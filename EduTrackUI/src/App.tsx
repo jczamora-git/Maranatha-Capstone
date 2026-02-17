@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import useFirebaseToken from "./hooks/useFirebaseToken";
 import { usePaymentPageLock } from "./hooks/usePaymentPageLock";
 import { FEATURES } from "@/config/features";
 import StudentMessaging from "./pages/student/Messaging";
@@ -108,8 +107,7 @@ const AppContent = () => {
   if (FEATURES.attendance) {
     LazyCampuses = lazy(() => import('./pages/admin/Campuses'));
   }
-  // Initialize Firebase token registration for real-time notifications
-  useFirebaseToken();
+
 
   return (
     <>
