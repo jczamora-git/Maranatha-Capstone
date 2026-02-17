@@ -3,13 +3,14 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /**
  * AcademicPeriodController - Manage academic periods
- * Handles school year + semester + period type (Midterm/Final Term) management
+ * Handles school year + quarter (1st-4th Quarter) management for preschool-elementary
  */
 class AcademicPeriodController extends Controller
 {
     public function __construct()
     {
         parent::__construct();
+        $this->call->model('AcademicPeriodModel');
     }
 
     /**
@@ -39,11 +40,8 @@ class AcademicPeriodController extends Controller
             if (!empty($_GET['school_year'])) {
                 $filters['school_year'] = $_GET['school_year'];
             }
-            if (!empty($_GET['semester'])) {
-                $filters['semester'] = $_GET['semester'];
-            }
-            if (!empty($_GET['period_type'])) {
-                $filters['period_type'] = $_GET['period_type'];
+            if (!empty($_GET['quarter'])) {
+                $filters['quarter'] = $_GET['quarter'];
             }
 
             $periods = $this->AcademicPeriodModel->get_all($filters);
@@ -241,35 +239,23 @@ class AcademicPeriodController extends Controller
             $data = json_decode(file_get_contents('php://input'), true);
 
             // Validation
-            if (empty($data['school_year']) || empty($data['semester']) || 
-                empty($data['period_type']) || empty($data['start_date']) || 
-                empty($data['end_date'])) {
+            if (empty($data['school_year']) || empty($data['quarter']) || 
+                empty($data['start_date']) || empty($data['end_date'])) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Missing required fields: school_year, semester, period_type, start_date, end_date'
+                    'message' => 'Missing required fields: school_year, quarter, start_date, end_date'
                 ]);
                 return;
             }
 
-            // Validate semester enum
-            $validSemesters = ['1st Semester', '2nd Semester', 'Summer'];
-            if (!in_array($data['semester'], $validSemesters)) {
+            // Validate quarter enum
+            $validQuarters = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
+            if (!in_array($data['quarter'], $validQuarters)) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Invalid semester. Must be: 1st Semester, 2nd Semester, or Summer'
-                ]);
-                return;
-            }
-
-            // Validate period_type enum
-            $validPeriodTypes = ['Midterm', 'Final Term'];
-            if (!in_array($data['period_type'], $validPeriodTypes)) {
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Invalid period_type. Must be: Midterm or Final Term'
+                    'message' => 'Invalid quarter. Must be: 1st Quarter, 2nd Quarter, 3rd Quarter, or 4th Quarter'
                 ]);
                 return;
             }
@@ -288,11 +274,11 @@ class AcademicPeriodController extends Controller
             // Prepare period data
             $periodData = [
                 'school_year' => $data['school_year'],
-                'semester' => $data['semester'],
-                'period_type' => $data['period_type'],
+                'quarter' => $data['quarter'],
                 'start_date' => $data['start_date'],
                 'end_date' => $data['end_date'],
-                'status' => $data['status'] ?? 'upcoming'
+                'status' => $data['status'] ?? 'upcoming',
+                'description' => $data['description'] ?? null
             ];
 
             $newId = $this->AcademicPeriodModel->create($periodData);
@@ -354,11 +340,11 @@ class AcademicPeriodController extends Controller
 
             // Only allow certain fields to be updated
             if (!empty($data['school_year'])) $updateData['school_year'] = $data['school_year'];
-            if (!empty($data['semester'])) $updateData['semester'] = $data['semester'];
-            if (!empty($data['period_type'])) $updateData['period_type'] = $data['period_type'];
+            if (!empty($data['quarter'])) $updateData['quarter'] = $data['quarter'];
             if (!empty($data['start_date'])) $updateData['start_date'] = $data['start_date'];
             if (!empty($data['end_date'])) $updateData['end_date'] = $data['end_date'];
             if (!empty($data['status'])) $updateData['status'] = $data['status'];
+            if (isset($data['description'])) $updateData['description'] = $data['description'];
 
             // If caller is trying to set this period as active, use set_active
             // which ensures only one period is active at a time (it deactivates others).
@@ -585,6 +571,41 @@ class AcademicPeriodController extends Controller
             echo json_encode([
                 'success' => true,
                 'data' => $period
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get distinct school years from academic periods
+     * GET /api/academic-periods/school-years
+     */
+    public function api_get_school_years()
+    {
+        api_set_json_headers();
+
+        // Check authorization
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            $school_years = $this->AcademicPeriodModel->get_distinct_school_years();
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'school_years' => $school_years
             ]);
         } catch (Exception $e) {
             http_response_code(500);

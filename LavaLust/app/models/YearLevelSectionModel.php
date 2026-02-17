@@ -143,4 +143,13 @@ class YearLevelSectionModel extends Model
 
         return $this->bulk_assign($yearLevelId, $sectionIds);
     }
+
+    /**
+     * Insert a new year level section mapping
+     * Alias for assign()
+     */
+    public function insert($data)
+    {
+        return $this->assign($data['year_level_id'], $data['section_id']);
+    }
 }

@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, BookOpen, Search, Grid3x3, List, Loader2, Users } from "lucide-react";
+import { BookOpen, Search, Grid3x3, List, Loader2, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
+import { FEATURES } from "@/config/features";
 
 type Course = {
   id: number | string;
@@ -71,7 +72,7 @@ const Courses = () => {
     }
   });
 
-  // Helper: attach student counts per section (by year level)
+  // Helper: attach student counts per section (by year level) - only if not already populated
   const fetchStudentCountsForCourses = async (coursesToUpdate: Course[]) => {
     // For each course, for each section that has an id, fetch students count by year level + section_id
     const updated = await Promise.all(coursesToUpdate.map(async (c) => {
@@ -79,7 +80,7 @@ const Courses = () => {
       const secs = await Promise.all(c.sections.map(async (s) => {
         // if section already has students count, skip
         if (typeof s.students === 'number') return s;
-        // If we don't have section id, try to skip (no reliable way to query)
+        // If we don't have section id, skip (no reliable way to query)
         if (!s.id) return s;
         try {
           const q = [] as string[];
@@ -102,91 +103,77 @@ const Courses = () => {
   const fetchTeacherCourses = async () => {
     if (!user) return;
     setLoading(true);
-    const tries = [
-      `${API_ENDPOINTS.TEACHER_ASSIGNMENTS}/my`,
-      `${API_ENDPOINTS.TEACHERS}/by-user/${encodeURIComponent(user.id)}`,
-      `${API_ENDPOINTS.TEACHERS}/${encodeURIComponent(user.id)}`,
-      API_ENDPOINTS.TEACHER_ASSIGNMENTS_BY_TEACHER(user.id),
-      `${API_ENDPOINTS.TEACHER_ASSIGNMENTS}?user_id=${encodeURIComponent(user.id)}`,
-      `${API_ENDPOINTS.TEACHER_ASSIGNMENTS}?teacher_user_id=${encodeURIComponent(user.id)}`,
-    ];
 
-    for (const url of tries) {
-      try {
-        const res = await apiGet(url);
-        // debug: log response shape to help identify incorrect callback rendering
-        console.debug('fetchTeacherCourses response', url, res);
-        if (!res) continue;
+    try {
+      const subjectsRes = await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
+      const subjects = Array.isArray(subjectsRes?.subjects) ? subjectsRes.subjects : [];
 
-        if (res.teacher && Array.isArray(res.teacher.assigned_courses)) {
-          const mapped: Course[] = res.teacher.assigned_courses.map((c: any, idx: number) => ({
-            id: c.id ?? c.subject_id ?? idx,
-            title: c.course_name || c.course || c.title || '',
-            code: c.course_code || c.code || '',
-            yearLevel: c.year_level ?? c.yearLevel ?? (c.subject && c.subject.year_level) ?? undefined,
-            sections: Array.isArray(c.sections) ? c.sections.map((s: any) => (typeof s === 'object' ? { id: s.id || s.section_id, name: s.name, students: typeof s.students_count === 'number' ? s.students_count : undefined } : { name: String(s) })) : [],
-            status: c.status ?? undefined,
-          }));
-          setCourses(mapped);
-          // fetch counts per section
-          fetchStudentCountsForCourses(mapped).catch(() => {});
-          setLoading(false);
-          return;
-        }
-
-        if (Array.isArray(res.assigned_courses)) {
-          const mapped: Course[] = res.assigned_courses.map((c: any, idx: number) => ({
-            id: c.id ?? c.subject_id ?? idx,
-            title: c.course_name || c.course || c.title || '',
-            code: c.course_code || c.code || '',
-            yearLevel: c.year_level ?? c.yearLevel ?? (c.subject && c.subject.year_level) ?? undefined,
-            sections: Array.isArray(c.sections) ? c.sections.map((s: any) => (typeof s === 'object' ? { id: s.id || s.section_id, name: s.name, students: typeof s.students_count === 'number' ? s.students_count : undefined } : { name: String(s) })) : [],
-            status: c.status ?? undefined,
-          }));
-          setCourses(mapped);
-          fetchStudentCountsForCourses(mapped).catch(() => {});
-          setLoading(false);
-          return;
-        }
-
-        if (Array.isArray(res.assignments)) {
-          const mapped: Course[] = res.assignments.map((a: any, idx: number) => {
-            const subj = a.subject || a;
-            const sections = Array.isArray(a.sections) && a.sections.length > 0 ? a.sections : (Array.isArray(subj.sections) ? subj.sections : []);
-            return {
-              id: subj.id ?? idx,
-              title: subj.course_name || subj.title || subj.course || '',
-              code: subj.course_code || subj.code || '',
-              yearLevel: subj.year_level ?? subj.yearLevel ?? undefined,
-              sections: sections.map((s: any) => (typeof s === 'object' ? { id: s.id || s.section_id, name: s.name, students: typeof s.students_count === 'number' ? s.students_count : undefined } : { name: String(s) })),
-              status: subj.status ?? undefined,
-            };
-          });
-          setCourses(mapped);
-          fetchStudentCountsForCourses(mapped).catch(() => {});
-          setLoading(false);
-          return;
-        }
-
-        if (Array.isArray(res)) {
-          const mapped = res.map((c: any, idx: number) => ({ id: c.id ?? idx, title: c.course_name || c.title || c.course || '', code: c.course_code || c.code || '', section: (c.sections && c.sections[0]) || undefined, students: c.students_count ?? undefined, status: c.status ?? undefined }));
-          setCourses(mapped);
-          setLoading(false);
-          return;
-        }
-      } catch (err) {
-        // ignore and try next
-        console.debug('fetchTeacherCourses attempt failed', err);
+      if (subjects.length === 0) {
+        setCourses([]);
+        return;
       }
-    }
 
-    // fallback sample
-    setCourses([
-      { id: 1, title: "Introduction to Computer Science", code: "CS101", section: "Section A", students: 35, status: "approved" },
-      { id: 2, title: "Data Structures", code: "CS201", section: "Section B", students: 28, status: "approved" },
-      { id: 3, title: "Web Development", code: "CS301", section: "Section A", students: 30, status: "pending" },
-    ]);
-    setLoading(false);
+      const levels = Array.from(new Set(subjects.map((s: any) => s.level || s.subject_level).filter(Boolean)));
+      const sectionsByLevel = new Map<string, Array<{ id: number | string; name: string; students?: number }>>();
+
+      await Promise.all(levels.map(async (level) => {
+        try {
+          const studentsRes = await apiGet(`${API_ENDPOINTS.STUDENTS}?year_level=${encodeURIComponent(level)}`);
+          if (studentsRes && Array.isArray(studentsRes.data)) {
+            const sectionMap = new Map<number | string, { id: number | string; name: string; count: number }>();
+
+            studentsRes.data.forEach((student: any) => {
+              if (student.section_id && student.section_name) {
+                if (sectionMap.has(student.section_id)) {
+                  sectionMap.get(student.section_id)!.count++;
+                } else {
+                  sectionMap.set(student.section_id, {
+                    id: student.section_id,
+                    name: student.section_name,
+                    count: 1
+                  });
+                }
+              }
+            });
+
+            if (sectionMap.size > 0) {
+              sectionsByLevel.set(level, Array.from(sectionMap.values()).map(sec => ({
+                id: sec.id,
+                name: sec.name,
+                students: sec.count
+              })));
+            } else {
+              sectionsByLevel.set(level, [{
+                id: `default-${level}`,
+                name: level,
+                students: studentsRes.data.length
+              }]);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch students for year level:', level, err);
+        }
+      }));
+
+      const mapped: Course[] = subjects.map((subject: any, idx: number) => {
+        const level = subject.level || subject.subject_level || '';
+        return {
+          id: subject.subject_id ?? subject.id ?? idx,
+          title: subject.name || subject.subject_name || '',
+          code: subject.course_code || subject.code || '',
+          yearLevel: level,
+          sections: level ? (sectionsByLevel.get(level) || []) : [],
+          status: subject.status ?? 'active'
+        };
+      });
+
+      setCourses(mapped);
+    } catch (err: any) {
+      console.error('fetchTeacherCourses error:', err);
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -215,10 +202,6 @@ const Courses = () => {
               {user?.name} • Manage your assigned courses and students
             </p>
           </div>
-          <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-lg hover:shadow-xl transition-all">
-            <Plus className="h-5 w-5 mr-2" />
-            Request New Course
-          </Button>
         </div>
 
         {/* Main Card */}
@@ -342,20 +325,32 @@ const Courses = () => {
                     </div>
 
                     {/* Card Actions */}
-                    <div className="px-5 py-4 border-t border-gray-200 mt-auto">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setManageCourse(course);
-                          setManageModalOpen(true);
-                        }}
-                        className="w-full gap-2 font-medium"
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        Manage Course
-                      </Button>
-                    </div>
+                    {FEATURES.courseManagement && (
+                      <div className="px-5 py-4 border-t border-gray-200 mt-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // If only one section, redirect directly
+                            if (course.sections && course.sections.length === 1) {
+                              const section = course.sections[0];
+                              if (section.id) {
+                                navigate(`/teacher/courses/${course.id}?section_id=${section.id}`);
+                              } else {
+                                navigate(`/teacher/courses/${course.id}`);
+                              }
+                            } else {
+                              setManageCourse(course);
+                              setManageModalOpen(true);
+                            }
+                          }}
+                          className="w-full gap-2 font-medium"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                          Manage Course
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -408,18 +403,30 @@ const Courses = () => {
                           {renderText(course.status)}
                         </Badge>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setManageCourse(course);
-                          setManageModalOpen(true);
-                        }}
-                        className="gap-1 font-medium hover:bg-accent-50 hover:border-accent-300 transition-all"
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        Manage
-                      </Button>
+                      {FEATURES.courseManagement && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // If only one section, redirect directly
+                            if (course.sections && course.sections.length === 1) {
+                              const section = course.sections[0];
+                              if (section.id) {
+                                navigate(`/teacher/courses/${course.id}?section_id=${section.id}`);
+                              } else {
+                                navigate(`/teacher/courses/${course.id}`);
+                              }
+                            } else {
+                              setManageCourse(course);
+                              setManageModalOpen(true);
+                            }
+                          }}
+                          className="gap-1 font-medium hover:bg-accent-50 hover:border-accent-300 transition-all"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                          Manage
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -428,52 +435,54 @@ const Courses = () => {
           </CardContent>
         </Card>
         {/* Manage Course Modal */}
-        <Dialog open={manageModalOpen} onOpenChange={setManageModalOpen}>
-          <DialogContent className="max-w-2xl border-0 shadow-2xl rounded-2xl overflow-hidden p-0">
-            {/* Gradient header */}
-            <div className="px-8 py-7 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
-              <div>
-                <h3 className="text-2xl font-bold">{manageCourse ? `Manage: ${renderText(manageCourse.title)}` : 'Manage Course'}</h3>
-                <p className="text-sm font-medium opacity-95 mt-2">Select a section to manage for this course.</p>
-              </div>
-            </div>
-
-            {/* Body with side padding */}
-            <div className="px-8 py-6 bg-white space-y-6">
-              {manageCourse ? (
+        {FEATURES.courseManagement && (
+          <Dialog open={manageModalOpen} onOpenChange={setManageModalOpen}>
+            <DialogContent className="max-w-2xl border-0 shadow-2xl rounded-2xl overflow-hidden p-0">
+              {/* Gradient header */}
+              <div className="px-8 py-7 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
                 <div>
-                  {manageCourse.sections && manageCourse.sections.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      {manageCourse.sections.map((s) => (
-                        <div key={s.id ?? s.name} className="flex flex-col items-center justify-between p-6 border border-gray-200 rounded-2xl bg-white hover:shadow-md transition-all hover:border-blue-200">
-                          <div className="text-center mb-4 w-full">
-                            <div className="font-bold text-lg text-gray-900">{renderText(s.name)}</div>
-                            <div className="text-sm text-gray-600 mt-1">{typeof s.students === 'number' ? `${s.students} students` : 'No students'}</div>
-                          </div>
-                          <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold hover:shadow-lg hover:from-blue-700 hover:to-cyan-600 transition-all shadow-md rounded-full px-6 py-2.5 text-sm" onClick={() => {
-                            setManageModalOpen(false);
-                            if (s.id) navigate(`/teacher/courses/${manageCourse.id}?section_id=${s.id}`);
-                            else navigate(`/teacher/courses/${manageCourse.id}`);
-                          }}>
-                            Manage Section
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground mb-4">No sections available for this course.</p>
-                  )}
-
-                  {/* Manage Course Overview button removed — per-section Manage Section handles navigation */}
+                  <h3 className="text-2xl font-bold">{manageCourse ? `Manage: ${renderText(manageCourse.title)}` : 'Manage Course'}</h3>
+                  <p className="text-sm font-medium opacity-95 mt-2">Select a section to manage for this course.</p>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No course selected.</p>
-              )}
-            </div>
+              </div>
 
-            {/* Footer removed — close handled by the dialog X icon in the header */}
-          </DialogContent>
-        </Dialog>
+              {/* Body with side padding */}
+              <div className="px-8 py-6 bg-white space-y-6">
+                {manageCourse ? (
+                  <div>
+                    {manageCourse.sections && manageCourse.sections.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        {manageCourse.sections.map((s) => (
+                          <div key={s.id ?? s.name} className="flex flex-col items-center justify-between p-6 border border-gray-200 rounded-2xl bg-white hover:shadow-md transition-all hover:border-blue-200">
+                            <div className="text-center mb-4 w-full">
+                              <div className="font-bold text-lg text-gray-900">{renderText(s.name)}</div>
+                              <div className="text-sm text-gray-600 mt-1">{typeof s.students === 'number' ? `${s.students} students` : 'No students'}</div>
+                            </div>
+                            <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold hover:shadow-lg hover:from-blue-700 hover:to-cyan-600 transition-all shadow-md rounded-full px-6 py-2.5 text-sm" onClick={() => {
+                              setManageModalOpen(false);
+                              if (s.id) navigate(`/teacher/courses/${manageCourse.id}?section_id=${s.id}`);
+                              else navigate(`/teacher/courses/${manageCourse.id}`);
+                            }}>
+                              Manage Section
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mb-4">No sections available for this course.</p>
+                    )}
+
+                    {/* Manage Course Overview button removed — per-section Manage Section handles navigation */}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No course selected.</p>
+                )}
+              </div>
+
+              {/* Footer removed — close handled by the dialog X icon in the header */}
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </DashboardLayout>
   );

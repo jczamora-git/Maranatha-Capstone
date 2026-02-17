@@ -3,7 +3,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /**
  * AcademicPeriod Model
- * Handles academic period tracking (school year + semester + period type)
+ * Handles academic period tracking (school year + quarter for preschool-elementary)
  */
 class AcademicPeriodModel extends Model
 {
@@ -27,13 +27,8 @@ class AcademicPeriodModel extends Model
         }
 
         // Semester filter
-        if (!empty($filters['semester'])) {
-            $query = $query->where('semester', $filters['semester']);
-        }
-
-        // Period type filter
-        if (!empty($filters['period_type'])) {
-            $query = $query->where('period_type', $filters['period_type']);
+        if (!empty($filters['quarter'])) {
+            $query = $query->where('quarter', $filters['quarter']);
         }
 
         return $query->order_by('start_date', 'DESC')->get_all();
@@ -61,23 +56,13 @@ class AcademicPeriodModel extends Model
     }
 
     /**
-     * Get current semester (active academic period's semester)
-     * Returns '1st Semester', '2nd Semester', or 'Summer'
+     * Get current quarter (active academic period's quarter)
+     * Returns '1st Quarter', '2nd Quarter', '3rd Quarter', or '4th Quarter'
      */
-    public function get_current_semester()
+    public function get_current_quarter()
     {
         $active = $this->get_active_period();
-        return $active ? $active['semester'] : null;
-    }
-
-    /**
-     * Get current period type (Midterm or Final Term)
-     * Returns 'Midterm' or 'Final Term'
-     */
-    public function get_current_period_type()
-    {
-        $active = $this->get_active_period();
-        return $active ? $active['period_type'] : null;
+        return $active ? $active['quarter'] : null;
     }
 
     /**
@@ -91,12 +76,12 @@ class AcademicPeriodModel extends Model
     }
 
     /**
-     * Check if a specific semester is currently active
+     * Check if a specific quarter is currently active
      */
-    public function is_semester_active($semester)
+    public function is_quarter_active($quarter)
     {
         $active = $this->get_active_period();
-        return $active && $active['semester'] === $semester;
+        return $active && $active['quarter'] === $quarter;
     }
 
     /**
@@ -105,9 +90,8 @@ class AcademicPeriodModel extends Model
     public function create($data)
     {
         // Validate required fields
-        if (empty($data['school_year']) || empty($data['semester']) || 
-            empty($data['period_type']) || empty($data['start_date']) || 
-            empty($data['end_date'])) {
+        if (empty($data['school_year']) || empty($data['quarter']) || 
+            empty($data['start_date']) || empty($data['end_date'])) {
             return false;
         }
 
@@ -140,7 +124,7 @@ class AcademicPeriodModel extends Model
     }
 
     /**
-     * Set a period as active (and deactivate others)
+     * Set a period as active (and update others: periods before it become 'past', periods after become 'upcoming')
      */
     public function set_active($id)
     {
@@ -155,14 +139,41 @@ class AcademicPeriodModel extends Model
                 $usedTx = 'beginTransaction';
             }
 
-            // Deactivate all periods
-            $this->db->table($this->table)
-                     ->update(['status' => 'past']);
-
-            // Activate the selected period
-            $this->db->table($this->table)
-                     ->where('id', $id)
-                     ->update(['status' => 'active']);
+            // Get the selected period to use as reference
+            $activePeriod = $this->db->table($this->table)
+                                     ->where('id', $id)
+                                     ->get();
+            
+            if (!$activePeriod) {
+                return false;
+            }
+            
+            // Get all periods to update their status correctly
+            $allPeriods = $this->db->table($this->table)->get_all();
+            
+            foreach ($allPeriods as $period) {
+                if ($period['id'] == $id) {
+                    // Set selected period as active
+                    $this->db->table($this->table)
+                             ->where('id', $id)
+                             ->update(['status' => 'active']);
+                } else {
+                    // Set periods to 'past' if they end before the active period starts
+                    // Set periods to 'upcoming' if they start after the active period ends
+                    if ($period['end_date'] < $activePeriod['start_date']) {
+                        $status = 'past';
+                    } elseif ($period['start_date'] > $activePeriod['end_date']) {
+                        $status = 'upcoming';
+                    } else {
+                        // Overlapping periods default to upcoming (shouldn't happen in practice)
+                        $status = 'upcoming';
+                    }
+                    
+                    $this->db->table($this->table)
+                             ->where('id', $period['id'])
+                             ->update(['status' => $status]);
+                }
+            }
 
             // Commit transaction if we started one
             if ($usedTx === 'transaction' && method_exists($this->db, 'commit')) {
@@ -311,5 +322,21 @@ class AcademicPeriodModel extends Model
             'upcoming' => $upcoming['count'] ?? 0,
             'past' => $past['count'] ?? 0
         ];
+    }
+
+    /**
+     * Get distinct school years from academic periods
+     * Returns array of school years ordered by school_year DESC
+     */
+    public function get_distinct_school_years()
+    {
+        $result = $this->db->table($this->table)
+                          ->select('school_year')
+                          ->group_by('school_year')
+                          ->order_by('school_year', 'DESC')
+                          ->get_all();
+
+        // Extract just the school_year values
+        return array_column($result, 'school_year');
     }
 }

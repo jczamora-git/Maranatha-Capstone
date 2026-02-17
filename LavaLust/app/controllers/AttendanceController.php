@@ -12,50 +12,16 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Calculate distance between two geographic coordinates using Haversine formula
-     * Returns distance in meters
-     */
-    private function haversineDistance($lat1, $lon1, $lat2, $lon2)
-    {
-        $earth_radius = 6371000; // meters
-        
-        $lat1_rad = deg2rad($lat1);
-        $lon1_rad = deg2rad($lon1);
-        $lat2_rad = deg2rad($lat2);
-        $lon2_rad = deg2rad($lon2);
-        
-        $dlat = $lat2_rad - $lat1_rad;
-        $dlon = $lon2_rad - $lon1_rad;
-        
-        $a = sin($dlat / 2) * sin($dlat / 2) +
-             cos($lat1_rad) * cos($lat2_rad) *
-             sin($dlon / 2) * sin($dlon / 2);
-        
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
-        return $earth_radius * $c;
-    }
-
-    /**
-     * Mark attendance by scanning a student QR code
+     * Mark attendance (swipe-based interface)
      * POST /api/attendance/mark
      * 
      * Expected payload:
      * {
-     *   "student_id": <int>,
+     *   "session_id": "timestamp-random" (string - groups records from single session),
+     *   "student_id": "MCC2025-00359" (string - student code),
      *   "teacher_id": <int>,
      *   "course_id": <int>,
-     *   "section_id": <int>,
-     *   "campus_id": <int>,
-     *   "qr_payload": {
-     *     "type": "attendance",
-     *     "student_id": <int>,
-     *     "ts": <timestamp_ms>,
-     *     "location": { "lat": <float>, "lng": <float> },
-     *     "expires_at": <timestamp_ms>
-     *   },
-     *   "teacher_location": { "lat": <float>, "lng": <float> },
-     *   "dev_mode": <bool> (optional, skip location validation)
+     *   "status": "present|late|absent|out_of_range"
      * }
      */
     public function api_mark_attendance()
@@ -86,86 +52,38 @@ class AttendanceController extends Controller
             }
 
             // Validate required fields
-            $student_id = $data['student_id'] ?? null;
+            $session_id = $data['session_id'] ?? null; // String: groups records from single session
+            $student_id = $data['student_id'] ?? null; // String: "MCC2025-00359"
             $teacher_id = $data['teacher_id'] ?? null;
             $course_id = $data['course_id'] ?? null;
-            $section_id = $data['section_id'] ?? null;
-            $campus_id = $data['campus_id'] ?? null;
-            $qr_payload = $data['qr_payload'] ?? null;
-            $dev_mode = $data['dev_mode'] ?? false;
+            $status = $data['status'] ?? 'present';
 
-            if (!$student_id || !$teacher_id || !$course_id || !$campus_id) {
+            if (!$session_id || !$student_id || !$teacher_id || !$course_id) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Missing required fields: student_id, teacher_id, course_id, campus_id'
+                    'message' => 'Missing required fields: session_id, student_id, teacher_id, course_id'
                 ]);
                 return;
             }
 
-            // Validate QR payload structure
-            if (!$qr_payload || !isset($qr_payload['type']) || !isset($qr_payload['expires_at'])) {
+            // Validate status
+            $valid_statuses = ['present', 'late', 'absent', 'excused'];
+            if (!in_array($status, $valid_statuses)) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Invalid QR payload structure'
+                    'message' => 'Invalid status. Must be: ' . implode(', ', $valid_statuses)
                 ]);
                 return;
-            }
-
-            $current_time_ms = intval(microtime(true) * 1000);
-            $expires_at_ms = intval($qr_payload['expires_at']);
-
-            // Check QR expiry (5 minute validity)
-            if ($current_time_ms > $expires_at_ms) {
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'QR code has expired',
-                    'expired_at' => $expires_at_ms,
-                    'current_time' => $current_time_ms
-                ]);
-                return;
-            }
-
-            // Default status is 'present'
-            $status = 'present';
-
-            // Check location proximity (unless in dev mode)
-            if (!$dev_mode && isset($qr_payload['location'])) {
-                $student_location = $qr_payload['location'];
-                $student_lat = floatval($student_location['lat'] ?? 0);
-                $student_lng = floatval($student_location['lng'] ?? 0);
-
-                // Fetch campus details
-                $campus = $this->db->table('campus')->where('id', $campus_id)->get();
-                
-                if ($campus) {
-                    $campus_lat = floatval($campus['latitude'] ?? $campus->latitude ?? 0);
-                    $campus_lng = floatval($campus['longitude'] ?? $campus->longitude ?? 0);
-                    $radius_m = intval($campus['geo_radius_m'] ?? $campus->geo_radius_m ?? 0);
-
-                    // Calculate distance using Haversine formula
-                    $distance = $this->haversineDistance(
-                        $campus_lat,
-                        $campus_lng,
-                        $student_lat,
-                        $student_lng
-                    );
-
-                    // Check if student is within campus radius
-                    if ($distance > $radius_m) {
-                        $status = 'out_of_range';
-                    }
-                }
             }
 
             // Insert attendance record
             $attendance = [
-                'student_id' => $student_id,
-                'teacher_id' => $teacher_id,
-                'course_id' => $course_id,
-                'section_id' => $section_id,
+                'session_id' => strval($session_id), // Groups records from single session
+                'student_id' => strval($student_id), // Keep as string
+                'teacher_id' => intval($teacher_id),
+                'course_id' => intval($course_id),
                 'status' => $status,
                 'created_at' => date('Y-m-d H:i:s')
             ];
@@ -252,31 +170,38 @@ class AttendanceController extends Controller
             $teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id']) : null;
             $date = isset($_GET['date']) ? trim($_GET['date']) : null;
 
-            // Start from attendance and join student info so frontend can display name and student code
+            // Start from attendance and join student info using student_id (which is the student code string)
+            // Then join with users to get first_name and last_name
             $query = $this->db->table('attendance')
-                ->select('attendance.*, students.student_id as student_code, users.first_name, users.last_name')
-                ->join('students', 'students.user_id = attendance.student_id')
-                ->join('users', 'users.id = attendance.student_id')
+                ->select('attendance.*, users.first_name, users.last_name')
+                ->join('students', 'students.student_id = attendance.student_id')
+                ->join('users', 'users.id = students.user_id')
                 ->where('attendance.course_id', $course_id);
 
             // Filter by teacher_id if provided
             if ($teacher_id) {
-                $query->where('teacher_id', $teacher_id);
+                $query->where('attendance.teacher_id', $teacher_id);
             }
 
             // If a date is provided (YYYY-MM-DD), filter records for that date
             if ($date) {
                 $start = $date . ' 00:00:00';
                 $end = date('Y-m-d 00:00:00', strtotime($date . ' +1 day'));
-                $query->where('created_at >=', $start)->where('created_at <', $end);
+                $query->where('attendance.created_at >=', $start)->where('attendance.created_at <', $end);
             }
 
-            $records = $query->order_by('created_at', 'DESC')->get_all();
+            $records = $query->order_by('attendance.created_at', 'DESC')->get_all();
+
+            // Map student name from first_name and last_name
+            $mapped = array_map(function($record) {
+                $record['student_name'] = trim(($record['first_name'] ?? '') . ' ' . ($record['last_name'] ?? ''));
+                return $record;
+            }, $records);
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
-                'data' => $records
+                'data' => $mapped
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -353,6 +278,131 @@ class AttendanceController extends Controller
             echo json_encode([
                 'success' => true,
                 'data' => $records
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Bulk insert attendance records
+     * POST /api/attendance/bulk
+     * 
+     * Expected payload:
+     * {
+     *   "records": [
+     *     {
+     *       "session_id": "MCA-20260127-ABC123",
+     *       "student_id": "123",
+     *       "course_id": 5,
+     *       "status": "present|late|absent|excused",
+     *       "attendance_date": "2026-01-27"
+     *     },
+     *     ...
+     *   ]
+     * }
+     */
+    public function api_bulk_insert_attendance()
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+
+            if (!$data || !isset($data['records']) || !is_array($data['records'])) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid payload. Expected { "records": [...] }'
+                ]);
+                return;
+            }
+
+            $records = $data['records'];
+            
+            if (empty($records)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'No records provided'
+                ]);
+                return;
+            }
+
+            // Get teacher_id from the first record (all records should have the same teacher_id)
+            // Or optionally from session, but request payload is preferred for bulk operations
+            $teacher_id = null;
+            if (!empty($records) && isset($records[0]['teacher_id'])) {
+                $teacher_id = intval($records[0]['teacher_id']);
+            }
+
+            if (!$teacher_id) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Teacher ID is required in attendance records'
+                ]);
+                return;
+            }
+
+            $inserted_count = 0;
+            $errors = [];
+            $valid_statuses = ['present', 'late', 'absent', 'excused'];
+
+            foreach ($records as $idx => $record) {
+                // Validate required fields
+                if (!isset($record['student_id']) || !isset($record['course_id']) || !isset($record['status']) || !isset($record['session_id'])) {
+                    $errors[] = "Record $idx: Missing required fields";
+                    continue;
+                }
+
+                // Validate status
+                if (!in_array($record['status'], $valid_statuses)) {
+                    $errors[] = "Record $idx: Invalid status '{$record['status']}'";
+                    continue;
+                }
+
+                // Prepare attendance record
+                $attendance = [
+                    'session_id' => $record['session_id'],
+                    'student_id' => strval($record['student_id']),
+                    'teacher_id' => intval($teacher_id),
+                    'course_id' => intval($record['course_id']),
+                    'status' => $record['status'],
+                    'created_at' => isset($record['attendance_date']) 
+                        ? $record['attendance_date'] . ' ' . date('H:i:s')
+                        : date('Y-m-d H:i:s')
+                ];
+
+                try {
+                    $this->db->table('attendance')->insert($attendance);
+                    $inserted_count++;
+                } catch (Exception $e) {
+                    $errors[] = "Record $idx: " . $e->getMessage();
+                }
+            }
+
+            http_response_code(201);
+            echo json_encode([
+                'success' => true,
+                'message' => "Successfully inserted $inserted_count attendance records",
+                'inserted_count' => $inserted_count,
+                'total_records' => count($records),
+                'errors' => $errors
             ]);
         } catch (Exception $e) {
             http_response_code(500);

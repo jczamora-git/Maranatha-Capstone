@@ -15,6 +15,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Montserrat', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        montserrat: ['Montserrat', 'sans-serif'],
+        'last-of-us': ['The Last Of Us', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -89,5 +94,8 @@ export default {
       },
     },
   },
-   plugins: [tailwindScrollbar, tailwindcssAnimate],
+  plugins: [
+    tailwindScrollbar, 
+    tailwindcssAnimate,
+  ],
 } satisfies Config;

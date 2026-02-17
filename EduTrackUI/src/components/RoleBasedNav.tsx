@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 export const RoleBasedNav = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const isProd = import.meta.env.MODE === "production";
 
   const adminLinks = [
     { to: "/admin", icon: BarChart3, label: "Dashboard" },
@@ -38,7 +39,7 @@ export const RoleBasedNav = () => {
 
   const studentLinks = [
     { to: "/student", icon: BarChart3, label: "Dashboard" },
-    { to: "/student/courses", icon: BookOpen, label: "My Courses" },
+    ...(isProd ? [] : [{ to: "/student/courses", icon: BookOpen, label: "My Courses" }]),
     { to: "/student/activities", icon: ClipboardList, label: "Activities" },
     { to: "/student/grades", icon: Award, label: "My Grades" },
     { to: "/student/progress", icon: Calendar, label: "Progress" },

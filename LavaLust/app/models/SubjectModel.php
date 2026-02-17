@@ -3,7 +3,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /**
  * Subject Model
- * Handles subjects table operations
+ * Handles subjects table operations for Nursery to Grade 6
  */
 class SubjectModel extends Model
 {
@@ -14,31 +14,22 @@ class SubjectModel extends Model
      */
     public function get_all($filters = [])
     {
-    $query = $this->db->table($this->table)
-              ->select('id, course_code, course_name, credits, category, year_level, semester, status, created_at, updated_at');
+        $query = $this->db->table($this->table)
+                  ->select('id, course_code, name, level, status, created_at, updated_at');
 
         if (!empty($filters['status'])) {
             $query = $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['category'])) {
-            $query = $query->where('category', $filters['category']);
-        }
-
-        if (!empty($filters['year_level'])) {
-            $query = $query->where('year_level', $filters['year_level']);
-        }
-
-        if (!empty($filters['semester'])) {
-            $query = $query->where('semester', $filters['semester']);
+        if (!empty($filters['level'])) {
+            $query = $query->where('level', $filters['level']);
         }
 
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';
             $query = $query->where_group_start();
             $query = $query->like('course_code', $search);
-            $query = $query->or_like('course_name', $search);
-            // description column removed from subjects table; search only course_code and course_name
+            $query = $query->or_like('name', $search);
             $query = $query->where_group_end();
         }
 
@@ -50,10 +41,10 @@ class SubjectModel extends Model
      */
     public function get_subject($id)
     {
-    return $this->db->table($this->table)
-            ->select('id, course_code, course_name, credits, category, year_level, semester, status, created_at, updated_at')
-            ->where('id', $id)
-            ->get();
+        return $this->db->table($this->table)
+                ->select('id, course_code, name, level, status, created_at, updated_at')
+                ->where('id', $id)
+                ->get();
     }
 
     public function find_by_id($id)
@@ -66,10 +57,10 @@ class SubjectModel extends Model
      */
     public function find_by_course_code($code)
     {
-    return $this->db->table($this->table)
-            ->select('id, course_code, course_name, credits, category, year_level, semester, status, created_at, updated_at')
-            ->where('course_code', $code)
-            ->get();
+        return $this->db->table($this->table)
+                ->select('id, course_code, name, level, status, created_at, updated_at')
+                ->where('course_code', $code)
+                ->get();
     }
 
     /**
@@ -96,12 +87,8 @@ class SubjectModel extends Model
         $now = date('Y-m-d H:i:s');
         $insert = [
             'course_code' => $data['course_code'] ?? '',
-            'course_name' => $data['course_name'] ?? '',
-            // description removed from subjects table
-            'credits' => $data['credits'] ?? 3,
-            'category' => $data['category'] ?? 'Major',
-            'year_level' => $data['year_level'] ?? '1st Year',
-            'semester' => $data['semester'] ?? '1st Semester',
+            'name' => $data['name'] ?? '',
+            'level' => $data['level'] ?? 'Grade 1',
             'status' => $data['status'] ?? 'active',
             'created_at' => $now,
             'updated_at' => $now
@@ -127,7 +114,7 @@ class SubjectModel extends Model
     {
         $data['updated_at'] = date('Y-m-d H:i:s');
 
-    $allowed = ['course_code','course_name','credits','category','year_level','semester','status','updated_at'];
+        $allowed = ['course_code', 'name', 'level', 'status', 'updated_at'];
         $updateData = [];
         foreach ($data as $k => $v) {
             if (in_array($k, $allowed)) {

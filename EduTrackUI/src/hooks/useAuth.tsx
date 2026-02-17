@@ -6,7 +6,11 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'student' | 'teacher' | 'admin';
+  first_name?: string;
+  last_name?: string;
+  role: 'student' | 'teacher' | 'admin' | 'enrollee';
+  status?: 'active' | 'inactive' | 'pending' | 'pending_verification';
+  payment_pin_set?: boolean;
 }
 
 interface RegistrationResponse {
@@ -27,6 +31,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   checkUser: () => Promise<boolean>;
+  updateUser: (updatedFields: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,7 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: response.user.id.toString(),
           email: response.user.email,
           name: `${response.user.first_name} ${response.user.last_name}`,
-          role: response.user.role as 'student' | 'teacher' | 'admin',
+          first_name: response.user.first_name,
+          last_name: response.user.last_name,
+          role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
+          status: response.user.status as 'active' | 'inactive' | 'pending' | 'pending_verification',
+          payment_pin_set: response.user.payment_pin_set || false,
         };
         
         setUser(userData);
@@ -60,6 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Navigate based on role
         switch (userData.role) {
+          case 'enrollee':
+            navigate('/enrollee/dashboard');
+            break;
           case 'student':
             navigate('/student/dashboard');
             break;
@@ -117,6 +129,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUser = (updatedFields: Partial<User>) => {
+    if (!user) return;
+    
+    const updatedUser = { ...user, ...updatedFields };
+    console.log('updateUser called:', { current: user, updated: updatedUser });
+    setUser(updatedUser);
+    localStorage.setItem('edutrack_user', JSON.stringify(updatedUser));
+  };
+
   const checkUser = async (): Promise<boolean> => {
     try {
       const response = await apiGet(API_ENDPOINTS.CHECK);
@@ -126,7 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: response.user.id.toString(),
           email: response.user.email,
           name: `${response.user.first_name} ${response.user.last_name}`,
-          role: response.user.role as 'student' | 'teacher' | 'admin',
+          role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
+          payment_pin_set: response.user.payment_pin_set || false,
         };
         
         setUser(userData);
@@ -134,6 +156,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Navigate based on role
         switch (userData.role) {
+          case 'enrollee':
+            navigate('/enrollee/dashboard');
+            break;
           case 'student':
             navigate('/student/dashboard');
             break;
@@ -156,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, checkUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, checkUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

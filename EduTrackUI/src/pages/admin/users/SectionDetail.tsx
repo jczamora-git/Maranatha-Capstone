@@ -108,9 +108,8 @@ const SectionDetail = () => {
     loadSectionFromRoute();
   }, [routeSectionId]);
 
-   // Display title: prefix with year number when provided in navigation state (e.g. '1-F1')
-   const yearPrefix = yearFromState ? (yearFromState.match(/\d+/)?.[0] ?? yearFromState) : null;
-   const displayTitle = section ? (yearPrefix ? `${yearPrefix}-${section.name}` : section.name) : "";
+   // Display title: use full year level name with section name (e.g. 'Nursery 2-Matatag')
+   const displayTitle = section ? (yearFromState ? `${yearFromState}-${section.name}` : section.name) : "";
 
   const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
@@ -194,10 +193,17 @@ const SectionDetail = () => {
   // Load all students with matching year level but NO section (available to add)
   useEffect(() => {
     const loadAvailableStudents = async () => {
-      if (!section?.id || !yearFromState) return;
+      if (!section?.id) return;
       try {
-        // Fetch students with this year level but no section (section_id = null)
-        const res = await apiGet(`${API_ENDPOINTS.STUDENTS}?year_level=${encodeURIComponent(yearFromState)}&section_id=`);
+        // Build query - filter by year level if available
+        const params: string[] = [];
+        if (yearFromState) {
+          params.push(`year_level=${encodeURIComponent(yearFromState)}`);
+        }
+        params.push('section_id=');
+        const url = `${API_ENDPOINTS.STUDENTS}?${params.join('&')}`;
+
+        const res = await apiGet(url);
         let arr: any[] = [];
         if (Array.isArray(res)) arr = res as any[];
         else if (res && res.data) arr = res.data;
@@ -288,6 +294,55 @@ const SectionDetail = () => {
   };
 
   const confirm = useConfirm();
+
+  const handleAddAllStudents = async () => {
+    if (filteredAvailableStudents.length === 0) {
+      showAlert("error", "No available students to add");
+      return;
+    }
+
+    const ok = await confirm({
+      title: 'Add all available students',
+      description: `Are you sure you want to add ${filteredAvailableStudents.length} student(s) to ${displayTitle}?`,
+      confirmText: 'Add All',
+      cancelText: 'Cancel',
+      variant: 'default'
+    });
+
+    if (!ok) return;
+
+    try {
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (const student of filteredAvailableStudents) {
+        try {
+          await apiPut(API_ENDPOINTS.STUDENT_BY_ID(student.id), { sectionId: section.id });
+          successCount++;
+        } catch (e) {
+          console.error(`Failed to add ${student.name}:`, e);
+          failureCount++;
+        }
+      }
+
+      // Update UI
+      const newSection = { 
+        ...section, 
+        students: [...section.students, ...filteredAvailableStudents.map(s => s.name)] 
+      };
+      setSection(newSection);
+      setSectionStudents((prev) => [...prev, ...filteredAvailableStudents]);
+      setAvailableStudents((prev) => 
+        prev.filter((st) => !filteredAvailableStudents.find(fas => fas.id === st.id))
+      );
+      window.dispatchEvent(new CustomEvent("section-updated", { detail: newSection }));
+      
+      showAlert("success", `Added ${successCount} student(s)${failureCount > 0 ? `, ${failureCount} failed` : ''}`);
+    } catch (e: any) {
+      console.error('Bulk add error:', e);
+      showAlert("error", e?.message || 'Failed to add students');
+    }
+  };
 
   const handleRemoveStudent = async (student: Student) => {
     const studentInfo = `${student.name} (${student.studentId ?? student.id})`;
@@ -460,7 +515,7 @@ const SectionDetail = () => {
                             >
                               <div className="flex items-center justify-between">
                                 <span>
-                                  {yearPrefix ? `${yearPrefix}-${sectionOpt.name}` : sectionOpt.name}
+                                  {yearFromState ? `${yearFromState}-${sectionOpt.name}` : sectionOpt.name}
                                 </span>
                                 {sectionOpt.id === section?.id && (
                                   <Badge variant="default" className="text-xs">
@@ -722,9 +777,23 @@ const SectionDetail = () => {
                 {/* Right: Available Students */}
                 <div className="w-1/2 flex flex-col">
                   <div className="p-4 border-b border-border bg-muted/30">
-                    <h3 className="font-bold text-lg">Available Students ({availableStudents.length})</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Year level: {yearFromState || "—"}</p>
-                    <div className="relative mt-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-bold text-lg">Available Students ({availableStudents.length})</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Year level: {yearFromState || "—"}</p>
+                      </div>
+                      {filteredAvailableStudents.length > 0 && (
+                        <Button
+                          size="sm"
+                          onClick={handleAddAllStudents}
+                          className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add All
+                        </Button>
+                      )}
+                    </div>
+                    <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search by name or ID..."

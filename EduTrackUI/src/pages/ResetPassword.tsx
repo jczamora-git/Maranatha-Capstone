@@ -95,7 +95,7 @@ const ResetPassword = () => {
           <Lock className="h-6 w-6 text-white" />
         </div>
         <h1 className="text-3xl font-bold text-foreground">Reset Password</h1>
-        <p className="text-muted-foreground mt-2">Create a new password for your EduTrack account</p>
+        <p className="text-muted-foreground mt-2">Create a new password for your MCAF account</p>
       </div>
 
       {/* Main card */}

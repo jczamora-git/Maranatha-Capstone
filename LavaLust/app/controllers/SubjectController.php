@@ -33,29 +33,14 @@ class SubjectController extends Controller
             if (!empty($_GET['status'])) {
                 $filters['status'] = $_GET['status'];
             }
-            if (!empty($_GET['category'])) {
-                $filters['category'] = $_GET['category'];
-            }
-            if (!empty($_GET['year_level'])) {
-                $filters['year_level'] = $_GET['year_level'];
-            }
-            if (!empty($_GET['semester'])) {
-                $filters['semester'] = $_GET['semester'];
+            if (!empty($_GET['level'])) {
+                $filters['level'] = $_GET['level'];
             }
             if (!empty($_GET['search'])) {
                 $filters['search'] = $_GET['search'];
             }
 
             $subjects = $this->SubjectModel->get_all($filters);
-
-            // If semester was provided and there are no results, try falling back
-            // to year-only filtering (some data may have inconsistent semester labels)
-            if ((empty($subjects) || count($subjects) === 0) && !empty($filters['semester']) && !empty($filters['year_level'])) {
-                // remove semester filter and re-query
-                $fallbackFilters = $filters;
-                unset($fallbackFilters['semester']);
-                $subjects = $this->SubjectModel->get_all($fallbackFilters);
-            }
 
             echo json_encode(['success' => true, 'subjects' => $subjects, 'count' => count($subjects)]);
         } catch (Exception $e) {
@@ -110,18 +95,14 @@ class SubjectController extends Controller
             $raw = file_get_contents('php://input');
             $data = json_decode($raw, true) ?? [];
 
-            $course_code = trim($data['course_code'] ?? '');
-            $course_name = trim($data['course_name'] ?? '');
-            // description field removed from subjects table
-            $credits = isset($data['credits']) ? (int)$data['credits'] : 3;
-            $category = $data['category'] ?? 'Major';
-            $year_level = $data['year_level'] ?? '1st Year';
-            $semester = $data['semester'] ?? '1st Semester';
+            $course_code = trim($data['code'] ?? $data['course_code'] ?? '');
+            $name = trim($data['name'] ?? '');
+            $level = $data['level'] ?? 'Grade 1';
             $status = $data['status'] ?? 'active';
 
-            if (empty($course_code) || empty($course_name)) {
+            if (empty($course_code) || empty($name)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'course_code and course_name are required']);
+                echo json_encode(['success' => false, 'message' => 'code and name are required']);
                 return;
             }
 
@@ -133,11 +114,8 @@ class SubjectController extends Controller
 
             $subjectId = $this->SubjectModel->create([
                 'course_code' => $course_code,
-                'course_name' => $course_name,
-                'credits' => $credits,
-                'category' => $category,
-                'year_level' => $year_level,
-                'semester' => $semester,
+                'name' => $name,
+                'level' => $level,
                 'status' => $status
             ]);
 
@@ -181,18 +159,14 @@ class SubjectController extends Controller
             $raw = file_get_contents('php://input');
             $data = json_decode($raw, true) ?? [];
 
-            $course_code = isset($data['course_code']) ? trim($data['course_code']) : $existing['course_code'];
-            $course_name = isset($data['course_name']) ? trim($data['course_name']) : $existing['course_name'];
-            // description removed from subjects table; do not attempt to read or write it
-            $credits = isset($data['credits']) ? (int)$data['credits'] : $existing['credits'];
-            $category = $data['category'] ?? $existing['category'];
-            $year_level = $data['year_level'] ?? $existing['year_level'];
-            $semester = $data['semester'] ?? $existing['semester'];
+            $course_code = isset($data['code']) || isset($data['course_code']) ? trim($data['code'] ?? $data['course_code']) : $existing['course_code'];
+            $name = isset($data['name']) ? trim($data['name']) : $existing['name'];
+            $level = $data['level'] ?? $existing['level'];
             $status = $data['status'] ?? $existing['status'];
 
-            if (empty($course_code) || empty($course_name)) {
+            if (empty($course_code) || empty($name)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'course_code and course_name are required']);
+                echo json_encode(['success' => false, 'message' => 'code and name are required']);
                 return;
             }
 
@@ -204,11 +178,8 @@ class SubjectController extends Controller
 
             $updated = $this->SubjectModel->update_subject($id, [
                 'course_code' => $course_code,
-                'course_name' => $course_name,
-                'credits' => $credits,
-                'category' => $category,
-                'year_level' => $year_level,
-                'semester' => $semester,
+                'name' => $name,
+                'level' => $level,
                 'status' => $status
             ]);
 
@@ -279,11 +250,15 @@ class SubjectController extends Controller
         try {
             $filters = [];
 
-            // Normalize year_level: accept numeric (1, '1') or strings like '1st', '1st Year'
+            // Normalize year_level: accept numeric (1, '1') or strings like '1st', '1st Year', or 'Grade 1'
             if (!empty($_GET['year_level'])) {
                 $rawYear = trim((string)$_GET['year_level']);
                 $yearNum = null;
-                if (is_numeric($rawYear)) {
+                
+                // Check if it's already in "Grade X" format
+                if (preg_match('/^Grade\s+(\d+)$/i', $rawYear, $m)) {
+                    $yearNum = (int)$m[1];
+                } elseif (is_numeric($rawYear)) {
                     $yearNum = (int)$rawYear;
                 } else {
                     // try to extract a number from strings like '1st', '1st Year'
@@ -292,16 +267,12 @@ class SubjectController extends Controller
                     }
                 }
 
-                if ($yearNum !== null && $yearNum >= 1 && $yearNum <= 4) {
-                    // Convert to DB representation (e.g., '1st Year')
-                    $suffix = 'th';
-                    if ($yearNum % 10 === 1 && $yearNum % 100 !== 11) $suffix = 'st';
-                    elseif ($yearNum % 10 === 2 && $yearNum % 100 !== 12) $suffix = 'nd';
-                    elseif ($yearNum % 10 === 3 && $yearNum % 100 !== 13) $suffix = 'rd';
-                    $filters['year_level'] = $yearNum . $suffix . ' Year';
+                if ($yearNum !== null && $yearNum >= 1) {
+                    // Convert to DB representation "Grade X" format (matching subjects table)
+                    $filters['level'] = 'Grade ' . $yearNum;
                 } else {
-                    // pass-through (maybe already '1st Year')
-                    $filters['year_level'] = $rawYear;
+                    // pass-through (maybe already 'Grade 1')
+                    $filters['level'] = $rawYear;
                 }
             }
 
@@ -338,7 +309,7 @@ class SubjectController extends Controller
 
             // If semester was provided and there are no results, try falling back
             // to year-only filtering (some data may have inconsistent semester labels)
-            if ((empty($subjects) || count($subjects) === 0) && !empty($filters['semester']) && !empty($filters['year_level'])) {
+            if ((empty($subjects) || count($subjects) === 0) && !empty($filters['semester']) && !empty($filters['level'])) {
                 $fallback = $filters;
                 unset($fallback['semester']);
                 $subjects = $this->SubjectModel->get_all($fallback);

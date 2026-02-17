@@ -5,13 +5,12 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Search, BookOpen, Loader2, Check, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2, Pencil } from "lucide-react";
 import { AlertMessage } from "@/components/AlertMessage";
-import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
-import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 
 type Teacher = {
   id: string;
@@ -26,28 +25,26 @@ type Teacher = {
 type Subject = {
   id: string;
   code: string;
-  title: string;
-  units: number;
-  yearLevel?: string;
+  name: string;
+  level: string;
+  status: "active" | "inactive";
 };
 
-type AssignedCourse = {
-  id?: string;
-  course: string;
-  title?: string;
-  units?: number;
-  sections: string[];
-  yearLevel: string;
+type TeacherSubjectAssignment = {
+  id: string;
+  subject_id: string;
+  subject_code: string;
+  subject_name: string;
+  teacher_id: string;
 };
 
-type YearLevelSection = {
-  year_level_id: number;
-  section: { id: number; name: string } | string;
-  section_id?: number;
-  section_name?: string;
-  name?: string;
-  id?: number;
+type SubjectOccupancy = {
+  subject_id: string;
+  teacher_id: string;
+  teacher_name: string;
 };
+
+const YEAR_LEVELS = ["Nursery 1", "Nursery 2", "Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
 
 const TeacherCourseAssignment = () => {
   const { user, isAuthenticated } = useAuth();
@@ -55,54 +52,121 @@ const TeacherCourseAssignment = () => {
   const { teacherId } = useParams<{ teacherId: string }>();
 
   const [teacher, setTeacher] = useState<Teacher | null>(null);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [assignedCourses, setAssignedCourses] = useState<AssignedCourse[]>([]);
-  const [yearLevelSectionsMap, setYearLevelSectionsMap] = useState<Record<string, { id: number; name: string }[]>>({});
-  const [searchQuery, setSearchQuery] = useState("");
-  const [yearFilter, setYearFilter] = useState<string>("all");
-  const [isAddSubjectPanelOpen, setIsAddSubjectPanelOpen] = useState(false);
-  const [pendingSubject, setPendingSubject] = useState<Subject | null>(null);
-  const [isAvailableCoursesOpen, setIsAvailableCoursesOpen] = useState(false);
+  const [assignedYearLevel, setAssignedYearLevel] = useState<string>("");
+  const [adviserAssignmentId, setAdviserAssignmentId] = useState<string | null>(null);
+  const [originalAdvisoryLevel, setOriginalAdvisoryLevel] = useState<string>("");
+  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
+  const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubjectAssignment[]>([]);
+  const [occupiedSubjects, setOccupiedSubjects] = useState<SubjectOccupancy[]>([]);
+  const [occupiedLevels, setOccupiedLevels] = useState<string[]>([]);
+  const [schoolYears, setSchoolYears] = useState<string[]>([]);
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState<string>("");
+  const [selectedSubjectTab, setSelectedSubjectTab] = useState<string>("All");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [isEditingAdvisory, setIsEditingAdvisory] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAdvisoryLevel, setPendingAdvisoryLevel] = useState<string>("");
+  const [showChangeConfirmModal, setShowChangeConfirmModal] = useState(false);
+  const [isChangingAdvisory, setIsChangingAdvisory] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [isDeletingAdviser, setIsDeletingAdviser] = useState(false);
 
   const showAlert = (type: "success" | "error" | "info", message: string) => {
     setAlert({ type, message });
   };
 
-  const ordinal = (n: number) => {
-    if (n % 10 === 1 && n % 100 !== 11) return `${n}st Year`;
-    if (n % 10 === 2 && n % 100 !== 12) return `${n}nd Year`;
-    if (n % 10 === 3 && n % 100 !== 13) return `${n}rd Year`;
-    return `${n}th Year`;
+  // Convert year level to initials
+  const getLevelInitials = (level: string): string => {
+    if (level === "Kinder") return "K";
+    if (level.startsWith("Nursery")) return `N${level.split(" ")[1]}`;
+    if (level.startsWith("Grade")) return `G${level.split(" ")[1]}`;
+    return level;
+  };
+
+  const fetchSchoolYears = async () => {
+    try {
+      const res = await apiGet("/api/academic-periods/school-years");
+      if (res && res.success && Array.isArray(res.school_years)) {
+        setSchoolYears(res.school_years);
+        // Set default to current school year if available
+        const currentYear = new Date().getFullYear();
+        const currentSchoolYear = `${currentYear}-${currentYear + 1}`;
+        const defaultYear = res.school_years.includes(currentSchoolYear) ? currentSchoolYear : res.school_years[0];
+        setSelectedSchoolYear(defaultYear || "");
+      }
+    } catch (err) {
+      console.error("Fetch school years error:", err);
+      // Fallback to current year
+      const currentYear = new Date().getFullYear();
+      const currentSchoolYear = `${currentYear}-${currentYear + 1}`;
+      setSchoolYears([currentSchoolYear]);
+      setSelectedSchoolYear(currentSchoolYear);
+    }
+  };
+
+  const fetchOccupiedLevels = async () => {
+    if (!selectedSchoolYear) return;
+    
+    try {
+      // Fetch all adviser assignments to see which levels are occupied
+      const res = await apiGet(`/api/teachers/advisers?school_year=${selectedSchoolYear}`);
+      
+      if (res && res.success && Array.isArray(res.advisers)) {
+        // Filter assignments for current school year and exclude current teacher
+        const occupied = res.advisers
+          .filter((a: any) => a.teacher_id !== parseInt(teacherId || "0"))
+          .map((a: any) => a.level);
+        
+        setOccupiedLevels(occupied);
+      }
+    } catch (err) {
+      console.error("Fetch occupied levels error:", err);
+      // Don't show alert for this non-critical fetch
+    }
   };
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "admin") {
       navigate("/auth");
     } else if (teacherId) {
-      fetchTeacher();
+      fetchSchoolYears();
       fetchSubjects();
-      fetchYearLevelData();
-      fetchAssignedCourses();
     }
   }, [isAuthenticated, user, navigate, teacherId]);
 
-  // Fetch taken sections for any assigned course when assignedCourses changes
+  // Refetch data when school year changes
   useEffect(() => {
-    if (!teacherId) return;
-    // build unique list of course codes to query
-    const courses = Array.from(new Set(assignedCourses.map((a) => a.course))).filter(Boolean);
-    if (courses.length) {
-      console.log('[TeacherCourseAssignment] Fetching taken sections for courses:', courses);
-      fetchTakenSectionsBulk(courses);
+    if (selectedSchoolYear && teacherId) {
+      setIsEditingAdvisory(false); // Reset editing mode
+      fetchTeacher();
+      fetchTeacherSubjects();
+      fetchOccupiedLevels();
+      fetchOccupiedSubjects();
     }
-  }, [assignedCourses, teacherId]);
+  }, [selectedSchoolYear, teacherId]);
+
+  // Set default subject tab to advisory level or first level when it changes
+  useEffect(() => {
+    if (assignedYearLevel) {
+      setSelectedSubjectTab(assignedYearLevel);
+    } else if (!selectedSubjectTab || selectedSubjectTab === "All") {
+      setSelectedSubjectTab(YEAR_LEVELS[0]);
+    }
+  }, [assignedYearLevel]);
+
+  // Get subjects filtered by selected tab
+  const getFilteredSubjects = () => {
+    return allSubjects.filter((s) => s.level === selectedSubjectTab);
+  };
+
+  const subjectsForLevel = getFilteredSubjects();
 
   const fetchTeacher = async () => {
     try {
-      const res = await apiGet(`${API_ENDPOINTS.TEACHER_BY_ID(teacherId)}`);
+      // Fetch basic teacher info
+      const res = await apiGet(`${API_ENDPOINTS.TEACHERS}/${teacherId}`);
       if (res && res.success && res.teacher) {
         setTeacher({
           id: res.teacher.id.toString(),
@@ -116,6 +180,27 @@ const TeacherCourseAssignment = () => {
       } else {
         showAlert("error", "Failed to load teacher information");
         setTimeout(() => navigate("/admin/users/teachers"), 2000);
+        return;
+      }
+
+      // Fetch adviser assignment only if school year is selected
+      if (selectedSchoolYear) {
+        const adviserRes = await apiGet(`/api/teachers/advisers?school_year=${selectedSchoolYear}`);
+        if (adviserRes && adviserRes.success && Array.isArray(adviserRes.advisers)) {
+          const assignment = adviserRes.advisers.find(
+            (a: any) => a.teacher_id === parseInt(teacherId || "0")
+          );
+          if (assignment) {
+            setAssignedYearLevel(assignment.level);
+            setAdviserAssignmentId(assignment.id.toString());
+            setOriginalAdvisoryLevel(assignment.level);
+          } else {
+            // Clear assignment if not found for selected school year
+            setAssignedYearLevel("");
+            setAdviserAssignmentId(null);
+            setOriginalAdvisoryLevel("");
+          }
+        }
       }
     } catch (err: any) {
       console.error("Fetch teacher error:", err);
@@ -126,397 +211,396 @@ const TeacherCourseAssignment = () => {
 
   const fetchSubjects = async () => {
     try {
-      // Try to fetch current active academic period so we can limit subjects
-      let semesterParam: string | null = null;
-      try {
-        const ap = await apiGet(API_ENDPOINTS.ACADEMIC_PERIODS_ACTIVE);
-        const active = ap && (ap.active || ap.period || ap.academic_period || ap);
-        if (active && active.semester) {
-          const m = String(active.semester).match(/^(\d+)/);
-          semesterParam = m ? (String(m[1]) === '1' ? '1st' : '2nd') : String(active.semester);
-        }
-      } catch (err) {
-        console.debug('Failed to fetch active academic period, will fetch subjects without semester filter', err);
-      }
-
-      // First attempt: request subjects filtered by semester (server-side filtering)
-      let res: any = null;
-      if (semesterParam) {
-        res = await apiGet(`${API_ENDPOINTS.SUBJECTS}?semester=${encodeURIComponent(semesterParam)}`);
-      } else {
-        res = await apiGet(API_ENDPOINTS.SUBJECTS);
-      }
-
-      let rows = (res && res.subjects) || (Array.isArray(res) ? res : res && res.rows ? res.rows : []);
-
-      // Fallback: if server-side filtered result is empty but we have a semester, fetch all and filter client-side
-      if ((!rows || rows.length === 0) && semesterParam) {
-        try {
-          const all = await apiGet(API_ENDPOINTS.SUBJECTS);
-          const allRows = (all && all.subjects) || (Array.isArray(all) ? all : all && all.rows ? all.rows : []);
-          if (Array.isArray(allRows)) {
-            rows = allRows.filter((s: any) => {
-              const semRaw = s.semester ?? s.academic_period_semester ?? s.sem ?? s.period ?? '';
-              if (!semRaw) return false;
-              const mm = String(semRaw).match(/^(\d+)/);
-              const semShort = mm ? (String(mm[1]) === '1' ? '1st' : '2nd') : String(semRaw);
-              return semShort === semesterParam;
-            });
-          }
-        } catch (err) {
-          console.debug('Failed to fetch all subjects for client-side semester filter', err);
-        }
-      }
-
-      // If we have an active semester, enforce it client-side too because some
-      // backend implementations ignore the semester query param and return all subjects.
-      if (semesterParam && Array.isArray(rows) && rows.length) {
-        rows = rows.filter((s: any) => {
-          const semRaw = s.semester ?? s.academic_period_semester ?? s.sem ?? s.period ?? s.period_name ?? s.semester_name ?? '';
-          if (!semRaw) return false;
-          const mm = String(semRaw).match(/(\d+)/);
-          const semShort = mm ? (String(mm[1]) === '1' ? '1st' : '2nd') : String(semRaw).replace(/semester/i, '').trim();
-          // Accept if normalized short matches or if the raw includes the semesterParam
-          return semShort === semesterParam || String(semRaw).toLowerCase().includes(String(semesterParam).toLowerCase());
-        });
-      }
+      const res = await apiGet(API_ENDPOINTS.SUBJECTS);
+      const rows = (res && res.subjects) || (Array.isArray(res) ? res : res && res.rows ? res.rows : []);
 
       if (Array.isArray(rows)) {
         const mapped = rows.map((s: any) => ({
           id: s.id?.toString() || "",
-          code: (s.course_code || s.code || "").toUpperCase(),
-          title: s.course_name || s.title || "",
-          units: s.credits ?? s.units ?? 3,
-          yearLevel: s.year_level ?? s.yearLevel ?? s.year ?? "",
+          code: (s.code || "").toUpperCase(),
+          name: s.name || "",
+          level: s.level || "",
+          status: s.status || "active",
         }));
-        setSubjects(mapped);
+        setAllSubjects(mapped);
       }
     } catch (err) {
       console.error("Fetch subjects error:", err);
-    }
-  };
-
-  const fetchYearLevelData = async () => {
-    try {
-      const res = await apiGet(API_ENDPOINTS.YEAR_LEVEL_SECTIONS);
-
-      // Accept multiple response shapes from the backend:
-      // - { year_level_sections: [...] }
-      // - { mappings: [...] }
-      // - { organized: { "1st Year": ["F1",...] } }
-      // - array directly
-      const map: Record<string, { id: number; name: string }[]> = {};
-
-      const mappings = res && (res.mappings || res.year_level_sections || res.rows || (Array.isArray(res) ? res : []));
-      const organized = res && res.organized;
-
-      // If API returned an 'organized' shape (display-name => [section names]) use it
-      if (organized && typeof organized === "object") {
-        for (const [display, list] of Object.entries(organized)) {
-          if (!Array.isArray(list)) continue;
-          map[display] = list.map((n: any, i: number) => ({ id: i + 1, name: String(n) }));
-          // also add numeric key if we can extract
-          const m = String(display).match(/^(\d+)/);
-          if (m) map[m[1]] = map[display];
-        }
-      }
-
-      // If API gave mappings (flat rows), use them to populate numeric and display keys
-      if (Array.isArray(mappings) && mappings.length) {
-        for (const r of mappings) {
-          const ylId = r.year_level_id ?? r.year_level ?? r.year_level_id;
-          const sectionName = r.section_name ?? r.section ?? r.name ?? r.section_name;
-          const display = r.year_level_name ?? ordinal(Number(ylId));
-          if (!ylId || !sectionName) continue;
-
-          const keyId = String(ylId);
-          if (!map[keyId]) map[keyId] = [];
-          if (!map[keyId].some((s) => s.name === sectionName)) map[keyId].push({ id: Number(r.section_id ?? r.id ?? 0), name: String(sectionName) });
-
-          if (!map[display]) map[display] = map[keyId];
-        }
-      }
-
-      setYearLevelSectionsMap(map);
-    } catch (err) {
-      console.error("Fetch year level sections error:", err);
-    }
-  };
-
-  const fetchAssignedCourses = async () => {
-    try {
-      const res = await apiGet(API_ENDPOINTS.TEACHER_ASSIGNMENTS_BY_TEACHER(teacherId));
-      // prefer the normalized assigned_courses array, but keep raw assignments too
-      const courses = (res && (res.assigned_courses || res.assignedCourses || res.assignments)) || (Array.isArray(res) ? res : []);
-      const raw = (res && res.assignments) || null;
-
-      if (Array.isArray(courses)) {
-        const mapped = courses.map((c: any) => ({
-          id: (c.teacher_subject_id ?? c.id)?.toString(),
-          course: c.course_code || (c.subject && c.subject.course_code) || c.course || "",
-          title: c.course_name || (c.subject && c.subject.course_name) || c.title,
-          units: c.credits ?? c.units,
-          sections: (c.sections || []).map((s: any) => (typeof s === "string" ? s : s.name || s)),
-          yearLevel: c.year_level || (c.subject && c.subject.year_level) || "1st Year",
-        }));
-        setAssignedCourses(mapped);
-        // keep a snapshot of original assignments to compute diffs on save
-        setOriginalAssignments(mapped);
-
-        // Build persistedSectionsMap from raw assignments if available (sections with ids)
-        const map: Record<string, { section_id?: number; name: string; teacher_subject_id?: number }[]> = {};
-        const source = Array.isArray(raw) ? raw : (Array.isArray(res.assignments) ? res.assignments : null);
-        if (Array.isArray(source)) {
-          for (const a of source) {
-            const courseCode = a.course_code || (a.subject && a.subject.course_code) || "";
-            const tsid = a.teacher_subject_id ?? null;
-            const secs = a.sections || [];
-            if (!map[courseCode]) map[courseCode] = [];
-            for (const s of secs) {
-              if (typeof s === 'string') {
-                map[courseCode].push({ name: s, teacher_subject_id: tsid });
-              } else if (s && (s.name || s.id)) {
-                map[courseCode].push({ section_id: s.id ?? null, name: s.name ?? String(s), teacher_subject_id: tsid });
-              }
-            }
-          }
-        }
-        setPersistedSectionsMap(map);
-      }
-    } catch (err) {
-      console.error("Fetch assigned courses error:", err);
+      showAlert("error", "Failed to load subjects");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // snapshot of assignments loaded from server to compute creates/updates/deletes
-  const [originalAssignments, setOriginalAssignments] = useState<AssignedCourse[]>([]);
-  // map course code -> array of persisted section objects { section_id, name, teacher_subject_id }
-  const [persistedSectionsMap, setPersistedSectionsMap] = useState<Record<string, { section_id?: number; name: string; teacher_subject_id?: number }[]>>({});
-  // sections taken by other teachers for a given subject/course_code
-  const [takenSectionsMap, setTakenSectionsMap] = useState<Record<string, { name: string; teacher_id: number; teacher_subject_id?: number; teacher_name?: string }[]>>({});
-
-  const fetchTakenSections = async (courseCode: string) => {
-    if (!courseCode) return;
+  const fetchTeacherSubjects = async () => {
+    if (!selectedSchoolYear) return;
+    
     try {
-      const res = await apiGet(`${API_ENDPOINTS.TEACHER_ASSIGNMENTS}?subject_code=${encodeURIComponent(courseCode)}`);
-      const rows = (res && res.assignments) || [];
-      const list: { name: string; teacher_id: number; teacher_subject_id?: number; teacher_name?: string }[] = [];
-      if (Array.isArray(rows)) {
-        for (const a of rows) {
-          const teacherIdNum = a.teacher_id ?? (a.teacher && a.teacher.id) ?? null;
-          const teacherName = a.teacher ? `${a.teacher.first_name || ''} ${a.teacher.last_name || ''}`.trim() : undefined;
-          const secs = a.sections || [];
-          for (const s of secs) {
-            if (typeof s === 'string') {
-              list.push({ name: s, teacher_id: Number(teacherIdNum), teacher_subject_id: a.teacher_subject_id ?? null, teacher_name: teacherName });
-            } else if (s && (s.name || s.id)) {
-              list.push({ name: s.name ?? String(s), teacher_id: Number(teacherIdNum), teacher_subject_id: a.teacher_subject_id ?? null, teacher_name: teacherName });
-            }
-          }
-        }
+      const res = await apiGet(`/api/teachers/${teacherId}/subjects?school_year=${selectedSchoolYear}`);
+      console.log("Teacher subjects response:", res);
+      if (res && res.success && Array.isArray(res.subjects)) {
+        const mapped = res.subjects.map((s: any) => ({
+          id: s.id?.toString() || s.assignment_id?.toString() || "",
+          subject_id: s.subject_id?.toString() || "",
+          subject_code: s.subject_code || s.code || s.course_code || "",
+          subject_name: s.subject_name || s.name || s.subject_name || "",
+          teacher_id: s.teacher_id?.toString() || "",
+        }));
+        console.log("Mapped teacher subjects:", mapped);
+        setTeacherSubjects(mapped);
       }
-      setTakenSectionsMap((prev) => ({ ...prev, [courseCode]: list }));
     } catch (err) {
-      console.error('Failed to fetch taken sections for', courseCode, err);
+      console.error("Fetch teacher subjects error:", err);
+      // Don't show alert for this non-critical fetch
     }
   };
 
-  // Bulk fetch: request taken sections for many courses in a single request
-  const fetchTakenSectionsBulk = async (courseCodes: string[]) => {
-    const codes = (courseCodes || []).filter(Boolean);
-    if (!codes.length) return;
+  const fetchOccupiedSubjects = async () => {
+    if (!selectedSchoolYear) return;
+    
     try {
-      // Expect backend to accept a comma-separated subject_codes query param
-      const q = `subject_codes=${encodeURIComponent(codes.join(","))}`;
-      console.log('[fetchTakenSectionsBulk] Query:', q);
-      const res = await apiGet(`${API_ENDPOINTS.TEACHER_ASSIGNMENTS}?${q}`);
-      console.log('[fetchTakenSectionsBulk] Response:', res);
-      const rows = (res && res.assignments) || [];
-      const newMap: Record<string, { name: string; teacher_id: number; teacher_subject_id?: number; teacher_name?: string }[]> = {};
-
-      if (Array.isArray(rows)) {
-        for (const a of rows) {
-          const courseCode = a.course_code || (a.subject && a.subject.course_code) || a.course || "";
-          if (!courseCode) continue;
-          if (!newMap[courseCode]) newMap[courseCode] = [];
-          const teacherIdNum = a.teacher_id ?? (a.teacher && a.teacher.id) ?? null;
-          const teacherName = a.teacher ? `${a.teacher.first_name || ''} ${a.teacher.last_name || ''}`.trim() : undefined;
-          const secs = a.sections || [];
-          for (const s of secs) {
-            if (typeof s === 'string') {
-              newMap[courseCode].push({ name: s, teacher_id: Number(teacherIdNum), teacher_subject_id: a.teacher_subject_id ?? null, teacher_name: teacherName });
-            } else if (s && (s.name || s.id)) {
-              newMap[courseCode].push({ name: s.name ?? String(s), teacher_id: Number(teacherIdNum), teacher_subject_id: a.teacher_subject_id ?? null, teacher_name: teacherName });
-            }
-          }
-        }
+      const res = await apiGet(`/api/teachers/assignments?school_year=${selectedSchoolYear}`);
+      if (res && res.success && Array.isArray(res.assignments)) {
+        // Filter out current teacher's assignments and map to occupancy data
+        const occupancy: SubjectOccupancy[] = res.assignments
+          .filter((a: any) => a.teacher_id !== parseInt(teacherId || "0"))
+          .map((a: any) => ({
+            subject_id: a.subject_id?.toString() || "",
+            teacher_id: a.teacher_id?.toString() || "",
+            teacher_name: `${a.first_name || ""} ${a.last_name || ""}`.trim() || "Unknown Teacher",
+          }));
+        setOccupiedSubjects(occupancy);
       }
-
-      console.log('[fetchTakenSectionsBulk] Built takenSectionsMap:', newMap);
-      setTakenSectionsMap((prev) => ({ ...prev, ...newMap }));
     } catch (err) {
-      console.error('Failed to bulk fetch taken sections', err);
+      console.error("Fetch occupied subjects error:", err);
+      // Don't show alert for this non-critical fetch
     }
   };
 
-  // Open the Available Courses panel and prefetch taken sections so availability is accurate
-  const handleOpenAvailablePanel = async () => {
-    try {
-      const codes = subjects.map((s) => s.code).filter(Boolean);
-      if (codes.length) {
-        await fetchTakenSectionsBulk(codes);
-      }
-    } catch (err) {
-      console.error('[handleOpenAvailablePanel] Failed to prefetch taken sections', err);
-    } finally {
-      setIsAvailableCoursesOpen(true);
-    }
+  const handleEditAdvisory = () => {
+    setIsEditingAdvisory(true);
   };
 
-  const toggleAssignCourse = async (subject: Subject, assign: boolean) => {
-    if (assign) {
-      // Check if already assigned
-      if (assignedCourses.some((ac) => ac.course === subject.code)) {
-        showAlert("info", "Course already assigned");
-        return;
-      }
-      // Add new assignment locally (persist on batch save)
-      const newAssignment: AssignedCourse = {
-        course: subject.code,
-        title: subject.title,
-        units: subject.units,
-        sections: [],
-        yearLevel: "1st Year",
-      };
-      setAssignedCourses([...assignedCourses, newAssignment]);
-      showAlert("success", `${subject.code} added`);
+  const handleCancelEdit = () => {
+    setIsEditingAdvisory(false);
+    setPendingAdvisoryLevel("");
+  };
+
+  const handleDeleteAdviserClick = () => {
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleAdvisoryChange = (value: string) => {
+    // Prevent changing if already in the process of changing
+    if (isChangingAdvisory) return;
+    
+    // Check if changing from early childhood level (N1, N2, K)
+    const currentLevel = assignedYearLevel;
+    const isEarlyChildhood = ["Nursery 1", "Nursery 2", "Kinder"].includes(currentLevel);
+    
+    if (isEarlyChildhood && currentLevel !== value) {
+      // Show confirmation modal
+      setPendingAdvisoryLevel(value);
+      setShowConfirmModal(true);
+    } else if (isEditingAdvisory && currentLevel && currentLevel !== value) {
+      // If we are explicitly editing and switching between non-early-childhood levels,
+      // show a simple confirmation (different from the early-childhood destructive modal).
+      setPendingAdvisoryLevel(value);
+      setShowChangeConfirmModal(true);
     } else {
-      // Remove assignment locally (persist deletion on batch save)
-      setAssignedCourses(assignedCourses.filter((ac) => ac.course !== subject.code));
-      showAlert("success", `${subject.code} removed`);
+      setAssignedYearLevel(value);
     }
   };
 
-  // Remove assignment immediately from the database (not just local state)
-  const removeAssignment = async (courseCode: string, teacherSubjectId?: string) => {
-    if (!teacherId) return;
-    const confirmMsg = `Are you sure you want to remove ${courseCode} from this teacher? This will delete the assignment and all assigned sections.`;
-    if (!confirm(confirmMsg)) return;
-
+  const confirmChangeAdvisory = async () => {
+    // Persist the advisory change immediately (acts as the update)
+    setShowChangeConfirmModal(false);
+    setIsChangingAdvisory(true);
     try {
-      setIsSaving(true);
-      const payload: any = {};
-      if (teacherSubjectId) payload.teacher_subject_id = Number(teacherSubjectId);
-      else {
-        payload.teacher_id = Number(teacherId);
-        payload.course_code = courseCode;
+      await saveYearLevelAssignment(pendingAdvisoryLevel);
+      // saveYearLevelAssignment will update adviserAssignmentId, originalAdvisoryLevel and refresh data
+      showAlert("success", "Advisory level updated");
+    } catch (err) {
+      console.error("Confirm change advisory save error:", err);
+      showAlert("error", "Failed to update advisory level");
+    } finally {
+      setPendingAdvisoryLevel("");
+      setIsChangingAdvisory(false);
+      setIsEditingAdvisory(false);
+    }
+  };
+
+  const confirmDeleteAdviser = async () => {
+    setShowDeleteConfirmModal(false);
+    if (!adviserAssignmentId) {
+      showAlert("error", "No adviser assignment to delete");
+      return;
+    }
+
+    setIsDeletingAdviser(true);
+    try {
+      // If early-childhood, remove subject assignments for that level first
+      if (["Nursery 1", "Nursery 2", "Kinder"].includes(assignedYearLevel)) {
+        const subjectsToRemove = teacherSubjects.filter(ts => {
+          const subject = allSubjects.find(s => s.id === ts.subject_id);
+          return subject?.level === assignedYearLevel;
+        });
+
+        for (const ts of subjectsToRemove) {
+          try {
+            await apiDelete(`/api/teachers/assignment`, {
+              assignment_id: parseInt(ts.id),
+              type: "subject"
+            });
+          } catch (err) {
+            console.error("Error removing subject during adviser delete:", err);
+          }
+        }
       }
 
-      await apiPost(`${API_ENDPOINTS.TEACHER_ASSIGNMENTS}/remove-assignment`, payload);
-
-      // Update local state: remove course from assignedCourses and persisted map
-      setAssignedCourses((prev) => prev.filter((a) => a.course !== courseCode));
-      setPersistedSectionsMap((prev) => {
-        const copy = { ...prev };
-        delete copy[courseCode];
-        return copy;
+      // Delete adviser assignment
+      await apiDelete(`/api/teachers/assignment`, {
+        assignment_id: parseInt(adviserAssignmentId),
+        type: "adviser"
       });
 
-      // refresh taken sections so availability updates
-      fetchTakenSectionsBulk([courseCode]);
+      // Clear local state and refresh
+      setAssignedYearLevel("");
+      setAdviserAssignmentId(null);
+      setOriginalAdvisoryLevel("");
+      setIsEditingAdvisory(false);
 
-      showAlert('success', `${courseCode} removed`);
+      await fetchTeacherSubjects();
+      await fetchOccupiedLevels();
+      await fetchTeacher();
+
+      showAlert("success", "Adviser assignment deleted");
+    } catch (err) {
+      console.error("Failed to delete adviser:", err);
+      showAlert("error", "Failed to delete adviser assignment");
+    } finally {
+      setIsDeletingAdviser(false);
+    }
+  };
+
+  // Handle selection from the year-level Select control.
+  // If the user is editing, defer to the advisory-change flow (which handles confirmations).
+  // If not editing and the teacher has no existing adviser assignment, automatically save the new assignment.
+  const handleYearLevelSelect = async (value: string) => {
+    if (isChangingAdvisory || isSaving) return;
+
+    if (isEditingAdvisory) {
+      handleAdvisoryChange(value);
+      return;
+    }
+
+    // Set the selected level immediately in UI
+    setAssignedYearLevel(value);
+
+    // If teacher has no existing adviser assignment (fresh assignment), auto-save
+    if ((!adviserAssignmentId || adviserAssignmentId === null) && !originalAdvisoryLevel) {
+      try {
+        await saveYearLevelAssignment(value);
+      } catch (err) {
+        console.error("Auto-save advisory error:", err);
+      }
+    }
+  };
+
+  const confirmAdvisoryChange = async () => {
+    setShowConfirmModal(false);
+    setIsChangingAdvisory(true);
+    
+    try {
+      const currentLevel = assignedYearLevel;
+      
+      // Step 1: Remove all subject assignments for early childhood levels
+      if (["Nursery 1", "Nursery 2", "Kinder"].includes(currentLevel)) {
+        const subjectsToRemove = teacherSubjects.filter(ts => {
+          const subject = allSubjects.find(s => s.id === ts.subject_id);
+          return subject?.level === currentLevel;
+        });
+        
+        for (const ts of subjectsToRemove) {
+          try {
+            await apiDelete(`/api/teachers/assignment`, {
+              assignment_id: parseInt(ts.id),
+              type: "subject"
+            });
+          } catch (err) {
+            console.error("Error removing subject:", err);
+          }
+        }
+      }
+      
+      // Step 2: Remove the old advisory assignment
+      if (adviserAssignmentId) {
+        try {
+          await apiDelete(`/api/teachers/assignment`, {
+            assignment_id: parseInt(adviserAssignmentId),
+            type: "adviser"
+          });
+        } catch (err) {
+          console.error("Error removing adviser assignment:", err);
+        }
+      }
+      
+      // Step 3: Set the new pending level
+      setAssignedYearLevel(pendingAdvisoryLevel);
+      setAdviserAssignmentId(null); // Clear the old adviser ID
+      setOriginalAdvisoryLevel("");
+      setIsEditingAdvisory(false);
+      setPendingAdvisoryLevel("");
+      
+      showAlert("success", "Advisory assignment changed. Previous assignments removed. Click 'Save' to confirm the new assignment.");
+    } catch (err) {
+      console.error("Error during advisory change:", err);
+      showAlert("error", "Failed to change advisory assignment");
+    } finally {
+      setIsChangingAdvisory(false);
+    }
+  };
+
+  const saveYearLevelAssignment = async (level?: string) => {
+    const levelToSave = level || assignedYearLevel;
+    if (!teacherId || !levelToSave || !teacher || !selectedSchoolYear) return;
+
+    setIsSaving(true);
+    try {
+      if (adviserAssignmentId && originalAdvisoryLevel && levelToSave !== originalAdvisoryLevel) {
+        await apiDelete(`/api/teachers/assignment`, {
+          assignment_id: parseInt(adviserAssignmentId),
+          type: "adviser"
+        });
+        setAdviserAssignmentId(null);
+      }
+
+      const payload = {
+        teacher_id: parseInt(teacherId),
+        level: levelToSave,
+        school_year: selectedSchoolYear,
+      };
+
+      const res = await apiPost("/api/teachers/assign-adviser", payload);
+
+      if (res && res.success) {
+        showAlert("success", `${teacher.firstName} assigned as adviser for ${levelToSave}`);
+        if (res.id) {
+          setAdviserAssignmentId(res.id.toString());
+        }
+        setOriginalAdvisoryLevel(levelToSave);
+        
+        // Reset editing mode
+        setIsEditingAdvisory(false);
+        
+        // Auto-assign all subjects for early childhood levels (Nursery 1, Nursery 2, Kinder)
+        const earlyChildhoodLevels = ["Nursery 1", "Nursery 2", "Kinder"];
+        if (earlyChildhoodLevels.includes(levelToSave)) {
+          await autoAssignLevelSubjects(levelToSave);
+        }
+        
+        // Refresh data
+        await fetchTeacher();
+        await fetchOccupiedLevels();
+        await fetchTeacherSubjects();
+      } else {
+        showAlert("error", res?.error || res?.message || "Failed to save assignment");
+      }
     } catch (err: any) {
-      console.error('Failed to remove assignment', err);
-      showAlert('error', err?.message || 'Failed to remove assignment');
+      console.error("Save assignment error:", err);
+      showAlert("error", err.message || "Failed to save assignment");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const updateAssignmentYearLevel = (courseCode: string, yearLevel: string) => {
-    setAssignedCourses((prev) =>
-      prev.map((ac) =>
-        ac.course === courseCode
-          ? {
-              ...ac,
-              yearLevel,
-              sections: [], // Clear sections when year level changes
-            }
-          : ac
-      )
-    );
-  };
-
-  const toggleSection = (courseCode: string, section: string) => {
-    setAssignedCourses((prev) =>
-      prev.map((ac) =>
-        ac.course === courseCode
-          ? {
-              ...ac,
-              sections: ac.sections.includes(section)
-                ? ac.sections.filter((s) => s !== section)
-                : [...ac.sections, section],
-            }
-          : ac
-      )
-    );
-  };
-
-  const saveAssignments = async () => {
-    if (!teacherId) return;
-    setIsSaving(true);
+  const autoAssignLevelSubjects = async (level: string) => {
     try {
-      // Send a single batch payload with all assignments. Server should
-      // process creates/updates/deletes transactionally.
-      const payload = {
-        teacher_id: teacherId,
-        assignments: assignedCourses.map((a) => ({
-          id: a.id,
-          course_code: a.course,
-          year_level: a.yearLevel,
-          sections: a.sections,
-        })),
-      };
-
-      const res = await apiPost(API_ENDPOINTS.TEACHER_ASSIGNMENTS, payload);
-
-      // Prefer structured information returned by the server about what was processed.
-      const processed = res && (res.assignments || res.processed || res.saved_assignments || res.data || null);
-
-      if (Array.isArray(processed) && processed.length) {
-        // Build a readable summary: subject id/code - year level - sections
-        const lines = processed.map((p: any) => {
-          const subj = p.subject_id ?? p.course_id ?? p.course_code ?? p.course ?? p.id ?? "unknown";
-          const year = p.year_level ?? p.yearLevel ?? p.year ?? "?";
-          const secs = Array.isArray(p.sections) ? p.sections.join(", ") : p.sections || "(none)";
-          return `${subj} — ${year} — ${secs}`;
-        });
-        showAlert("success", `Assignments processed:\n${lines.join("\n")}`);
-      } else if (res && (res.success || res.saved)) {
-        // Server confirmed but didn't return details; show what we sent
-        const lines = payload.assignments.map((p: any) => `${p.course_code ?? p.course ?? "unknown"} — ${p.year_level} — ${(p.sections || []).join(", ") || "(none)"}`);
-        showAlert("success", `Assignments processed (sent):\n${lines.join("\n")}`);
-      } else if (res && res.error) {
-        showAlert("error", res.error || "Failed to save assignments");
-      } else {
-        // Fallback: generic success
-        showAlert("success", "Course assignments saved");
+      // Get all subjects for this level
+      const levelSubjects = allSubjects.filter((s) => s.level === level && s.status === "active");
+      
+      if (levelSubjects.length === 0) {
+        showAlert("info", `No active subjects found for ${level}`);
+        return;
       }
 
-  // Refresh canonical assignments from server and stay on the page so admin
-  // can continue editing without being redirected.
-  await fetchAssignedCourses();
-  // After refresh, also fetch taken sections for current assigned courses to update disabling
-  const coursesAfter = Array.from(new Set(assignedCourses.map((a) => a.course))).filter(Boolean);
-  if (coursesAfter.length) await fetchTakenSectionsBulk(coursesAfter);
+      // Assign each subject to the teacher
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const subject of levelSubjects) {
+        try {
+          const payload = {
+            teacher_id: parseInt(teacherId!),
+            subject_id: parseInt(subject.id),
+            school_year: selectedSchoolYear,
+          };
+
+          const res = await apiPost("/api/teachers/assign-subject", payload);
+          if (res && res.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (err) {
+          failCount++;
+          console.error(`Failed to assign subject ${subject.code}:`, err);
+        }
+      }
+
+      if (successCount > 0) {
+        showAlert("success", `Auto-assigned ${successCount} subject(s) for ${level}`);
+      }
+      if (failCount > 0) {
+        showAlert("info", `${failCount} subject(s) were already assigned or failed to assign`);
+      }
+    } catch (err) {
+      console.error("Auto-assign subjects error:", err);
+    }
+  };
+
+  const assignSubjectToTeacher = async (subjectId: string) => {
+    if (!teacherId || !selectedSchoolYear) return;
+
+    try {
+      const payload = {
+        teacher_id: parseInt(teacherId),
+        subject_id: parseInt(subjectId),
+        school_year: selectedSchoolYear,
+      };
+
+      const res = await apiPost("/api/teachers/assign-subject", payload);
+
+      if (res && res.success) {
+        showAlert("success", "Subject assigned successfully");
+        await fetchTeacherSubjects();
+        await fetchOccupiedSubjects();
+      } else {
+        showAlert("error", res?.error || res?.message || "Failed to assign subject");
+      }
     } catch (err: any) {
-      console.error("Save assignments error:", err);
-      showAlert("error", err.message || "Failed to save assignments");
-    } finally {
-      setIsSaving(false);
+      console.error("Assign subject error:", err);
+      showAlert("error", err.message || "Failed to assign subject");
+    }
+  };
+
+  const removeSubjectAssignment = async (assignmentId: string) => {
+    try {
+      const res = await apiDelete(`/api/teachers/assignment`, {
+        assignment_id: parseInt(assignmentId),
+        type: "subject"
+      });
+
+      if (res && res.success) {
+        showAlert("success", "Subject assignment removed");
+        await fetchTeacherSubjects();
+        await fetchOccupiedSubjects();
+      } else {
+        showAlert("error", res?.error || res?.message || "Failed to remove assignment");
+      }
+    } catch (err: any) {
+      console.error("Remove subject error:", err);
+      showAlert("error", err.message || "Failed to remove assignment");
     }
   };
 
@@ -550,410 +634,491 @@ const TeacherCourseAssignment = () => {
     );
   }
 
-  const filteredSubjects = subjects.filter(
-    (s) =>
-      searchQuery.trim() === "" ||
-      s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Apply year level filter (from subject metadata) if set
-  const subjectsWithYear = filteredSubjects.map((s) => ({
-    subject: s,
-    year: ((s as any).year_level || (s as any).yearLevel || (s as any).year || "") as string,
-  }));
-
-  const unassignedSubjects = subjectsWithYear
-    .filter(({ subject }) => !assignedCourses.some((ac) => ac.course === subject.code))
-    .filter(({ subject, year }) => {
-      if (yearFilter === "all") return true;
-      return String(year) === String(yearFilter);
-    })
-    // Exclude subjects that have no available sections left (all sections occupied)
-    .filter(({ subject, year }) => {
-      // Determine year key from subject metadata or fallback to year
-      const subjectYear = (subject as any).yearLevel || year || "";
-      let yearKey = String(subjectYear || "");
-
-      let byYear = yearLevelSectionsMap[yearKey];
-      if ((!byYear || !byYear.length) && yearKey) {
-        const m = String(yearKey).match(/^(\d+)/);
-        if (m) byYear = yearLevelSectionsMap[m[1]];
-      }
-
-      // If we don't know the sections for this year, keep the subject (can't determine fullness)
-      if (!byYear || !byYear.length) return true;
-
-      const totalNames = byYear.map((b) => String(b.name));
-      const totalCount = totalNames.length;
-
-      // Sections already taken by other teachers
-      const taken = (takenSectionsMap[subject.code] || []).map((t: any) => String(t.name)).filter(Boolean);
-      // Sections persisted for this teacher (from persistedSectionsMap)
-      const persisted = (persistedSectionsMap[subject.code] || []).map((p: any) => String(p.name)).filter(Boolean);
-      // Sections assigned in current local state for this teacher
-      const localAssigned = (assignedCourses.find((ac) => ac.course === subject.code)?.sections) || [];
-
-      const occupied = new Set<string>([...taken, ...persisted, ...localAssigned]);
-
-      // If all sections are occupied, exclude the subject from available list
-      if (occupied.size >= totalCount) return false;
-      return true;
-    })
-    .map(({ subject }) => subject as Subject);
-
   return (
     <DashboardLayout>
-      <div className="p-8">
+      <div className="p-8 max-w-4xl">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin/users/teachers")} className="hover:bg-muted">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Manage Teacher Courses
-              </h1>
-              <p className="text-muted-foreground">
-                {teacher.firstName} {teacher.lastName} ({teacher.employeeId})
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={() => handleOpenAvailablePanel()}
-            className="bg-gradient-to-r from-primary to-accent text-white font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
-          >
-            <Check className="h-4 w-4" />
-            Add Course
+        <div className="mb-6 flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/admin/users/teachers")} className="hover:bg-muted">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div>
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Manage Teacher Assignment
+            </h1>
+            <p className="text-muted-foreground">
+              {teacher.firstName} {teacher.lastName} ({teacher.employeeId})
+            </p>
+          </div>
         </div>
 
-            <Card className="shadow-lg border-0">
-              <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Assigned Courses ({assignedCourses.length})</CardTitle>
-                    <CardDescription>Configure sections per year level</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => navigate("/admin/users/teachers")}>
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={saveAssignments}
-                      disabled={isSaving}
-                      className="bg-gradient-to-r from-primary to-accent text-white"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Changes"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                {assignedCourses.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-lg font-medium">No courses assigned yet</p>
-                    <p className="text-sm">Click "Add Course" in the header to get started</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {assignedCourses.map((ac) => (
-                      <div key={ac.course} className="p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors space-y-3">
-                        {/* Course Header */}
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="font-semibold text-lg">{ac.course}</p>
-                            <p className="text-sm text-muted-foreground">{ac.title}</p>
-                            <p className="text-xs text-muted-foreground">{ac.units} units</p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              // If this assignment exists in DB (has id), remove from DB. Otherwise just remove locally.
-                              if (ac.id) removeAssignment(ac.course, ac.id);
-                              else toggleAssignCourse({ id: "", code: ac.course, title: ac.title || "", units: ac.units || 0 }, false);
-                            }}
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Remove
-                          </Button>
-                        </div>
-
-                        {/* Year Level & Sections */}
-                        <div className="space-y-3 pt-3 border-t">
-                          <div>
-                            <Label className="text-sm font-semibold mb-2 block">Year Level</Label>
-                            {/* Use the subject's dedicated year level (from subjects data) when available. This replaces the editable dropdown so
-                                the UI only shows sections that belong to the subject's configured year level. */}
-                            {(() => {
-                              const subj = subjects.find((s) => s.code === ac.course);
-                              const subjectYear = subj && ( (subj as any).year_level || (subj as any).yearLevel || (subj as any).year ) ?
-                                ((subj as any).year_level || (subj as any).yearLevel || (subj as any).year) : ac.yearLevel;
-
-                              return (
-                                <Badge className="px-3 py-2 text-sm font-medium">
-                                  {String(subjectYear)}
-                                </Badge>
-                              );
-                            })()}
-                          </div>
-
-                          <div>
-                            <Label className="text-sm font-semibold mb-2 block">Sections</Label>
-                            <div className="flex gap-2 flex-wrap">
-                              {(() => {
-                                // Prefer the subject's dedicated year level (from subjects table) so we only show sections
-                                // relevant to that subject. Fallback to ac.yearLevel or "1st Year".
-                                const subj = subjects.find((s) => s.code === ac.course);
-                                const subjectYear = subj && ( (subj as any).year_level || (subj as any).yearLevel || (subj as any).year ) ?
-                                  ((subj as any).year_level || (subj as any).yearLevel || (subj as any).year) : ac.yearLevel;
-                                const yearKey = subjectYear || ac.yearLevel || "1st Year";
-                                let byYear = yearLevelSectionsMap[yearKey];
-
-                                if (!byYear) {
-                                  const match = yearKey.match(/^(\d+)/);
-                                  if (match) {
-                                    byYear = yearLevelSectionsMap[match[1]];
-                                  }
-                                }
-
-                                const names = (byYear && byYear.length ? byYear.map((x) => x.name) : []);
-                                if (!names.length) {
-                                  return (
-                                    <div className="text-sm text-muted-foreground">No sections defined for this year level</div>
-                                  );
-                                }
-                                return names.map((s) => {
-                                  const active = ac.sections.includes(s);
-                                  // check if this section exists in DB (persisted for this teacher)
-                                  const persisted = (persistedSectionsMap[ac.course] || []).find((ps) => ps.name === s);
-                                  // check if this section is taken by another teacher
-                                  const taken = (takenSectionsMap[ac.course] || []).find((ts) => ts.name === s && String(ts.teacher_id) !== String(teacherId));
-
-                                  console.log(`[Section ${s}] course=${ac.course}, teacherId=${teacherId}, takenMap=`, takenSectionsMap[ac.course], 'taken=', taken);
-
-                                  if (taken) {
-                                    // disabled for this teacher because another teacher has it
-                                    return (
-                                      <Button key={s} size="sm" variant="outline" disabled title={`Assigned to ${taken.teacher_name || 'another teacher'}`} className="font-medium opacity-60">
-                                        {s}
-                                      </Button>
-                                    );
-                                  }
-
-                                  return (
-                                    <div key={s} className="relative group">
-                                      <Button
-                                        size="sm"
-                                        variant={active ? "default" : "outline"}
-                                        className="font-medium"
-                                        onClick={() => {
-                                          // Only allow toggle for non-persisted (local) selections.
-                                          if (!persisted) toggleSection(ac.course, s);
-                                        }}
-                                      >
-                                        {s}
-                                      </Button>
-                                      {persisted && (
-                                        <button
-                                          title="Delete persisted section"
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            const confirmMsg = `Are you sure you want to remove section ${s} for ${ac.course}? This will delete the assignment in the database.`;
-                                            if (!confirm(confirmMsg)) return;
-                                            try {
-                                              setIsSaving(true);
-                                              // call backend to remove the section mapping
-                                              const payload = {
-                                                teacher_subject_id: persisted.teacher_subject_id ?? ac.id,
-                                                section_id: persisted.section_id ?? null,
-                                              };
-                                              await apiPost(`${API_ENDPOINTS.TEACHER_ASSIGNMENTS}/remove-section`, payload);
-                                              // update local states: remove section from assignedCourses and persistedSectionsMap
-                                              setAssignedCourses((prev) => prev.map((p) => p.course === ac.course ? { ...p, sections: p.sections.filter((x) => x !== s) } : p));
-                                              setPersistedSectionsMap((prev) => {
-                                                const copy = { ...prev };
-                                                copy[ac.course] = (copy[ac.course] || []).filter((x) => x.name !== s);
-                                                return copy;
-                                              });
-                                              // also refresh taken sections for this course so UI updates (bulk-friendly)
-                                              fetchTakenSectionsBulk([ac.course]);
-                                              showAlert('success', `Section ${s} removed`);
-                                            } catch (err: any) {
-                                              console.error('Failed to remove persisted section', err);
-                                              showAlert('error', err?.message || 'Failed to remove section');
-                                            } finally {
-                                              setIsSaving(false);
-                                            }
-                                          }}
-                                          className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  );
-                                });
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-        {alert && <AlertMessage type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
-        
-        {/* Available Courses Side Panel */}
-        {isAvailableCoursesOpen && (
-          <div className="fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={() => setIsAvailableCoursesOpen(false)} />
-            <div className="relative ml-auto w-full max-w-2xl bg-background shadow-2xl flex flex-col border-l border-border">
-              <div className="bg-gradient-to-r from-primary to-accent p-6 text-white flex items-center justify-between border-b border-accent-200">
-                <h2 className="text-2xl font-bold">Add Course</h2>
-                <button
-                  onClick={() => setIsAvailableCoursesOpen(false)}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-all"
-                  title="Close"
-                  aria-label="Close"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              <div className="p-6 flex flex-col flex-1">
-                <div className="flex gap-3 mb-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search courses..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 h-10"
-                    />
-                  </div>
-                  <div className="w-40">
-                    <Select value={yearFilter} onValueChange={(v) => setYearFilter(v)}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        {Array.from(
-                          new Set(
-                            subjects
-                              .map((s) => ((s as any).year_level || (s as any).yearLevel || (s as any).year || "") as string)
-                              .filter(Boolean)
-                          )
-                        )
-                          .sort((a, b) => {
-                            // Extract numeric year from strings like "1st Year", "2nd Year", etc.
-                            const aNum = parseInt(a) || 0;
-                            const bNum = parseInt(b) || 0;
-                            return aNum - bNum;
-                          })
-                          .map((y) => (
-                            <SelectItem key={y} value={y}>{String(y)}</SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {unassignedSubjects.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">{subjects.length === 0 ? "No courses available" : "All courses assigned"}</p>
-                    </div>
-                  ) : (
-                    unassignedSubjects.map((subject) => (
-                      <div
-                        key={subject.id}
-                        className="p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors flex items-start justify-between gap-2"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm">{subject.code}</p>
-                          <p className="text-xs text-muted-foreground truncate">{subject.title}</p>
-                          <p className="text-xs text-muted-foreground">{subject.units} units</p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setPendingSubject(subject);
-                            setIsAddSubjectPanelOpen(true);
-                            setIsAvailableCoursesOpen(false);
-                          }}
-                          className="flex-shrink-0 gap-1"
-                        >
-                          <Check className="h-3 w-3" />
-                          Add
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+        {/* School Year Selection */}
+        <Card className="shadow-lg border-0 mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <Label htmlFor="school-year" className="font-semibold text-base">
+                School Year:
+              </Label>
+              <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
+                <SelectTrigger className="w-48 border-2 rounded-lg">
+                  <SelectValue placeholder="Select school year..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {schoolYears.map((year) => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        )}
-        
-        {/* Add Subject Confirmation Panel */}
-        {isAddSubjectPanelOpen && pendingSubject && (
-          <div className="fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={() => { setIsAddSubjectPanelOpen(false); setPendingSubject(null); }} />
-            <div className="relative ml-auto w-full max-w-2xl bg-background shadow-2xl flex flex-col border-l border-border">
-              <div className="bg-gradient-to-r from-primary to-accent p-6 text-white flex items-center justify-between border-b border-accent-200">
-                <h2 className="text-2xl font-bold">Add Course: {pendingSubject.code}</h2>
-                <button
-                  onClick={() => { setIsAddSubjectPanelOpen(false); setPendingSubject(null); }}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-all"
-                  title="Close"
-                  aria-label="Close"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+          </CardContent>
+        </Card>
+
+        {/* Year Level Assignment */}
+        <Card className="shadow-lg border-0 mb-6">
+          <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Advisory Assignment</CardTitle>
+                <CardDescription>Assign this teacher as an adviser (homeroom teacher) for one grade level</CardDescription>
               </div>
-              <div className="p-6 flex-1">
-                <p className="font-semibold mb-2">{pendingSubject.title}</p>
-                <p className="text-sm text-muted-foreground mb-4">Units: {pendingSubject.units}</p>
-                <p className="text-sm mb-4">Year Level: {( (pendingSubject as any).year_level || (pendingSubject as any).yearLevel || (pendingSubject as any).year) || 'Not specified'}</p>
-                <div className="flex gap-2">
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => navigate("/admin/users/teachers")}>
+                  Back
+                </Button>
+                {(!assignedYearLevel || isEditingAdvisory) && (
                   <Button
-                    onClick={async () => {
-                      // perform the actual assign
-                      toggleAssignCourse(pendingSubject, true);
-                      setIsAddSubjectPanelOpen(false);
-                      setPendingSubject(null);
-                    }}
+                    onClick={saveYearLevelAssignment}
+                    disabled={isSaving || !assignedYearLevel || isChangingAdvisory}
                     className="bg-gradient-to-r from-primary to-accent text-white"
                   >
-                    Add Course
+                    {isSaving || isChangingAdvisory ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {isChangingAdvisory ? "Processing..." : "Saving..."}
+                      </>
+                    ) : (
+                      <>
+                        Save {["Nursery 1", "Nursery 2", "Kinder"].includes(assignedYearLevel) ? "& Auto-Assign Subjects" : "Assignment"}
+                      </>
+                    )}
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => { setIsAddSubjectPanelOpen(false); setPendingSubject(null); }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {/* Visual indicator if already assigned */}
+              {assignedYearLevel && !isEditingAdvisory && (
+                <div className="mb-4 p-4 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-400 rounded-lg shadow-md ring-2 ring-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">✓</span>
+                        <span className="font-bold text-green-900 text-lg">Currently Assigned as Adviser</span>
+                      </div>
+                      <p className="text-green-700 font-semibold text-xl">
+                        {assignedYearLevel}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">School Year: {selectedSchoolYear}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditAdvisory}
+                      className="flex items-center gap-2 border-green-600 text-green-700 hover:bg-green-50"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {(!assignedYearLevel || isEditingAdvisory) && (
+              <div>
+                <Label htmlFor="year-level" className="font-semibold text-base mb-3 block">
+                  Select Advisory Level (Homeroom Class) *
+                </Label>
+                {occupiedLevels.length === YEAR_LEVELS.length && !assignedYearLevel ? (
+                  <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                    <p className="text-red-800 font-semibold text-center">
+                      ⚠️ No year level available - all levels are currently occupied
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <Select 
+                      value={assignedYearLevel} 
+                      onValueChange={handleYearLevelSelect}
+                      disabled={(!isEditingAdvisory && !!assignedYearLevel) || isChangingAdvisory}
+                    >
+                      <SelectTrigger className={`w-full max-w-sm h-11 border-2 rounded-lg ${!isEditingAdvisory && assignedYearLevel ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        <SelectValue placeholder="Choose a year level..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {YEAR_LEVELS.map((level) => {
+                          const isOccupied = occupiedLevels.includes(level) && level !== assignedYearLevel;
+                          return (
+                            <SelectItem key={level} value={level} disabled={isOccupied}>
+                              <span className={isOccupied ? "text-muted-foreground line-through" : ""}>
+                                {level}
+                              </span>
+                              {isOccupied && <span className="ml-2 text-xs text-red-500">(Occupied)</span>}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {isEditingAdvisory && (
+                      <div className="mt-3 flex gap-2">
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                          Cancel
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={handleDeleteAdviserClick} disabled={!adviserAssignmentId || isDeletingAdviser}>
+                          {isDeletingAdviser ? "Deleting..." : "Delete Assignment"}
+                        </Button>
+                      </div>
+                    )}
+                    {!assignedYearLevel && occupiedLevels.length > 0 && (
+                      <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <p className="text-xs font-semibold text-orange-900 mb-1">Occupied Year Levels:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {occupiedLevels.map((level) => (
+                            <span key={level} className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded">
+                              {level}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                {assignedYearLevel && ["Nursery 1", "Nursery 2", "Kinder"].includes(assignedYearLevel) && (!adviserAssignmentId || isEditingAdvisory) && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">ℹ️ Note:</span> Teachers assigned to {assignedYearLevel} will automatically be assigned to all subjects for this level when you click "Save Assignment".
+                    </p>
+                  </div>
+                )}
+              </div>
+              )}
+
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Subject Teacher Assignments */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b pb-4">
+            <div>
+              <CardTitle>Subject Teacher Assignments</CardTitle>
+              <CardDescription>Assign this teacher to teach specific subjects (can be across multiple grade levels)</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* Assigned Subjects Summary */}
+            <div className="p-4 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-green-900 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
+                  Currently Assigned Subjects
+                </h4>
+                <span className="text-sm font-semibold text-green-700 bg-green-100 px-2 py-1 rounded">
+                  {teacherSubjects.length} {teacherSubjects.length === 1 ? "Subject" : "Subjects"}
+                </span>
+              </div>
+              {teacherSubjects.length === 0 ? (
+                <p className="text-sm text-green-700 italic">No subjects assigned yet. Assign subjects from the tabs below.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {teacherSubjects.map((ts) => {
+                    const subject = allSubjects.find((s) => s.id === ts.subject_id);
+                    return (
+                      <div
+                        key={ts.id}
+                        className="inline-flex items-center gap-2 bg-white text-green-800 px-3 py-1.5 rounded-lg border-2 border-green-300 shadow-sm"
+                      >
+                        <span className="font-bold">{subject?.code || ts.subject_code}</span>
+                        <span className="text-xs text-green-600 font-medium">• {subject?.level || "Unknown"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Year Level Tabs */}
+            <div className="border-b bg-muted/30">
+              <div className="flex overflow-x-auto">
+                {YEAR_LEVELS.map((level) => {
+                  const subjectCount = allSubjects.filter((s) => s.level === level && s.status === "active").length;
+                  
+                  // Calculate general occupancy (across all teachers) for color coding
+                  const levelSubjects = allSubjects.filter((s) => s.level === level && s.status === "active");
+                  const occupiedInLevel = levelSubjects.filter((subject) => 
+                    // Include both: subjects occupied by other teachers OR assigned to current teacher
+                    occupiedSubjects.some((os) => os.subject_id === subject.id) ||
+                    teacherSubjects.some((ts) => ts.subject_id === subject.id)
+                  ).length;
+                  
+                  // Teacher's own assignments for this level
+                  const myAssignedCount = teacherSubjects.filter((ts) => {
+                    const subject = allSubjects.find((s) => s.id === ts.subject_id);
+                    return subject?.level === level;
+                  }).length;
+                  const isAdvisoryLevel = level === assignedYearLevel;
+                  
+                  // Calculate occupancy percentage (includes all teachers and self)
+                  const percentage = subjectCount > 0 ? Math.round((occupiedInLevel / subjectCount) * 100) : 0;
+                  
+                  // Determine color based on general occupancy percentage
+                  let tabBgColor = "bg-gray-100"; // Default for 0% or no subjects
+                  let tabBorderColor = "border-transparent";
+                  
+                  if (percentage > 0 && percentage <= 20) {
+                    // Low occupancy (red) - needs attention
+                    tabBgColor = "bg-red-200";
+                    tabBorderColor = selectedSubjectTab === level ? "border-red-500" : "border-transparent";
+                  } else if (percentage >= 21 && percentage <= 69) {
+                    // Medium occupancy (yellow/orange) - in progress
+                    tabBgColor = "bg-yellow-200";
+                    tabBorderColor = selectedSubjectTab === level ? "border-yellow-500" : "border-transparent";
+                  } else if (percentage >= 70 && percentage < 100) {
+                    // High occupancy (blue) - well staffed but not full
+                    tabBgColor = "bg-blue-200";
+                    tabBorderColor = selectedSubjectTab === level ? "border-blue-500" : "border-transparent";
+                  } else if (percentage === 100) {
+                    // Fully staffed (green)
+                    tabBgColor = "bg-green-200";
+                    tabBorderColor = selectedSubjectTab === level ? "border-green-500" : "border-transparent";
+                  }
+                  
+                  if (selectedSubjectTab !== level) {
+                    tabBorderColor = "border-transparent";
+                  }
+
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => setSelectedSubjectTab(level)}
+                      className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap relative ${tabBgColor} ${tabBorderColor} ${
+                        selectedSubjectTab === level
+                          ? "text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:brightness-95"
+                      }`}
+                      title={`${level} - ${percentage}% occupied overall (${occupiedInLevel}/${subjectCount} subjects)${myAssignedCount > 0 ? ` | You: ${myAssignedCount} subject${myAssignedCount > 1 ? 's' : ''}` : ''}`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold">{getLevelInitials(level)}</span>
+                        {isAdvisoryLevel && (
+                          <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-800 rounded font-semibold">
+                            Advisory
+                          </span>
+                        )}
+                        {myAssignedCount > 0 && (
+                          <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded font-medium">
+                            {myAssignedCount}/{subjectCount}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Subjects Grid */}
+            <div className="p-6">
+              {subjectsForLevel.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg font-medium">
+                    No subjects found for {selectedSubjectTab}
+                  </p>
+                  <p className="text-sm mt-2">Create subjects in the Subjects management page</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {subjectsForLevel.map((subject) => {
+                    const isAssigned = teacherSubjects.some((ts) => ts.subject_id === subject.id);
+                    const assignment = teacherSubjects.find((ts) => ts.subject_id === subject.id);
+                    const occupiedBy = occupiedSubjects.find((os) => os.subject_id === subject.id);
+                    const isOccupied = !!occupiedBy;
+                    const isFixedEarlyChildhoodAssignment =
+                      isAssigned &&
+                      ["Nursery 1", "Nursery 2", "Kinder"].includes(assignedYearLevel) &&
+                      subject.level === assignedYearLevel;
+                    
+                    return (
+                      <div
+                        key={subject.id}
+                        className={`relative p-4 border-2 rounded-lg transition-all ${
+                          subject.status === "active"
+                            ? isAssigned
+                              ? "bg-gradient-to-br from-green-50 to-green-100 border-green-400 shadow-lg ring-2 ring-green-200"
+                              : isOccupied
+                              ? "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-300 opacity-75"
+                              : "bg-gradient-to-br from-card to-muted/30 border-accent-200 hover:border-accent-400 hover:shadow-md"
+                            : "bg-muted/50 border-muted opacity-70"
+                        }`}
+                      >
+                        {isAssigned && (
+                          <div className="absolute -top-2 -right-2 bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                            <span className="text-xs font-bold">✓</span>
+                          </div>
+                        )}
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className={`font-bold text-lg ${isAssigned ? "text-green-900" : ""}`}>{subject.code}</p>
+                            <p className={`text-sm ${isAssigned ? "text-green-700" : "text-muted-foreground"}`}>{subject.name}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={subject.status === "active" ? "default" : "outline"}>
+                              {subject.status}
+                            </Badge>
+                            {isAssigned && (
+                              <Badge className="bg-green-600 text-white border-green-700 font-semibold shadow-md">
+                                ✓ Assigned to You
+                              </Badge>
+                            )}
+                            {isOccupied && !isAssigned && (
+                              <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+                                Occupied
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`text-xs mt-3 pt-3 border-t ${isAssigned ? "border-green-200 text-green-800" : "text-muted-foreground"}`}>
+                          Level: <span className="font-medium">{subject.level}</span>
+                          {isOccupied && !isAssigned && (
+                            <div className="mt-1 text-orange-700">
+                              Assigned to: <span className="font-semibold">{occupiedBy.teacher_name}</span>
+                            </div>
+                          )}
+                          {isAssigned && (
+                            <div className="mt-1 text-green-700 font-medium">
+                              ✓ You are teaching this subject
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          {isAssigned && assignment ? (
+                            isFixedEarlyChildhoodAssignment ? (
+                              <Button size="sm" variant="outline" disabled>
+                                Fixed Assignment
+                              </Button>
+                            ) : (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => removeSubjectAssignment(assignment.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+                            >
+                              ✕ Remove Assignment
+                            </Button>
+                            )
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => assignSubjectToTeacher(subject.id)}
+                              disabled={subject.status !== "active" || isOccupied}
+                            >
+                              {isOccupied ? "Occupied" : "Assign"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Confirmation Modal for Advisory Change */}
+        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-red-600">⚠️ Confirm Advisory Change</DialogTitle>
+              <DialogDescription className="space-y-3 pt-2">
+                <p className="text-base font-semibold">
+                  You are changing advisory from <span className="text-blue-600">{assignedYearLevel}</span> to <span className="text-blue-600">{pendingAdvisoryLevel}</span>.
+                </p>
+                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                  <p className="text-red-900 font-semibold mb-2">⚠️ Warning: This will:</p>
+                  <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
+                    <li>Remove your current advisory assignment for <strong>{assignedYearLevel}</strong></li>
+                    <li><strong>Delete all your subject assignments</strong> for {assignedYearLevel}</li>
+                    <li>Assign you as adviser for <strong>{pendingAdvisoryLevel}</strong> instead</li>
+                  </ul>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This action is necessary because early childhood teachers (Nursery 1, Nursery 2, Kinder) are automatically assigned to all subjects for their advisory level.
+                </p>
+                <p className="text-sm font-semibold">Are you sure you want to continue?</p>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmAdvisoryChange}>
+                Yes, Change Advisory & Delete Subjects
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Simple confirmation for non-early-childhood advisory changes while editing */}
+        <Dialog open={showChangeConfirmModal} onOpenChange={setShowChangeConfirmModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Confirm Advisory Change</DialogTitle>
+              <DialogDescription className="space-y-3 pt-2">
+                <p className="text-base font-semibold">
+                  Are you sure you want to change advisory from <span className="text-blue-600">{assignedYearLevel}</span> to <span className="text-blue-600">{pendingAdvisoryLevel}</span>?
+                </p>
+                <p className="text-sm text-muted-foreground">This will update the advisory level. Click Save to persist the change.</p>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowChangeConfirmModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="secondary" onClick={confirmChangeAdvisory}>
+                Yes, Change Advisory
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete confirmation for adviser assignment */}
+        <Dialog open={showDeleteConfirmModal} onOpenChange={setShowDeleteConfirmModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-red-600">Delete Adviser Assignment</DialogTitle>
+              <DialogDescription className="space-y-3 pt-2">
+                <p className="text-base font-semibold">Are you sure you want to remove the adviser assignment for <span className="text-blue-600">{assignedYearLevel}</span>?</p>
+                <p className="text-sm text-muted-foreground">This will unassign the teacher as adviser{assignedYearLevel && ["Nursery 1","Nursery 2","Kinder"].includes(assignedYearLevel) ? " and remove their subject assignments for this level" : ""}.</p>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteConfirmModal(false)} disabled={isDeletingAdviser}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteAdviser} disabled={isDeletingAdviser}>
+                {isDeletingAdviser ? "Deleting..." : "Yes, Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {alert && <AlertMessage type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
       </div>
     </DashboardLayout>
   );

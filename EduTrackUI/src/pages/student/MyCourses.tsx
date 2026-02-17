@@ -5,6 +5,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BookOpen, User, Loader2, Phone, Mail, IdCard } from "lucide-react";
+import { BookOpen, User, Loader2, Phone, Mail, IdCard, GraduationCap, Calendar, Award, Search, Grid3x3, List } from "lucide-react";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 
 const MyCourses = () => {
@@ -25,6 +27,9 @@ const MyCourses = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
   const [teacherDialogOpen, setTeacherDialogOpen] = useState(false);
   const [loadingTeacher, setLoadingTeacher] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [sortOption, setSortOption] = useState<string>("code_asc");
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "student") {
@@ -268,11 +273,6 @@ const MyCourses = () => {
         });
 
         setCourses(mappedCourses);
-        // expose count if server returned it
-        try {
-          const lastRes = (typeof subjectsRes !== 'undefined') ? subjectsRes : null;
-          // Note: subjectsRes variable may be out of scope here; we logged the rows above for debugging.
-        } catch (e) {}
       } catch (error) {
         console.error('Error fetching courses:', error);
         setCourses([]);
@@ -285,6 +285,29 @@ const MyCourses = () => {
       fetchCourses();
     }
   }, [user, isAuthenticated]);
+
+  // Filter courses based on search
+  const filteredCourses = courses.filter((course) =>
+    course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.teacher?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Sort courses
+  const sortedCourses = [...filteredCourses].sort((a, b) => {
+    switch (sortOption) {
+      case "code_asc":
+        return (a.code || "").localeCompare(b.code || "");
+      case "code_desc":
+        return (b.code || "").localeCompare(a.code || "");
+      case "title_asc":
+        return (a.title || "").localeCompare(b.title || "");
+      case "title_desc":
+        return (b.title || "").localeCompare(a.title || "");
+      default:
+        return 0;
+    }
+  });
 
   const handleViewTeacher = async (teacherId: number | string) => {
     if (!teacherId) {
@@ -339,87 +362,262 @@ const MyCourses = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">My Courses</h1>
-          <p className="text-muted-foreground">
-            {studentInfo ? (
-              // Prefer: "Program Description | <year>-<SectionName>" e.g. "Bachelor of Science in Information Technology | 1-F1"
-              studentInfo.section_description && studentInfo.section_name && studentInfo.yearLevelNum
-                ? `${studentInfo.section_description} | ${studentInfo.yearLevelNum}-${studentInfo.section_name}`
-                : `${studentInfo.displayYearLabel || (studentInfo.year_level || studentInfo.yearLevel || 'N/A')} - ${studentInfo.section_name || 'Section'}`
-            ) : (
-              'View all your enrolled courses'
-            )}
-          </p>
+      <div className="p-8 bg-gradient-to-b from-background to-muted/30 min-h-screen">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div>
+            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              My Subjects
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              {studentInfo ? (
+                  studentInfo.yearLevelNum && studentInfo.section_name
+                    ? `Maranatha Christian Academy | ${studentInfo.yearLevelNum}-${studentInfo.section_name}`
+                    : `${studentInfo.displayYearLabel || (studentInfo.year_level || studentInfo.yearLevel || 'N/A')} - ${studentInfo.section_name || 'Section'}`
+                ) : (
+                  'View all your enrolled courses'
+                )}
+            </p>
+          </div>
+            
+          </div>
+          
+          {/* Quick Stats */}
+          {!loading && courses.length > 0 && (
+            <div className="grid grid-cols-3 gap-4 mt-6">
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-blue-700">{courses.length}</p>
+                      <p className="text-xs text-blue-600">Enrolled Courses</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-purple-500 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-purple-700">{studentInfo?.displayYearLabel?.match(/\d+/)?.[0] || 'N/A'}</p>
+                      <p className="text-xs text-purple-600">Year Level</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-emerald-100/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-emerald-500 flex items-center justify-center">
+                      <Award className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-emerald-700">{courses.reduce((sum, c) => sum + (c.credits || 0), 0)}</p>
+                      <p className="text-xs text-emerald-600">Total Credits</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2 text-muted-foreground">Loading courses...</span>
-          </div>
-        ) : courses.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium mb-2">No courses found</p>
-              <p className="text-sm text-muted-foreground">
-                No courses are available for your year level and the current semester.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-            <Card key={course.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>{course.title}</CardTitle>
-                <CardDescription>{course.code}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Instructor</span>
-                    <button
-                      onClick={() => handleViewTeacher(course.teacherId)}
-                      className="font-medium text-right flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
-                      disabled={!course.teacherId}
-                    >
-                      <User className="h-3 w-3" />
-                      {course.teacher}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Section</span>
-                    <Badge variant="secondary">{course.section}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Credits</span>
-                    <span className="font-semibold">{course.credits}</span>
-                  </div>
-                  {course.grade && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Current Grade</span>
-                      <Badge className="bg-success text-success-foreground">{course.grade}</Badge>
-                    </div>
+        {/* Main Card */}
+        <Card className="shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b pb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-bold">
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      All Courses ({courses.length})
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </span>
+                  ) : (
+                    `All Courses (${sortedCourses.length})`
                   )}
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => navigate(`/student/courses/${course.id}`)}
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Your enrolled courses for this semester
+                </CardDescription>
+              </div>
+            </div>
+
+            {/* Filters and Controls */}
+            <div className="flex items-center gap-3 mt-4 flex-wrap">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search courses by name, code, or instructor..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 py-2.5 text-base border-2 focus:border-accent-500 rounded-xl bg-background shadow-sm"
+                />
+              </div>
+
+              <div className="w-48">
+                <Select value={sortOption} onValueChange={setSortOption}>
+                  <SelectTrigger className="border-2 rounded-xl px-4 py-2.5 bg-background font-medium shadow-sm">
+                    {sortOption === "code_asc" && "Code A → Z"}
+                    {sortOption === "code_desc" && "Code Z → A"}
+                    {sortOption === "title_asc" && "Title A → Z"}
+                    {sortOption === "title_desc" && "Title Z → A"}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="code_asc">Code A → Z</SelectItem>
+                    <SelectItem value="code_desc">Code Z → A</SelectItem>
+                    <SelectItem value="title_asc">Title A → Z</SelectItem>
+                    <SelectItem value="title_desc">Title Z → A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode((v) => (v === "list" ? "grid" : "list"))}
+                className="px-4 py-2.5 rounded-xl font-medium border-2 gap-2 shadow-sm hover:bg-accent-50 hover:border-accent-300 transition-all"
+                title="Toggle view"
+              >
+                {viewMode === "grid" ? <Grid3x3 className="h-5 w-5" /> : <List className="h-5 w-5" />}
+                <span>{viewMode === "grid" ? "Grid" : "List"}</span>
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <span className="ml-4 text-lg text-muted-foreground">Loading your courses...</span>
+              </div>
+            ) : sortedCourses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <BookOpen className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                <h3 className="text-xl font-semibold text-muted-foreground mb-2">
+                  {searchQuery ? "No Matching Courses" : "No Courses Found"}
+                </h3>
+                <p className="text-muted-foreground max-w-md">
+                  {searchQuery
+                    ? "No courses match your search. Try adjusting your filters."
+                    : "No courses are available for your year level and the current semester."}
+                </p>
+              </div>
+            ) : viewMode === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sortedCourses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="rounded-2xl border-2 transition-all duration-300 flex flex-col overflow-hidden bg-white border-gray-200 hover:shadow-lg hover:border-accent-200"
                   >
-                    View Details
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            ))}
-          </div>
-        )}
+                    {/* Card Header - Course Info */}
+                    <div className="p-5 flex items-start gap-3">
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 bg-gradient-to-br from-primary to-accent">
+                        <BookOpen className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-base text-gray-900">{course.code}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{course.title}</p>
+                        {course.semester && (
+                          <Badge variant="secondary" className="text-xs mt-2">
+                            {course.semester}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Instructor & Details Section */}
+                    <div className="px-5 py-4 bg-blue-50 border-t border-gray-200">
+                      <button
+                        onClick={() => handleViewTeacher(course.teacherId)}
+                        className="w-full flex items-center gap-2 text-sm hover:text-primary transition-colors mb-3 group"
+                        disabled={!course.teacherId}
+                      >
+                        <div className="h-8 w-8 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center flex-shrink-0 transition-colors">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground">Instructor</p>
+                          <p className="font-medium truncate text-gray-900">{course.teacher}</p>
+                        </div>
+                      </button>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="text-center p-2 rounded-lg bg-white border border-gray-200">
+                          <p className="text-xs text-muted-foreground">Section</p>
+                          <p className="font-semibold text-sm text-gray-900">{course.section}</p>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-white border border-gray-200">
+                          <p className="text-xs text-muted-foreground">Credits</p>
+                          <p className="font-semibold text-sm text-gray-900">{course.credits}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Actions */}
+                    <div className="px-5 py-4 border-t border-gray-200 mt-auto">
+                      <Button
+                        onClick={() => navigate(`/student/courses/${course.id}`)}
+                        className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-md font-medium"
+                      >
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        View Course
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {sortedCourses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="rounded-2xl border-2 transition-all duration-300 flex items-center justify-between p-4 bg-card border-accent-100 hover:border-accent-300 hover:shadow-md"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 bg-gradient-to-br from-primary to-accent">
+                        <BookOpen className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-lg">{course.title}</p>
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                            {course.code}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {course.teacher} • {course.section} • {course.credits} Credits
+                          {course.semester && ` • ${course.semester}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/student/courses/${course.id}`)}
+                        className="gap-1 font-medium hover:bg-accent-50 hover:border-accent-300 transition-all"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        View Course
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Teacher Details Dialog */}

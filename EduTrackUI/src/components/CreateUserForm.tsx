@@ -174,7 +174,7 @@ export function CreateUserForm({ onSuccess }: CreateUserFormProps) {
           <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-700">
             ✓ New users are created with <strong>Active</strong> status by default
             <br />
-            ✓ Student ID format: <code className="bg-white px-1">MCC{'{year}'}-{'{00000}'}</code>
+            ✓ Student ID format: <code className="bg-white px-1">MCAF{'{year}'}-{'{0001}'}</code>
             <br />
             ✓ Employee ID format: <code className="bg-white px-1">EMP{'{year}'}-{'{000}'}</code>
           </div>

@@ -16,11 +16,11 @@ import { useConfirm } from "@/components/Confirm";
 interface AcademicPeriod {
   id: number;
   school_year: string;
-  semester: string;
-  period_type: string;
+  quarter: string;
   start_date: string;
   end_date: string;
   status: string;
+  description?: string;
   created_at: string;
   updated_at: string;
 }
@@ -36,11 +36,11 @@ const AcademicPeriods = () => {
   // Form state
   const [formData, setFormData] = useState({
     school_year: "",
-    semester: "1st Semester",
-    period_type: "Midterm",
+    quarter: "1st Quarter",
     start_date: "",
     end_date: "",
     status: "upcoming",
+    description: "",
   });
 
   // Fetch all academic periods
@@ -146,11 +146,11 @@ const AcademicPeriods = () => {
   const resetForm = () => {
     setFormData({
       school_year: "",
-      semester: "1st Semester",
-      period_type: "Midterm",
+      quarter: "1st Quarter",
       start_date: "",
       end_date: "",
       status: "upcoming",
+      description: "",
     });
   };
 
@@ -170,11 +170,11 @@ const AcademicPeriods = () => {
     setEditingPeriod(period);
     setFormData({
       school_year: period.school_year,
-      semester: period.semester,
-      period_type: period.period_type,
+      quarter: period.quarter,
       start_date: period.start_date,
       end_date: period.end_date,
       status: period.status,
+      description: period.description || "",
     });
     setIsEditDialogOpen(true);
   };
@@ -195,7 +195,7 @@ const AcademicPeriods = () => {
   const handleSetActive = async (period: AcademicPeriod) => {
     const confirmed = await confirm({
       title: "Set as Active Period?",
-      message: `This will set "${period.school_year} ${period.semester} - ${period.period_type}" as the active academic period. All other periods will be deactivated. Continue?`,
+      message: `This will set "${period.school_year} ${period.quarter}" as the active academic period. All other periods will be deactivated. Continue?`,
     });
 
     if (confirmed) {
@@ -215,7 +215,7 @@ const AcademicPeriods = () => {
 
     const confirmed = await confirm({
       title: "Delete Academic Period?",
-      message: `Are you sure you want to delete "${period.school_year} ${period.semester} - ${period.period_type}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete "${period.school_year} ${period.quarter}"? This action cannot be undone.`,
     });
 
     if (confirmed) {
@@ -253,7 +253,7 @@ const AcademicPeriods = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Academic Periods</h1>
-            <p className="text-muted-foreground">Manage school years, semesters, and grading periods</p>
+            <p className="text-muted-foreground">Manage school years and quarterly grading periods</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
@@ -265,7 +265,7 @@ const AcademicPeriods = () => {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create Academic Period</DialogTitle>
-                <DialogDescription>Add a new school year, semester, and grading period</DialogDescription>
+                <DialogDescription>Add a new school year and quarter</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -278,29 +278,27 @@ const AcademicPeriods = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="semester">Semester *</Label>
-                  <Select value={formData.semester} onValueChange={(v) => setFormData({ ...formData, semester: v })}>
+                  <Label htmlFor="quarter">Quarter *</Label>
+                  <Select value={formData.quarter} onValueChange={(v) => setFormData({ ...formData, quarter: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1st Semester">1st Semester</SelectItem>
-                      <SelectItem value="2nd Semester">2nd Semester</SelectItem>
-                      <SelectItem value="Summer">Summer</SelectItem>
+                      <SelectItem value="1st Quarter">1st Quarter</SelectItem>
+                      <SelectItem value="2nd Quarter">2nd Quarter</SelectItem>
+                      <SelectItem value="3rd Quarter">3rd Quarter</SelectItem>
+                      <SelectItem value="4th Quarter">4th Quarter</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="period_type">Period Type *</Label>
-                  <Select value={formData.period_type} onValueChange={(v) => setFormData({ ...formData, period_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Midterm">Midterm</SelectItem>
-                      <SelectItem value="Final Term">Final Term</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="description">Description (Optional)</Label>
+                  <Input
+                    id="description"
+                    placeholder="e.g., August to October"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="start_date">Start Date *</Label>
@@ -359,18 +357,14 @@ const AcademicPeriods = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-4 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">School Year</p>
                   <p className="text-lg font-bold text-primary">{activePeriod.school_year}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Semester</p>
-                  <p className="text-lg font-bold">{activePeriod.semester}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Period Type</p>
-                  <Badge className="text-sm px-3 py-1">{activePeriod.period_type}</Badge>
+                  <p className="text-sm text-muted-foreground mb-1">Quarter</p>
+                  <Badge className="text-sm px-3 py-1">{activePeriod.quarter}</Badge>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Duration</p>
@@ -416,11 +410,9 @@ const AcademicPeriods = () => {
                   <div className="space-y-3">
                     {groupedPeriods[year]
                       .sort((a, b) => {
-                        // Sort by semester order and period type
-                        const semesterOrder: any = { '1st Semester': 1, '2nd Semester': 2, 'Summer': 3 };
-                        const periodOrder: any = { 'Midterm': 1, 'Final Term': 2 };
-                        const semesterDiff = semesterOrder[a.semester] - semesterOrder[b.semester];
-                        return semesterDiff !== 0 ? semesterDiff : periodOrder[a.period_type] - periodOrder[b.period_type];
+                        // Sort by quarter order
+                        const quarterOrder: any = { '1st Quarter': 1, '2nd Quarter': 2, '3rd Quarter': 3, '4th Quarter': 4 };
+                        return quarterOrder[a.quarter] - quarterOrder[b.quarter];
                       })
                       .map((period) => (
                         <div
@@ -429,12 +421,15 @@ const AcademicPeriods = () => {
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold">{period.semester} - {period.period_type}</h4>
+                              <h4 className="font-semibold">{period.quarter}</h4>
                               {getStatusBadge(period.status)}
                             </div>
                             <p className="text-sm text-muted-foreground">
                               {new Date(period.start_date).toLocaleDateString()} - {new Date(period.end_date).toLocaleDateString()}
                             </p>
+                            {period.description && (
+                              <p className="text-xs text-muted-foreground mt-1">{period.description}</p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             {period.status !== 'active' && (
@@ -493,29 +488,27 @@ const AcademicPeriods = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_semester">Semester *</Label>
-                <Select value={formData.semester} onValueChange={(v) => setFormData({ ...formData, semester: v })}>
+                <Label htmlFor="edit_quarter">Quarter *</Label>
+                <Select value={formData.quarter} onValueChange={(v) => setFormData({ ...formData, quarter: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1st Semester">1st Semester</SelectItem>
-                    <SelectItem value="2nd Semester">2nd Semester</SelectItem>
-                    <SelectItem value="Summer">Summer</SelectItem>
+                    <SelectItem value="1st Quarter">1st Quarter</SelectItem>
+                    <SelectItem value="2nd Quarter">2nd Quarter</SelectItem>
+                    <SelectItem value="3rd Quarter">3rd Quarter</SelectItem>
+                    <SelectItem value="4th Quarter">4th Quarter</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_period_type">Period Type *</Label>
-                <Select value={formData.period_type} onValueChange={(v) => setFormData({ ...formData, period_type: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Midterm">Midterm</SelectItem>
-                    <SelectItem value="Final Term">Final Term</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="edit_description">Description (Optional)</Label>
+                <Input
+                  id="edit_description"
+                  placeholder="e.g., August to October"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_start_date">Start Date *</Label>

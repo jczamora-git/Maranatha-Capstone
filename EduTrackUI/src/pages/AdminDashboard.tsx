@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Users, BookOpen, GraduationCap, Settings, Plus, TrendingUp, Calendar, Edit, Bell, FileText, Grid3x3, ClipboardList, School } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { FEATURES } from "@/config/features";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { EnrollmentDashboardWidget } from "@/components/EnrollmentDashboardWidget";
 import { useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -19,6 +21,14 @@ const AdminDashboard = () => {
   });
   
   const activePeriod = activePeriodData?.data;
+
+  // Fetch active enrollment period
+  const { data: activeEnrollmentData } = useQuery({
+    queryKey: ['enrollment-period', 'active'],
+    queryFn: () => apiGet(`${API_ENDPOINTS.ENROLLMENT_PERIODS}/active`),
+  });
+  
+  const activeEnrollment = activeEnrollmentData?.data;
 
   // State for dashboard stats
   const [stats, setStats] = useState({
@@ -131,19 +141,15 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             {activePeriod ? (
-              <div className="grid md:grid-cols-4 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">School Year</p>
                   <p className="text-lg font-bold text-primary">{activePeriod.school_year}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Semester</p>
-                  <p className="text-lg font-bold">{activePeriod.semester}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Grading Period</p>
+                  <p className="text-sm text-muted-foreground">Quarter</p>
                   <Badge className="text-sm px-3 py-1">
-                    {activePeriod.period_type}
+                    {activePeriod.quarter}
                   </Badge>
                 </div>
                 <div className="space-y-1">
@@ -167,6 +173,85 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Active Enrollment Period Card - Only show when Open */}
+        {activeEnrollment && (
+          <Card className="mb-6 border-green-500/20 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
+                    <ClipboardList className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      Active Enrollment Period
+                      <Badge className="bg-green-600 text-white">Open</Badge>
+                    </CardTitle>
+                    <CardDescription>Students can enroll during this period</CardDescription>
+                  </div>
+                </div>
+                <Link to="/admin/enrollment-periods">
+                  <Button variant="outline" size="sm">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Manage Periods
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Period Name</p>
+                  <p className="text-lg font-bold text-green-600">{activeEnrollment.enrollment_name}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Type</p>
+                  <Badge variant="secondary" className="text-sm px-3 py-1">
+                    {activeEnrollment.enrollment_type}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Current Enrollees</p>
+                  <p className="text-lg font-bold">{activeEnrollment.current_enrollees || 0}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Allowed Grade Levels</p>
+                  <div className="flex flex-wrap gap-1">
+                    {(() => {
+                      try {
+                        const grades = activeEnrollment.allowed_grade_levels 
+                          ? JSON.parse(activeEnrollment.allowed_grade_levels) 
+                          : [];
+                        return (
+                          <>
+                            {grades.slice(0, 3).map((grade: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {grade}
+                              </Badge>
+                            ))}
+                            {grades.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{grades.length - 3}
+                              </Badge>
+                            )}
+                          </>
+                        );
+                      } catch {
+                        return <span className="text-xs text-muted-foreground">All Levels</span>;
+                      }
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Enrollment Widget */}
+        <div className="mb-8">
+          <EnrollmentDashboardWidget />
+        </div>
 
         {/* Stats Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -436,12 +521,14 @@ const AdminDashboard = () => {
                     Academic Periods
                   </Button>
                 </Link>
-                <Link to="/admin/campuses">
-                  <Button variant="ghost" className="w-full justify-start text-sm">
-                    <School className="h-4 w-4 mr-2" />
-                    Campuses
-                  </Button>
-                </Link>
+                {FEATURES.attendance && (
+                  <Link to="/admin/campuses">
+                    <Button variant="ghost" className="w-full justify-start text-sm">
+                      <School className="h-4 w-4 mr-2" />
+                      Campuses
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/admin/users/sections">
                   <Button variant="ghost" className="w-full justify-start text-sm">
                     <Grid3x3 className="h-4 w-4 mr-2" />

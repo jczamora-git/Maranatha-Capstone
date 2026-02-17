@@ -19,10 +19,7 @@ type Subject = {
   id: string;
   code: string;
   name: string;
-  credits: number;
-  category: "general_education" | "major" | "elective";
-  yearLevel: number;
-  semester: string;
+  level: string;
   status: "active" | "inactive";
 };
 
@@ -30,8 +27,7 @@ const Subjects = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [semesterFilter, setSemesterFilter] = useState<string>("all");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -41,7 +37,7 @@ const Subjects = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -49,10 +45,7 @@ const Subjects = () => {
   const [form, setForm] = useState<Omit<Subject, "id">>({
     code: "",
     name: "",
-    credits: 3,
-    category: "major",
-    yearLevel: 1,
-    semester: "1st",
+    level: "Grade 1",
     status: "active",
   });
 
@@ -84,16 +77,7 @@ const Subjects = () => {
           id: String(s.id ?? s.subject_id ?? s.code ?? Date.now()),
           code: s.code ?? s.course_code ?? s.subject_code ?? "",
           name: s.name ?? s.subject_name ?? s.course_name ?? s.title ?? "",
-          credits: Number.isFinite(Number(s.credits ?? s.units ?? 3)) ? Number(s.credits ?? s.units ?? 3) : 3,
-          category: (s.category as any) ?? s.type ?? "major",
-          yearLevel: Number(s.yearLevel ?? s.year_level ?? s.year ?? 1) || 1,
-          // Normalize semester values from backend like "1st Semester" to short values used by the UI ("1st"/"2nd")
-          semester: (() => {
-            const raw = String(s.semester ?? s.sem ?? "").toLowerCase();
-            if (raw.includes("1st") || raw.includes("1")) return "1st";
-            if (raw.includes("2nd") || raw.includes("2")) return "2nd";
-            return "1st";
-          })(),
+          level: s.level ?? s.year_level ?? s.year ?? "Grade 1",
           status: (s.status ?? s.state ?? "active") as "active" | "inactive",
         });
 
@@ -113,15 +97,14 @@ const Subjects = () => {
   const filteredSubjects = subjects.filter((s) => {
     const q = searchQuery.trim().toLowerCase();
     const matchesQuery = q === "" || s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
-    const matchesCategory = categoryFilter === "all" || s.category === categoryFilter;
-    const matchesSemester = semesterFilter === "all" || s.semester === semesterFilter;
-    return matchesQuery && matchesCategory && matchesSemester;
+    const matchesLevel = levelFilter === "all" || s.level === levelFilter;
+    return matchesQuery && matchesLevel;
   });
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, categoryFilter, semesterFilter]);
+  }, [searchQuery, levelFilter]);
 
   // Clamp currentPage to valid pages
   const totalItems = filteredSubjects.length;
@@ -136,10 +119,7 @@ const Subjects = () => {
     setForm({
       code: "",
       name: "",
-      credits: 3,
-      category: "major",
-      yearLevel: 1,
-      semester: "1st",
+      level: "Grade 1",
       status: "active",
     });
     setIsCreateOpen(true);
@@ -153,12 +133,9 @@ const Subjects = () => {
     (async () => {
       try {
         const payload = {
-          course_code: form.code.trim(),
-          course_name: form.name.trim(),
-          credits: form.credits,
-          category: form.category,
-          year_level: form.yearLevel,
-          semester: form.semester === '1st' ? '1st Semester' : '2nd Semester',
+          code: form.code.trim(),
+          name: form.name.trim(),
+          level: form.level,
           status: form.status,
         };
 
@@ -166,21 +143,18 @@ const Subjects = () => {
         // accept res.subject, res.data, or array
         const created = res && (res.subject || res.data || res) ? (res.subject || res.data || res) : null;
         // normalize created if present
-        if (created && (created.id || created.course_code)) {
-          const normalized = {
-            id: String(created.id ?? created.subject_id ?? created.course_code),
-            code: created.course_code ?? created.code ?? '',
-            name: created.course_name ?? created.name ?? '',
-            credits: created.credits ?? created.units ?? 3,
-            category: created.category ?? 'major',
-            yearLevel: Number(created.year_level?.toString().charAt(0)) || form.yearLevel,
-            semester: created.semester?.includes('2') ? '2nd' : '1st',
+        if (created && (created.id || created.code)) {
+          const normalized: Subject = {
+            id: String(created.id ?? created.subject_id ?? created.code),
+            code: created.code ?? created.course_code ?? '',
+            name: created.name ?? created.course_name ?? '',
+            level: created.level ?? form.level,
             status: created.status ?? 'active',
-          } as Subject;
+          };
           setSubjects((s) => [normalized, ...s]);
         } else {
           // fallback local add
-          const newSubject: Subject = { id: String(Date.now()), ...form } as Subject;
+          const newSubject: Subject = { id: String(Date.now()), ...form };
           setSubjects((s) => [newSubject, ...s]);
         }
 
@@ -198,10 +172,7 @@ const Subjects = () => {
     setForm({
       code: s.code,
       name: s.name,
-      credits: s.credits,
-      category: s.category,
-      yearLevel: s.yearLevel,
-      semester: s.semester,
+      level: s.level,
       status: s.status,
     });
     setIsEditOpen(true);
@@ -211,13 +182,10 @@ const Subjects = () => {
     if (!selectedSubjectId) return;
     (async () => {
       try {
-        const payload: any = {
-          course_code: form.code.trim(),
-          course_name: form.name.trim(),
-          credits: form.credits,
-          category: form.category,
-          year_level: form.yearLevel,
-          semester: form.semester === '1st' ? '1st Semester' : '2nd Semester',
+        const payload = {
+          code: form.code.trim(),
+          name: form.name.trim(),
+          level: form.level,
           status: form.status,
         };
 
@@ -226,12 +194,9 @@ const Subjects = () => {
         if (updated) {
           const mapped: Subject = {
             id: String(updated.id ?? updated.subject_id ?? selectedSubjectId),
-            code: updated.course_code ?? updated.code ?? form.code,
-            name: updated.course_name ?? updated.name ?? form.name,
-            credits: updated.credits ?? form.credits,
-            category: updated.category ?? form.category,
-            yearLevel: Number(updated.year_level?.toString().charAt(0)) || form.yearLevel,
-            semester: updated.semester?.includes('2') ? '2nd' : '1st',
+            code: updated.code ?? updated.course_code ?? form.code,
+            name: updated.name ?? updated.course_name ?? form.name,
+            level: updated.level ?? form.level,
             status: updated.status ?? form.status,
           };
           setSubjects((prev) => prev.map((s) => (s.id === selectedSubjectId ? mapped : s)));
@@ -286,28 +251,22 @@ const Subjects = () => {
             <p className="text-muted-foreground text-lg">Create and manage the course catalog (Information Technology)</p>
           </div>
           <div className="flex items-center gap-3">
-              <div className="w-44">
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <div className="w-48">
+              <Select value={levelFilter} onValueChange={setLevelFilter}>
                 <SelectTrigger className="border-2 focus:border-accent-500 rounded-lg px-3 py-2 bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="general_education">General Ed</SelectItem>
-                  <SelectItem value="major">Major</SelectItem>
-                  <SelectItem value="elective">Elective</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-40">
-              <Select value={semesterFilter} onValueChange={setSemesterFilter}>
-                <SelectTrigger className="border-2 focus:border-accent-500 rounded-lg px-3 py-2 bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Semesters</SelectItem>
-                  <SelectItem value="1st">1st Semester</SelectItem>
-                  <SelectItem value="2nd">2nd Semester</SelectItem>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="Nursery 1">Nursery 1</SelectItem>
+                  <SelectItem value="Nursery 2">Nursery 2</SelectItem>
+                  <SelectItem value="Kinder">Kinder</SelectItem>
+                  <SelectItem value="Grade 1">Grade 1</SelectItem>
+                  <SelectItem value="Grade 2">Grade 2</SelectItem>
+                  <SelectItem value="Grade 3">Grade 3</SelectItem>
+                  <SelectItem value="Grade 4">Grade 4</SelectItem>
+                  <SelectItem value="Grade 5">Grade 5</SelectItem>
+                  <SelectItem value="Grade 6">Grade 6</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -365,7 +324,7 @@ const Subjects = () => {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className={viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
+            <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
               {(() => {
                 const list = [...pagedSubjects];
                 // apply sort
@@ -412,9 +371,7 @@ const Subjects = () => {
                           <div className="mb-4">
                             <p className="font-semibold text-base">{subject.name}</p>
                             <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                              <span>{subject.credits} units</span>
-                              <span>•</span>
-                              <span>Year {subject.yearLevel} • {subject.semester} Sem</span>
+                              <span>{subject.level}</span>
                             </div>
                           </div>
 
@@ -424,9 +381,9 @@ const Subjects = () => {
                               : "bg-card/50 border border-border/30"
                           }`}>
                             <div className="flex justify-between items-center">
-                              <span className="text-xs font-semibold text-slate-600">Category</span>
+                              <span className="text-xs font-semibold text-slate-600">Level</span>
                               <Badge variant="secondary" className="capitalize text-xs">
-                                {subject.category.replace("_", " ")}
+                                {subject.level}
                               </Badge>
                             </div>
                           </div>
@@ -483,19 +440,13 @@ const Subjects = () => {
                             <div className="flex items-center gap-2">
                               <p className="font-semibold text-lg">{subject.code}</p>
                               <Badge variant="outline" className="text-xs">
-                                {subject.credits} units
+                                {subject.level}
                               </Badge>
                             </div>
                             <p className="font-medium text-sm text-slate-700">{subject.name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="text-right text-sm">
-                            <p className="text-muted-foreground">Year {subject.yearLevel} • {subject.semester} Sem</p>
-                          </div>
-                          <Badge variant="secondary" className="capitalize">
-                            {subject.category.replace("_", " ")}
-                          </Badge>
                           <Badge variant={subject.status === "active" ? "default" : "outline"}>
                             {subject.status}
                           </Badge>
@@ -550,80 +501,45 @@ const Subjects = () => {
             <div className="space-y-5 px-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="code" className="font-semibold">Course Code *</Label>
+                  <Label htmlFor="code" className="font-semibold">Subject Code *</Label>
                   <Input
                     id="code"
                     value={form.code}
                     onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-                    placeholder="e.g., CS101"
+                    placeholder="e.g., ENG"
                     className="mt-2 py-3 border-2 rounded-lg"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="credits" className="font-semibold">Credits</Label>
+                  <Label htmlFor="name" className="font-semibold">Subject Name *</Label>
                   <Input
-                    id="credits"
-                    type="number"
-                    value={form.credits}
-                    onChange={(e) => setForm((f) => ({ ...f, credits: parseInt(e.target.value) || 3 }))}
+                    id="name"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="e.g., English"
                     className="mt-2 py-3 border-2 rounded-lg"
                   />
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="name" className="font-semibold">Course Name *</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g., Introduction to Programming"
-                  className="mt-2 py-3 border-2 rounded-lg"
-                />
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="category" className="font-semibold">Category</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as any }))}>
-                    <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general_education">General Education</SelectItem>
-                      <SelectItem value="major">Major</SelectItem>
-                      <SelectItem value="elective">Elective</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="yearLevel" className="font-semibold">Year Level</Label>
-                  <Select
-                    value={form.yearLevel.toString()}
-                    onValueChange={(v) => setForm((f) => ({ ...f, yearLevel: parseInt(v) }))}
-                  >
-                    <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="semester" className="font-semibold">Semester</Label>
-                  <Select value={form.semester} onValueChange={(v) => setForm((f) => ({ ...f, semester: v }))}>
-                    <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1st">1st Semester</SelectItem>
-                      <SelectItem value="2nd">2nd Semester</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="level" className="font-semibold">Level *</Label>
+                <Select value={form.level} onValueChange={(v) => setForm((f) => ({ ...f, level: v }))}>
+                  <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Nursery 1">Nursery 1</SelectItem>
+                    <SelectItem value="Nursery 2">Nursery 2</SelectItem>
+                    <SelectItem value="Kinder">Kinder</SelectItem>
+                    <SelectItem value="Grade 1">Grade 1</SelectItem>
+                    <SelectItem value="Grade 2">Grade 2</SelectItem>
+                    <SelectItem value="Grade 3">Grade 3</SelectItem>
+                    <SelectItem value="Grade 4">Grade 4</SelectItem>
+                    <SelectItem value="Grade 5">Grade 5</SelectItem>
+                    <SelectItem value="Grade 6">Grade 6</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Button className="w-full bg-gradient-to-r from-primary to-accent text-white py-3 font-semibold rounded-lg shadow-lg" onClick={handleCreate}>
                 Create Subject
@@ -641,7 +557,7 @@ const Subjects = () => {
             <div className="space-y-5 px-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-code" className="font-semibold">Course Code *</Label>
+                  <Label htmlFor="edit-code" className="font-semibold">Subject Code *</Label>
                   <Input
                     id="edit-code"
                     value={form.code}
@@ -650,69 +566,34 @@ const Subjects = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-credits" className="font-semibold">Credits</Label>
+                  <Label htmlFor="edit-name" className="font-semibold">Subject Name *</Label>
                   <Input
-                    id="edit-credits"
-                    type="number"
-                    value={form.credits}
-                    onChange={(e) => setForm((f) => ({ ...f, credits: parseInt(e.target.value) || 3 }))}
+                    id="edit-name"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     className="mt-2 py-3 border-2 rounded-lg"
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="edit-name" className="font-semibold">Course Name *</Label>
-                <Input
-                  id="edit-name"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="mt-2 py-3 border-2 rounded-lg"
-                />
-              </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="edit-category" className="font-semibold">Category</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as any }))}>
-                    <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general_education">General Education</SelectItem>
-                      <SelectItem value="major">Major</SelectItem>
-                      <SelectItem value="elective">Elective</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-yearLevel" className="font-semibold">Year Level</Label>
-                  <Select
-                    value={form.yearLevel.toString()}
-                    onValueChange={(v) => setForm((f) => ({ ...f, yearLevel: parseInt(v) }))}
-                  >
-                    <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-semester" className="font-semibold">Semester</Label>
-                  <Select value={form.semester} onValueChange={(v) => setForm((f) => ({ ...f, semester: v }))}>
-                    <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1st">1st Semester</SelectItem>
-                      <SelectItem value="2nd">2nd Semester</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="edit-level" className="font-semibold">Level *</Label>
+                <Select value={form.level} onValueChange={(v) => setForm((f) => ({ ...f, level: v }))}>
+                  <SelectTrigger className="mt-2 border-2 rounded-lg px-3 py-2 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Nursery 1">Nursery 1</SelectItem>
+                    <SelectItem value="Nursery 2">Nursery 2</SelectItem>
+                    <SelectItem value="Kinder">Kinder</SelectItem>
+                    <SelectItem value="Grade 1">Grade 1</SelectItem>
+                    <SelectItem value="Grade 2">Grade 2</SelectItem>
+                    <SelectItem value="Grade 3">Grade 3</SelectItem>
+                    <SelectItem value="Grade 4">Grade 4</SelectItem>
+                    <SelectItem value="Grade 5">Grade 5</SelectItem>
+                    <SelectItem value="Grade 6">Grade 6</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="edit-status" className="font-semibold">Status</Label>

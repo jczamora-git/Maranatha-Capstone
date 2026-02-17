@@ -48,6 +48,7 @@ const UserManagement = () => {
   const [form, setForm] = useState<{ 
     firstName: string; 
     lastName: string; 
+    middleName?: string;
     email: string; 
     role: "admin" | "teacher" | "student"; 
     status: string;
@@ -56,16 +57,22 @@ const UserManagement = () => {
   }>({
     firstName: "",
     lastName: "",
+    middleName: "",
     email: "",
     role: "student",
     status: "active",
     phone: "",
-    yearLevel: "1st Year",
+    yearLevel: "Nursery 1",
   });
+
+  const toTitleCase = (s: string) => {
+    if (!s) return s;
+    return s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  };
 
   const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
 
@@ -134,7 +141,7 @@ const UserManagement = () => {
 
   const handleOpenCreate = () => {
     // Open the role selection dialog first
-    setForm({ firstName: "", lastName: "", email: "", role: "student", status: "active", phone: "", yearLevel: "1st Year" });
+    setForm({ firstName: "", lastName: "", middleName: "", email: "", role: "student", status: "active", phone: "", yearLevel: "Nursery 1" });
     setIsSelectRoleOpen(true);
   };
 
@@ -148,10 +155,15 @@ const UserManagement = () => {
     setEmailSuccess(false);
     setShowEmailModal(true);
     try {
-      // Step 1: Create the user
+      // Normalize names to Title Case then create the user
+      const firstName = toTitleCase(form.firstName.trim());
+      const lastName = toTitleCase(form.lastName.trim());
+      const middleName = toTitleCase((form.middleName || '').trim());
+
       const response = await apiPost(API_ENDPOINTS.USERS, {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
+        firstName,
+        lastName,
+        middleName,
         email: form.email.trim(),
         role: form.role,
         phone: form.phone?.trim() || "",
@@ -186,8 +198,8 @@ const UserManagement = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: form.email.trim(),
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
+          firstName: firstName,
+          lastName: lastName,
           password: defaultPassword,
           role: form.role
         }),
@@ -212,7 +224,7 @@ const UserManagement = () => {
         setTimeout(() => {
           setShowEmailModal(false);
           setIsCreateOpen(false);
-          setForm({ firstName: "", lastName: "", email: "", role: "student", status: "active", phone: "", yearLevel: "1st Year" });
+          setForm({ firstName: "", lastName: "", middleName: "", email: "", role: "student", status: "active", phone: "", yearLevel: "Nursery 1" });
           fetchUsers();
         }, 3000);
       } else {
@@ -222,7 +234,7 @@ const UserManagement = () => {
         if (emailData && emailData.message) console.debug('Email endpoint message:', emailData.message);
         setShowEmailModal(false);
         setIsCreateOpen(false);
-        setForm({ firstName: "", lastName: "", email: "", role: "student", status: "active", phone: "", yearLevel: "1st Year" });
+        setForm({ firstName: "", lastName: "", middleName: "", email: "", role: "student", status: "active", phone: "", yearLevel: "Nursery 1" });
         fetchUsers();
       }
     } catch (error: any) {
@@ -237,7 +249,7 @@ const UserManagement = () => {
 
   const handleSelectRole = (role: "admin" | "teacher" | "student") => {
     // set role and open the create modal
-    setForm((f) => ({ ...f, role, yearLevel: role === 'student' ? (f.yearLevel || '1st Year') : undefined }));
+    setForm((f) => ({ ...f, role, yearLevel: role === 'student' ? (f.yearLevel || 'Nursery 1') : undefined }));
     setIsSelectRoleOpen(false);
     setOpenedFromSelector(true);
     setIsCreateOpen(true);
@@ -284,16 +296,8 @@ const UserManagement = () => {
   // Create student profile
   const createStudentProfile = async (userId: number) => {
     try {
-      // Get the next student ID
-      const studentId = await generateStudentId();
-      console.log("Generated student ID:", studentId);
-
-      // Insert into students table
+      // Create student profile on the server and let backend generate the student_id
       const yearLevel = form.yearLevel || '1st Year';
-      const query = `INSERT INTO \`students\` (\`user_id\`, \`student_id\`, \`year_level\`, \`status\`) VALUES (${userId}, '${studentId}', '${yearLevel}', 'active')`;
-      console.log("Executing query:", query);
-
-      // Since we don't have a direct query endpoint, we'll use a custom API call
       const response = await fetch(`${API_ENDPOINTS.USERS}/../students`, {
         method: 'POST',
         headers: {
@@ -301,7 +305,6 @@ const UserManagement = () => {
         },
         body: JSON.stringify({
           user_id: userId,
-          student_id: studentId,
           year_level: yearLevel,
           status: 'active'
         }),
@@ -309,7 +312,9 @@ const UserManagement = () => {
       });
 
       if (!response.ok) {
-        console.warn("Student profile creation failed, but user was created");
+        // If server returned 4xx/5xx, log for debugging but continue (user was created)
+        const text = await response.text();
+        console.warn("Student profile creation failed, but user was created", response.status, text);
       }
     } catch (error) {
       console.warn("Could not create student profile:", error);
@@ -351,42 +356,58 @@ const UserManagement = () => {
   // Generate next student ID
   const generateStudentId = async (): Promise<string> => {
     try {
-      const year = new Date().getFullYear();
-      
-      // Fetch last student ID from backend
-      const response = await fetch(`${API_ENDPOINTS.USERS}/../students/last-id?year=${year}`, {
+      // Fetch active academic period to obtain the start year (e.g. "2026-2027")
+      const apRes = await apiGet('/api/academic-periods/active');
+      let startYear = String(new Date().getFullYear());
+      if (apRes && apRes.success && apRes.period && apRes.period.school_year) {
+        const sy = apRes.period.school_year as string;
+        const parts = sy.split('-');
+        if (parts.length > 0) startYear = parts[0];
+      }
+
+      // Ask backend for last student id for that start year (backend expects ?year={startYear})
+      const response = await fetch(`${API_ENDPOINTS.USERS}/../students/last-id?year=${startYear}`, {
         credentials: 'include'
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.last_id) {
-          const match = data.last_id.match(/MCC\d+-(\d+)/);
+          const match = data.last_id.match(/MCAF(\d+)-(\d+)/);
           if (match) {
-            const nextNum = parseInt(match[1]) + 1;
-            return `MCC${year}-${String(nextNum).padStart(5, '0')}`;
+            const nextNum = parseInt(match[2]) + 1;
+            return `MCAF${startYear}-${String(nextNum).padStart(4, '0')}`;
           }
         }
       }
-      
-      // Fallback to 00001
-      return `MCC${year}-00001`;
+
+      // Fallback to first sequence
+      return `MCAF${startYear}-0001`;
     } catch (error) {
       console.error("Error generating student ID:", error);
       const year = new Date().getFullYear();
-      return `MCC${year}-00001`;
+      return `MCAF${year}-0001`;
     }
   };
 
-  const handleOpenEdit = (u: User) => {
+  const handleOpenEdit = async (u: User) => {
     setSelectedUserId(u.id);
+    let data: any = u;
+    try {
+      const res = await apiGet(API_ENDPOINTS.USER_BY_ID(u.id));
+      if (res && (res.user || res.data)) data = res.user || res.data;
+    } catch (err) {
+      console.warn('Could not fetch full user for edit, falling back to list data', err);
+    }
+
     setForm({ 
-      firstName: u.first_name, 
-      lastName: u.last_name, 
-      email: u.email, 
-      role: u.role, 
-      status: u.status,
-      phone: u.phone || ""
+      firstName: toTitleCase(data.first_name || data.firstName || ''), 
+      middleName: toTitleCase((data.middle_name || data.middleName || '').trim()),
+      lastName: toTitleCase(data.last_name || data.lastName || ''), 
+      email: data.email || '', 
+      role: data.role || 'student', 
+      status: data.status || 'active',
+      phone: data.phone || ""
     });
     setIsEditOpen(true);
   };
@@ -401,9 +422,13 @@ const UserManagement = () => {
 
     setIsLoading(true);
     try {
+      const firstName = toTitleCase(form.firstName.trim());
+      const lastName = toTitleCase(form.lastName.trim());
+
       const response = await apiPut(API_ENDPOINTS.USER_BY_ID(selectedUserId), {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
+        firstName,
+        lastName,
+        middleName: toTitleCase((form.middleName || '').trim()),
         email: form.email.trim(),
         role: form.role,
         status: form.status,
@@ -508,11 +533,10 @@ const UserManagement = () => {
                       <SelectValue>{roleFilter === "all" ? "All Roles" : roleFilter.charAt(0).toUpperCase() + roleFilter.slice(1)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Roles</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                    </SelectContent>
+                        <SelectItem value="all">All Roles</SelectItem>
+                        <SelectItem value="teacher">Teacher</SelectItem>
+                        <SelectItem value="student">Student</SelectItem>
+                      </SelectContent>
                   </Select>
                 </div>
                 <Button
@@ -555,7 +579,12 @@ const UserManagement = () => {
                             </span>
                           </div>
                           <div>
-                            <p className="font-bold text-lg">{user.first_name} {user.last_name}</p>
+                            <p className="font-bold text-lg">
+                              {user.first_name}
+                              {((user as any).middle_name || (user as any).middleName) ? ' ' + (((user as any).middle_name || (user as any).middleName)[0].toUpperCase() + '.') : ''}
+                              {' '}
+                              {user.last_name}
+                            </p>
                             <p className="text-sm text-muted-foreground">{user.email}</p>
                           </div>
                         </div>
@@ -623,7 +652,12 @@ const UserManagement = () => {
                         </span>
                       </div>
                       <div>
-                        <p className="font-bold text-base">{user.first_name} {user.last_name}</p>
+                        <p className="font-bold text-base">
+                          {user.first_name}
+                          {((user as any).middle_name || (user as any).middleName) ? ' ' + (((user as any).middle_name || (user as any).middleName)[0].toUpperCase() + '.') : ''}
+                          {' '}
+                          {user.last_name}
+                        </p>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
@@ -693,7 +727,6 @@ const UserManagement = () => {
             <div className="space-y-4 px-6 pb-6">
               <p className="text-sm text-muted-foreground">Choose the account type to create. For students you'll be able to select a year level in the next step.</p>
               <div className="flex gap-3">
-                <Button className="flex-1 bg-gradient-to-r from-primary to-accent text-white" onClick={() => handleSelectRole('admin')}>Admin</Button>
                 <Button className="flex-1 bg-gradient-to-r from-primary to-accent text-white" onClick={() => handleSelectRole('teacher')}>Teacher</Button>
                 <Button className="flex-1 bg-gradient-to-r from-primary to-accent text-white" onClick={() => handleSelectRole('student')}>Student</Button>
               </div>
@@ -711,7 +744,7 @@ const UserManagement = () => {
               <DialogTitle className="text-2xl font-bold text-white">Create New User</DialogTitle>
             </DialogHeader>
             <div className="space-y-5 px-2">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="firstName" className="font-semibold text-lg">First Name *</Label>
                   <Input 
@@ -719,6 +752,16 @@ const UserManagement = () => {
                     value={form.firstName} 
                     onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} 
                     placeholder="Enter first name" 
+                    className="mt-2 py-3 text-base border-2 focus:border-accent-500 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="middleName" className="font-semibold text-lg">Middle Name</Label>
+                  <Input
+                    id="middleName"
+                    value={form.middleName}
+                    onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+                    placeholder="Optional middle name"
                     className="mt-2 py-3 text-base border-2 focus:border-accent-500 rounded-lg"
                   />
                 </div>
@@ -788,10 +831,15 @@ const UserManagement = () => {
                       <SelectValue>{form.yearLevel}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1st Year">1st Year</SelectItem>
-                      <SelectItem value="2nd Year">2nd Year</SelectItem>
-                      <SelectItem value="3rd Year">3rd Year</SelectItem>
-                      <SelectItem value="4th Year">4th Year</SelectItem>
+                      <SelectItem value="Nursery 1">Nursery 1</SelectItem>
+                      <SelectItem value="Nursery 2">Nursery 2</SelectItem>
+                      <SelectItem value="Kinder">Kinder</SelectItem>
+                      <SelectItem value="Grade 1">Grade 1</SelectItem>
+                      <SelectItem value="Grade 2">Grade 2</SelectItem>
+                      <SelectItem value="Grade 3">Grade 3</SelectItem>
+                      <SelectItem value="Grade 4">Grade 4</SelectItem>
+                      <SelectItem value="Grade 5">Grade 5</SelectItem>
+                      <SelectItem value="Grade 6">Grade 6</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -802,7 +850,7 @@ const UserManagement = () => {
                   ✓ New users are created with <span className="font-bold">Active</span> status by default
                 </p>
                 <p className="text-sm text-muted-foreground font-medium mt-2">
-                  ✓ Student profiles auto-generated with ID: <code className="bg-white px-1 text-xs">MCC{'{year}'}-{'{00000}'}</code>
+                  ✓ Student profiles auto-generated with ID: <code className="bg-white px-1 text-xs">MCAF{'{year}'}-{'{0001}'}</code>
                 </p>
                 <p className="text-sm text-muted-foreground font-medium mt-1">
                   ✓ Teacher profiles auto-generated with ID: <code className="bg-white px-1 text-xs">EMP{'{year}'}-{'{000}'}</code>
@@ -834,7 +882,7 @@ const UserManagement = () => {
               <DialogTitle className="text-2xl font-bold text-white">Edit User</DialogTitle>
             </DialogHeader>
             <div className="space-y-5 px-2">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="edit-firstName" className="font-semibold text-lg">First Name *</Label>
                   <Input 
@@ -842,6 +890,16 @@ const UserManagement = () => {
                     value={form.firstName} 
                     onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} 
                     placeholder="Enter first name" 
+                    className="mt-2 py-3 text-base border-2 focus:border-accent-500 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-middleName" className="font-semibold text-lg">Middle Name</Label>
+                  <Input
+                    id="edit-middleName"
+                    value={form.middleName}
+                    onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+                    placeholder="Optional middle name"
                     className="mt-2 py-3 text-base border-2 focus:border-accent-500 rounded-lg"
                   />
                 </div>

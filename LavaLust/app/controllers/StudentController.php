@@ -9,6 +9,7 @@ class StudentController extends Controller
     public function __construct()
     {
         parent::__construct();
+        $this->call->model('AcademicPeriodModel');
     }
 
     /**
@@ -88,6 +89,49 @@ class StudentController extends Controller
                 'success' => true,
                 'data' => $students,
                 'count' => is_array($students) ? count($students) : 0
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get all students and enrollees (includes enrollees without student records)
+     * GET /api/students-enrollees
+     */
+    public function api_get_students_enrollees()
+    {
+        api_set_json_headers();
+
+        // Check authorization
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            $filters = [];
+            if (!empty($_GET['status'])) {
+                $filters['status'] = $_GET['status'];
+            }
+            if (!empty($_GET['search'])) {
+                $filters['search'] = $_GET['search'];
+            }
+
+            $users = $this->StudentModel->get_students_and_enrollees($filters);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $users,
+                'count' => is_array($users) ? count($users) : 0
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -225,13 +269,38 @@ class StudentController extends Controller
             
             $user_id = $json_data['user_id'] ?? null;
             $student_id = $json_data['student_id'] ?? '';
-            $year_level = $json_data['year_level'] ?? '1st Year';
+            $year_level = $json_data['year_level'] ?? 'Nursery 1';
             $status = $json_data['status'] ?? 'active';
 
-            // If student_id not provided, generate one using model helper
-            if (empty($student_id)) {
-                $student_id = $this->StudentModel->generate_student_id(date('Y'));
-            } else {
+            if (empty($user_id)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'User ID is required'
+                ]);
+                return;
+            }
+
+            // Check if user already has a student profile (user_id is UNIQUE in students table)
+            $existingStudent = $this->StudentModel->get_by_user_id($user_id);
+            if ($existingStudent) {
+                http_response_code(409);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'User already has a student profile',
+                    'student' => $existingStudent
+                ]);
+                return;
+            }
+
+            $studentData = [
+                'user_id' => $user_id,
+                'year_level' => $year_level,
+                'status' => $status
+            ];
+
+            // If student_id is provided, insert directly with validation
+            if (!empty($student_id)) {
                 // Check if student_id already exists
                 if ($this->StudentModel->student_id_exists($student_id)) {
                     http_response_code(409);
@@ -241,35 +310,65 @@ class StudentController extends Controller
                     ]);
                     return;
                 }
-            }
 
-            // Insert student profile
-            $studentData = [
-                'user_id' => $user_id,
-                'student_id' => $student_id,
-                'year_level' => $year_level,
-                'status' => $status,
-                'created_at' => date('Y-m-d H:i:s')
-            ];
+                // Insert directly with provided ID
+                $studentData['student_id'] = $student_id;
+                $studentData['created_at'] = date('Y-m-d H:i:s');
 
-            $result = $this->db->table('students')->insert($studentData);
+                try {
+                    $this->db->transaction();
+                    $result = $this->db->table('students')->insert($studentData);
+                    $this->db->commit();
 
-            if ($result) {
-                // Fetch the created record to return
-                $created = $this->db->table('students')->where('student_id', $student_id)->get();
-
-                http_response_code(201);
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Student profile created successfully',
-                    'student' => $created
-                ]);
+                    if ($result) {
+                        $created = $this->db->table('students')->where('student_id', $student_id)->get();
+                        http_response_code(201);
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Student profile created successfully',
+                            'student' => $created
+                        ]);
+                    } else {
+                        http_response_code(500);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Failed to create student profile'
+                        ]);
+                    }
+                } catch (Exception $e) {
+                    try { $this->db->roll_back(); } catch (Exception $_) {}
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Database error: ' . $e->getMessage()
+                    ]);
+                }
             } else {
-                http_response_code(500);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Failed to create student profile'
-                ]);
+                // No student_id provided - generate using active academic period start year
+                $period = $this->AcademicPeriodModel->get_active_period();
+                $startYear = date('Y');
+                if ($period && !empty($period['school_year'])) {
+                    $parts = explode('-', $period['school_year']);
+                    if (count($parts) > 0) $startYear = $parts[0];
+                }
+
+                // Use StudentModel safe create method
+                $created = $this->StudentModel->create_student_with_generated_id($studentData, $startYear);
+
+                if ($created) {
+                    http_response_code(201);
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Student profile created successfully',
+                        'student' => $created
+                    ]);
+                } else {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to create student profile after retries. Check server logs for details.'
+                    ]);
+                }
             }
         } catch (Exception $e) {
             http_response_code(500);
@@ -573,7 +672,13 @@ class StudentController extends Controller
             $inserted = 0;
             $skipped = 0;
             $errors = [];
+            // Determine start year from active academic period for ID generation
+            $period = $this->AcademicPeriodModel->get_active_period();
             $currentYear = date('Y');
+            if ($period && !empty($period['school_year'])) {
+                $parts = explode('-', $period['school_year']);
+                if (count($parts) > 0) $currentYear = $parts[0];
+            }
 
             foreach ($rows as $index => $row) {
                 $rowNumber = $index + 2; // +2 because index is 0-based and header is row 1
@@ -648,23 +753,53 @@ class StudentController extends Controller
                     }
 
                     // Create student profile
-                    $studentData = [
-                        'user_id' => $userId,
-                        'student_id' => $studentId,
-                        'year_level' => $yearLevelNormalized,
-                        'status' => 'active',
-                        'created_at' => date('Y-m-d H:i:s')
-                    ];
+                    if (!empty($studentId)) {
+                        // Provided student ID - attempt insert directly, fail row on duplicate
+                        $studentData = [
+                            'user_id' => $userId,
+                            'student_id' => $studentId,
+                            'year_level' => $yearLevelNormalized,
+                            'status' => 'active',
+                            'created_at' => date('Y-m-d H:i:s')
+                        ];
 
-                    $result = $this->db->table('students')->insert($studentData);
-
-                    if ($result) {
-                        $inserted++;
+                        try {
+                            $this->db->transaction();
+                            $res = $this->db->table('students')->insert($studentData);
+                            $this->db->commit();
+                            if ($res) {
+                                $inserted++;
+                            } else {
+                                $this->db->roll_back();
+                                $this->db->table('users')->where('id', $userId)->delete();
+                                $errors[] = "Row {$rowNumber}: Failed to create student profile for {$firstName} {$lastName}";
+                                $skipped++;
+                            }
+                        } catch (Exception $e) {
+                            try { $this->db->roll_back(); } catch (Exception $_) {}
+                            // Duplicate or other error
+                            $this->db->table('users')->where('id', $userId)->delete();
+                            $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                            $skipped++;
+                        }
                     } else {
-                        // Rollback user creation if student profile fails
-                        $this->db->table('users')->where('id', $userId)->delete();
-                        $errors[] = "Row {$rowNumber}: Failed to create student profile for {$firstName} {$lastName}";
-                        $skipped++;
+                        // No student ID provided - let StudentModel generate and insert safely
+                        $this->call->model('StudentModel');
+                        // Determine startYear from active academic period (already set in $currentYear)
+                        $created = $this->StudentModel->create_student_with_generated_id([
+                            'user_id' => $userId,
+                            'year_level' => $yearLevelNormalized,
+                            'status' => 'active'
+                        ], $currentYear);
+
+                        if ($created) {
+                            $inserted++;
+                        } else {
+                            // Rollback user creation if student profile fails
+                            $this->db->table('users')->where('id', $userId)->delete();
+                            $errors[] = "Row {$rowNumber}: Failed to create student profile for {$firstName} {$lastName} (after retries)";
+                            $skipped++;
+                        }
                     }
 
                 } catch (Exception $e) {
@@ -880,7 +1015,7 @@ class StudentController extends Controller
             );
 
             // Send email
-            $result = sendNotif($email, 'Your EduTrack Student Account Has Been Created', $emailBody);
+            $result = sendNotif($email, 'Your Student Account Has Been Created - Maranatha', $emailBody);
 
             if ($result['success']) {
                 http_response_code(200);

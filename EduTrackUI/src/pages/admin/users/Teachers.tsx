@@ -15,6 +15,7 @@ import { AlertMessage } from "@/components/AlertMessage";
 import { useConfirm } from "@/components/Confirm";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { toast } from "sonner";
+import { Pagination } from "@/components/Pagination";
 
 type Teacher = {
   id: string;
@@ -24,6 +25,9 @@ type Teacher = {
   employeeId: string;
   phone?: string;
   status: "active" | "inactive";
+  assignedYearLevel?: string;
+  assignedSection?: string;
+  assignedSubjects?: string[];
   assignedCourses: { 
     course: string; 
     title?: string; 
@@ -39,10 +43,14 @@ const Teachers = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState<string>("");
 
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 12;
+  const [showAdvisersFirst, setShowAdvisersFirst] = useState<boolean>(false);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -70,15 +78,74 @@ const Teachers = () => {
       if (!isAuthenticated || !isAdmin) {
         navigate("/auth");
       } else {
-  fetchTeachers();
-  fetchSubjects();
-  fetchYearLevelData();
+        fetchSchoolYears();
+        fetchSubjects();
+        fetchYearLevelData();
       }
     }
   }, [isAuthenticated, isAdmin, navigate, roleLoading]);
 
+  const fetchSchoolYears = async () => {
+    try {
+      const res = await apiGet("/api/academic-periods/school-years");
+      if (res && res.success && Array.isArray(res.school_years)) {
+        const currentYear = new Date().getFullYear();
+        const currentSchoolYear = `${currentYear}-${currentYear + 1}`;
+        const defaultYear = res.school_years.includes(currentSchoolYear)
+          ? currentSchoolYear
+          : res.school_years[0];
+        setSelectedSchoolYear(defaultYear || "");
+        return;
+      }
+    } catch (err) {
+      console.error("Fetch school years error:", err);
+    }
+
+    const currentYear = new Date().getFullYear();
+    const currentSchoolYear = `${currentYear}-${currentYear + 1}`;
+    setSelectedSchoolYear(currentSchoolYear);
+  };
+
+  // Fetch assignment details for a single teacher
+  const fetchTeacherAssignment = async (teacherId: string) => {
+    try {
+      if (!selectedSchoolYear) {
+        return { assignedYearLevel: undefined, assignedSection: undefined, assignedSubjects: [] };
+      }
+
+      const advisersRes = await apiGet(`${API_ENDPOINTS.TEACHERS}/advisers?school_year=${selectedSchoolYear}`);
+      const assignment =
+        advisersRes &&
+        advisersRes.success &&
+        Array.isArray(advisersRes.advisers)
+          ? advisersRes.advisers.find((a: any) => a.teacher_id === parseInt(teacherId, 10))
+          : null;
+
+      let assignedSubjects: string[] = [];
+      if (selectedSchoolYear) {
+        const subjectsRes = await apiGet(`${API_ENDPOINTS.TEACHERS}/${teacherId}/subjects?school_year=${selectedSchoolYear}`);
+        if (subjectsRes && subjectsRes.success && Array.isArray(subjectsRes.subjects)) {
+          assignedSubjects = subjectsRes.subjects
+            .map((s: any) => (s.course_code || s.subject_code || s.code || "").toString().toUpperCase())
+            .filter((code: string) => Boolean(code));
+        }
+      }
+      // Always return assignedSubjects so we can display them even when the
+      // teacher is not an adviser for the selected school year.
+      return {
+        assignedYearLevel: assignment ? assignment.level : undefined,
+        assignedSection: "",
+        assignedSubjects,
+      };
+    } catch (error) {
+      console.error(`Failed to fetch assignment for teacher ${teacherId}:`, error);
+    }
+    return { assignedYearLevel: undefined, assignedSection: undefined, assignedSubjects: [] };
+  };
+
   // Fetch teachers from API
   const fetchTeachers = async () => {
+    if (!selectedSchoolYear) return;
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -101,33 +168,18 @@ const Teachers = () => {
           assignedCourses: t.assigned_courses || t.assignedCourses || []
         }));
 
-        // Ensure we have up-to-date assigned courses for each teacher.
-        // The /api/teachers endpoint may not include assignment details for every teacher,
-        // so fetch per-teacher assignments in parallel and merge into the list.
-        const withAssignments = await Promise.all(
-          transformedTeachers.map(async (tt) => {
-            try {
-              const res = await apiGet(API_ENDPOINTS.TEACHER_ASSIGNMENTS_BY_TEACHER(tt.id));
-              const assigned = (res && (res.assigned_courses || res.assignedCourses || res.assignments)) || [];
-              // Normalize to the UI shape used elsewhere: { course, title?, units?, sections: [], yearLevel? }
-              const mapped = Array.isArray(assigned)
-                ? assigned.map((a: any) => ({
-                    course: a.course_code ?? a.course ?? a.courseCode ?? a.course_code,
-                    title: a.course_name ?? a.course_name ?? a.title ?? a.course_name,
-                    units: a.credits ?? a.units,
-                    sections: a.sections || [],
-                    yearLevel: a.year_level ?? a.yearLevel ?? undefined,
-                  }))
-                : [];
-              return { ...tt, assignedCourses: mapped };
-            } catch (err) {
-              // If assignment fetch fails, return teacher as-is
-              return tt;
-            }
+        // Fetch assignments for all teachers
+        const teachersWithAssignments = await Promise.all(
+          transformedTeachers.map(async (teacher) => {
+            const assignment = await fetchTeacherAssignment(teacher.id);
+            return {
+              ...teacher,
+              ...assignment
+            };
           })
         );
 
-        setTeachers(withAssignments);
+        setTeachers(teachersWithAssignments);
       }
     } catch (error: any) {
       console.error('Fetch teachers error:', error);
@@ -142,7 +194,7 @@ const Teachers = () => {
     if (isAuthenticated && isAdmin && !roleLoading) {
       fetchTeachers();
     }
-  }, [statusFilter, searchQuery]);
+  }, [statusFilter, searchQuery, selectedSchoolYear]);
 
   const filteredTeachers = teachers.filter((t) => {
     const q = searchQuery.trim().toLowerCase();
@@ -151,6 +203,56 @@ const Teachers = () => {
     const matchesStatus = statusFilter === "all" || t.status === statusFilter;
     return matchesQuery && matchesStatus;
   });
+  // Optionally order advisers first by specific level ordering
+  const levelOrder = [
+    'Nursery 1',
+    'Nursery 2',
+    'Kinder',
+    'Grade 1',
+    'Grade 2',
+    'Grade 3',
+    'Grade 4',
+    'Grade 5',
+    'Grade 6',
+  ];
+
+  const sortedTeachers = (() => {
+    const copy = [...filteredTeachers];
+    if (showAdvisersFirst) {
+      copy.sort((a, b) => {
+        const aIdx = a.assignedYearLevel ? levelOrder.indexOf(a.assignedYearLevel) : -1;
+        const bIdx = b.assignedYearLevel ? levelOrder.indexOf(b.assignedYearLevel) : -1;
+        const aHas = a.assignedYearLevel && aIdx !== -1;
+        const bHas = b.assignedYearLevel && bIdx !== -1;
+        if (aHas && bHas) return aIdx - bIdx;
+        if (aHas && !bHas) return -1;
+        if (!aHas && bHas) return 1;
+        const an = `${a.firstName} ${a.lastName}`;
+        const bn = `${b.firstName} ${b.lastName}`;
+        return an.localeCompare(bn);
+      });
+    } else {
+      copy.sort((a, b) => {
+        const an = `${a.firstName} ${a.lastName}`;
+        const bn = `${b.firstName} ${b.lastName}`;
+        return an.localeCompare(bn);
+      });
+    }
+    return copy;
+  })();
+
+  // Pagination
+  const totalItems = sortedTeachers.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery, selectedSchoolYear, showAdvisersFirst]);
+
+  const pagedTeachers = sortedTeachers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   // Year levels and their sections (fetched as year_level_sections)
   const [yearLevels, setYearLevels] = useState<{ id: number; name: string }[]>([]);
   const [yearLevelSectionsMap, setYearLevelSectionsMap] = useState<Record<string, { id: number; name: string }[]>>({});
@@ -539,6 +641,16 @@ const Teachers = () => {
                   {viewMode === "list" ? <Grid3x3 className="h-4 w-4" /> : <List className="h-4 w-4" />}
                   {viewMode === "list" ? "Grid" : "List"}
                 </Button>
+                <Button
+                  variant={showAdvisersFirst ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowAdvisersFirst((s) => !s)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium border-2 shadow-sm hover:bg-accent-50 hover:border-accent-300 transition-all"
+                  title="Show advisers first"
+                  aria-pressed={showAdvisersFirst}
+                >
+                  Advisers First
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -550,7 +662,7 @@ const Teachers = () => {
               </div>
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredTeachers.map((teacher) => (
+                {pagedTeachers.map((teacher) => (
                   <div
                     key={teacher.id}
                     className={`rounded-2xl border-2 transition-all duration-300 flex flex-col overflow-hidden ${
@@ -586,6 +698,28 @@ const Teachers = () => {
                           {teacher.status.charAt(0).toUpperCase() + teacher.status.slice(1)}
                         </Badge>
                       </div>
+
+                      {teacher.assignedYearLevel && (
+                        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-purple-400 rounded-lg">
+                          <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Advisory Year Level</p>
+                          <p className="text-sm font-bold text-purple-900 mt-1">
+                            {teacher.assignedYearLevel}{teacher.assignedSection ? ` - ${teacher.assignedSection}` : ""}
+                          </p>
+                        </div>
+                      )}
+
+                      {teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && (
+                        <div className="mb-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-400 rounded-lg">
+                          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Subjects Assigned</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {teacher.assignedSubjects.map((code) => (
+                              <Badge key={code} variant="default" className="text-xs font-semibold bg-emerald-600 text-white">
+                                {code}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {teacher.assignedCourses.length > 0 && (
                         <div className="pt-3 border-t border-accent-100">
@@ -650,7 +784,7 @@ const Teachers = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredTeachers.map((teacher) => (
+                {pagedTeachers.map((teacher) => (
                 <div
                   key={teacher.id}
                   className={`p-5 border-2 rounded-2xl transition-all duration-300 ${
@@ -685,6 +819,29 @@ const Teachers = () => {
                         </Badge>
                       </div>
                     </div>
+
+                    {/* Year Level Assignment */}
+                    {teacher.assignedYearLevel && (
+                      <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-purple-400 rounded-lg">
+                        <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Advisory Year Level</p>
+                        <p className="text-sm font-bold text-purple-900 mt-1">
+                          {teacher.assignedYearLevel}{teacher.assignedSection ? ` - ${teacher.assignedSection}` : ""}
+                        </p>
+                      </div>
+                    )}
+
+                    {teacher.assignedSubjects && teacher.assignedSubjects.length > 0 && (
+                      <div className="mb-4 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-400 rounded-lg">
+                        <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Subjects Assigned</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {teacher.assignedSubjects.map((code) => (
+                            <Badge key={code} variant="default" className="text-xs font-semibold bg-emerald-600 text-white">
+                              {code}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Courses Section */}
                     {teacher.assignedCourses.length > 0 && (
@@ -760,6 +917,16 @@ const Teachers = () => {
                 <GraduationCap className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-lg text-muted-foreground font-medium">No teachers found matching your filters</p>
                 <p className="text-sm text-muted-foreground mt-2">Try adjusting your search or filters</p>
+              </div>
+            )}
+            {!isLoading && totalItems > 0 && (
+              <div className="mt-6 px-2">
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={(p) => setCurrentPage(p)}
+                />
               </div>
             )}
           </CardContent>
@@ -928,7 +1095,7 @@ const Teachers = () => {
                   }}
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
-                  Manage Courses
+                  Manage Assignments
                 </Button>
               </div>
 

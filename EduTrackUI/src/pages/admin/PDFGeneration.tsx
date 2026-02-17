@@ -580,10 +580,15 @@ const PDFGeneration = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Year Levels</SelectItem>
-                        <SelectItem value="1">1st Year</SelectItem>
-                        <SelectItem value="2">2nd Year</SelectItem>
-                        <SelectItem value="3">3rd Year</SelectItem>
-                        <SelectItem value="4">4th Year</SelectItem>
+                        <SelectItem value="5">Nursery 1</SelectItem>
+                        <SelectItem value="6">Nursery 2</SelectItem>
+                        <SelectItem value="7">Kinder</SelectItem>
+                        <SelectItem value="8">Grade 1</SelectItem>
+                        <SelectItem value="9">Grade 2</SelectItem>
+                        <SelectItem value="10">Grade 3</SelectItem>
+                        <SelectItem value="11">Grade 4</SelectItem>
+                        <SelectItem value="12">Grade 5</SelectItem>
+                        <SelectItem value="13">Grade 6</SelectItem>
                       </SelectContent>
                     </Select>
 

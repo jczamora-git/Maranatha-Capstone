@@ -138,53 +138,12 @@ class TeacherModel extends Model
 
     /**
      * Get assigned courses for a teacher
-     * Returns array of assigned courses with sections
+     * DEPRECATED: Old college model - returns empty array
+     * Use get_current_assignment() and get_subjects_for_level() instead for preschool model
      */
     public function get_assigned_courses($teacherId)
     {
-        // Get all teacher_subjects for this teacher
-        $assignments = $this->db->table('teacher_subjects')
-                                ->select('teacher_subjects.id as teacher_subject_id, teacher_subjects.subject_id')
-                                ->where('teacher_subjects.teacher_id', $teacherId)
-                                ->get_all();
-
-        if (empty($assignments)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($assignments as $a) {
-            // Get subject details
-            $subject = $this->db->table('subjects')
-                              ->select('id, course_code, course_name, credits, category, year_level, semester')
-                              ->where('id', $a['subject_id'])
-                              ->get();
-
-            if (empty($subject)) continue;
-
-            // Get sections for this assignment
-            $sections = $this->db->table('teacher_subject_sections')
-                              ->join('sections', 'teacher_subject_sections.section_id = sections.id')
-                              ->select('sections.id, sections.name, sections.description')
-                              ->where('teacher_subject_sections.teacher_subject_id', $a['teacher_subject_id'])
-                              ->get_all();
-
-            $section_names = [];
-            foreach ($sections as $s) {
-                $section_names[] = $s['name'];
-            }
-
-            $result[] = [
-                'course' => $subject['course_code'],
-                'title' => $subject['course_name'],
-                'units' => $subject['credits'],
-                'sections' => $section_names,
-                'yearLevel' => $subject['year_level'],
-                'teacher_subject_id' => $a['teacher_subject_id']
-            ];
-        }
-
-        return $result;
+        return [];
     }
 
     /**
@@ -220,29 +179,21 @@ class TeacherModel extends Model
             return false;
         }
 
-        try {
-            $this->db->beginTransaction();
-
-            // Update teacher record
-            if (!empty($teacherData)) {
-                $this->db->table($this->table)
-                        ->where('id', $id)
-                        ->update($teacherData);
-            }
-
-            // Update user record
-            if (!empty($userData)) {
-                $this->db->table('users')
-                        ->where('id', $teacher['user_id'])
-                        ->update($userData);
-            }
-
-            $this->db->commit();
-            return true;
-        } catch (Exception $e) {
-            $this->db->rollback();
-            throw $e;
+        // Update teacher record
+        if (!empty($teacherData)) {
+            $this->db->table($this->table)
+                    ->where('id', $id)
+                    ->update($teacherData);
         }
+
+        // Update user record
+        if (!empty($userData)) {
+            $this->db->table('users')
+                    ->where('id', $teacher['user_id'])
+                    ->update($userData);
+        }
+
+        return true;
     }
 
     /**
@@ -285,124 +236,92 @@ class TeacherModel extends Model
     }
 
     /**
-     * Assign course to teacher with sections
-     * @param int $teacherId
-     * @param string $courseCode Subject course_code
-     * @param string $sections Comma-separated section names (e.g., "F1,F2,F3")
+     * Get teacher's current assignment for a school year
      */
-    public function assign_course($teacherId, $courseCode, $sections)
+    public function get_current_assignment($teacherId, $schoolYear = null)
     {
-        // Find subject by course_code
-        $subject = $this->db->table('subjects')
-                           ->select('id')
-                           ->where('course_code', $courseCode)
-                           ->get();
-
-        if (empty($subject) || empty($subject['id'])) {
-            return false;
+        if (!$schoolYear) {
+            // Use current school year if not provided
+            $schoolYear = date('Y') . '-' . (date('Y') + 1);
         }
 
-        $subject_id = $subject['id'];
-
-        // Create or get teacher_subject assignment
-        $ts_assignment = $this->db->table('teacher_subjects')
-                                  ->select('id')
-                                  ->where('teacher_id', $teacherId)
-                                  ->where('subject_id', $subject_id)
-                                  ->get();
-
-        if (!empty($ts_assignment) && isset($ts_assignment['id'])) {
-            $ts_id = $ts_assignment['id'];
-        } else {
-            // Insert new teacher_subject
-            $now = date('Y-m-d H:i:s');
-            $insert_result = $this->db->table('teacher_subjects')->insert([
-                'teacher_id' => $teacherId,
-                'subject_id' => $subject_id,
-                'created_at' => $now,
-                'updated_at' => $now
-            ]);
-
-            if (!$insert_result) {
-                return false;
-            }
-
-            $ts_id = $this->db->insert_id();
-        }
-
-        // Clear existing sections for this assignment
-        $this->db->table('teacher_subject_sections')
-                ->where('teacher_subject_id', $ts_id)
-                ->delete();
-
-        // Parse and add sections
-        if (!empty($sections)) {
-            $section_names = explode(',', $sections);
-            foreach ($section_names as $sname) {
-                $sname = trim($sname);
-                if (empty($sname)) continue;
-
-                // Find section by name
-                $section_row = $this->db->table('sections')
-                                       ->select('id')
-                                       ->where('name', $sname)
-                                       ->get();
-
-                if (!empty($section_row) && isset($section_row['id'])) {
-                    $this->db->table('teacher_subject_sections')->insert([
-                        'teacher_subject_id' => $ts_id,
-                        'section_id' => $section_row['id'],
-                        'created_at' => date('Y-m-d H:i:s'),
-                        'updated_at' => date('Y-m-d H:i:s')
-                    ]);
-                }
-            }
-        }
-
-        return true;
+        return $this->db->table('teacher_assignments')
+                        ->where('teacher_id', $teacherId)
+                        ->where('school_year', $schoolYear)
+                        ->get();
     }
 
     /**
-     * Remove course assignment from teacher
-     * Deletes teacher_subject record and related section links
+     * Get all assignments for a teacher
      */
-    public function remove_course_assignment($teacherId, $courseCode)
+    public function get_all_assignments($teacherId)
     {
-        // Find subject by course_code
-        $subject = $this->db->table('subjects')
-                           ->select('id')
-                           ->where('course_code', $courseCode)
-                           ->get();
+        return $this->db->table('teacher_assignments')
+                        ->where('teacher_id', $teacherId)
+                        ->order_by('school_year', 'DESC')
+                        ->get_all();
+    }
 
-        if (empty($subject) || empty($subject['id'])) {
-            return false;
+    /**
+     * Create or update teacher assignment
+     */
+    public function save_assignment($teacherId, $level, $schoolYear = null)
+    {
+        if (!$schoolYear) {
+            $schoolYear = date('Y') . '-' . (date('Y') + 1);
         }
 
-        $subject_id = $subject['id'];
+        // Check if assignment exists
+        $existing = $this->db->table('teacher_assignments')
+                            ->where('teacher_id', $teacherId)
+                            ->where('school_year', $schoolYear)
+                            ->get();
 
-        // Find teacher_subject assignment
-        $ts_assignment = $this->db->table('teacher_subjects')
-                                  ->select('id')
-                                  ->where('teacher_id', $teacherId)
-                                  ->where('subject_id', $subject_id)
-                                  ->get();
+        if (!empty($existing)) {
+            // Update existing assignment
+            return $this->db->table('teacher_assignments')
+                           ->where('id', $existing['id'])
+                           ->update([
+                               'level' => $level,
+                               'updated_at' => date('Y-m-d H:i:s')
+                           ]);
+        } else {
+            // Create new assignment
+            return $this->db->table('teacher_assignments')
+                           ->insert([
+                               'teacher_id' => $teacherId,
+                               'level' => $level,
+                               'school_year' => $schoolYear,
+                               'created_at' => date('Y-m-d H:i:s'),
+                               'updated_at' => date('Y-m-d H:i:s')
+                           ]);
+        }
+    }
 
-        if (empty($ts_assignment) || !isset($ts_assignment['id'])) {
-            return true; // Already removed
+    /**
+     * Get subjects for a specific level
+     */
+    public function get_subjects_for_level($level)
+    {
+        return $this->db->table('subjects')
+                        ->where('level', $level)
+                        ->where('status', 'active')
+                        ->order_by('course_code', 'ASC')
+                        ->get_all();
+    }
+
+    /**
+     * Delete teacher assignment
+     */
+    public function delete_assignment($teacherId, $schoolYear = null)
+    {
+        if (!$schoolYear) {
+            $schoolYear = date('Y') . '-' . (date('Y') + 1);
         }
 
-        $ts_id = $ts_assignment['id'];
-
-        // Delete section links first (foreign key cascade should handle this, but explicit is better)
-        $this->db->table('teacher_subject_sections')
-                ->where('teacher_subject_id', $ts_id)
-                ->delete();
-
-        // Delete teacher_subject assignment
-        $result = $this->db->table('teacher_subjects')
-                          ->where('id', $ts_id)
-                          ->delete();
-
-        return $result;
+        return $this->db->table('teacher_assignments')
+                        ->where('teacher_id', $teacherId)
+                        ->where('school_year', $schoolYear)
+                        ->delete();
     }
 }

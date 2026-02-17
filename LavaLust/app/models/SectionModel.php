@@ -195,4 +195,32 @@ class SectionModel extends Model
                         ->order_by('s.name', 'ASC')
                         ->get_all();
     }
+
+    /**
+     * Insert a new section
+     * Alias for create()
+     */
+    public function insert($data)
+    {
+        return $this->create($data);
+    }
+
+    /**
+     * Update a section
+     * Alias for update_section()
+     */
+    public function update($id, $data)
+    {
+        return $this->update_section($id, $data);
+    }
+
+    /**
+     * Delete a section permanently
+     */
+    public function delete($id)
+    {
+        return $this->db->table($this->table)
+                        ->where('id', $id)
+                        ->delete();
+    }
 }

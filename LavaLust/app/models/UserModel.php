@@ -112,8 +112,9 @@ class UserModel extends Model
             return false;
         }
         
-        // Check if user is active
-        if ($user['status'] !== 'active') {
+        // Check if user is active or pending (enrollees can login with pending status)
+        // Only block inactive users
+        if ($user['status'] === 'inactive') {
             return false;
         }
         
@@ -121,6 +122,10 @@ class UserModel extends Model
         if (password_verify($password, $user['password'])) {
             // Remove password from returned data
             unset($user['password']);
+            
+            // Add payment_pin_set flag based on whether PIN hash exists
+            $user['payment_pin_set'] = !empty($user['payment_pin_hash']);
+            
             return $user;
         }
         
@@ -149,7 +154,7 @@ class UserModel extends Model
     public function get_all($filters = [])
     {
         $query = $this->db->table($this->table)
-                          ->select('id, email, role, first_name, last_name, phone, status, created_at, updated_at');
+                  ->select('id, email, role, first_name, middle_name, last_name, phone, status, created_at, updated_at');
         
         // Apply filters
         if (isset($filters['role']) && $filters['role'] !== 'all') {
@@ -163,7 +168,7 @@ class UserModel extends Model
         // Search functionality
         if (isset($filters['search']) && !empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';
-            $query->where("(first_name LIKE '$search' OR last_name LIKE '$search' OR email LIKE '$search')");
+            $query->where("(first_name LIKE '$search' OR middle_name LIKE '$search' OR last_name LIKE '$search' OR email LIKE '$search')");
         }
         
         // Order by most recent first
@@ -188,14 +193,26 @@ class UserModel extends Model
     }
 
     /**
-     * Generate unique student ID
-     * Format: MCC{year}-{5-digit-number}
-     * Example: MCC2025-00001
+    * Generate unique student ID
+    * Format: MCAF{year}-{4-digit-number}
+    * Example: MCAF2025-0001
      */
     private function generate_student_id()
     {
+        // Determine start year from active academic period when possible
         $year = date('Y');
-        $pattern = 'MCC' . $year . '-%';
+        try {
+            $this->call->model('AcademicPeriodModel');
+            $period = $this->AcademicPeriodModel->get_active_period();
+            if ($period && !empty($period['school_year'])) {
+                $parts = explode('-', $period['school_year']);
+                if (count($parts) > 0) $year = $parts[0];
+            }
+        } catch (Exception $e) {
+            // fallback to current year
+        }
+
+        $pattern = 'MCAF' . $year . '-%';
         
         try {
             error_log("Searching for existing student IDs with pattern: $pattern");
@@ -207,19 +224,19 @@ class UserModel extends Model
             
             error_log("Last student query result: " . json_encode($lastStudent));
             
-            if ($lastStudent && preg_match('/MCC' . $year . '-(\d+)/', $lastStudent['student_id'], $matches)) {
+            if ($lastStudent && preg_match('/MCAF' . $year . '-(\d+)/', $lastStudent['student_id'], $matches)) {
                 $nextNum = intval($matches[1]) + 1;
             } else {
                 $nextNum = 1;
             }
-            
-            $generatedId = 'MCC' . $year . '-' . str_pad($nextNum, 5, '0', STR_PAD_LEFT);
+
+            $generatedId = 'MCAF' . $year . '-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
             error_log("Generated student ID: $generatedId");
             return $generatedId;
         } catch (Exception $e) {
             error_log("Error generating student ID: " . $e->getMessage());
             // Fallback to simple sequential ID
-            return 'MCC' . $year . '-00001';
+            return 'MCAF' . $year . '-0001';
         }
     }
 
@@ -366,30 +383,29 @@ class UserModel extends Model
             
             $studentData = [
                 'user_id' => $userId,
-                'student_id' => $studentId,
                 'year_level' => '1st Year',
                 'status' => 'active'
             ];
 
-            error_log("About to insert student data: " . json_encode($studentData));
-            
-            // Use query builder to insert
-            $result = $this->db->table('students')->insert($studentData);
-            
-            error_log("Insert result type: " . gettype($result) . ", value: " . var_export($result, true));
-            
-            if ($result === false || $result === 0) {
-                error_log("WARNING: Student insert may have failed. Result: " . var_export($result, true));
-                // Try alternative approach - use raw insert
-                error_log("Trying alternative insert method");
-                $query = "INSERT INTO students (user_id, student_id, year_level, status) VALUES (?, ?, ?, ?)";
-                $stmt = $this->db->raw($query, [$userId, $studentId, '1st Year', 'active']);
-                error_log("Alternative insert completed");
-                return true; // Assume success
+            // Use StudentModel safe creation to avoid duplicate IDs
+            try {
+                $this->call->model('StudentModel');
+                $period = null;
+                try { $this->call->model('AcademicPeriodModel'); $period = $this->AcademicPeriodModel->get_active_period(); } catch (Exception $_) {}
+                $startYear = date('Y');
+                if ($period && !empty($period['school_year'])) {
+                    $parts = explode('-', $period['school_year']);
+                    if (count($parts) > 0) $startYear = $parts[0];
+                }
+
+                $created = $this->StudentModel->create_student_with_generated_id($studentData, $startYear);
+                if ($created) return true;
+                error_log("Failed to create student profile via StudentModel for user_id: $userId");
+                return false;
+            } catch (Exception $e) {
+                error_log("EXCEPTION in create_student_profile via StudentModel: " . $e->getMessage());
+                return false;
             }
-            
-            error_log("=== Student profile creation completed successfully ===");
-            return true;
         } catch (Exception $e) {
             error_log("EXCEPTION in create_student_profile: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());

@@ -297,4 +297,23 @@ $config['csrf_token_name']         = 'csrf_test_name';
 $config['csrf_cookie_name']        = 'csrf_cookie_name';
 $config['csrf_expire']             = 7200;
 $config['csrf_regenerate']         = FALSE;
+
+/*
+|--------------------------------------------------------------------------
+| Frontend Portal URL
+|--------------------------------------------------------------------------
+| URL to the frontend portal for email links and redirects
+| Automatically detects environment (development vs production)
+*/
+if ($config['ENVIRONMENT'] === 'development') {
+    $config['portal_url'] = 'http://localhost:5174';
+} else {
+    $config['portal_url'] = 'https://edutrackph.online/ui';
+}
+// Public banner URL used in email templates. Use HTTPS in production.
+if ($config['ENVIRONMENT'] === 'development') {
+    $config['banner_url'] = 'http://localhost:5174/public/email-banner.png';
+} else {
+    $config['banner_url'] = 'https://assets.edutrackph.online/email-banner.png';
+}
 ?>

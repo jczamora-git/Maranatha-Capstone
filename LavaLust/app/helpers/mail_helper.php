@@ -32,24 +32,23 @@ function sendNotif($recipient, $subject, $body, $attachmentPath = null)
         $mail->isSMTP();                                            //Send using SMTP
         $mail->Host       = 'smtp.gmail.com';                       //Set the SMTP server to send through
         $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
-        $mail->Username   = 'jeizi.zamora@gmail.com';               //SMTP username
-        $mail->Password   = 'mhla alsu shwd lfme';                  //SMTP password
+        $mail->Username   = 'mcafcalapan@gmail.com';               //SMTP username
+        $mail->Password   = 'dlhh rsol dhja gyuh';                  //SMTP password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            //Enable implicit TLS encryption
         $mail->Port       = 465;                                    //TCP port to connect to
 
         //Recipients
-        $mail->setFrom('edutrack@mcc.edu.ph', 'EduTrack Notification'); //Set sender
+        $mail->setFrom('mcafcalapan@edu.ph', 'MCAF Notification'); //Set sender
         $mail->addAddress($recipient);                              //Add dynamic recipient
 
-        // Attempt to embed project logo as inline image (CID) so templates can use <img src="cid:edu_logo">
+        // Embed images using CID (Content-ID) for smaller email size
         $projectRoot = dirname(__DIR__, 2); // LavaLust root
-        $logoPath = $projectRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'logo.png';
-        if (file_exists($logoPath)) {
-            try {
-                $mail->addEmbeddedImage($logoPath, 'edu_logo', 'logo.png');
-            } catch (Exception $e) {
-                // If embedding fails, continue without blocking email send
-            }
+        
+        // Embed banner image (ensure inline disposition and explicit mime-type)
+        $bannerPath = $projectRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'email-banner.png';
+        if (file_exists($bannerPath)) {
+            // parameters: path, cid, name, encoding, type, disposition
+            $mail->addEmbeddedImage($bannerPath, 'email_banner', 'email-banner.png', 'base64', 'image/png', 'inline');
         }
 
         //Attachments

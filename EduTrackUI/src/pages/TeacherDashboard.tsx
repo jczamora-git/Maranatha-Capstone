@@ -2,13 +2,14 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Users, FileText, TrendingUp, Plus, Award, QrCode } from "lucide-react";
+import { BookOpen, Users, FileText, Award, QrCode } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import { useNotificationContext } from "@/context/NotificationContext";
+import { FEATURES } from "@/config/features";
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
@@ -25,10 +26,85 @@ const TeacherDashboard = () => {
     avgGrade: 0
   });
   const [loading, setLoading] = useState(true);
+  const [adviserLevels, setAdviserLevels] = useState<string[]>([]);
+  const isTeacherAdviser = adviserLevels.length > 0;
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAdviserLevels = async () => {
+      if (user?.role !== "teacher") return;
+
+      try {
+        const cached = localStorage.getItem('adviserLevels');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAdviserLevels(parsed.map(String));
+          }
+        }
+      } catch (e) {
+        // ignore cache errors
+      }
+
+      try {
+        const res = await apiGet(API_ENDPOINTS.TEACHER_ADVISER_LEVELS);
+        const levels = res && Array.isArray(res.levels) ? res.levels : [];
+        if (!cancelled) {
+          const normalized = levels.map((lvl: any) => String(lvl));
+          setAdviserLevels(normalized);
+          try {
+            localStorage.setItem('adviserLevels', JSON.stringify(normalized));
+            localStorage.setItem('isTeacherAdviser', normalized.length > 0 ? 'true' : 'false');
+          } catch (err) {
+            // ignore storage errors
+          }
+        }
+      } catch (e) {
+        // ignore fetch errors
+      }
+    };
+
+    loadAdviserLevels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadEnrollmentCount = async () => {
+      if (!isTeacherAdviser || adviserLevels.length === 0) {
+        setEnrollmentCount(0);
+        return;
+      }
+
+      try {
+        const results = await Promise.all(
+          adviserLevels.map((level) => apiGet(API_ENDPOINTS.ADVISER_ENROLLMENTS(String(level))))
+        );
+        const total = results.reduce((sum, res) => {
+          const list = res.data ?? res.enrollments ?? res ?? [];
+          return sum + (Array.isArray(list) ? list.length : 0);
+        }, 0);
+        if (!cancelled) setEnrollmentCount(total);
+      } catch (e) {
+        if (!cancelled) setEnrollmentCount(0);
+      }
+    };
+
+    loadEnrollmentCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isTeacherAdviser, adviserLevels]);
 
   // Fetch announcements and seed global notifications
   useEffect(() => {
@@ -80,11 +156,11 @@ const TeacherDashboard = () => {
     try {
       setLoading(true);
 
-      // Fetch teacher's courses using assigned_courses which has students_count
-      const coursesRes = await apiGet(`${API_ENDPOINTS.TEACHER_ASSIGNMENTS}/my`);
-      const assignedCourses = coursesRes.assigned_courses ?? [];
+      // Fetch teacher's assigned subjects (teacher_subject_assignments)
+      const coursesRes = await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
+      const assignedCourses = Array.isArray(coursesRes?.subjects) ? coursesRes.subjects : [];
 
-      if (!Array.isArray(assignedCourses) || assignedCourses.length === 0) {
+      if (assignedCourses.length === 0) {
         setCourses([]);
         setRecentActivities([]);
         setRecentGrades([]);
@@ -93,18 +169,24 @@ const TeacherDashboard = () => {
         return;
       }
 
-      // Get all course IDs (teacher_subject_id) for fetching activities
-      const courseIds = assignedCourses.map((c: any) => c.teacher_subject_id ?? c.id);
-      
-      // Calculate total students from sections' students_count
-      let totalStudents = 0;
-      assignedCourses.forEach((course: any) => {
-        if (Array.isArray(course.sections)) {
-          course.sections.forEach((sec: any) => {
-            totalStudents += sec.students_count ?? 0;
-          });
+      // Map year levels to student counts for totals and activity stats
+      const levels = Array.from(
+        new Set(assignedCourses.map((c: any) => c.level ?? c.subject_level ?? c.year_level).filter(Boolean))
+      );
+      const studentsByLevel = new Map<string, number>();
+      await Promise.all(levels.map(async (level) => {
+        try {
+          const studentsRes = await apiGet(`${API_ENDPOINTS.STUDENTS}?year_level=${encodeURIComponent(String(level))}`);
+          const list = studentsRes.data ?? studentsRes.students ?? studentsRes ?? [];
+          studentsByLevel.set(String(level), Array.isArray(list) ? list.length : 0);
+        } catch (e) {
+          studentsByLevel.set(String(level), 0);
         }
-      });
+      }));
+      const totalStudents = Array.from(studentsByLevel.values()).reduce((sum, count) => sum + count, 0);
+
+      // Get all course IDs (subject IDs) for fetching activities
+      const courseIds = assignedCourses.map((c: any) => c.subject_id ?? c.id);
 
       // Fetch activities for teacher's courses using the optimized endpoint
       let allActivities: any[] = [];
@@ -125,32 +207,26 @@ const TeacherDashboard = () => {
 
       // Process courses with stats
       const coursesWithStats = assignedCourses.map((course: any) => {
-        const courseId = course.teacher_subject_id ?? course.id;
-        
-        // Count students across all sections
-        let studentCount = 0;
-        if (Array.isArray(course.sections)) {
-          course.sections.forEach((sec: any) => {
-            studentCount += sec.students_count ?? 0;
-          });
-        }
+        const courseId = course.subject_id ?? course.id;
+        const level = course.level ?? course.subject_level ?? course.year_level ?? '';
+        const studentCount = studentsByLevel.get(String(level)) ?? 0;
 
         // Count activities for this course
         const courseActivities = teacherActivities.filter((a: any) => {
-          const actCourseId = a.course_id ?? a.teacher_subject_id;
+          const actCourseId = a.course_id ?? a.teacher_subject_id ?? a.subject_id;
           return String(actCourseId) === String(courseId);
         });
 
         return {
           id: courseId,
           subject_id: course.subject_id ?? course.id,
-          name: course.course_name ?? 'N/A',
-          code: course.course_code ?? '',
+          name: course.name ?? course.subject_name ?? course.course_name ?? 'N/A',
+          code: course.course_code ?? course.code ?? '',
           students: studentCount,
           activities: courseActivities.length,
-          avgGrade: 0, // Will calculate if needed
+          avgGrade: 0,
           sections: course.sections ?? [],
-          year_level: course.year_level
+          year_level: level
         };
       });
 
@@ -164,17 +240,14 @@ const TeacherDashboard = () => {
       const recentWithStats = sortedActivities.map((activity: any) => {
         // Find the course for this activity
         const course = assignedCourses.find((c: any) => {
-          const courseId = c.teacher_subject_id ?? c.id;
-          const actCourseId = activity.course_id ?? activity.teacher_subject_id;
+          const courseId = c.subject_id ?? c.id;
+          const actCourseId = activity.course_id ?? activity.teacher_subject_id ?? activity.subject_id;
           return String(courseId) === String(actCourseId);
         });
 
-        // Get total students for the activity's section
-        let totalForActivity = 0;
-        if (course && Array.isArray(course.sections)) {
-          const actSection = course.sections.find((s: any) => String(s.id) === String(activity.section_id));
-          totalForActivity = actSection?.students_count ?? 0;
-        }
+        // Total students for this activity is all students in the year level
+        const level = course?.level ?? course?.subject_level ?? course?.year_level ?? '';
+        const totalForActivity = studentsByLevel.get(String(level)) ?? totalStudents;
 
         // Use graded_count from the optimized endpoint
         const gradedCount = activity.graded_count ?? 0;
@@ -182,7 +255,7 @@ const TeacherDashboard = () => {
         return {
           id: activity.id,
           course: course?.course_name ?? 'N/A',
-          courseId: course?.teacher_subject_id ?? course?.id,
+          courseId: course?.subject_id ?? course?.id,
           activity: activity.title ?? activity.name ?? 'Untitled',
           submitted: gradedCount,
           total: totalForActivity,
@@ -260,6 +333,53 @@ const TeacherDashboard = () => {
     }
   };
 
+  const overviewCards = [
+    {
+      key: "courses",
+      title: "Total Courses",
+      value: loading ? "..." : stats.totalCourses,
+      icon: BookOpen,
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
+      visible: true,
+    },
+    {
+      key: "students",
+      title: "Total Students",
+      value: loading ? "..." : stats.totalStudents,
+      icon: Users,
+      iconBg: "bg-accent/10",
+      iconColor: "text-accent",
+      visible: true,
+    },
+    {
+      key: "activities",
+      title: "Activities",
+      value: loading ? "..." : stats.totalActivities,
+      icon: FileText,
+      iconBg: "bg-success/10",
+      iconColor: "text-success",
+      visible: FEATURES.activities,
+    },
+    {
+      key: "enrollments",
+      title: "Enrollment Records",
+      value: loading ? "..." : enrollmentCount,
+      icon: FileText,
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-700",
+      visible: isTeacherAdviser,
+    },
+  ];
+
+  const visibleOverviewCards = overviewCards.filter((card) => card.visible);
+  const overviewColsClass =
+    visibleOverviewCards.length >= 4
+      ? "md:grid-cols-4"
+      : visibleOverviewCards.length === 3
+      ? "md:grid-cols-3"
+      : "md:grid-cols-2";
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -267,15 +387,14 @@ const TeacherDashboard = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/" className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              EduTrack
+              Maranatha Christian Academy
             </Link>
-            <Badge className="bg-accent text-accent-foreground">Teacher</Badge>
+            <Badge className="bg-accent text-accent-foreground">
+              {isTeacherAdviser ? `Adviser of ${adviserLevels[0]}` : "Teacher"}
+            </Badge>
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell />
-            <div className="text-right">
-              <p className="text-sm font-medium">{user?.name}</p>
-            </div>
           </div>
         </div>
       </header>
@@ -290,48 +409,25 @@ const TeacherDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Courses</p>
-                  <p className="text-2xl font-bold">{loading ? '...' : stats.totalCourses}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Students</p>
-                  <p className="text-2xl font-bold">{loading ? '...' : stats.totalStudents}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Activities</p>
-                  <p className="text-2xl font-bold">{loading ? '...' : stats.totalActivities}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className={`grid ${overviewColsClass} gap-6 mb-8`}>
+          {visibleOverviewCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Card key={card.key}>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-lg ${card.iconBg} flex items-center justify-center`}>
+                      <Icon className={`h-6 w-6 ${card.iconColor}`} />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">{card.title}</p>
+                      <p className="text-2xl font-bold">{card.value}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -374,11 +470,13 @@ const TeacherDashboard = () => {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to={`/teacher/courses/${course.id}`}>View Details</Link>
-                        </Button>
-                      </div>
+                      {FEATURES.courseManagement && (
+                        <div className="flex gap-2 mt-4">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to={`/teacher/courses/${course.id}`}>View Details</Link>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -386,39 +484,41 @@ const TeacherDashboard = () => {
             </Card>
 
             {/* Recent Activities */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activities</CardTitle>
-                <CardDescription>Latest submissions and assessments</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading activities...</div>
-                ) : recentActivities.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">No recent activities</div>
-                ) : (
-                  recentActivities.map((activity) => (
-                    <div key={activity.id} className="p-4 border border-border rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-medium">{activity.activity}</p>
-                          <p className="text-sm text-muted-foreground">{activity.course}</p>
+            {FEATURES.activities && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Activities</CardTitle>
+                  <CardDescription>Latest submissions and assessments</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loading ? (
+                    <div className="text-center py-8 text-muted-foreground">Loading activities...</div>
+                  ) : recentActivities.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">No recent activities</div>
+                  ) : (
+                    recentActivities.map((activity) => (
+                      <div key={activity.id} className="p-4 border border-border rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-medium">{activity.activity}</p>
+                            <p className="text-sm text-muted-foreground">{activity.course}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{activity.date}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">{activity.date}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-muted-foreground">
+                            Graded: {activity.submitted}/{activity.total}
+                          </p>
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to={`/teacher/courses/${activity.courseId}/activities/${activity.id}${activity.sectionId ? `?section_id=${activity.sectionId}` : ''}`}>View</Link>
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                          Graded: {activity.submitted}/{activity.total}
-                        </p>
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to={`/teacher/courses/${activity.courseId}/activities/${activity.id}${activity.sectionId ? `?section_id=${activity.sectionId}` : ''}`}>View</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -429,56 +529,72 @@ const TeacherDashboard = () => {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/teacher/grades">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Grade Input
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/teacher/courses">
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Manage Courses
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/teacher/attendance-qr">
-                    <QrCode className="h-4 w-4 mr-2" />
-                    Attendance
-                  </Link>
-                </Button>
+                {isTeacherAdviser && FEATURES.enrollment && FEATURES.adviserEnrollment && (
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link to="/admin/enrollments">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Enrollments
+                    </Link>
+                  </Button>
+                )}
+                {FEATURES.grading && (
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link to="/teacher/grades">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Grade Input
+                    </Link>
+                  </Button>
+                )}
+                {FEATURES.courses && (
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link to="/teacher/courses">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Manage Courses
+                    </Link>
+                  </Button>
+                )}
+                {FEATURES.attendance && (
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link to="/teacher/attendance">
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Attendance
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
             {/* Recent Grades */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Recent Grades
-                </CardTitle>
-                <CardDescription>Latest graded submissions</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {loading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
-                ) : recentGrades.length === 0 ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">No recent grades</div>
-                ) : (
-                  recentGrades.map((grade, idx) => (
-                    <div key={idx} className="p-3 bg-muted rounded-lg">
-                      <div className="flex items-start justify-between mb-1">
-                        <p className="font-medium text-sm truncate flex-1">{grade.studentName}</p>
-                        <Badge className="text-xs bg-success/10 text-success">
-                          {grade.grade}/{grade.maxScore}
-                        </Badge>
+            {FEATURES.grading && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Recent Grades
+                  </CardTitle>
+                  <CardDescription>Latest graded submissions</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loading ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
+                  ) : recentGrades.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">No recent grades</div>
+                  ) : (
+                    recentGrades.map((grade, idx) => (
+                      <div key={idx} className="p-3 bg-muted rounded-lg">
+                        <div className="flex items-start justify-between mb-1">
+                          <p className="font-medium text-sm truncate flex-1">{grade.studentName}</p>
+                          <Badge className="text-xs bg-success/10 text-success">
+                            {grade.grade}/{grade.maxScore}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{grade.activity}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{grade.activity}</p>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

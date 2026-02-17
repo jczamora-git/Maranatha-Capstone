@@ -8,6 +8,7 @@ class UserController extends Controller
         parent::__construct();
         $this->call->database();
         $this->call->model('UserModel');
+        $this->call->model('AcademicPeriodModel');
         $this->call->library('session');
     }
 
@@ -18,6 +19,7 @@ class UserController extends Controller
                 'email' => $this->io->post('email'),
                 'password' => $this->io->post('password'),
                 'first_name' => $this->io->post('first_name'),
+                'middle_name' => $this->io->post('middle_name'),
                 'last_name' => $this->io->post('last_name'),
                 'phone' => $this->io->post('phone'),
                 'role' => $this->io->post('role', 'student'),
@@ -148,6 +150,7 @@ class UserController extends Controller
             $email = $json_data['email'] ?? '';
             $password = $json_data['password'] ?? '';
             $first_name = $json_data['first_name'] ?? '';
+            $middle_name = $json_data['middle_name'] ?? '';
             $last_name = $json_data['last_name'] ?? '';
             $phone = $json_data['phone'] ?? '';
             $role = $json_data['role'] ?? 'student';
@@ -193,14 +196,18 @@ class UserController extends Controller
             }
             
             // Prepare user data
+            // Both students and enrollees need email verification
+            $userStatus = 'pending';
+            
             $userData = [
                 'email' => $email,
                 'password' => $password,
                 'first_name' => $first_name,
+                'middle_name' => $middle_name,
                 'last_name' => $last_name,
                 'phone' => $phone,
                 'role' => $role,
-                'status' => 'active'
+                'status' => $userStatus // All users: pending until email verified
             ];
             
             // Create user
@@ -210,44 +217,55 @@ class UserController extends Controller
                 // If role is student, create student profile with auto-generated ID
                 if ($role === 'student') {
                     $this->call->model('StudentModel');
-                    
-                    // Generate student ID using current year
+
+                    // Determine start year from active academic period
+                    $period = $this->AcademicPeriodModel->get_active_period();
                     $currentYear = date('Y');
-                    $studentId = $this->StudentModel->generate_student_id($currentYear);
+                    if ($period && !empty($period['school_year'])) {
+                        $parts = explode('-', $period['school_year']);
+                        if (count($parts) > 0) $currentYear = $parts[0];
+                    }
                     
-                    // Create student record
+                    // Create student record with auto-generated ID
                     $studentData = [
                         'user_id' => $userId,
-                        'student_id' => $studentId,
                         'year_level' => 1, // Default to first year
                         'section_id' => null,
-                        'status' => 'active',
-                        'created_at' => date('Y-m-d H:i:s'),
+                        'status' => 'pending', // Pending until verified
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
                     
-                    $studentCreated = $this->db->table('students')->insert($studentData);
-                    
-                    if (!$studentCreated) {
-                        // Log the error but don't fail the registration
+                    // Use StudentModel safe creation to avoid duplicate IDs under concurrency
+                    $createdStudent = $this->StudentModel->create_student_with_generated_id($studentData, $currentYear);
+                    if (!$createdStudent) {
                         error_log('Failed to create student profile for user ID: ' . $userId);
                     }
                 }
                 
-                // Send welcome email
+                // Handle verification - all users need email verification
+                // But enrollees will verify through the dashboard, not automatically
                 $this->call->helper('mail');
                 $this->call->helper('email_templates');
+                $this->call->helper('token');
                 
-                $welcomeSubject = 'Welcome to Mindoro State University Portal - EduTrack PH';
-                $portalUrl = 'http://localhost:5174/auth';
-                $logoUrl = 'http://localhost:5174/logo.png';
-                $welcomeBody = generate_welcome_email($first_name, $email, $role, $portalUrl, $logoUrl);
+                // Only send verification email for non-enrollee roles
+                // Enrollees will manually trigger verification from their dashboard
+                $emailResult = ['success' => true, 'message' => 'Email not sent for enrollees (manual trigger)'];
                 
-                $emailResult = sendNotif($email, $welcomeSubject, $welcomeBody);
-                
-                if (!$emailResult['success']) {
-                    // Log email failure but don't fail the registration
-                    error_log('Failed to send welcome email to: ' . $email . ' - ' . $emailResult['message']);
+                if ($role !== 'enrollee') {
+                    // Generate verification URL with encrypted token
+                    $portalUrl = config_item('portal_url');
+                    $verificationUrl = generate_verification_url($userId, $email, $portalUrl);
+                    
+                    $verificationSubject = 'Verify Your Email - Maranatha';
+                    $verificationBody = generate_verification_email($first_name, $verificationUrl, 24);
+                    
+                    $emailResult = sendNotif($email, $verificationSubject, $verificationBody);
+                    
+                    if (!$emailResult['success']) {
+                        // Log email failure but don't fail the registration
+                        error_log('Failed to send verification email to: ' . $email . ' - ' . $emailResult['message']);
+                    }
                 }
                 
                 // Get user data (without password)
@@ -257,10 +275,11 @@ class UserController extends Controller
                 http_response_code(201);
                 echo json_encode([
                     'success' => true,
-                    'message' => 'User registered successfully',
+                    'message' => 'Account created successfully! Please check your email to verify your account.',
+                    'requires_verification' => true,
                     'user' => $user,
-                    'email_result' => $emailResult // include email send result for frontend
-                ]);
+                    'email_result' => $emailResult
+                    ]);
             } else {
                 http_response_code(500);
                 echo json_encode([
@@ -297,6 +316,22 @@ class UserController extends Controller
                 echo json_encode([
                     'success' => false,
                     'message' => 'Email and password are required'
+                ]);
+                return;
+            }
+            
+            // First check if user exists and get their status
+            $userCheck = $this->UserModel->find_by_email($email);
+            
+            if ($userCheck && $userCheck['status'] === 'pending' && $userCheck['role'] !== 'enrollee') {
+                // User exists but email not verified (block non-enrollees)
+                // Enrollees are allowed to login with pending status
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Please verify your email address before logging in. Check your inbox for the verification link.',
+                    'requires_verification' => true,
+                    'email' => $email
                 ]);
                 return;
             }
@@ -338,6 +373,368 @@ class UserController extends Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Check if a student email exists and if password is set
+     * POST /api/auth/check-student
+     */
+    public function api_check_student()
+    {
+        api_set_json_headers();
+        
+        try {
+            // Get raw POST data
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+            
+            $email = $json_data['email'] ?? $this->io->post('email');
+            
+            if (empty($email)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email is required'
+                ]);
+                return;
+            }
+            
+            // Find user by email
+            $user = $this->UserModel->find_by_email($email);
+            
+            if (!$user || $user['role'] !== 'student') {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Student account not found with this email'
+                ]);
+                return;
+            }
+            
+            // Check if password is set (not empty/null)
+            $passwordIsSet = !empty($user['password']);
+            
+            // Get student details with section name using JOIN
+            $studentId = null;
+            $yearLevel = null;
+            $sectionName = null;
+            
+            $query = "SELECT s.student_id, s.year_level, sec.name AS section_name 
+                     FROM students s 
+                     LEFT JOIN sections sec ON s.section_id = sec.id 
+                     WHERE s.user_id = ?";
+            
+            $studentResults = $this->db->raw($query, [$user['id']])->fetchAll(\PDO::FETCH_ASSOC);
+            
+            if (is_array($studentResults) && isset($studentResults[0])) {
+                $studentData = $studentResults[0];
+                $studentId = $studentData['student_id'] ?? null;
+                $yearLevel = $studentData['year_level'] ?? null;
+                $sectionName = $studentData['section_name'] ?? null;
+            }
+            
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Student account found',
+                'student_found' => true,
+                'password_set' => $passwordIsSet,
+                'user_id' => $user['id'],
+                'email' => $user['email'],
+                'first_name' => $user['first_name'],
+                'last_name' => $user['last_name'],
+                'student_id' => $studentId,
+                'year_level' => $yearLevel,
+                'section' => $sectionName
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Set password for a student (first-time setup)
+     * POST /api/auth/set-password
+     */
+    public function api_set_password()
+    {
+        api_set_json_headers();
+        
+        try {
+            // Get raw POST data
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+            
+            $email = $json_data['email'] ?? $this->io->post('email');
+            $password = $json_data['password'] ?? $this->io->post('password');
+            
+            // Validation
+            if (empty($email) || empty($password)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email and password are required'
+                ]);
+                return;
+            }
+            
+            // Check password length
+            if (strlen($password) < 6) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Password must be at least 6 characters long'
+                ]);
+                return;
+            }
+            
+            // Find user by email
+            $user = $this->UserModel->find_by_email($email);
+            
+            if (!$user || $user['role'] !== 'student') {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Student account not found with this email'
+                ]);
+                return;
+            }
+            
+            // Update password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $updated = $this->UserModel->update($user['id'], [
+                'password' => $hashedPassword
+            ]);
+            
+            if (!$updated) {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to set password. Please try again.'
+                ]);
+                return;
+            }
+            
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Password set successfully',
+                'user' => [
+                    'id' => $user['id'],
+                    'email' => $user['email'],
+                    'role' => $user['role'],
+                    'first_name' => $user['first_name'],
+                    'last_name' => $user['last_name']
+                ]
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Verify email address using encrypted token
+     * GET /api/users/verify-email?token=xxx
+     */
+    public function api_verify_email()
+    {
+        api_set_json_headers();
+        
+        try {
+            $token = $_GET['token'] ?? '';
+            
+            if (empty($token)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Verification token is required'
+                ]);
+                return;
+            }
+            
+            // Load token helper and verify
+            $this->call->helper('token');
+            $payload = verify_token($token);
+            
+            if (!$payload) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid or expired verification link. Please request a new one.'
+                ]);
+                return;
+            }
+            
+            $userId = $payload['user_id'];
+            $email = $payload['email'];
+            
+            error_log('Email verification attempt - User ID: ' . $userId . ', Email: ' . $email);
+            
+            // Find the user
+            $user = $this->UserModel->find_by_id($userId);
+            
+            if (!$user) {
+                error_log('User not found for ID: ' . $userId . '. Token payload: ' . json_encode($payload));
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'User not found'
+                ]);
+                return;
+            }
+            
+            // Verify email matches
+            if ($user['email'] !== $email) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email mismatch. Please request a new verification link.'
+                ]);
+                return;
+            }
+            
+            // Check if already verified
+            if ($user['status'] === 'active') {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Email already verified. You can now log in.',
+                    'already_verified' => true,
+                    'user' => [
+                        'email' => $user['email'],
+                        'first_name' => $user['first_name'],
+                        'role' => $user['role']
+                    ]
+                ]);
+                return;
+            }
+            
+            // Update user status to active
+            $updated = $this->UserModel->update_user($userId, ['status' => 'active']);
+            
+            if (!$updated) {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to verify email. Please try again.'
+                ]);
+                return;
+            }
+            
+            // Also update student record if exists
+            $this->db->table('students')
+                ->where('user_id', $userId)
+                ->update(['status' => 'active', 'updated_at' => date('Y-m-d H:i:s')]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Email verified successfully! You can now set your password.',
+                'user' => [
+                    'email' => $user['email'],
+                    'first_name' => $user['first_name'],
+                    'role' => $user['role']
+                ]
+            ]);
+            
+        } catch (Exception $e) {
+            error_log('Email verification error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Resend verification email
+     * POST /api/users/resend-verification
+     */
+    public function api_resend_verification()
+    {
+        api_set_json_headers();
+        
+        try {
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+            
+            $email = $json_data['email'] ?? '';
+            
+            if (empty($email)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email is required'
+                ]);
+                return;
+            }
+            
+            error_log('Resend verification requested for email: ' . $email);
+            
+            // Find the user
+            $user = $this->UserModel->find_by_email($email);
+            
+            if (!$user) {
+                error_log('User not found for email: ' . $email);
+                // Don't reveal if email exists for security
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'If this email is registered, a verification link has been sent.'
+                ]);
+                return;
+            }
+            
+            error_log('Found user for email: ' . $email . ', User ID: ' . $user['id']);
+            
+            // Check if already verified
+            if ($user['status'] === 'active') {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'This email is already verified. You can log in.',
+                    'already_verified' => true
+                ]);
+                return;
+            }
+            
+            // Send new verification email
+            $this->call->helper('mail');
+            $this->call->helper('email_templates');
+            $this->call->helper('token');
+            
+            $portalUrl = config_item('portal_url');
+            error_log('Portal URL: ' . $portalUrl);
+            $verificationUrl = generate_verification_url($user['id'], $email, $portalUrl);
+            error_log('Generated verification URL: ' . $verificationUrl);
+            
+            $verificationSubject = 'Verify Your Email - EduTrack PH';
+            $verificationBody = generate_verification_email($user['first_name'], $verificationUrl, 24);
+            
+            $emailResult = sendNotif($email, $verificationSubject, $verificationBody);
+            error_log('Email send result: ' . json_encode($emailResult));
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Verification email sent! Please check your inbox.',
+                'email_sent' => $emailResult['success']
+            ]);
+            
+        } catch (Exception $e) {
+            error_log('Resend verification error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error'
             ]);
         }
     }
@@ -406,16 +803,30 @@ class UserController extends Controller
         
         $isAuthenticated = $this->session->userdata('logged_in') === true;
         
-        echo json_encode([
-            'success' => true,
-            'authenticated' => $isAuthenticated,
-            'user' => $isAuthenticated ? [
+        $userData = null;
+        if ($isAuthenticated) {
+            $user_id = $this->session->userdata('user_id');
+            // Fetch full user data to include payment_pin_set
+            $user = $this->db->select('*')
+                ->from('users')
+                ->where('id', $user_id)
+                ->get()
+                ->row();
+            
+            $userData = [
                 'id' => $this->session->userdata('user_id'),
                 'email' => $this->session->userdata('email'),
                 'role' => $this->session->userdata('role'),
                 'first_name' => $this->session->userdata('first_name'),
-                'last_name' => $this->session->userdata('last_name')
-            ] : null
+                'last_name' => $this->session->userdata('last_name'),
+                'payment_pin_set' => $user && !empty($user->payment_pin_hash)
+            ];
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'authenticated' => $isAuthenticated,
+            'user' => $userData
         ]);
     }
 
@@ -567,6 +978,7 @@ class UserController extends Controller
             // Extract and validate data
             $email = $json_data['email'] ?? '';
             $first_name = $json_data['firstName'] ?? '';
+            $middle_name = $json_data['middleName'] ?? '';
             $last_name = $json_data['lastName'] ?? '';
             $role = $json_data['role'] ?? 'student';
             $phone = $json_data['phone'] ?? '';
@@ -617,6 +1029,7 @@ class UserController extends Controller
                 'email' => $email,
                 'password' => $password,
                 'first_name' => $first_name,
+                'middle_name' => $middle_name,
                 'last_name' => $last_name,
                 'phone' => $phone,
                 'role' => $role,
@@ -691,6 +1104,7 @@ class UserController extends Controller
             // Extract data
             $email = $json_data['email'] ?? '';
             $first_name = $json_data['firstName'] ?? '';
+            $middle_name = $json_data['middleName'] ?? '';
             $last_name = $json_data['lastName'] ?? '';
             $role = $json_data['role'] ?? '';
             $status = $json_data['status'] ?? '';
@@ -730,6 +1144,7 @@ class UserController extends Controller
             $updateData = [
                 'email' => $email,
                 'first_name' => $first_name,
+                'middle_name' => $middle_name,
                 'last_name' => $last_name,
                 'phone' => $phone
             ];
@@ -896,9 +1311,10 @@ class UserController extends Controller
             $this->call->helper('mail');
             $this->call->helper('email_templates');
 
-            $resetUrl = sprintf('http://localhost:5174/auth/reset?token=%s', $token);
-            $logoUrl = 'http://localhost:5174/logo.png';
-            $subject = 'EduTrack Password Reset Request';
+            $portalUrl = config_item('portal_url');
+            $resetUrl = sprintf('%s/auth/reset?token=%s', $portalUrl, $token);
+            $logoUrl = $portalUrl . '/logo.png';
+            $subject = 'Password Reset Request - Maranatha';
             $body = generate_password_reset_email($user['first_name'] ?? $user['email'], $resetUrl, $logoUrl);
 
             $emailResult = sendNotif($email, $subject, $body);
@@ -1049,6 +1465,204 @@ class UserController extends Controller
     }
 
     /**
+     * API: Request PIN reset
+     * POST /api/auth/request-pin-reset
+     * Body JSON: { email }
+     */
+    public function api_request_pin_reset()
+    {
+        api_set_json_headers();
+
+        try {
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+
+            $email = isset($json_data['email']) ? trim($json_data['email']) : '';
+
+            if (empty($email)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Email is required.']);
+                return;
+            }
+
+            // Validate email format
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid email format.']);
+                return;
+            }
+
+            // Check if user exists
+            $user = $this->db->table('users')->where('email', $email)->get();
+
+            // For security, always return success to prevent email enumeration
+            // Only send email if user actually exists
+            if ($user) {
+                // Generate reset token
+                $token = bin2hex(random_bytes(16));
+                $expiresAt = date('Y-m-d H:i:s', time() + 86400); // 24 hours
+
+                // Delete any existing PIN reset tokens for this email
+                $this->db->table('password_resets')
+                    ->where('email', $email)
+                    ->where('type', 'pin')
+                    ->delete();
+
+                // Insert new token record (reuse password_resets table with type field)
+                $inserted = $this->db->table('password_resets')->insert([
+                    'email' => $email,
+                    'token' => $token,
+                    'type' => 'pin',
+                    'expires_at' => $expiresAt,
+                    'used' => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+
+                if (!$inserted) {
+                    error_log('Failed to insert PIN reset token for: ' . $email);
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'message' => 'Failed to create reset token.']);
+                    return;
+                }
+
+                // Get portal URL from config
+                $portalUrl = rtrim(config_item('portal_url') ?: 'http://localhost:5173', '/');
+                
+                // Generate reset URL
+                $resetUrl = sprintf('%s/auth/reset-pin?token=%s', $portalUrl, $token);
+
+                // Get logo URL
+                $logoUrl = $portalUrl . '/assets/images/mcc-logo.png';
+
+                // Generate email HTML using helper
+                $this->call->helper('mail');
+                $this->call->helper('email_templates');
+                $emailBody = generate_pin_reset_email($user['first_name'], $resetUrl, $logoUrl);
+
+                // Send email
+                sendNotif($email, 'Reset Your Payment PIN - EduTrack', $emailBody);
+
+                error_log('PIN reset email sent to: ' . $email);
+            } else {
+                error_log('PIN reset requested for non-existent email: ' . $email);
+                // Don't reveal that email doesn't exist
+            }
+
+            // Always return success for security
+            echo json_encode([
+                'success' => true,
+                'message' => 'If your email is registered, you will receive PIN reset instructions shortly.'
+            ]);
+        } catch (Exception $e) {
+            error_log('Exception in api_request_pin_reset: ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error occurred.']);
+        }
+    }
+
+    /**
+     * API: Reset PIN using token
+     * POST /api/auth/reset-pin
+     * Body JSON: { token, new_pin }
+     */
+    public function api_reset_pin()
+    {
+        api_set_json_headers();
+
+        try {
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+
+            $token = isset($json_data['token']) ? trim($json_data['token']) : '';
+            $newPin = isset($json_data['new_pin']) ? trim($json_data['new_pin']) : '';
+
+            // Validate inputs
+            if (empty($token) || empty($newPin)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token and new PIN are required.']);
+                return;
+            }
+
+            // Validate PIN format (4-6 digits)
+            if (!preg_match('/^\d{4,6}$/', $newPin)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'PIN must be 4-6 digits.']);
+                return;
+            }
+
+            // Find token record
+            $reset = $this->db->table('password_resets')
+                ->where('token', $token)
+                ->where('type', 'pin')
+                ->get();
+
+            if (!$reset) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid or expired token.']);
+                return;
+            }
+
+            // Check if token is expired
+            $now = new DateTime();
+            $expiresAt = new DateTime($reset['expires_at']);
+
+            if ($now > $expiresAt) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Reset token has expired.']);
+                return;
+            }
+
+            // Check if already used
+            if ($reset['used'] == 1) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Reset token has already been used.']);
+                return;
+            }
+
+            // Find user by email
+            $user = $this->db->table('users')->where('email', $reset['email'])->get();
+
+            if (!$user) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'User not found.']);
+                return;
+            }
+
+            // Hash the new PIN
+            $hashedPin = password_hash($newPin, PASSWORD_BCRYPT);
+
+            // Update user's PIN
+            $updated = $this->db->table('users')->where('id', $user['id'])->update([
+                'payment_pin_hash' => $hashedPin,
+                'payment_pin_set_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            if (!$updated) {
+                error_log('Failed to update PIN for user ID: ' . $user['id']);
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to update PIN.']);
+                return;
+            }
+
+            // Mark token as used
+            $this->db->table('password_resets')->where('id', $reset['id'])->update([
+                'used' => 1,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            error_log('PIN reset successfully for user ID: ' . $user['id']);
+
+            echo json_encode(['success' => true, 'message' => 'PIN reset successfully.']);
+        } catch (Exception $e) {
+            error_log('Exception in api_reset_pin: ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error occurred.']);
+        }
+    }
+
+    /**
      * Send welcome email to newly created user
      * POST /api/auth/send-welcome-email
      */
@@ -1097,7 +1711,7 @@ class UserController extends Controller
             $emailBody = generate_welcome_email_with_credentials($firstName, $email, $role, $password, $portalUrl);
 
             // Send email
-            $result = sendNotif($email, 'Your EduTrack Account Has Been Created', $emailBody);
+            $result = sendNotif($email, 'Your Account Has Been Created - Maranatha', $emailBody);
 
             if ($result['success']) {
                 http_response_code(200);
@@ -1268,6 +1882,207 @@ class UserController extends Controller
 
             http_response_code(200);
             echo json_encode(['success' => true, 'results' => $results]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * API: Setup Payment PIN
+     * POST /api/auth/setup-payment-pin
+     */
+    public function api_setup_payment_pin()
+    {
+        api_set_json_headers();
+        try {
+            // Check if user is authenticated
+            $user_id = $this->session->userdata('user_id');
+            if (!$user_id || !$this->session->userdata('logged_in')) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            // Get raw POST data and decode JSON (like api_login does)
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+            
+            $payment_pin = $json_data['payment_pin'] ?? $this->io->post('payment_pin');
+
+            // Validate PIN format
+            if (empty($payment_pin)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'PIN is required']);
+                return;
+            }
+
+            if (!preg_match('/^\d{4,6}$/', $payment_pin)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'PIN must be 4-6 digits']);
+                return;
+            }
+
+            // Hash the PIN using bcrypt
+            $pin_hash = password_hash($payment_pin, PASSWORD_BCRYPT, ['cost' => 10]);
+
+            // Update user's payment PIN hash in database
+            $this->db->table('users')
+                ->where('id', $user_id)
+                ->update([
+                    'payment_pin_hash' => $pin_hash,
+                    'payment_pin_set_at' => date('Y-m-d H:i:s'),
+                    'pin_attempts' => 0,
+                    'pin_locked_until' => null
+                ]);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Payment PIN successfully set',
+                'user' => [
+                    'id' => $user_id,
+                    'payment_pin_set' => true
+                ]
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * API: Verify Payment PIN
+     * POST /api/auth/verify-payment-pin
+     * 
+     * Verifies that the provided PIN matches the user's payment PIN
+     * Implements brute-force protection with attempt limiting
+     */
+    public function api_verify_payment_pin()
+    {
+        api_set_json_headers();
+        try {
+            // Check if user is authenticated
+            $user_id = $this->session->userdata('user_id');
+            if (!$user_id || !$this->session->userdata('logged_in')) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            // Get raw POST data and decode JSON (like api_login does)
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+            
+            $payment_pin = $json_data['payment_pin'] ?? $this->io->post('payment_pin');
+
+            // Validate PIN format
+            if (empty($payment_pin)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'PIN is required']);
+                return;
+            }
+
+            if (!preg_match('/^\d{4,6}$/', $payment_pin)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid PIN format']);
+                return;
+            }
+
+            // Get user's PIN hash and attempt info
+            $user = $this->db->table('users')->where('id', $user_id)->get();
+            
+            // Check if user exists (->get() returns false/empty if no record found)
+            if (!$user) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'User not found']);
+                return;
+            }
+
+            // Check if account is locked due to too many failed attempts
+            if ($user['pin_locked_until'] && strtotime($user['pin_locked_until']) > time()) {
+                http_response_code(200);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Account temporarily locked. Please try again later.'
+                ]);
+                return;
+            }
+
+            // Reset lock if time has passed
+            if ($user['pin_locked_until'] && strtotime($user['pin_locked_until']) <= time()) {
+                $this->db->table('users')
+                    ->where('id', $user_id)
+                    ->update([
+                        'pin_attempts' => 0,
+                        'pin_locked_until' => null
+                    ]);
+                $user['pin_attempts'] = 0;
+            }
+
+            // Check if user has a PIN set
+            if (empty($user['payment_pin_hash'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'No PIN set for this account']);
+                return;
+            }
+
+            // Verify PIN against hash
+            if (password_verify($payment_pin, $user['payment_pin_hash'])) {
+                // PIN is correct - reset attempts and lock
+                $this->db->table('users')
+                    ->where('id', $user_id)
+                    ->update([
+                        'pin_attempts' => 0,
+                        'pin_locked_until' => null
+                    ]);
+
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'PIN verified successfully'
+                ]);
+                return;
+            }
+
+            // PIN is incorrect - increment attempts
+            $new_attempts = ($user['pin_attempts'] ?? 0) + 1;
+            $max_attempts = 3;
+
+            if ($new_attempts >= $max_attempts) {
+                // Lock account for 15 minutes
+                $lock_until = date('Y-m-d H:i:s', time() + (15 * 60));
+                $this->db->table('users')
+                    ->where('id', $user_id)
+                    ->update([
+                        'pin_attempts' => $new_attempts,
+                        'pin_locked_until' => $lock_until
+                    ]);
+
+                http_response_code(200);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Account locked. Try again in 15 minutes.',
+                    'attempts_remaining' => 0
+                ]);
+            } else {
+                // Calculate remaining attempts
+                $attempts_remaining = $max_attempts - $new_attempts;
+                
+                // Update attempt count
+                $this->db->table('users')
+                    ->where('id', $user_id)
+                    ->update([
+                        'pin_attempts' => $new_attempts
+                    ]);
+
+                http_response_code(200);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Incorrect PIN. You have $attempts_remaining more attempt" . ($attempts_remaining > 1 ? 's' : '') . " until it locks.",
+                    'attempts_remaining' => $attempts_remaining
+                ]);
+            }
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);

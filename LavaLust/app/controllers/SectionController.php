@@ -256,6 +256,211 @@ class SectionController extends Controller
     }
 
     /**
+     * POST /api/year-levels
+     * Create a new year level
+     */
+    public function api_create_year_level()
+    {
+        api_set_json_headers();
+
+        if (!$this->is_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (!isset($input['name']) || empty(trim($input['name']))) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Year level name is required.']);
+                return;
+            }
+
+            $data = [
+                'name' => trim($input['name']),
+                'order' => isset($input['order']) ? (int)$input['order'] : 0
+            ];
+
+            $id = $this->YearLevelModel->insert($data);
+
+            if ($id) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Year level created successfully.',
+                    'id' => $id,
+                    'year_level' => array_merge($data, ['id' => $id])
+                ]);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Failed to create year level.']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * PUT /api/year-levels/{id}
+     * Update a year level
+     */
+    public function api_update_year_level($id)
+    {
+        api_set_json_headers();
+
+        if (!$this->is_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            // Check if year level exists
+            $yearLevel = $this->YearLevelModel->find_by_id($id);
+            if (!$yearLevel) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Year level not found.']);
+                return;
+            }
+
+            $data = [];
+            if (isset($input['name'])) {
+                $data['name'] = trim($input['name']);
+            }
+            if (isset($input['order'])) {
+                $data['order'] = (int)$input['order'];
+            }
+
+            if (empty($data)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'No fields to update.']);
+                return;
+            }
+
+            $result = $this->YearLevelModel->update($id, $data);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Year level updated successfully.',
+                    'year_level' => array_merge($yearLevel, $data)
+                ]);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Failed to update year level.']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * DELETE /api/year-levels/{id}
+     * Delete a year level
+     */
+    public function api_delete_year_level($id)
+    {
+        api_set_json_headers();
+
+        if (!$this->is_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+
+        try {
+            // Check if year level exists
+            $yearLevel = $this->YearLevelModel->find_by_id($id);
+            if (!$yearLevel) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Year level not found.']);
+                return;
+            }
+
+            $result = $this->YearLevelModel->delete($id);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Year level deleted successfully.'
+                ]);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Failed to delete year level.']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * POST /api/year-levels/{yearLevelId}/sections
+     * Create a section under a year level
+     */
+    public function api_create_section_under_year_level($yearLevelId)
+    {
+        api_set_json_headers();
+
+        if (!$this->is_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+            return;
+        }
+
+        try {
+            // Check if year level exists
+            $yearLevel = $this->YearLevelModel->find_by_id($yearLevelId);
+            if (!$yearLevel) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Year level not found.']);
+                return;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (!isset($input['name']) || empty(trim($input['name']))) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Section name is required.']);
+                return;
+            }
+
+            $data = [
+                'name' => trim($input['name']),
+                'description' => isset($input['description']) ? trim($input['description']) : '',
+                'status' => isset($input['status']) ? trim($input['status']) : 'active'
+            ];
+
+            $sectionId = $this->SectionModel->insert($data);
+
+            if ($sectionId) {
+                // Assign section to year level
+                $this->YearLevelSectionModel->insert([
+                    'year_level_id' => $yearLevelId,
+                    'section_id' => $sectionId
+                ]);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Section created successfully under ' . $yearLevel['name'],
+                    'section' => array_merge($data, ['id' => $sectionId])
+                ]);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Failed to create section.']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * GET /api/year-levels/{id}/sections
      * Get all sections assigned to a specific year level
      */

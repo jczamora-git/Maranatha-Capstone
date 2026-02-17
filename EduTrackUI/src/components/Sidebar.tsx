@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "next-themes";
+import { FEATURES } from "@/config/features";
+import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import {
   LayoutDashboard,
   Users,
@@ -27,7 +29,10 @@ import {
   Monitor,
   Mail,
   Menu,
-  X
+  X,
+  DollarSign,
+  CalendarClock,
+  Radio
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -63,6 +68,25 @@ export const Sidebar = () => {
   const { theme, setTheme } = useTheme();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isTeacherAdviser, setIsTeacherAdviser] = useState(() => {
+    try {
+      const cached = localStorage.getItem('adviserLevels');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return true;
+        }
+      }
+    } catch (err) {
+      // ignore cache errors
+    }
+
+    try {
+      return localStorage.getItem('isTeacherAdviser') === 'true';
+    } catch (err) {
+      return false;
+    }
+  });
 
   // Check if any admin submenu is active (includes the main users page)
   const isAdminSubmenuActive = location.pathname.startsWith('/admin/users');
@@ -118,36 +142,82 @@ export const Sidebar = () => {
     }
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    const hasCache = isTeacherAdviser === true;
+
+    const checkAdviser = async () => {
+      if (user?.role !== "teacher") {
+        setIsTeacherAdviser(false);
+        return;
+      }
+
+      try {
+        const res = await apiGet(API_ENDPOINTS.TEACHER_ADVISER_LEVELS);
+        const levels = res && Array.isArray(res.levels) ? res.levels : [];
+        if (!cancelled) {
+          const isAdviser = levels.length > 0;
+          setIsTeacherAdviser(isAdviser);
+          try {
+            localStorage.setItem('isTeacherAdviser', isAdviser ? 'true' : 'false');
+            localStorage.setItem('adviserLevels', JSON.stringify(levels));
+          } catch (err) {
+            // ignore storage errors
+          }
+        }
+      } catch (err) {
+        if (!cancelled && !hasCache) setIsTeacherAdviser(false);
+      }
+    };
+
+    checkAdviser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role]);
+
+  const isProd = import.meta.env.MODE === "production";
+
   const adminLinks = [
     { to: "/admin/dashboard", icon: BarChart3, label: "Dashboard" },
     { to: "/admin/users", icon: Users, label: "Manage Users" },
-    { to: "/admin/campuses", icon: School, label: "Campuses" },
-    // { to: "/admin/grading", icon: Award, label: "Grading System" },
-    { to: "/admin/announcements", icon: Bell, label: "Announcements" },
-    { to: "/admin/pdf", icon: FileText, label: "PDF Generation" },
-    // { to: "/admin/settings", icon: Settings, label: "Settings" },
+    ...(FEATURES.enrollment ? [{ to: "/admin/enrollments", icon: ClipboardList, label: "Enrollments" }] : []),
+    ...(FEATURES.payment ? [{ to: "/admin/payments", icon: DollarSign, label: "Payments" }] : []),
+    ...(FEATURES.payment ? [{ to: "/admin/payment-plans", icon: CalendarClock, label: "Payment Plans" }] : []),
+    ...(FEATURES.attendance ? [{ to: "/admin/rfid-attendance", icon: Radio, label: "RFID Scanner" }] : []),
+    ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
+    ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
+    ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : []),
   ];
 
   const teacherLinks = [
     { to: "/teacher/dashboard", icon: BarChart3, label: "Dashboard" },
-    { to: "/teacher/courses", icon: BookOpen, label: "My Courses" },
-    { to: "/teacher/messages", icon: Mail, label: "Messages" },
-    { to: "/teacher/activities", icon: ClipboardList, label: "Activities" },
-    // { to: "/teacher/students", icon: Users, label: "Manage Students" },
-    { to: "/teacher/attendance-qr", icon: Calendar, label: "Attendance QR" },
-    { to: "/teacher/grades", icon: Award, label: "Grade Input" },
-    // { to: "/teacher/settings", icon: Settings, label: "Settings" },
+    ...(FEATURES.adviserEnrollment && isTeacherAdviser ? [{ to: "/admin/enrollments", icon: ClipboardList, label: "Enrollments" }] : []),
+    ...(FEATURES.courses ? [{ to: "/teacher/courses", icon: BookOpen, label: "My Courses" }] : []),
+    ...(FEATURES.messages ? [{ to: "/teacher/messages", icon: Mail, label: "Messages" }] : []),
+    ...(FEATURES.activities ? [{ to: "/teacher/activities", icon: ClipboardList, label: "Activities" }] : []),
+    ...(FEATURES.attendance ? [{ to: "/teacher/attendance", icon: Calendar, label: "Attendance" }] : []),
+    ...(FEATURES.grading ? [{ to: "/teacher/grades", icon: Award, label: "Grade Input" }] : []),
   ];
 
   const studentLinks = [
     { to: "/student/dashboard", icon: BarChart3, label: "Dashboard" },
-    { to: "/student/courses", icon: BookOpen, label: "My Courses" },
-    { to: "/student/messages", icon: Mail, label: "Messages" },
-    { to: "/student/attendance-qr", icon: Calendar, label: "Attendance QR" },
-    { to: "/student/activities", icon: ClipboardList, label: "Activities" },
-    { to: "/student/grades", icon: Award, label: "My Grades" },
-    { to: "/student/progress", icon: Calendar, label: "Progress" },
+    ...(FEATURES.courses && !isProd ? [{ to: "/student/courses", icon: BookOpen, label: "My Courses" }] : []),
+    ...(FEATURES.enrollment ? [{ to: "/enrollment/my-enrollments", icon: FileText, label: "My Enrollments" }] : []),
+    ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: DollarSign, label: "Payment" }] : []),
+    ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
+    ...(FEATURES.grading ? [
+      { to: "/student/grades", icon: Award, label: "My Grades" },
+      { to: "/student/progress", icon: Calendar, label: "Progress" }
+    ] : []),
     { to: "/student/settings", icon: Settings, label: "Settings" },
+  ];
+
+  const enrolleeLinks = [
+    { to: "/enrollee/dashboard", icon: BarChart3, label: "Dashboard" },
+    ...(FEATURES.enrollment ? [{ to: "/enrollee/enrollment", icon: FileText, label: "Enrollment" }] : []),
+    ...(FEATURES.payment ? [{ to: "/enrollee/payment", icon: Award, label: "Payment" }] : []),
   ];
 
   // Determine links from the authenticated user's role. If no role, return an empty list.
@@ -160,6 +230,8 @@ export const Sidebar = () => {
         return teacherLinks;
       case "student":
         return studentLinks;
+      case "enrollee":
+        return enrolleeLinks;
       default:
         return [];
     }
@@ -170,9 +242,13 @@ export const Sidebar = () => {
       {/* Mobile Header with Hamburger */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-30 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src="/vector.png" alt="EduTrack logo" className="h-6 w-6" />
-          <span className="text-lg font-bold text-blue-700">EduTrack</span>
-        </div>
+          <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="Maranatha Christian Academy Foundation" className="h-8 w-8" />
+          <div className="leading-tight">
+            <p className="text-xs font-extrabold text-gray-800" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Maranatha Christian</p>
+            <p className="text-xs font-extrabold text-gray-800" style={{ fontFamily: 'Montserrat', lineHeight: '0.9' }}>Academy Foundation</p>
+            <p className="text-[10px] font-normal text-gray-600" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Calapan City Inc.</p>
+          </div>
+        </div>  
         <Button
           variant="ghost"
           size="icon"
@@ -261,19 +337,22 @@ export const Sidebar = () => {
                         <Users className="h-4 w-4" />
                         <span>User Directory</span>
                       </button>
-                      <button
-                        onClick={() => {
-                          navigate('/admin/users/teachers');
-                          setMobileMenuOpen(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/teachers') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <GraduationCap className="h-4 w-4" />
-                        <span>Manage Teachers</span>
-                      </button>
+                      {FEATURES.teacherManagement && (
+                        <button
+                          onClick={() => {
+                            navigate('/admin/users/teachers');
+                            setMobileMenuOpen(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
+                            location.pathname.startsWith('/admin/users/teachers') && !location.pathname.includes('assignments') ? 'bg-primary/10 text-primary' : ''
+                          )}
+                        >
+                          <GraduationCap className="h-4 w-4" />
+                          <span>Manage Teachers</span>
+                        </button>
+                      )}
+                      {/* Teacher Assignments removed - page deprecated */}
                       <button
                         onClick={() => {
                           navigate('/admin/users/students');
@@ -287,19 +366,21 @@ export const Sidebar = () => {
                         <Users className="h-4 w-4" />
                         <span>Manage Students</span>
                       </button>
-                      <button
-                        onClick={() => {
-                          navigate('/admin/users/subjects');
-                          setMobileMenuOpen(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        <span>Manage Subjects</span>
-                      </button>
+                      {FEATURES.subjects && (
+                        <button
+                          onClick={() => {
+                            navigate('/admin/users/subjects');
+                            setMobileMenuOpen(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
+                            location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
+                          )}
+                        >
+                          <BookOpen className="h-4 w-4" />
+                          <span>Manage Subjects</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           navigate('/admin/users/sections');
@@ -351,9 +432,13 @@ export const Sidebar = () => {
       >
         <div className="p-4 sm:p-6 flex justify-between items-center">
           {isOpen && (
-            <div className="flex items-center gap-2">
-              <img src="/vector.png" alt="EduTrack logo" className="h-5 sm:h-6 w-5 sm:w-6" />
-              <span className="text-lg sm:text-xl font-bold text-blue-700 truncate">EduTrack</span>
+            <div className="flex items-center gap-2 w-full">
+              <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="Maranatha Christian Academy Foundation" className="h-6 w-6 flex-shrink-0" />
+              <div className="leading-tight flex-1 min-w-0">
+                <p className="text-xs font-extrabold text-gray-800 truncate" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Maranatha Christian</p>
+                <p className="text-xs font-extrabold text-gray-800 truncate" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Academy Foundation</p>
+                <p className="text-[10px] font-normal text-gray-600 truncate" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Calapan City INC.</p>
+              </div>
             </div>
           )}
           <Button
@@ -422,16 +507,20 @@ export const Sidebar = () => {
                         <span className="hidden sm:inline">User Directory</span>
                       </button>
 
-                      <button
-                        onClick={() => navigate('/admin/users/teachers')}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/teachers') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <GraduationCap className="h-3 sm:h-4 w-3 sm:w-4" />
-                        <span className="hidden sm:inline">Manage Teachers</span>
-                      </button>
+                      {FEATURES.teacherManagement && (
+                        <button
+                          onClick={() => navigate('/admin/users/teachers')}
+                          className={cn(
+                            "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
+                            location.pathname.startsWith('/admin/users/teachers') && !location.pathname.includes('assignments') ? 'bg-primary/10 text-primary' : ''
+                          )}
+                        >
+                          <GraduationCap className="h-3 sm:h-4 w-3 sm:w-4" />
+                          <span className="hidden sm:inline">Manage Teachers</span>
+                        </button>
+                      )}
+
+                      {/* Teacher Assignments removed - page deprecated */}
 
                       <button
                         onClick={() => navigate('/admin/users/students')}
@@ -444,16 +533,18 @@ export const Sidebar = () => {
                         <span className="hidden sm:inline">Manage Students</span>
                       </button>
 
-                      <button
-                        onClick={() => navigate('/admin/users/subjects')}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <BookOpen className="h-3 sm:h-4 w-3 sm:w-4" />
-                        <span className="hidden sm:inline">Manage Subjects</span>
-                      </button>
+                      {FEATURES.subjects && (
+                        <button
+                          onClick={() => navigate('/admin/users/subjects')}
+                          className={cn(
+                            "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
+                            location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
+                          )}
+                        >
+                          <BookOpen className="h-3 sm:h-4 w-3 sm:w-4" />
+                          <span className="hidden sm:inline">Manage Subjects</span>
+                        </button>
+                      )}
 
                       <button
                         onClick={() => navigate('/admin/users/sections')}

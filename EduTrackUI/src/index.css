@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Fonts */
+/* Montserrat is now loaded from Google Fonts in index.html */
+/* Keeping local ExtraBold as backup */
+@font-face {
+  font-family: 'Montserrat ExtraBold';
+  src: url('./assets/Montserrat-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* The Last Of Us - Custom Font */
+@font-face {
+  font-family: 'The Last Of Us';
+  src: url('./assets/The Last Of Us.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -226,6 +245,129 @@ input[type="number"] {
 @layer utilities {
   .bg-edu-gradient {
     background: linear-gradient(120deg, #e6f0ff 0%, #f3f6ff 55%, #ffffff 100%);
+  }
+  
+  /* Shake animation for error feedback */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
+  
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+}
+
+/* Custom prose styles for rich text content (replaces @tailwindcss/typography) */
+@layer components {
+  .prose {
+    @apply text-gray-700 leading-relaxed;
+    max-width: 65ch;
+  }
+  
+  .prose h1 {
+    @apply text-3xl font-bold text-gray-900 mt-6 mb-4;
+  }
+  
+  .prose h2 {
+    @apply text-2xl font-bold text-gray-900 mt-5 mb-3;
+  }
+  
+  .prose h3 {
+    @apply text-xl font-semibold text-gray-900 mt-4 mb-2;
+  }
+  
+  .prose h4 {
+    @apply text-lg font-semibold text-gray-900 mt-3 mb-2;
+  }
+  
+  .prose p {
+    @apply mb-4;
+  }
+  
+  .prose a {
+    @apply text-blue-600 underline hover:text-blue-700;
+  }
+  
+  .prose strong {
+    @apply font-bold text-gray-900;
+  }
+  
+  .prose em {
+    @apply italic;
+  }
+  
+  .prose ul {
+    @apply list-disc list-inside mb-4 space-y-2;
+  }
+  
+  .prose ol {
+    @apply list-decimal list-inside mb-4 space-y-2;
+  }
+  
+  .prose li {
+    @apply text-gray-700;
+  }
+  
+  .prose blockquote {
+    @apply border-l-4 border-blue-500 pl-4 italic text-gray-600 my-4;
+  }
+  
+  .prose code {
+    @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800;
+  }
+  
+  .prose pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4;
+  }
+  
+  .prose pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+  
+  .prose table {
+    @apply w-full border-collapse mb-4;
+  }
+  
+  .prose th {
+    @apply bg-gray-100 border border-gray-300 px-4 py-2 text-left font-semibold;
+  }
+  
+  .prose td {
+    @apply border border-gray-300 px-4 py-2;
+  }
+  
+  .prose img {
+    @apply rounded-lg my-4;
+  }
+  
+  .prose hr {
+    @apply border-t border-gray-300 my-6;
+  }
+  
+  /* Size modifiers */
+  .prose-sm {
+    @apply text-sm;
+  }
+  
+  .prose-sm h1 { @apply text-2xl; }
+  .prose-sm h2 { @apply text-xl; }
+  .prose-sm h3 { @apply text-lg; }
+  .prose-sm h4 { @apply text-base; }
+  
+  .prose-lg {
+    @apply text-lg;
+  }
+  
+  .prose-lg h1 { @apply text-4xl; }
+  .prose-lg h2 { @apply text-3xl; }
+  .prose-lg h3 { @apply text-2xl; }
+  .prose-lg h4 { @apply text-xl; }
+  
+  /* Remove max-width */
+  .max-w-none {
+    max-width: none;
   }
 }
 

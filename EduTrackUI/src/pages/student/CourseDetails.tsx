@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, Clock, CheckCircle, BarChart3, AlertCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, CheckCircle, BarChart3, AlertCircle, FileText, Upload, PlayCircle } from "lucide-react";
 
 const CourseDetails = () => {
   const { user, isAuthenticated } = useAuth();
@@ -299,12 +299,47 @@ const CourseDetails = () => {
                         <div className="flex-1">
                           <p className="font-semibold text-foreground">{activity.title}</p>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                            <span className="px-2 py-1 bg-muted rounded">{activity.type}</span>
+                            <span className="px-2 py-1 bg-muted rounded capitalize">{activity.type}</span>
                             <span>Due: {activity.dueDate}</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
+                        {/* Action Buttons */}
+                        {(activity.type === 'quiz' || activity.type === 'exam') && activity.status !== 'graded' && (
+                          <Button
+                            size="sm"
+                            onClick={() => navigate(`/student/courses/${courseId}/activities/${activity.id}/quiz`)}
+                            className="bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600"
+                          >
+                            <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                            Take {activity.type === 'exam' ? 'Exam' : 'Quiz'}
+                          </Button>
+                        )}
+                        {['worksheet', 'project', 'art'].includes(activity.type) && activity.status !== 'graded' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/student/courses/${courseId}/activities/${activity.id}/submit`)}
+                            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                          >
+                            <Upload className="h-3.5 w-3.5 mr-1" />
+                            Submit
+                          </Button>
+                        )}
+                        {activity.status !== 'graded' && !['quiz', 'exam', 'worksheet', 'project', 'art'].includes(activity.type) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/student/courses/${courseId}/activities/${activity.id}`)}
+                            className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                          >
+                            <FileText className="h-3.5 w-3.5 mr-1" />
+                            View
+                          </Button>
+                        )}
+                        
+                        {/* Score Display */}
                         {activity.score !== null ? (
                           <div className="text-right bg-success/5 px-3 py-2 rounded-lg border border-success/20">
                             <p className="font-bold text-base text-success">

@@ -18,12 +18,24 @@ import { Pagination } from "@/components/Pagination";
 
 type AssignedCourse = { course: string; title?: string; units?: number };
 
+type YearLevel = {
+  id: number;
+  name: string;
+  order: number;
+};
+
+type Section = {
+  id: number;
+  name: string;
+  year_level_id?: number;
+};
+
 type Student = {
   id: string;
   name: string;
   email: string;
   studentId: string;
-  yearLevel: "1" | "2" | "3" | "4";
+  yearLevel: string;
   section: string;
   phone?: string;
   parentContact?: {
@@ -41,10 +53,12 @@ const Students = () => {
   const [yearLevelFilter, setYearLevelFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sectionFilter, setSectionFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [sortOption, setSortOption] = useState<string>("name_asc");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [sortOption, setSortOption] = useState<string>("id_desc");
 
   const [students, setStudents] = useState<Student[]>([]);
+  const [yearLevels, setYearLevels] = useState<YearLevel[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -52,9 +66,10 @@ const Students = () => {
   const [form, setForm] = useState<any>({
     firstName: "",
     lastName: "",
+    middleName: "",
     email: "",
     studentId: "",
-    yearLevel: "1",
+    yearLevel: "",
     // section removed from add modal; keep empty by default
     section: "",
     phone: "",
@@ -68,7 +83,7 @@ const Students = () => {
 
   const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
 
   const [isImportResultOpen, setIsImportResultOpen] = useState(false);
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number; total_rows: number; errors: string[] } | null>(null);
@@ -79,8 +94,28 @@ const Students = () => {
     setAlert({ type, message });
   };
 
+  const toTitleCase = (s: string) => {
+    if (!s) return s;
+    return s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  };
+
   const confirm = useConfirm();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Helper function to get section name by section_id
+  const getSectionName = (sectionId: string | undefined): string => {
+    if (!sectionId || sectionId === '') return '';
+    // If sectionId is already a section name (not numeric), return it
+    if (isNaN(Number(sectionId))) return sectionId;
+    // Otherwise look it up in sections
+    const section = sections.find(s => String(s.id) === String(sectionId));
+    if (section) {
+      return section.name;
+    }
+    // If not found, log for debugging
+    console.debug(`[getSectionName] Section ID ${sectionId} not found in ${sections.length} sections:`, sections.map(s => ({ id: s.id, name: s.name })));
+    return '';
+  };
 
   const handleImportClick = () => {
     if (fileInputRef.current) fileInputRef.current.click();
@@ -159,6 +194,10 @@ const Students = () => {
 
   const yearLevelToEnum = (v: string | undefined) => {
     if (!v) return undefined;
+    // Try to find the year level by ID in the fetched data
+    const yearLevel = yearLevels.find(yl => String(yl.id) === String(v));
+    if (yearLevel) return yearLevel.name;
+    // Fallback to old mapping for backwards compatibility
     const map: Record<string, string> = { '1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year', '1st Year': '1st Year', '2nd Year': '2nd Year', '3rd Year': '3rd Year', '4th Year': '4th Year' };
     return map[String(v)] ?? undefined;
   };
@@ -169,6 +208,67 @@ const Students = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
+  // Fetch year levels and sections from database
+  useEffect(() => {
+    const fetchYearLevelsAndSections = async () => {
+      try {
+        const yearRes = await apiGet('/api/year-levels');
+        
+        if (yearRes && yearRes.success && yearRes.year_levels) {
+          const sorted = yearRes.year_levels.sort((a: YearLevel, b: YearLevel) => a.order - b.order);
+          setYearLevels(sorted);
+          console.debug('[Students] Year levels fetched:', sorted.length, sorted);
+          // Set default year level to first one
+          if (sorted.length > 0 && !form.yearLevel) {
+            setForm((f: any) => ({ ...f, yearLevel: String(sorted[0].id) }));
+          }
+          
+          // Fetch sections for each year level
+          try {
+            const allSections: Section[] = [];
+            console.debug('[Students] Fetching sections for', sorted.length, 'year levels...');
+            for (const yl of sorted) {
+              try {
+                const sectionRes = await apiGet(`/api/year-levels/${yl.id}/sections`);
+                if (sectionRes && (sectionRes.success || sectionRes.data || sectionRes.sections)) {
+                  const sectionList = sectionRes.data || sectionRes.sections || [];
+                  if (Array.isArray(sectionList)) {
+                    console.debug(`[Students] Year level ${yl.name} has ${sectionList.length} sections:`, sectionList);
+                    allSections.push(...sectionList);
+                  }
+                }
+              } catch (err) {
+                console.warn(`[Students] Failed to fetch sections for year level ${yl.id} (${yl.name}):`, err);
+              }
+            }
+            console.debug('[Students] Total sections fetched:', allSections.length, allSections);
+            setSections(allSections);
+          } catch (err) {
+            console.error('[Students] Failed to fetch sections:', err);
+            // Fallback: try to fetch all sections at once
+            try {
+              console.debug('[Students] Trying fallback: fetching all sections...');
+              const sectionRes = await apiGet(API_ENDPOINTS.SECTIONS);
+              if (sectionRes && (sectionRes.success || sectionRes.data || sectionRes.sections)) {
+                const sectionList = sectionRes.data || sectionRes.sections || [];
+                console.debug('[Students] Fallback sections fetch succeeded:', sectionList);
+                setSections(Array.isArray(sectionList) ? sectionList : []);
+              }
+            } catch (fallbackErr) {
+              console.error('[Students] Fallback sections fetch also failed:', fallbackErr);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Students] Failed to fetch year levels:', err);
+      }
+    };
+    
+    if (isAuthenticated && user?.role === 'admin') {
+      fetchYearLevelsAndSections();
+    }
+  }, [isAuthenticated, user]);
+
   // Fetch students from API (uses the USERS endpoint + ../students similar to other pages)
   const fetchStudents = async () => {
     try {
@@ -177,20 +277,21 @@ const Students = () => {
       const rows = res && (res.data || res.students) ? (res.data || res.students) : Array.isArray(res) ? res : [];
       if (Array.isArray(rows)) {
         const mapped: Student[] = rows.map((r: any) => {
-          // normalize section to a numeric value when possible (e.g. 'F4' or 'Section 4' -> '4')
-          const rawSec = r.section_name ?? r.section ?? (r.section_id ? String(r.section_id) : "");
-          let secNum = "";
-          if (rawSec) {
-            const m = String(rawSec).match(/(\d+)/);
-            secNum = m ? m[1] : String(rawSec).trim();
-          }
+          // Store section_id (numeric) or section_name if available
+          // The section field will be looked up in getSectionName() using the sections array
+          const section = r.section_name ?? r.section ?? (r.section_id ? String(r.section_id) : "");
           return {
           id: String(r.id ?? r.user_id ?? Date.now()),
-          name: `${r.first_name || r.firstName || ''} ${r.last_name || r.lastName || ''}`.trim() || (r.email || ''),
+          // Display as "Lastname, Firstname"
+          name: (() => {
+            const first = r.first_name || r.firstName || '';
+            const last = r.last_name || r.lastName || '';
+            return (last || first) ? (last + (first ? ', ' + first : '')) : (r.email || '');
+          })(),
           email: r.email || r.user_email || '',
           studentId: r.student_id || r.studentId || '',
-          yearLevel: (typeof r.year_level === 'string') ? (r.year_level.startsWith('1') ? '1' : r.year_level.charAt(0)) : (r.year_level || '1'),
-          section: secNum,
+          yearLevel: r.year_level || '',
+          section: section,
           phone: r.phone || '',
           parentContact: undefined,
           status: r.status || r.user_status || 'active',
@@ -198,6 +299,9 @@ const Students = () => {
           assignedCourses: (r.assigned_courses || r.assignedCourses || r.courses || []).map((c: any) => ({ course: c.course_code || c.code || c.course || String(c), title: c.course_name || c.title || undefined, units: c.credits ?? c.units ?? undefined })) as AssignedCourse[],
           };
         });
+        console.debug('[Students] Students loaded:', mapped.length, 'students', mapped.slice(0, 3));
+        // Ensure list shows latest by student ID (e.g. MCAF2026-0004)
+        mapped.sort((a, b) => (b.studentId || '').localeCompare(a.studentId || ''));
         setStudents(mapped);
 
         // Populate assignedCourses based on subjects for the student's year level.
@@ -208,7 +312,7 @@ const Students = () => {
             // Fetch subjects for each year once
             const yearFetches = years.map(async (y) => {
               try {
-                const subRes = await apiGet(`${API_ENDPOINTS.SUBJECTS}?year_level=${encodeURIComponent(String(y))}`);
+                const subRes = await apiGet(`${API_ENDPOINTS.SUBJECTS}?level=${encodeURIComponent(String(y))}`);
                 const arr = subRes && (subRes.subjects || subRes.data) ? (subRes.subjects || subRes.data) : Array.isArray(subRes) ? subRes : [];
                 const normalized = Array.isArray(arr)
                   ? arr.map((c: any) => ({ course: c.course_code || c.code || c.course || String(c), title: c.course_name || c.title || undefined, units: c.credits ?? c.units ?? undefined }))
@@ -281,26 +385,8 @@ const Students = () => {
     }
   };
 
-  // Generate next student ID by asking backend for last id and incrementing
-  const generateStudentId = async (): Promise<string> => {
-    try {
-      const year = new Date().getFullYear();
-      // try API endpoint for last student id
-      const res = await apiGet(`${API_ENDPOINTS.STUDENTS}/last-id?year=${year}`);
-      if (res && res.last_id) {
-        const match = String(res.last_id).match(/MCC\d+-(\d+)/);
-        if (match) {
-          const nextNum = parseInt(match[1], 10) + 1;
-          return `MCC${year}-${String(nextNum).padStart(5, '0')}`;
-        }
-      }
-      return `MCC${year}-00001`;
-    } catch (err) {
-      console.error('Error generating student ID:', err);
-      const year = new Date().getFullYear();
-      return `MCC${year}-00001`;
-    }
-  };
+
+  const getDefaultYearLevelId = () => (yearLevels[0] ? String(yearLevels[0].id) : "");
 
   const filteredStudents = students.filter((s) => {
     const q = searchQuery.trim().toLowerCase();
@@ -311,14 +397,14 @@ const Students = () => {
       s.studentId.toLowerCase().includes(q);
     const matchesYearLevel = yearLevelFilter === "all" || s.yearLevel === yearLevelFilter;
     const matchesStatus = statusFilter === "all" || s.status === statusFilter;
-    // sectionFilter stored as `${year}-${sectionNum}` (e.g. "1-4"). Compare accordingly.
+    // sectionFilter stored as `${yearLevel}-${sectionName}` (e.g. "Nursery 1-Makabansa")
     const matchesSection =
       sectionFilter === "all" || `${s.yearLevel}-${s.section}` === sectionFilter;
-    return matchesQuery && matchesYearLevel && matchesStatus;
+    return matchesQuery && matchesYearLevel && matchesStatus && matchesSection;
   });
 
   // available sections for the Section filter dropdown (filter out empty strings to avoid SelectItem error)
-  // Build unique year-section keys for the section filter dropdown (format: "1-4")
+  // Build unique year-section keys for the section filter dropdown with resolved names
   const availableSections = Array.from(
     new Set(
       students
@@ -329,7 +415,20 @@ const Students = () => {
         })
         .filter((x) => x)
     )
-  ).sort();
+  ).map((key) => {
+    // For each key, resolve the section name
+    const parts = String(key).split('-');
+    if (parts.length === 2) {
+      const yearLevel = parts[0];
+      const sectionId = parts[1];
+      const sectionName = getSectionName(sectionId);
+      return {
+        key: key,
+        display: `${yearLevel} - ${sectionName}`,
+      };
+    }
+    return { key, display: key };
+  }).sort((a, b) => a.display.localeCompare(b.display));
 
   const getCourseSuggestions = (query: string) => {
     const q = (query || "").replace(/\s+/g, "").toUpperCase();
@@ -393,12 +492,14 @@ const Students = () => {
   const pagedStudents = sortedStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleOpenCreate = () => {
+    const defaultYearLevelId = getDefaultYearLevelId();
     setForm({
       firstName: "",
       lastName: "",
+      middleName: "",
       email: "",
       studentId: "",
-      yearLevel: "1",
+      yearLevel: defaultYearLevelId,
       // section removed from add modal; keep empty by default
       section: "",
       phone: "",
@@ -406,8 +507,10 @@ const Students = () => {
       status: "active",
       assignedCourses: [],
     });
-    // fetch suggestions for default year (1)
-    fetchSubjects('1');
+    if (defaultYearLevelId) {
+      // fetch suggestions for default year level
+      fetchSubjects(defaultYearLevelId);
+    }
     setIsCreateOpen(true);
   };
 
@@ -422,10 +525,15 @@ const Students = () => {
     setEmailSuccess(false);
     setShowEmailModal(true);
     try {
+      const firstName = toTitleCase(form.firstName.trim());
+      const lastName = toTitleCase(form.lastName.trim());
+      const middleName = toTitleCase((form.middleName || '').trim());
+
       // 1) create user
       const userResp = await apiPost(API_ENDPOINTS.USERS, {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
+        firstName,
+        lastName,
+        middleName,
         email: form.email.trim(),
         role: 'student',
         phone: form.phone?.trim() || '',
@@ -443,17 +551,23 @@ const Students = () => {
       const defaultPassword = userResp.default_password || 'demo123';
 
       // 2) create student profile
-      const studentIdToUse = form.studentId?.trim() || await generateStudentId();
+      const studentIdInput = form.studentId?.trim();
+      const yearLevelName = yearLevelToEnum(form.yearLevel) || form.yearLevel || 'Nursery 1';
       const payload: any = {
         user_id: createdUserId,
-        student_id: studentIdToUse,
-        year_level: yearLevelToEnum(form.yearLevel) || `${form.yearLevel}st Year`,
+        year_level: yearLevelName,
         status: form.status,
-        first_name: form.firstName.trim(),
-        last_name: form.lastName.trim(),
+        first_name: firstName,
+        // include middle name if provided
+        ...(middleName ? { middle_name: middleName } : {}),
+        last_name: lastName,
         email: form.email.trim(),
         phone: form.phone?.trim() || null,
       };
+
+      if (studentIdInput) {
+        payload.student_id = studentIdInput;
+      }
 
       const res = await apiPost(API_ENDPOINTS.STUDENTS, payload);
       if (!res || !res.success) {
@@ -475,11 +589,11 @@ const Students = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: form.email.trim(),
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
+          firstName,
+          lastName,
           password: defaultPassword,
-          studentId: studentIdToUse,
-          yearLevel: yearLevelToEnum(form.yearLevel) || `${form.yearLevel}st Year`
+          studentId: res?.student?.student_id || studentIdInput || "",
+          yearLevel: yearLevelName
         }),
         credentials: 'include'
       });
@@ -503,13 +617,13 @@ const Students = () => {
       // success: use returned student if present
       if (res && res.student) {
         const created = res.student;
-        const displayName = `${form.firstName.trim()} ${form.lastName.trim()}`;
+        const displayName = `${lastName}${firstName ? ', ' + firstName : ''}`;
         const newStudent: Student = {
           id: created.id?.toString() || String(createdUserId),
           name: displayName,
           email: created.email ?? form.email,
-          studentId: created.student_id ?? studentIdToUse,
-          yearLevel: (created.year_level || `1st Year`).startsWith('1') ? '1' : (created.year_level || '1st Year').charAt(0),
+          studentId: created.student_id ?? studentIdInput ?? "",
+          yearLevel: created.year_level ?? yearLevelName,
           section: created.section_id ? String(created.section_id) : '',
           phone: created.phone ?? form.phone,
           parentContact: form.parentContact,
@@ -520,9 +634,10 @@ const Students = () => {
         
         // Auto close modal and cleanup after 3 seconds
         setTimeout(() => {
+          const resetYearLevelId = getDefaultYearLevelId();
           setShowEmailModal(false);
           setIsCreateOpen(false);
-          setForm({ firstName: "", lastName: "", email: "", studentId: "", yearLevel: "1", section: "", phone: "", parentContact: undefined, status: "active", assignedCourses: [] });
+          setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", parentContact: undefined, status: "active", assignedCourses: [] });
         }, 3000);
         
         showAlert('success', `Student ${newStudent.name} created. Welcome email ${emailData.success ? 'sent' : 'send attempted'}!`);
@@ -530,14 +645,15 @@ const Students = () => {
       }
 
       // fallback: local add
-      const displayName = `${form.firstName.trim()} ${form.lastName.trim()}`;
-      const newStudent: Student = { id: String(createdUserId ?? Date.now()), name: displayName, email: form.email, studentId: studentIdToUse, yearLevel: form.yearLevel, section: '', phone: form.phone, parentContact: form.parentContact, status: form.status, assignedCourses: form.assignedCourses };
+      const displayName = `${lastName}${firstName ? ', ' + firstName : ''}`;
+      const newStudent: Student = { id: String(createdUserId ?? Date.now()), name: displayName, email: form.email, studentId: studentIdInput || "", yearLevel: yearLevelName, section: '', phone: form.phone, parentContact: form.parentContact, status: form.status, assignedCourses: form.assignedCourses };
       setStudents((s) => [newStudent, ...s]);
       
       setTimeout(() => {
+        const resetYearLevelId = getDefaultYearLevelId();
         setShowEmailModal(false);
         setIsCreateOpen(false);
-        setForm({ firstName: "", lastName: "", email: "", studentId: "", yearLevel: "1", section: "", phone: "", parentContact: undefined, status: "active", assignedCourses: [] });
+        setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", parentContact: undefined, status: "active", assignedCourses: [] });
       }, 3000);
       
       showAlert('success', `Student ${displayName} created. Welcome email ${emailData.success ? 'sent' : 'send attempted'}!`);
@@ -558,11 +674,16 @@ const Students = () => {
 
   const handleOpenEdit = (s: Student) => {
     setSelectedStudentId(s.id);
+    
+    // Find the year level ID that matches the student's year level name
+    const matchingYearLevel = yearLevels.find(yl => yl.name === s.yearLevel);
+    const yearLevelId = matchingYearLevel ? String(matchingYearLevel.id) : "";
+    
     setForm({
       name: s.name,
       email: s.email,
       studentId: s.studentId,
-      yearLevel: s.yearLevel,
+      yearLevel: yearLevelId,
       section: s.section,
       phone: s.phone,
       parentContact: s.parentContact,
@@ -571,7 +692,7 @@ const Students = () => {
     });
     setIsEditOpen(true);
     // fetch subjects that match this student's year level so suggestions match
-    if (s.yearLevel) fetchSubjects(s.yearLevel);
+    if (yearLevelId) fetchSubjects(yearLevelId);
   };
 
   const handleEdit = async () => {
@@ -580,7 +701,7 @@ const Students = () => {
     // Build payload expected by StudentController::api_update_student
   const payload: any = {};
   if (form.studentId !== undefined) payload.studentId = form.studentId;
-  if (form.yearLevel !== undefined) payload.yearLevel = yearLevelToEnum(form.yearLevel) ?? `${form.yearLevel}st Year`;
+  if (form.yearLevel !== undefined) payload.yearLevel = yearLevelToEnum(form.yearLevel) ?? form.yearLevel;
     if (form.section !== undefined && form.section !== '') {
       // try to send numeric id for section when possible
       const n = Number(form.section);
@@ -596,10 +717,14 @@ const Students = () => {
           // map server response to local Student shape
           const mapped: Student = {
             id: String(updated.id ?? updated.user_id ?? selectedStudentId),
-            name: `${updated.first_name || updated.firstName || form.name || ''} ${updated.last_name || updated.lastName || ''}`.trim() || (form.name || ''),
+            name: (() => {
+              const first = updated.first_name || updated.firstName || '';
+              const last = updated.last_name || updated.lastName || '';
+              return (last || first) ? (last + (first ? ', ' + first : '')) : (form.name || '');
+            })(),
             email: updated.email ?? form.email ?? '',
             studentId: updated.student_id ?? form.studentId ?? '',
-            yearLevel: (updated.year_level || `${form.yearLevel}st Year`).startsWith('1') ? '1' : (updated.year_level || `${form.yearLevel}st Year`).charAt(0),
+            yearLevel: updated.year_level || yearLevelToEnum(form.yearLevel) || form.yearLevel || '',
             section: updated.section_id ? String(updated.section_id) : (updated.section_name || form.section || ''),
             phone: updated.phone ?? form.phone ?? '',
             parentContact: form.parentContact,
@@ -684,6 +809,15 @@ const Students = () => {
                 Export Students
               </Button>
 
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/admin/users/students/grades")} 
+                className="mr-3 border-2 rounded-xl px-4 py-2.5 hover:bg-primary/5 hover:border-primary/50"
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Manage Grades
+              </Button>
+
               <Button onClick={handleOpenCreate} className="bg-gradient-to-r from-primary to-accent text-white shadow-lg hover:shadow-xl">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Student
@@ -716,14 +850,13 @@ const Students = () => {
                   <div className="w-36">
                     <Select value={yearLevelFilter} onValueChange={setYearLevelFilter}>
                       <SelectTrigger className="border-2 rounded-xl px-3 py-2 bg-background font-medium shadow-sm">
-                        {yearLevelFilter === "all" ? "All Years" : `${yearLevelFilter}st Year`}
+                        {yearLevelFilter === "all" ? "All Grades" : yearLevelFilter}
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Years</SelectItem>
-                        <SelectItem value="1">1st Year</SelectItem>
-                        <SelectItem value="2">2nd Year</SelectItem>
-                        <SelectItem value="3">3rd Year</SelectItem>
-                        <SelectItem value="4">4th Year</SelectItem>
+                        <SelectItem value="all">All Grades</SelectItem>
+                        {yearLevels.map((yl) => (
+                          <SelectItem key={yl.id} value={yl.name}>{yl.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -746,18 +879,15 @@ const Students = () => {
                     <Select value={sectionFilter} onValueChange={setSectionFilter}>
                         <SelectTrigger className="border-2 rounded-xl px-3 py-2 bg-background font-medium shadow-sm">
                           {sectionFilter === "all" ? "All Sections" : (() => {
-                            const parts = String(sectionFilter).split('-');
-                            return parts.length === 2 ? `${parts[0]} - F${parts[1]}` : String(sectionFilter);
+                            const selected = availableSections.find(s => s.key === sectionFilter);
+                            return selected ? selected.display : String(sectionFilter);
                           })()}
                         </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Sections</SelectItem>
-                        {availableSections.map((sec) => {
-                          const [y, s] = String(sec).split('-');
-                          return (
-                            <SelectItem key={sec} value={sec}>{`${y} - F${s}`}</SelectItem>
-                          );
-                        })}
+                        {availableSections.map((sec) => (
+                          <SelectItem key={sec.key} value={sec.key}>{sec.display}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -765,20 +895,16 @@ const Students = () => {
                   <div className="w-44">
                     <Select value={sortOption} onValueChange={setSortOption}>
                       <SelectTrigger className="border-2 rounded-xl px-4 py-2.5 bg-background font-medium shadow-sm">
-                        {sortOption === "name_asc" && "Name A → Z"}
-                        {sortOption === "name_desc" && "Name Z → A"}
-                        {sortOption === "id_asc" && "ID A → Z"}
-                        {sortOption === "id_desc" && "ID Z → A"}
-                        {sortOption === "year_asc" && "Year ↑"}
-                        {sortOption === "year_desc" && "Year ↓"}
+                          {sortOption === "id_asc" && "Student ID ↑"}
+                          {sortOption === "id_desc" && "Student ID ↓"}
+                          {sortOption === "name_asc" && "Student Name ↑"}
+                          {sortOption === "name_desc" && "Student Name ↓"}
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="name_asc">Name A → Z</SelectItem>
-                        <SelectItem value="name_desc">Name Z → A</SelectItem>
-                        <SelectItem value="id_asc">Student ID A → Z</SelectItem>
-                        <SelectItem value="id_desc">Student ID Z → A</SelectItem>
-                        <SelectItem value="year_asc">Year ↑</SelectItem>
-                        <SelectItem value="year_desc">Year ↓</SelectItem>
+                        <SelectItem value="id_asc">Student ID ↑</SelectItem>
+                        <SelectItem value="id_desc">Student ID ↓</SelectItem>
+                        <SelectItem value="name_asc">Student Name ↑</SelectItem>
+                        <SelectItem value="name_desc">Student Name ↓</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -798,8 +924,8 @@ const Students = () => {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {viewMode === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {pagedStudents.map((student) => (
                   <div
                     key={student.id}
@@ -820,7 +946,7 @@ const Students = () => {
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-lg">{student.name}</p>
                               <p className="text-sm text-muted-foreground truncate">{student.email}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{student.yearLevel} - F{student.section || '—'}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{student.yearLevel} - {getSectionName(student.section) || student.section || '—'}</p>
                             </div>
                       </div>
                       <Badge
@@ -912,7 +1038,7 @@ const Students = () => {
                           <Badge variant="outline" className="text-xs flex-shrink-0">{student.studentId}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">{student.email}</p>
-                        <p className="text-xs text-muted-foreground">{student.yearLevel} - F{student.section || '—'}</p>
+                        <p className="text-xs text-muted-foreground">{student.yearLevel} - {getSectionName(student.section) || student.section || '—'}</p>
                       </div>
                     </div>
 
@@ -999,14 +1125,23 @@ const Students = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-4 mt-2">
+              <div className="grid grid-cols-2 gap-4 mt-2">
                 <div>
                   <Label htmlFor="studentId">Student ID (optional)</Label>
                   <Input
                     id="studentId"
                     value={form.studentId}
                     onChange={(e) => setForm((f) => ({ ...f, studentId: e.target.value }))}
-                    placeholder="e.g., MCC2025-00001 — leave empty to auto-generate"
+                    placeholder="e.g., MCAF2025-0001 — leave empty to auto-generate"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="middleName">Middle Name (optional)</Label>
+                  <Input
+                    id="middleName"
+                    value={form.middleName}
+                    onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+                    placeholder="Optional middle name"
                   />
                 </div>
               </div>
@@ -1033,20 +1168,19 @@ const Students = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="yearLevel">Year Level</Label>
-                  <Select value={form.yearLevel || "1"} onValueChange={(v) => {
+                  <Label htmlFor="yearLevel">Grade Level</Label>
+                  <Select value={form.yearLevel || ""} onValueChange={(v) => {
                       setForm((f) => ({ ...f, yearLevel: v as any }));
                       // update subject suggestions to match the selected year
                       fetchSubjects(String(v));
                     }}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select a grade level" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
+                      {yearLevels.map((yl) => (
+                        <SelectItem key={yl.id} value={String(yl.id)}>{yl.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1151,19 +1285,18 @@ const Students = () => {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="edit-yearLevel">Year Level</Label>
-                  <Select value={form.yearLevel || "1"} onValueChange={(v) => {
+                  <Label htmlFor="edit-yearLevel">Grade Level</Label>
+                  <Select value={form.yearLevel || ""} onValueChange={(v) => {
                       setForm((f) => ({ ...f, yearLevel: v as any }));
                       fetchSubjects(String(v));
                     }}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select a grade level" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1st Year</SelectItem>
-                      <SelectItem value="2">2nd Year</SelectItem>
-                      <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
+                      {yearLevels.map((yl) => (
+                        <SelectItem key={yl.id} value={String(yl.id)}>{yl.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1212,19 +1345,7 @@ const Students = () => {
                   </div>
                 </div>
               </div>
-              <div className="mt-4">
-                <Button
-                  variant="secondary"
-                  className="w-full justify-center"
-                  onClick={() => {
-                    setIsEditOpen(false);
-                    if (selectedStudentId) navigate(`/admin/users/students/${selectedStudentId}/courses`);
-                  }}
-                >
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Manage Subjects
-                </Button>
-              </div>
+              {/* Manage Subjects removed - student course assignment handled elsewhere or deprecated */}
               <div className="flex gap-2 pt-4 border-t">
                 <Button className="flex-1 bg-gradient-to-r from-primary to-accent text-white py-3 font-semibold rounded-lg shadow-lg" onClick={handleEdit}>
                   Save Changes

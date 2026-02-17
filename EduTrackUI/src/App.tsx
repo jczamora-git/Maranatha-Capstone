@@ -1,3 +1,4 @@
+import React, { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import useFirebaseToken from "./hooks/useFirebaseToken";
+import { usePaymentPageLock } from "./hooks/usePaymentPageLock";
+import { FEATURES } from "@/config/features";
 import StudentMessaging from "./pages/student/Messaging";
 import TeacherMessaging from "./pages/teacher/Messaging";
 import { AuthProvider } from "./hooks/useAuth";
@@ -12,11 +15,18 @@ import { ConfirmProvider } from "@/components/Confirm";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { NotificationContainer } from "@/components/NotificationContainer";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Register from "./pages/Register";
+import StudentLogin from "./pages/StudentLogin";
+import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ForgotPin from "./pages/ForgotPin";
+import ResetPin from "./pages/ResetPin";
 import StudentDashboard from "./pages/StudentDashboard";
+import EnrolleeDashboard from "./pages/EnrolleeDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -30,41 +40,74 @@ import StudentNotifications from "./pages/student/Notifications";
 import TeacherNotifications from "./pages/teacher/Notifications";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AcademicPeriods from "./pages/admin/AcademicPeriods";
-import Campuses from "./pages/admin/Campuses";
+import EnrollmentSettings from "./pages/admin/EnrollmentSettings";
+import ManagementPage from "./pages/admin/ManagementPage";
 import Teachers from "./pages/admin/users/Teachers";
 import TeacherCourseAssignment from "./pages/admin/users/TeacherCourseAssignment";
 import Students from "./pages/admin/users/Students";
-import StudentCourseAssignment from "./pages/admin/users/StudentCourseAssignment";
 import Subjects from "./pages/admin/users/Subjects";
 import Sections from "./pages/admin/users/Sections";
 import SectionDetail from "./pages/admin/users/SectionDetail";
+import StudentGradeLevelManagement from "./pages/admin/users/StudentGradeLevelManagement";
+import Payments from "./pages/admin/Payments";
+import PaymentPlans from "./pages/admin/PaymentPlans";
+import RFIDAttendance from "./pages/admin/RFIDAttendance";
+import AdviserManualEnrollment from "./pages/teacher/AdviserManualEnrollment";
 
+// Enrollment pages
+import EnrollmentForm from "./pages/enrollment/EnrollmentForm";
+import EnrollmentStatus from "./pages/enrollment/EnrollmentStatus";
+import MyEnrollments from "./pages/enrollment/MyEnrollments";
+import Payment from "./pages/enrollment/Payment";
+import PaymentProcess from "./pages/enrollment/PaymentProcess";
+import InstallmentPlans from "./pages/enrollment/InstallmentPlans";
+import SetupPin from "./pages/enrollment/SetupPin";
+import VerifyPin from "./pages/enrollment/VerifyPin";
+import EnrollmentDetail from "./pages/admin/EnrollmentDetail";
+import AdminEnrollmentCreate from "./pages/admin/AdminEnrollmentCreate";
 
 // Teacher pages
 import Courses from "./pages/teacher/Courses";
 import CourseManagement from "./pages/teacher/CourseManagement";
 import ActivityDetail from "./pages/teacher/ActivityDetail";
+import ActivityOutputs from "./pages/teacher/ActivityOutputs";
+import QuizBuilder from "./pages/teacher/QuizBuilder";
+import QuizReview from "./pages/teacher/QuizReview";
+import StudentQuizReview from "./pages/teacher/StudentQuizReview";
 import Activities from "./pages/teacher/Activities";
 // import StudentManagement from "./pages/teacher/StudentManagement";
 // import StudentDetail from "./pages/teacher/StudentDetail";
 import GradeInput from "./pages/teacher/GradeInput";
 import GradeInputEdit from "./pages/teacher/GradeInputEdit";
 import TeacherSettings from "./pages/teacher/TeacherSettings";
-import AttendanceQR from "./pages/teacher/AttendanceQR";
+import AttendanceDashboard from "./pages/teacher/AttendanceDashboard";
+import AttendanceSession from "./pages/teacher/AttendanceSession";
+import AttendanceHistory from "./pages/teacher/AttendanceHistory";
 
 // Student pages
 import MyCourses from "./pages/student/MyCourses";
 import CourseDetails from "./pages/student/CourseDetails";
+import StudentCourseManagement from "./pages/student/CourseManagement";
+import QuizTaker from "./pages/student/QuizTaker";
+import ActivitySubmit from "./pages/student/ActivitySubmit";
 import MyActivities from "./pages/student/MyActivities";
 import MyGrades from "./pages/student/MyGrades";
 import MyProgress from "./pages/student/MyProgress";
 import CourseGradeDetail from "./pages/student/CourseGradeDetail";
 import StudentSettings from "./pages/student/StudentSettings";
-import StudentAttendanceQR from "./pages/student/AttendanceQR";
+// StudentAttendanceQR removed - Attendance QR not used
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  // Monitor payment section lock/unlock across all pages
+  usePaymentPageLock();
+  
+  // Lazy-load Campuses only at runtime inside the component to avoid top-level evaluation issues
+  let LazyCampuses: any = null;
+  if (FEATURES.attendance) {
+    LazyCampuses = lazy(() => import('./pages/admin/Campuses'));
+  }
   // Initialize Firebase token registration for real-time notifications
   useFirebaseToken();
 
@@ -74,57 +117,176 @@ const AppContent = () => {
       <Routes>
             <Route path="/" element={<Auth />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/student-login" element={<StudentLogin />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             <Route path="/auth/reset" element={<ResetPassword />} />
+            <Route path="/auth/forgot-pin" element={<ForgotPin />} />
+            <Route path="/auth/reset-pin" element={<ResetPin />} />
+            <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             
             {/* Student Routes */}
             <Route path="/student/dashboard" element={<ProtectedRoute requiredRole="student"><StudentDashboard /></ProtectedRoute>} />
-            <Route path="/student/courses" element={<ProtectedRoute requiredRole="student"><MyCourses /></ProtectedRoute>} />
-            <Route path="/student/activities" element={<ProtectedRoute requiredRole="student"><MyActivities /></ProtectedRoute>} />
-            <Route path="/student/grades" element={<ProtectedRoute requiredRole="student"><MyGrades /></ProtectedRoute>} />
-            <Route path="/student/progress" element={<ProtectedRoute requiredRole="student"><MyProgress /></ProtectedRoute>} />
-            <Route path="/student/course-grade-detail/:courseId" element={<ProtectedRoute requiredRole="student"><CourseGradeDetail /></ProtectedRoute>} />
+            {FEATURES.courses && (
+              <>
+                <Route path="/student/courses" element={<ProtectedRoute requiredRole="student"><MyCourses /></ProtectedRoute>} />
+                <Route path="/student/courses/:courseId" element={<ProtectedRoute requiredRole="student"><StudentCourseManagement /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.activities && (
+              <>
+                <Route path="/student/activities" element={<ProtectedRoute requiredRole="student"><MyActivities /></ProtectedRoute>} />
+                <Route path="/student/courses/:courseId/activities/:activityId/quiz" element={<ProtectedRoute requiredRole="student"><QuizTaker /></ProtectedRoute>} />
+                <Route path="/student/courses/:courseId/activities/:activityId/submit" element={<ProtectedRoute requiredRole="student"><ActivitySubmit /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.grading && (
+              <>
+                <Route path="/student/grades" element={<ProtectedRoute requiredRole="student"><MyGrades /></ProtectedRoute>} />
+                <Route path="/student/progress" element={<ProtectedRoute requiredRole="student"><MyProgress /></ProtectedRoute>} />
+                <Route path="/student/course-grade-detail/:courseId" element={<ProtectedRoute requiredRole="student"><CourseGradeDetail /></ProtectedRoute>} />
+              </>
+            )}
             <Route path="/student/settings" element={<ProtectedRoute requiredRole="student"><StudentSettings /></ProtectedRoute>} />
-            <Route path="/student/courses/:courseId" element={<ProtectedRoute requiredRole="student"><CourseDetails /></ProtectedRoute>} />
-            <Route path="/student/attendance-qr" element={<ProtectedRoute requiredRole="student"><StudentAttendanceQR /></ProtectedRoute>} />
-            <Route path="/student/messages" element={<ProtectedRoute requiredRole="student"><StudentMessaging /></ProtectedRoute>} />
+            {FEATURES.messages && (
+              <Route path="/student/messages" element={<ProtectedRoute requiredRole="student"><StudentMessaging /></ProtectedRoute>} />
+            )}
+            
+            {/* Enrollee Routes */}
+            <Route path="/enrollee/dashboard" element={<ProtectedRoute requiredRole="enrollee"><EnrolleeDashboard /></ProtectedRoute>} />
+            {FEATURES.enrollment && (
+              <>
+                <Route path="/enrollee/enrollment" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><MyEnrollments /></ProtectedRoute>} />
+                <Route path="/enrollee/enrollment-form" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><EnrollmentForm /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.payment && (
+              <Route path="/enrollee/payment" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><Payment /></ProtectedRoute>} />
+            )}
             
             {/* Teacher Routes */}
             <Route path="/teacher/dashboard" element={<ProtectedRoute requiredRole="teacher"><TeacherDashboard /></ProtectedRoute>} />
-            <Route path="/teacher/courses" element={<ProtectedRoute requiredRole="teacher"><Courses /></ProtectedRoute>} />
-            <Route path="/teacher/courses/:courseId/activities/:activityId" element={<ProtectedRoute requiredRole="teacher"><ActivityDetail /></ProtectedRoute>} />
-            <Route path="/teacher/activities" element={<ProtectedRoute requiredRole="teacher"><Activities /></ProtectedRoute>} />
-            {/* <Route path="/teacher/students" element={<ProtectedRoute requiredRole="teacher"><StudentManagement /></ProtectedRoute>} />
-            <Route path="/teacher/student-detail" element={<ProtectedRoute requiredRole="teacher"><StudentDetail /></ProtectedRoute>} /> */}
-            <Route path="/teacher/grades" element={<ProtectedRoute requiredRole="teacher"><GradeInput /></ProtectedRoute>} />
-            <Route path="/teacher/grade-input-edit" element={<ProtectedRoute requiredRole="teacher"><GradeInputEdit /></ProtectedRoute>} />
+            {FEATURES.courses && (
+              <>
+                <Route path="/teacher/courses" element={<ProtectedRoute requiredRole="teacher"><Courses /></ProtectedRoute>} />
+                {FEATURES.courseManagement && (
+                  <Route path="/teacher/courses/:courseId" element={<ProtectedRoute requiredRole="teacher"><CourseManagement /></ProtectedRoute>} />
+                )}
+              </>
+            )}
+            {FEATURES.activities && (
+              <>
+                <Route path="/teacher/courses/:courseId/activities/:activityId" element={<ProtectedRoute requiredRole="teacher"><ActivityDetail /></ProtectedRoute>} />
+                <Route path="/teacher/courses/:courseId/activities/:activityId/outputs" element={<ProtectedRoute requiredRole="teacher"><ActivityOutputs /></ProtectedRoute>} />
+                <Route path="/teacher/courses/:courseId/activities/:activityId/quiz-builder" element={<ProtectedRoute requiredRole="teacher"><QuizBuilder /></ProtectedRoute>} />
+                <Route path="/teacher/courses/:courseId/activities/:activityId/review" element={<ProtectedRoute requiredRole="teacher"><QuizReview /></ProtectedRoute>} />
+                <Route path="/teacher/courses/:courseId/activities/:activityId/review/:studentId" element={<ProtectedRoute requiredRole="teacher"><StudentQuizReview /></ProtectedRoute>} />
+                <Route path="/teacher/activities" element={<ProtectedRoute requiredRole="teacher"><Activities /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.grading && (
+              <>
+                <Route path="/teacher/grades" element={<ProtectedRoute requiredRole="teacher"><GradeInput /></ProtectedRoute>} />
+                <Route path="/teacher/grade-input-edit" element={<ProtectedRoute requiredRole="teacher"><GradeInputEdit /></ProtectedRoute>} />
+              </>
+            )}
             <Route path="/teacher/settings" element={<ProtectedRoute requiredRole="teacher"><TeacherSettings /></ProtectedRoute>} />
-            <Route path="/teacher/attendance-qr" element={<ProtectedRoute requiredRole="teacher"><AttendanceQR /></ProtectedRoute>} />
-            <Route path="/teacher/courses/:courseId" element={<ProtectedRoute requiredRole="teacher"><CourseManagement /></ProtectedRoute>} />
-            <Route path="/teacher/messages" element={<ProtectedRoute requiredRole="teacher"><TeacherMessaging /></ProtectedRoute>} />
+            {FEATURES.attendance && (
+              <>
+                <Route path="/teacher/attendance" element={<ProtectedRoute requiredRole="teacher"><AttendanceDashboard /></ProtectedRoute>} />
+                <Route path="/teacher/attendance-session" element={<ProtectedRoute requiredRole="teacher"><AttendanceSession /></ProtectedRoute>} />
+                <Route path="/teacher/attendance-history" element={<ProtectedRoute requiredRole="teacher"><AttendanceHistory /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.messages && (
+              <Route path="/teacher/messages" element={<ProtectedRoute requiredRole="teacher"><TeacherMessaging /></ProtectedRoute>} />
+            )}
             
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+            {FEATURES.enrollment && (
+              <>
+                <Route path="/admin/enrollments" element={<ProtectedRoute requiredRole={["admin", "teacher"]}><ManagementPage /></ProtectedRoute>} />
+                <Route path="/admin/enrollments/new" element={<ProtectedRoute requiredRole="admin"><AdminEnrollmentCreate /></ProtectedRoute>} />
+                <Route path="/admin/enrollments/:enrollmentId" element={<ProtectedRoute requiredRole={["admin", "teacher"]}><EnrollmentDetail /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.enrollment && FEATURES.adviserEnrollment && (
+              <Route path="/adviser/enrollments/new" element={<ProtectedRoute requiredRole="teacher"><AdviserManualEnrollment /></ProtectedRoute>} />
+            )}
+            {FEATURES.payment && (
+              <>
+                <Route path="/admin/payments" element={<ProtectedRoute requiredRole="admin"><Payments /></ProtectedRoute>} />
+                <Route path="/admin/payment-plans" element={<ProtectedRoute requiredRole="admin"><PaymentPlans /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.attendance && (
+              <Route path="/admin/rfid-attendance" element={<ProtectedRoute requiredRole="admin"><RFIDAttendance /></ProtectedRoute>} />
+            )}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UserManagement /></ProtectedRoute>} />
-            <Route path="/admin/users/teachers" element={<ProtectedRoute requiredRole="admin"><Teachers /></ProtectedRoute>} />
-            <Route path="/admin/teachers/:teacherId/courses" element={<ProtectedRoute requiredRole="admin"><TeacherCourseAssignment /></ProtectedRoute>} />
-            {/* New route to match users path used in UI */}
-            <Route path="/admin/users/teachers/:teacherId/courses" element={<ProtectedRoute requiredRole="admin"><TeacherCourseAssignment /></ProtectedRoute>} />
+            {FEATURES.teacherManagement && (
+              <Route path="/admin/users/teachers" element={<ProtectedRoute requiredRole="admin"><Teachers /></ProtectedRoute>} />
+            )}
             <Route path="/admin/users/students" element={<ProtectedRoute requiredRole="admin"><Students /></ProtectedRoute>} />
-            <Route path="/admin/users/students/:studentId/courses" element={<ProtectedRoute requiredRole="admin"><StudentCourseAssignment /></ProtectedRoute>} />
-            <Route path="/admin/users/subjects" element={<ProtectedRoute requiredRole="admin"><Subjects /></ProtectedRoute>} />
+            {FEATURES.teacherManagement && (
+              <>
+                <Route path="/admin/teachers/:teacherId/courses" element={<ProtectedRoute requiredRole="admin"><TeacherCourseAssignment /></ProtectedRoute>} />
+                <Route path="/admin/users/teachers/:teacherId/courses" element={<ProtectedRoute requiredRole="admin"><TeacherCourseAssignment /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.courses && (
+              <Route path="/admin/users/students/grades" element={<ProtectedRoute requiredRole="admin"><StudentGradeLevelManagement /></ProtectedRoute>} />
+            )}
+            {FEATURES.subjects && (
+              <>
+                <Route path="/admin/users/subjects" element={<ProtectedRoute requiredRole="admin"><Subjects /></ProtectedRoute>} />
+                <Route path="/admin/assignments" element={<ProtectedRoute requiredRole="admin"><SubjectAssignment /></ProtectedRoute>} />
+              </>
+            )}
             <Route path="/admin/users/sections" element={<ProtectedRoute requiredRole="admin"><Sections /></ProtectedRoute>} />
             <Route path="/admin/users/sections/:sectionId" element={<ProtectedRoute requiredRole="admin"><SectionDetail /></ProtectedRoute>} />
-            <Route path="/admin/grading" element={<ProtectedRoute requiredRole="admin"><GradingSystem /></ProtectedRoute>} />
-            <Route path="/admin/assignments" element={<ProtectedRoute requiredRole="admin"><SubjectAssignment /></ProtectedRoute>} />
-            <Route path="/admin/announcements" element={<ProtectedRoute requiredRole="admin"><Announcements /></ProtectedRoute>} />
-            <Route path="/admin/pdf" element={<ProtectedRoute requiredRole="admin"><PDFGeneration /></ProtectedRoute>} />
-              <Route path="/student/notifications" element={<ProtectedRoute requiredRole="student"><StudentNotifications /></ProtectedRoute>} />
-              <Route path="/teacher/notifications" element={<ProtectedRoute requiredRole="teacher"><TeacherNotifications /></ProtectedRoute>} />
+            {FEATURES.grading && (
+              <Route path="/admin/grading" element={<ProtectedRoute requiredRole="admin"><GradingSystem /></ProtectedRoute>} />
+            )}
+            {FEATURES.announcements && (
+              <Route path="/admin/announcements" element={<ProtectedRoute requiredRole="admin"><Announcements /></ProtectedRoute>} />
+            )}
+            {FEATURES.reports && (
+              <Route path="/admin/pdf" element={<ProtectedRoute requiredRole="admin"><PDFGeneration /></ProtectedRoute>} />
+            )}
+            <Route path="/student/notifications" element={<ProtectedRoute requiredRole="student"><StudentNotifications /></ProtectedRoute>} />
+            <Route path="/teacher/notifications" element={<ProtectedRoute requiredRole="teacher"><TeacherNotifications /></ProtectedRoute>} />
             <Route path="/admin/academic-periods" element={<ProtectedRoute requiredRole="admin"><AcademicPeriods /></ProtectedRoute>} />
-            <Route path="/admin/campuses" element={<ProtectedRoute requiredRole="admin"><Campuses /></ProtectedRoute>} />
+            <Route path="/admin/enrollment-settings" element={<ProtectedRoute requiredRole="admin"><EnrollmentSettings /></ProtectedRoute>} />
+            {FEATURES.attendance && LazyCampuses && (
+              <Route path="/admin/campuses" element={<ProtectedRoute requiredRole="admin"><Suspense fallback={null}><LazyCampuses /></Suspense></ProtectedRoute>} />
+            )}
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
+            
+            {/* Enrollment Routes - Open to both enrollees and students */}
+            {FEATURES.enrollment && (
+              <>
+                <Route path="/enrollment/new" element={<ProtectedRoute requiredRole={["enrollee", "student", "admin"]}><EnrollmentForm /></ProtectedRoute>} />
+                <Route path="/enrollment/status/:enrollmentId" element={<ProtectedRoute requiredRole={["enrollee", "student", "admin"]}><EnrollmentStatus /></ProtectedRoute>} />
+                <Route path="/enrollment/my-enrollments" element={<ProtectedRoute requiredRole={["enrollee", "student", "admin"]}><MyEnrollments /></ProtectedRoute>} />
+                <Route path="/enrollment/setup-pin" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><SetupPin /></ProtectedRoute>} />
+                <Route path="/enrollment/verify-pin" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><VerifyPin /></ProtectedRoute>} />
+                {/* Duplicate routes under /enrollee prefix to support older links and hooks that navigate with the enrollee prefix */}
+                <Route path="/enrollee/new" element={<ProtectedRoute requiredRole={["enrollee", "student", "admin"]}><EnrollmentForm /></ProtectedRoute>} />
+                <Route path="/enrollee/status/:enrollmentId" element={<ProtectedRoute requiredRole={["enrollee", "student", "admin"]}><EnrollmentStatus /></ProtectedRoute>} />
+                <Route path="/enrollee/my-enrollments" element={<ProtectedRoute requiredRole={["enrollee", "student", "admin"]}><MyEnrollments /></ProtectedRoute>} />
+                <Route path="/enrollee/setup-pin" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><SetupPin /></ProtectedRoute>} />
+                <Route path="/enrollee/verify-pin" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><VerifyPin /></ProtectedRoute>} />
+              </>
+            )}
+            {FEATURES.payment && (
+              <>
+                <Route path="/enrollment/payment" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><Payment /></ProtectedRoute>} />
+                <Route path="/enrollment/payment-process" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><PaymentProcess /></ProtectedRoute>} />
+                <Route path="/enrollment/installment-plans" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><InstallmentPlans /></ProtectedRoute>} />
+              </>
+            )}
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
@@ -149,13 +311,14 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="light"
       enableSystem
       disableTransitionOnChange
     >
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PWAInstallPrompt />
         <NotificationProvider>
           <BrowserRouter basename={routerBase}>
             <AuthProvider>

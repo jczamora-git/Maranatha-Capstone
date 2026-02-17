@@ -9,6 +9,16 @@ export const API_ENDPOINTS = {
   LOGOUT: `${API_BASE_URL}/api/auth/logout`,
   ME: `${API_BASE_URL}/api/auth/me`,
   CHECK: `${API_BASE_URL}/api/auth/check`,
+  CHECK_STUDENT: `${API_BASE_URL}/api/auth/check-student`,
+  SET_PASSWORD: `${API_BASE_URL}/api/auth/set-password`,
+  SETUP_PAYMENT_PIN: `${API_BASE_URL}/api/auth/setup-payment-pin`,
+  VERIFY_PAYMENT_PIN: `${API_BASE_URL}/api/auth/verify-payment-pin`,
+  REQUEST_PIN_RESET: `${API_BASE_URL}/api/auth/request-pin-reset`,
+  RESET_PIN: `${API_BASE_URL}/api/auth/reset-pin`,
+  
+  // Email Verification
+  VERIFY_EMAIL: `${API_BASE_URL}/api/users/verify-email`,
+  RESEND_VERIFICATION: `${API_BASE_URL}/api/users/resend-verification`,
   
   // User Management
   USERS: `${API_BASE_URL}/api/users`,
@@ -19,8 +29,17 @@ export const API_ENDPOINTS = {
   TEACHER_BY_ID: (id: string | number) => `${API_BASE_URL}/api/teachers/${id}`,
   TEACHER_STATS: `${API_BASE_URL}/api/teachers/stats`,
   
+  // Teacher Adviser & Subject Assignments
+  TEACHER_ADVISERS: `${API_BASE_URL}/api/teacher-advisers`,
+  TEACHER_ASSIGN_ADVISER: `${API_BASE_URL}/api/teachers/assign-adviser`,
+  TEACHER_ASSIGN_SUBJECT: `${API_BASE_URL}/api/teachers/assign-subject`,
+  TEACHER_ASSIGNMENTS_LIST: `${API_BASE_URL}/api/teachers/assignments`,
+  TEACHER_SUBJECTS: (teacher_id: string | number) => `${API_BASE_URL}/api/teachers/${teacher_id}/subjects`,
+  TEACHER_ASSIGNMENT_REMOVE: `${API_BASE_URL}/api/teachers/assignment`,
+  
   // Student Management
   STUDENTS: `${API_BASE_URL}/api/students`,
+  STUDENTS_ENROLLEES: `${API_BASE_URL}/api/students-enrollees`,
   STUDENT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/students/${id}`,
   STUDENT_BY_USER: (user_id: string | number) => `${API_BASE_URL}/api/students/by-user/${user_id}`,
   STUDENTS_IMPORT: `${API_BASE_URL}/api/students/import`,
@@ -40,10 +59,65 @@ export const API_ENDPOINTS = {
   TEACHER_ASSIGNMENTS_BY_TEACHER: (teacher_id: string | number) => `${API_BASE_URL}/api/teacher-assignments/by-teacher/${teacher_id}`,
   TEACHER_ASSIGNMENTS_FOR_STUDENT: `${API_BASE_URL}/api/teacher-assignments/for-student`,
   TEACHER_BY_ID_PUBLIC: (id: string | number) => `${API_BASE_URL}/api/teachers/${id}/public`,
+  TEACHER_MY_SUBJECTS: `${API_BASE_URL}/api/teachers/me/subjects`,
   // Student subjects (enrollments)
+  DISCOUNT_TEMPLATES: `${API_BASE_URL}/api/admin/discount-templates`,
+  DISCOUNT_TEMPLATE_BY_ID: (id: string | number) => `${API_BASE_URL}/api/admin/discount-templates/${id}`,
+  DISCOUNT_TEMPLATE_TOGGLE: (id: string | number) => `${API_BASE_URL}/api/admin/discount-templates/${id}/toggle`,
   STUDENT_SUBJECTS: `${API_BASE_URL}/api/student-subjects`,
+
+  // School Fees
+  SCHOOL_FEES: `${API_BASE_URL}/api/school-fees`,
+  SCHOOL_FEE_BY_ID: (id: string | number) => `${API_BASE_URL}/api/school-fees/${id}`,
+  SCHOOL_FEES_TOGGLE_STATUS: (id: string | number) => `${API_BASE_URL}/api/school-fees/${id}/toggle-status`,
+  SCHOOL_FEES_FOR_STUDENT: (student_id: string | number) => `${API_BASE_URL}/api/school-fees/student/${student_id}`,
+  
+  // Payments
+  PAYMENTS: `${API_BASE_URL}/api/payments`,
+  PAYMENTS_CHECK_REFERENCE: `${API_BASE_URL}/api/payments/check-reference`,
+  PAYMENT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payments/${id}`,
+  PAYMENT_DISCOUNTS: (payment_id: string | number) => `${API_BASE_URL}/api/payments/${payment_id}/discounts`,
+  PAYMENT_APPLY_DISCOUNT: (payment_id: string | number) => `${API_BASE_URL}/api/payments/${payment_id}/discounts`,
+  PAYMENT_REMOVE_DISCOUNT: (payment_id: string | number, discount_id: string | number) => `${API_BASE_URL}/api/payments/${payment_id}/discounts/${discount_id}`,
+  
+  // Payment Discounts
+  PAYMENT_DISCOUNTS_LIST: `${API_BASE_URL}/api/payment-discounts`,
+  PAYMENT_DISCOUNTS_BY_STUDENT: (student_id: string | number, period_id: string | number) => `${API_BASE_URL}/api/payment-discounts/student/${student_id}/period/${period_id}`,
+  
+  // Payment Plans
+  PAYMENT_PLANS: `${API_BASE_URL}/api/payment-plans`,
+  PAYMENT_PLAN_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-plans/${id}`,
+  PAYMENT_PLAN_INSTALLMENTS: (plan_id: string | number) => `${API_BASE_URL}/api/payment-plans/${plan_id}/installments`,
+  
   // Sections
   SECTIONS: `${API_BASE_URL}/api/sections`,
+
+  // Enrollment Management
+  ENROLLMENTS: `${API_BASE_URL}/api/enrollments`,
+  ENROLLMENT_SUBMIT: `${API_BASE_URL}/api/enrollments/submit`,
+  ENROLLMENT_LATEST: `${API_BASE_URL}/api/enrollments/latest`,
+  ENROLLMENT_STATUS: (id: string | number) => `${API_BASE_URL}/api/enrollments/${id}/status`,
+  ENROLLMENT_DOCUMENTS: (id: string | number) => `${API_BASE_URL}/api/enrollments/${id}/documents`,
+  ENROLLMENT_DISCOUNTS: (id: string | number) => `${API_BASE_URL}/api/enrollments/${id}/discounts`,
+  ENROLLMENT_PREVIEW_FOR_CONTINUING: (id: string | number) => `${API_BASE_URL}/api/enrollments/${id}/preview-for-continuing`,
+  ENROLLMENT_AUTO_CREATE_CONTINUING: `${API_BASE_URL}/api/enrollments/auto-create-continuing`,
+  ENROLLMENT_CLASSIFY_STUDENT: `${API_BASE_URL}/api/enrollments/classify-student`,
+  MY_ENROLLMENTS: `${API_BASE_URL}/api/my-enrollments`,
+  STUDENT_CURRENT_GRADE: `${API_BASE_URL}/api/students/current-grade`,
+  ADVISER_ENROLLMENT_PAYMENTS: (id: string | number) => `${API_BASE_URL}/api/adviser/enrollments/${id}/payments`,
+  
+  // Admin Enrollment Management
+  ADMIN_ENROLLMENTS: `${API_BASE_URL}/api/admin/enrollments`,
+  ADMIN_ENROLLMENTS_STATS: `${API_BASE_URL}/api/admin/enrollments/stats`,
+  ADMIN_ENROLLMENT_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/enrollments/${id}`,
+  ADMIN_ENROLLMENT_APPROVE: (id: string | number) => `${API_BASE_URL}/api/admin/enrollments/${id}/approve`,
+  ADMIN_ENROLLMENT_REJECT: (id: string | number) => `${API_BASE_URL}/api/admin/enrollments/${id}/reject`,
+  ADMIN_DOCUMENT_VERIFY: (id: string | number) => `${API_BASE_URL}/api/admin/documents/${id}/verify`,
+  ADMIN_DOCUMENT_REJECT: (id: string | number) => `${API_BASE_URL}/api/admin/documents/${id}/reject`,
+  ADVISER_ENROLLMENTS: (level: string) => `${API_BASE_URL}/api/adviser/enrollments?level=${encodeURIComponent(level)}`,
+  ADVISER_ELIGIBLE_STUDENTS: (level: string) => `${API_BASE_URL}/api/adviser/enrollments/eligible-students?level=${encodeURIComponent(level)}`,
+  ADVISER_ENROLLMENT_SUBMIT: `${API_BASE_URL}/api/adviser/enrollments/submit`,
+  TEACHER_ADVISER_LEVELS: `${API_BASE_URL}/api/teachers/me/adviser-levels`,
 
   // Activities (Grade Transparency)
   ACTIVITIES: `${API_BASE_URL}/api/activities`,
@@ -56,6 +130,7 @@ export const API_ENDPOINTS = {
   ACTIVITIES_COURSE_WITH_STATS: `${API_BASE_URL}/api/activities/course/with-stats`,
   EXPORT_CLASS_RECORD: `${API_BASE_URL}/api/activities/export-class-record`,
   EXPORT_CLASS_RECORD_EXCEL: `${API_BASE_URL}/api/activities/export-class-record-excel`,
+  IMPORT_CLASS_RECORD: `${API_BASE_URL}/api/activities/import-class-record`,
   
   // Academic periods
   ACADEMIC_PERIODS: `${API_BASE_URL}/api/academic-periods`,
@@ -65,6 +140,18 @@ export const API_ENDPOINTS = {
   ACADEMIC_PERIODS_CURRENT_SUBJECTS: `${API_BASE_URL}/api/academic-periods/current-subjects`,
   ACADEMIC_PERIOD_BY_ID: (id: string | number) => `${API_BASE_URL}/api/academic-periods/${id}`,
   ACADEMIC_PERIOD_SET_ACTIVE: (id: string | number) => `${API_BASE_URL}/api/academic-periods/${id}/set-active`,
+  
+  // Enrollment periods
+  ENROLLMENT_PERIODS: `${API_BASE_URL}/api/enrollment-periods`,
+  ENROLLMENT_PERIODS_ACTIVE: `${API_BASE_URL}/api/enrollment-periods/active`,
+  ENROLLMENT_PERIOD_BY_ID: (id: string | number) => `${API_BASE_URL}/api/enrollment-periods/${id}`,
+  ENROLLMENT_PERIOD_SET_ACTIVE: (id: string | number) => `${API_BASE_URL}/api/enrollment-periods/${id}/set-active`,
+  
+  // Document Requirements
+  ADMIN_DOCUMENT_REQUIREMENTS: `${API_BASE_URL}/api/admin/document-requirements`,
+  DOCUMENT_REQUIREMENTS_BY_GRADE: (gradeLevel: string, enrollmentType?: string) => 
+    `${API_BASE_URL}/api/document-requirements/${encodeURIComponent(gradeLevel)}${enrollmentType ? '/' + encodeURIComponent(enrollmentType) : ''}`,
+  
   // Campuses (location for attendance)
   CAMPUSES: `${API_BASE_URL}/api/campuses`,
   CAMPUS_BY_ID: (id: string | number) => `${API_BASE_URL}/api/campuses/${id}`,
@@ -74,6 +161,7 @@ export const API_ENDPOINTS = {
   // Attendance
   ATTENDANCE: `${API_BASE_URL}/api/attendance`,
   ATTENDANCE_MARK: `${API_BASE_URL}/api/attendance/mark`,
+  ATTENDANCE_BULK: `${API_BASE_URL}/api/attendance/bulk`,
   ATTENDANCE_TODAY: `${API_BASE_URL}/api/attendance/today`,
   ATTENDANCE_STUDENT: (id: string | number) => `${API_BASE_URL}/api/attendance/student/${id}`,
   ATTENDANCE_COURSE: (id: string | number) => `${API_BASE_URL}/api/attendance/course/${id}`,
@@ -99,17 +187,35 @@ export const API_ENDPOINTS = {
   BROADCASTS_BY_ID: (id: string | number) => `${API_BASE_URL}/api/broadcasts/${id}`,
   BROADCASTS_BY_SUBJECT: (subject_id: string | number) => `${API_BASE_URL}/api/broadcasts/subject/${subject_id}`,
   BROADCASTS_BY_SECTION: (section_id: string | number) => `${API_BASE_URL}/api/broadcasts/section/${section_id}`,
+
+  // Learning Materials (File Upload & Storage)
+  LEARNING_MATERIALS: `${API_BASE_URL}/api/learning-materials`,
+  LEARNING_MATERIALS_BY_ID: (id: string | number) => `${API_BASE_URL}/api/learning-materials/${id}`,
+  LEARNING_MATERIALS_BY_SUBJECT: (subject_id: string | number, section_id: string | number) => `${API_BASE_URL}/api/learning-materials/subject/${subject_id}?section_id=${section_id}`,
+  UPLOAD_FILE: `${API_BASE_URL}/api/upload/file`,
+
+  // Quiz Builder (Teacher)
+  QUIZ_QUESTIONS: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/questions`,
+  QUIZ_QUESTION: (activityId: string | number, questionId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/questions/${questionId}`,
+  QUIZ_SETTINGS: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/settings`,
+  
+  // Quiz Taker (Student)
+  QUIZ_START: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/quiz/start`,
+  QUIZ_SAVE_ANSWER: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/quiz/save-answer`,
+  QUIZ_SUBMIT: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/quiz/submit`,
 };
 
 // API helper functions
 export async function apiPost(url: string, data: any) {
+  const isFormData = data instanceof FormData;
+  
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
+    headers: isFormData ? {} : {
       'Content-Type': 'application/json',
     },
     credentials: 'include', // Important for session cookies
-    body: JSON.stringify(data),
+    body: isFormData ? data : JSON.stringify(data),
   });
 
   const text = await response.text();
@@ -194,13 +300,14 @@ export async function apiPut(url: string, data: any) {
   }
 }
 
-export async function apiDelete(url: string) {
+export async function apiDelete(url: string, data?: any) {
   const response = await fetch(url, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include', // Important for session cookies
+    body: data ? JSON.stringify(data) : undefined,
   });
 
   const text = await response.text();
@@ -267,4 +374,7 @@ export async function apiUploadFile(url: string, file: File, fieldName: string =
     return { success: true };
   }
 }
+
+// Alias for backward compatibility
+export const apiUpload = apiUploadFile;
 

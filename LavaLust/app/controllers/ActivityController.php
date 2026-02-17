@@ -177,7 +177,7 @@ class ActivityController extends Controller
 
             // Prepare activity data
             $activityData = [
-                'course_id' => $data['course_id'],
+                'subject_id' => $data['course_id'], // Map course_id from request to subject_id in database
                 'title' => $data['title'],
                 'type' => $data['type'],
                 'academic_period_id' => $academicPeriodId,
@@ -1020,7 +1020,7 @@ class ActivityController extends Controller
                 $sql = "SELECT a.*, ag.grade as student_grade, ag.status as grade_status, ag.id as grade_id, ag.created_at as grade_created_at 
                     FROM activities a 
                     LEFT JOIN activity_grades ag ON a.id = ag.activity_id AND ag.student_id = ? 
-                    WHERE a.course_id = ?";
+                    WHERE a.subject_id = ?";
             
             $params = [$studentIdInt, $courseIdInt];
             
@@ -1051,9 +1051,10 @@ class ActivityController extends Controller
                 foreach ($activities as $activity) {
                     $result[] = [
                         'id' => $activity['id'],
-                        'course_id' => $activity['course_id'],
+                        'subject_id' => $activity['subject_id'],
                         'academic_period_id' => $activity['academic_period_id'],
                         'title' => $activity['title'],
+                        'description' => $activity['description'] ?? '',
                         'type' => $activity['type'],
                         'max_score' => $activity['max_score'],
                         'due_at' => $activity['due_at'],
@@ -1214,7 +1215,7 @@ class ActivityController extends Controller
             }
 
             // Build activities query with filters
-            $conditions = ['a.course_id = ?'];
+            $conditions = ['a.subject_id = ?'];
             $params = [(int)$courseId];
 
             if (!empty($sectionId)) {
@@ -1467,4 +1468,799 @@ class ActivityController extends Controller
             ]);
         }
     }
+
+    /**
+     * Import class record from Excel file
+     * POST /api/activities/import-class-record
+     * FormData: file (Excel file), course_id, section_id, academic_period_id (optional)
+     */
+    public function api_import_class_record()
+    {
+        api_set_json_headers();
+
+        // Check authorization
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        $userRole = $this->session->userdata('role');
+        if ($userRole !== 'teacher' && $userRole !== 'admin') {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Forbidden: only teachers/admins can import grades'
+            ]);
+            return;
+        }
+
+        try {
+            // Check if file is uploaded
+            if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'No file uploaded or upload error'
+                ]);
+                return;
+            }
+
+            // Get parameters
+            $courseId = $_POST['course_id'] ?? null;
+            $sectionId = $_POST['section_id'] ?? null;
+            $academicPeriodId = $_POST['academic_period_id'] ?? null;
+
+            if (!$courseId || !$sectionId) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing required parameters: course_id and section_id'
+                ]);
+                return;
+            }
+
+            // Validate file type
+            $fileInfo = pathinfo($_FILES['file']['name']);
+            $extension = strtolower($fileInfo['extension'] ?? '');
+            
+            if (!in_array($extension, ['xlsx', 'xls'])) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid file type. Only .xlsx and .xls files are allowed.'
+                ]);
+                return;
+            }
+
+            // Load PhpSpreadsheet
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($_FILES['file']['tmp_name']);
+            $sheet = $spreadsheet->getActiveSheet();
+            $highestRow = $sheet->getHighestRow();
+            $highestCol = $sheet->getHighestColumn();
+            $highestColIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestCol);
+
+            // Get activities for this course/section to map columns
+            $activityFilters = [
+                'course_id' => $courseId,
+                'section_id' => $sectionId
+            ];
+            if ($academicPeriodId) {
+                $activityFilters['academic_period_id'] = $academicPeriodId;
+            }
+            $activities = $this->ActivityModel->get_all($activityFilters);
+
+            // Categorize activities
+            $written = [];
+            $performance = [];
+            $exam = [];
+            foreach ($activities as $act) {
+                $type = strtolower($act['type'] ?? '');
+                if (in_array($type, ['quiz', 'assignment', 'other'])) {
+                    $written[] = $act;
+                } elseif (in_array($type, ['project', 'laboratory', 'performance'])) {
+                    $performance[] = $act;
+                } elseif ($type === 'exam') {
+                    $exam[] = $act;
+                }
+            }
+
+            // Find header row (look for "No", "Student ID", "Name" pattern)
+            $headerRow = 0;
+            for ($row = 1; $row <= min($highestRow, 20); $row++) {
+                $cellA = strtolower(trim($sheet->getCell('A' . $row)->getValue() ?? ''));
+                $cellB = strtolower(trim($sheet->getCell('B' . $row)->getValue() ?? ''));
+                $cellC = strtolower(trim($sheet->getCell('C' . $row)->getValue() ?? ''));
+                
+                if (($cellA === 'no' || $cellA === '#') && 
+                    (strpos($cellB, 'student') !== false || strpos($cellB, 'id') !== false) && 
+                    (strpos($cellC, 'name') !== false)) {
+                    $headerRow = $row;
+                    break;
+                }
+            }
+
+            if ($headerRow === 0) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Could not find header row. Expected columns: No, Student ID, Name'
+                ]);
+                return;
+            }
+
+            // Skip HPS row if present (row after header)
+            $dataStartRow = $headerRow + 1;
+            $hpsCheck = strtolower(trim($sheet->getCell('B' . $dataStartRow)->getValue() ?? ''));
+            if (strpos($hpsCheck, 'hps') !== false) {
+                $dataStartRow++;
+            }
+
+            // Add debug info for row detection
+            $debugInfo['header_row'] = $headerRow;
+            $debugInfo['data_start_row'] = $dataStartRow;
+            $debugInfo['highest_row'] = $highestRow;
+            $debugInfo['written_count'] = count($written);
+            $debugInfo['performance_count'] = count($performance);
+            $debugInfo['exam_count'] = count($exam);
+
+            // Map column positions based on header
+            // Structure: No, Student ID, Name, [Written W1..Wn, Total, PS, WS], [Performance P1..Pn, Total, PS, WS], [Exam, PS, WS], Initial, Final
+            
+            // Build column map for activity grades
+            $activityColumnMap = []; // activity_id => column_index
+            $currentCol = 4; // Start after No, Student ID, Name (columns 1,2,3)
+            
+            // Written Works columns
+            foreach ($written as $act) {
+                $activityColumnMap[$act['id']] = $currentCol;
+                $debugInfo['column_map'][] = [
+                    'activity_id' => $act['id'],
+                    'activity_name' => $act['title'],
+                    'column_index' => $currentCol,
+                    'column_letter' => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($currentCol)
+                ];
+                $currentCol++;
+            }
+            $currentCol += 3; // Skip Total, PS, WS
+            
+            // Performance Tasks columns
+            foreach ($performance as $act) {
+                $activityColumnMap[$act['id']] = $currentCol;
+                $debugInfo['column_map'][] = [
+                    'activity_id' => $act['id'],
+                    'activity_name' => $act['title'],
+                    'column_index' => $currentCol,
+                    'column_letter' => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($currentCol)
+                ];
+                $currentCol++;
+            }
+            $currentCol += 3; // Skip Total, PS, WS
+            
+            // Exam columns
+            if (!empty($exam)) {
+                // For exam, we need to handle it differently since there's just one "Score" column
+                // The exam score goes to all exam activities proportionally, or to the first one
+                $examScoreCol = $currentCol;
+                $currentCol += 3; // Skip Score, PS, WS
+            }
+
+            // Get student ID map (student_id code -> database id)
+            $yearLevel = null;
+            $course = $this->db->table('teacher_subjects ts')
+                ->select('s.year_level')
+                ->join('subjects s', 's.id = ts.subject_id')
+                ->where('ts.id', $courseId)
+                ->get();
+            if ($course) {
+                $yearLevel = $course['year_level'];
+            }
+
+            $studentsQuery = $this->db->table('students st')
+                ->select('st.id, st.student_id')
+                ->where('st.section_id', $sectionId);
+            
+            if ($yearLevel) {
+                $studentsQuery->where('st.year_level', $yearLevel);
+            }
+            
+            $studentsData = $studentsQuery->get_all();
+            
+            $studentIdMap = []; // student_id (code) => database id
+            foreach ($studentsData as $st) {
+                $studentIdMap[$st['student_id']] = $st['id'];
+            }
+
+            // Process data rows
+            $inserted = 0;
+            $updated = 0;
+            $skipped = 0;
+            $errors = [];
+            $processedStudents = [];
+            $debugInfo = [];
+
+            for ($row = $dataStartRow; $row <= $highestRow; $row++) {
+                $studentIdCode = trim($sheet->getCell('B' . $row)->getValue() ?? '');
+                
+                // Skip empty rows
+                if (empty($studentIdCode)) {
+                    continue;
+                }
+
+                // Find student database ID
+                $studentDbId = $studentIdMap[$studentIdCode] ?? null;
+                
+                if (!$studentDbId) {
+                    $errors[] = "Row {$row}: Student ID '{$studentIdCode}' not found in database";
+                    continue;
+                }
+
+                $processedStudents[] = $studentIdCode;
+
+                // Debug: Log first 3 students' data
+                if (count($processedStudents) <= 3) {
+                    $studentDebug = [
+                        'row' => $row,
+                        'student_id' => $studentIdCode,
+                        'db_id' => $studentDbId,
+                        'grades_read' => []
+                    ];
+                }
+
+                // Process each activity grade
+                foreach ($activityColumnMap as $activityId => $colIndex) {
+                    $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                    $cell = $sheet->getCell($colLetter . $row);
+                    
+                    // Get calculated value (handles formulas)
+                    $cellValue = $cell->getCalculatedValue();
+                    
+                    // Debug first 3 students
+                    if (count($processedStudents) <= 3) {
+                        $studentDebug['grades_read'][] = [
+                            'activity_id' => $activityId,
+                            'column' => $colLetter,
+                            'raw_value' => $cellValue
+                        ];
+                    }
+                    
+                    // Handle formula results
+                    if ($cellValue === null || $cellValue === '' || $cellValue === '-') {
+                        continue;
+                    }
+
+                    // Parse grade value - convert to integer since DB column is int
+                    $grade = is_numeric($cellValue) ? intval(round(floatval($cellValue))) : null;
+                    
+                    if ($grade === null) {
+                        continue;
+                    }
+
+                    // Check if grade record exists
+                    $existingQuery = "SELECT * FROM activity_grades WHERE activity_id = ? AND student_id = ? LIMIT 1";
+                    $existingStmt = $this->db->raw($existingQuery, [$activityId, $studentDbId]);
+                    $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($existing) {
+                        // Update if grade changed (integer comparison)
+                        $existingGrade = intval($existing['grade'] ?? 0);
+                        if ($existingGrade !== $grade) {
+                            $updateQuery = "UPDATE activity_grades SET grade = ?, updated_at = ? WHERE activity_id = ? AND student_id = ?";
+                            $updateStmt = $this->db->raw($updateQuery, [$grade, date('Y-m-d H:i:s'), $activityId, $studentDbId]);
+                            $affectedRows = $updateStmt->rowCount();
+                            if ($affectedRows > 0) {
+                                $updated++;
+                                // Debug: Log the update
+                                if (count($processedStudents) <= 3) {
+                                    $debugInfo['updates'][] = [
+                                        'student' => $studentIdCode,
+                                        'activity_id' => $activityId,
+                                        'old_grade' => $existingGrade,
+                                        'new_grade' => $grade,
+                                        'affected_rows' => $affectedRows,
+                                        'query' => $updateQuery,
+                                        'params' => [$grade, date('Y-m-d H:i:s'), $activityId, $studentDbId]
+                                    ];
+                                }
+                            } else {
+                                // Debug: Log failed update
+                                if (count($processedStudents) <= 3) {
+                                    $debugInfo['failed_updates'][] = [
+                                        'student' => $studentIdCode,
+                                        'activity_id' => $activityId,
+                                        'old_grade' => $existingGrade,
+                                        'new_grade' => $grade,
+                                        'affected_rows' => $affectedRows
+                                    ];
+                                }
+                            }
+                        } else {
+                            $skipped++;
+                        }
+                    } else {
+                        // Insert new record
+                        $insertQuery = "INSERT INTO activity_grades (activity_id, student_id, grade, created_at, updated_at) VALUES (?, ?, ?, ?, ?)";
+                        $now = date('Y-m-d H:i:s');
+                        $insertStmt = $this->db->raw($insertQuery, [$activityId, $studentDbId, $grade, $now, $now]);
+                        if ($insertStmt) {
+                            $inserted++;
+                        }
+                    }
+                }
+
+                // Store student debug info
+                if (count($processedStudents) <= 3) {
+                    $debugInfo['students'][] = $studentDebug;
+                }
+
+                // Handle exam scores if present
+                if (!empty($exam) && isset($examScoreCol)) {
+                    $examCell = $sheet->getCell(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($examScoreCol) . $row);
+                    $examValue = $examCell->getCalculatedValue();
+                    
+                    if ($examValue !== null && $examValue !== '' && $examValue !== '-' && is_numeric($examValue)) {
+                        $examGrade = floatval($examValue);
+                        $totalExamMax = array_sum(array_column($exam, 'max_score'));
+                        
+                        // Distribute exam score proportionally across all exam activities
+                        foreach ($exam as $examAct) {
+                            $proportion = $totalExamMax > 0 ? ($examAct['max_score'] / $totalExamMax) : 1;
+                            $actGrade = intval(round($examGrade * $proportion));
+                            
+                            $existing = $this->db->table('activity_grades')
+                                ->where('activity_id', $examAct['id'])
+                                ->where('student_id', $studentDbId)
+                                ->get();
+
+                            $gradeData = [
+                                'grade' => $actGrade,
+                                'updated_at' => date('Y-m-d H:i:s'),
+                            ];
+
+                            if ($existing) {
+                                $existingExamGrade = intval($existing['grade'] ?? 0);
+                                if ($existingExamGrade !== $actGrade) {
+                                    $result = $this->db->table('activity_grades')
+                                        ->where('activity_id', $examAct['id'])
+                                        ->where('student_id', $studentDbId)
+                                        ->update($gradeData);
+                                    if ($result) {
+                                        $updated++;
+                                    }
+                                } else {
+                                    $skipped++;
+                                }
+                            } else {
+                                $gradeData['activity_id'] = $examAct['id'];
+                                $gradeData['student_id'] = $studentDbId;
+                                $gradeData['created_at'] = date('Y-m-d H:i:s');
+
+                                $result = $this->db->table('activity_grades')->insert($gradeData);
+                                if ($result) {
+                                    $inserted++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Import completed successfully',
+                'inserted' => $inserted,
+                'updated' => $updated,
+                'skipped' => $skipped,
+                'processed_students' => count($processedStudents),
+                'total_activities' => count($activityColumnMap),
+                'errors' => $errors,
+                'debug' => $debugInfo
+            ]);
+
+        } catch (Exception $e) {
+            error_log('Import class record error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get activity submissions (for file upload activities)
+     * GET /api/activities/{id}/submissions
+     */
+    public function api_get_submissions($activityId)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            // Get activity details
+            $activity = $this->db->table('activities')
+                ->where('id', $activityId)
+                ->get();
+
+            if (!$activity) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Activity not found'
+                ]);
+                return;
+            }
+
+            // Get students for this course/section
+            $students = [];
+            if ($activity['section_id']) {
+                // Get students from section (students table has section_id column)
+                // Names are in users table, joined by user_id
+                $students = $this->db->table('students')
+                    ->select('students.id, students.student_id, users.first_name, users.last_name, users.email')
+                    ->join('users', 'users.id = students.user_id')
+                    ->where('students.section_id', $activity['section_id'])
+                    ->get_all();
+            } else {
+                // Get all students enrolled in the course
+                $students = $this->db->table('students')
+                    ->select('students.id, students.student_id, users.first_name, users.last_name, users.email')
+                    ->join('users', 'users.id = students.user_id')
+                    ->join('student_subjects', 'student_subjects.student_id = students.id')
+                    ->where('student_subjects.subject_id', $activity['course_id'])
+                    ->get_all();
+            }
+
+            // Get submissions for this activity
+            $submissions = $this->db->table('activity_submissions')
+                ->where('activity_id', $activityId)
+                ->get_all();
+
+            // Get grades for this activity
+            $grades = $this->db->table('activity_grades')
+                ->where('activity_id', $activityId)
+                ->get_all();
+
+            // Create maps by student_id
+            $submissionMap = [];
+            foreach ($submissions as $sub) {
+                $submissionMap[$sub['student_id']] = $sub;
+                
+                // Get files for this submission
+                $files = $this->db->table('activity_submission_files')
+                    ->where('submission_id', $sub['id'])
+                    ->get_all();
+                
+                $submissionMap[$sub['student_id']]['files'] = $files;
+            }
+
+            $gradeMap = [];
+            foreach ($grades as $grade) {
+                $gradeMap[$grade['student_id']] = $grade;
+            }
+
+            // Build response with all students and their submission status
+            $result = [];
+            foreach ($students as $student) {
+                $submission = $submissionMap[$student['id']] ?? null;
+                $grade = $gradeMap[$student['id']] ?? null;
+                
+                // Prepare file data
+                $fileUrl = null;
+                $fileName = null;
+                $fileSize = null;
+                
+                if ($submission && !empty($submission['files'])) {
+                    $files = $submission['files'];
+                    // Create JSON arrays for multiple files
+                    $fileUrls = array_column($files, 'file_path');
+                    $fileNames = array_column($files, 'file_name');
+                    $fileSizes = array_column($files, 'file_size');
+                    
+                    $fileUrl = count($fileUrls) > 1 ? json_encode($fileUrls) : $fileUrls[0];
+                    $fileName = count($fileNames) > 1 ? json_encode($fileNames) : $fileNames[0];
+                    $fileSize = count($fileSizes) > 0 ? $fileSizes[0] : null;
+                }
+                
+                $result[] = [
+                    'student_id' => $student['id'],
+                    'student_name' => $student['first_name'] . ' ' . $student['last_name'],
+                    'student_number' => $student['student_id'],
+                    'file_url' => $fileUrl,
+                    'file_name' => $fileName,
+                    'file_size' => $fileSize,
+                    'submitted_at' => $submission['submitted_at'] ?? null,
+                    'grade' => $grade['grade'] ?? null,
+                    'feedback' => $grade['feedback'] ?? null,
+                    'status' => $this->getSubmissionStatus($submission, $grade, $activity['due_at'])
+                ];
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $result
+            ]);
+
+        } catch (Exception $e) {
+            error_log('Get submissions error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Save grade for a student submission
+     * POST /api/activities/{id}/grade
+     */
+    public function api_save_grade($activityId)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($input['student_id']) || !isset($input['grade'])) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'student_id and grade are required'
+                ]);
+                return;
+            }
+
+            $studentId = $input['student_id'];
+            $grade = $input['grade'];
+            $feedback = $input['feedback'] ?? null;
+            $status = $input['status'] ?? 'graded';
+
+            // Check if grade already exists
+            $existing = $this->db->table('activity_grades')
+                ->where('activity_id', $activityId)
+                ->where('student_id', $studentId)
+                ->get();
+
+            $data = [
+                'grade' => $grade,
+                'feedback' => $feedback,
+                'status' => $status,
+            ];
+
+            if ($existing) {
+                // Update existing grade
+                $result = $this->db->table('activity_grades')
+                    ->where('activity_id', $activityId)
+                    ->where('student_id', $studentId)
+                    ->update($data);
+            } else {
+                // Insert new grade
+                $data['activity_id'] = $activityId;
+                $data['student_id'] = $studentId;
+                $data['created_at'] = date('Y-m-d H:i:s');
+                
+                $result = $this->db->table('activity_grades')->insert($data);
+            }
+
+            if ($result) {
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Grade saved successfully',
+                    'data' => array_merge($data, ['activity_id' => $activityId, 'student_id' => $studentId])
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to save grade'
+                ]);
+            }
+
+        } catch (Exception $e) {
+            error_log('Save grade error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Helper function to determine submission status
+     */
+    private function getSubmissionStatus($submission, $grade, $dueDate)
+    {
+        // Check if graded
+        if ($grade && isset($grade['grade']) && $grade['grade'] !== null) {
+            return 'graded';
+        }
+
+        // Check if submitted
+        if (!$submission || !$submission['submitted_at']) {
+            return 'not_submitted';
+        }
+
+        // Check if late
+        if ($submission['is_late'] || ($dueDate && strtotime($submission['submitted_at']) > strtotime($dueDate))) {
+            return 'late';
+        }
+
+        return 'submitted';
+    }
+
+    /**
+     * Submit activity (for file uploads and text submissions)
+     * POST /api/activities/{id}/submit
+     */
+    public function api_submit_activity($activityId)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            // Get activity details
+            $activity = $this->db->table('activities')
+                ->where('id', $activityId)
+                ->get();
+
+            if (!$activity) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Activity not found'
+                ]);
+                return;
+            }
+
+            // Get student_id from POST data
+            $studentId = $_POST['student_id'] ?? null;
+            $submissionText = $_POST['submission_text'] ?? '';
+
+            if (!$studentId) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Student ID is required'
+                ]);
+                return;
+            }
+
+            // Check if student exists
+            $student = $this->db->table('students')
+                ->where('id', $studentId)
+                ->get();
+
+            if (!$student) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Student not found'
+                ]);
+                return;
+            }
+
+            // Check if due date has passed
+            $isLate = false;
+            if ($activity['due_at']) {
+                $isLate = strtotime('now') > strtotime($activity['due_at']);
+            }
+
+            // Check if submission already exists
+            $existingSubmission = $this->db->table('activity_submissions')
+                ->where('activity_id', $activityId)
+                ->where('student_id', $studentId)
+                ->get();
+
+            if ($existingSubmission) {
+                // Update existing submission
+                $this->db->table('activity_submissions')
+                    ->where('id', $existingSubmission['id'])
+                    ->update([
+                        'submission_text' => $submissionText,
+                        'submitted_at' => date('Y-m-d H:i:s'),
+                        'is_late' => $isLate ? 1 : 0
+                    ]);
+
+                $submissionId = $existingSubmission['id'];
+
+                // Delete old files
+                $this->db->table('activity_submission_files')
+                    ->where('submission_id', $submissionId)
+                    ->delete();
+            } else {
+                // Create new submission
+                $this->db->table('activity_submissions')->insert([
+                    'activity_id' => $activityId,
+                    'student_id' => $studentId,
+                    'submission_text' => $submissionText,
+                    'submitted_at' => date('Y-m-d H:i:s'),
+                    'is_late' => $isLate ? 1 : 0
+                ]);
+
+                $submissionId = $this->db->insert_id();
+            }
+
+            // Handle file uploads
+            if (isset($_FILES['files']) && !empty($_FILES['files']['name'][0])) {
+                $uploadPath = 'public/uploads/submissions/';
+                
+                // Create directory if it doesn't exist
+                if (!is_dir($uploadPath)) {
+                    mkdir($uploadPath, 0755, true);
+                }
+
+                $fileCount = count($_FILES['files']['name']);
+                
+                for ($i = 0; $i < $fileCount; $i++) {
+                    if ($_FILES['files']['error'][$i] === UPLOAD_ERR_OK) {
+                        $tmpName = $_FILES['files']['tmp_name'][$i];
+                        $originalName = basename($_FILES['files']['name'][$i]);
+                        $fileSize = $_FILES['files']['size'][$i];
+                        
+                        // Generate unique filename
+                        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+                        $filename = uniqid() . '_' . time() . '.' . $extension;
+                        $filePath = $uploadPath . $filename;
+
+                        if (move_uploaded_file($tmpName, $filePath)) {
+                            // Save file record
+                            $this->db->table('activity_submission_files')->insert([
+                                'submission_id' => $submissionId,
+                                'file_name' => $originalName,
+                                'file_path' => $filePath,
+                                'file_size' => $fileSize
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Activity submitted successfully',
+                'submission_id' => $submissionId
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error submitting activity: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
+

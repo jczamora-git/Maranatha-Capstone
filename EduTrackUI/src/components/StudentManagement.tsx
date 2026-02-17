@@ -163,10 +163,15 @@ export function StudentManagement() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">All Year Levels</SelectItem>
-            <SelectItem value="1st Year">1st Year</SelectItem>
-            <SelectItem value="2nd Year">2nd Year</SelectItem>
-            <SelectItem value="3rd Year">3rd Year</SelectItem>
-            <SelectItem value="4th Year">4th Year</SelectItem>
+            <SelectItem value="Nursery 1">Nursery 1</SelectItem>
+            <SelectItem value="Nursery 2">Nursery 2</SelectItem>
+            <SelectItem value="Kinder">Kinder</SelectItem>
+            <SelectItem value="Grade 1">Grade 1</SelectItem>
+            <SelectItem value="Grade 2">Grade 2</SelectItem>
+            <SelectItem value="Grade 3">Grade 3</SelectItem>
+            <SelectItem value="Grade 4">Grade 4</SelectItem>
+            <SelectItem value="Grade 5">Grade 5</SelectItem>
+            <SelectItem value="Grade 6">Grade 6</SelectItem>
           </SelectContent>
         </Select>
       </div>

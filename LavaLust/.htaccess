@@ -23,8 +23,17 @@ AddDefaultCharset UTF-8
     Options -Indexes
 
     # --------------------------------------------------
-    # Route all requests through index.php
+    # Handle SPA routes for /ui/ folder - redirect to ui/index.html
+    # This handles all /ui/* routes including those with query strings
+    RewriteCond %{REQUEST_URI} ^/ui
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ui(/.*)?$ /ui/index.html [QSA,L]
+
+    # --------------------------------------------------
+    # Route all other requests through index.php (LavaLust backend)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/ui
     RewriteRule ^(.*)$ index.php/$1 [QSA,L]
 </IfModule>

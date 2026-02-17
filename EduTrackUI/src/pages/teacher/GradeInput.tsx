@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Award, Save, Upload, Download, FileSpreadsheet, Edit3, Send } from "lucide-react";
+import { Award, Save, Upload, Download, FileSpreadsheet, Edit3, Send, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
 
@@ -34,9 +34,12 @@ const GradeInput = () => {
   const [sections, setSections] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
-  const [loading, setLoading] = useState({ periods: false, courses: false, sections: false, students: false, activities: false, submitting: false });
+  const [loading, setLoading] = useState({ periods: false, courses: false, sections: false, students: false, activities: false, submitting: false, importing: false });
 
   const [courseInfo, setCourseInfo] = useState({ code: "", title: "", teacher: "", section: "" });
+
+  // File input ref for import
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to categorize activities by grading component
   const categorizeActivities = (activities: any[]) => {
@@ -258,6 +261,117 @@ const GradeInput = () => {
     } catch (error: any) {
       console.error('Export Excel failed:', error);
       alert('Failed to export Excel: ' + (error.message || 'Unknown error'));
+    }
+  };
+
+  // Import class record from Excel file
+  const handleImportClick = () => {
+    if (!selectedCourse || !selectedSection) {
+      alert("Please select a course and section first");
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleImportClassRecord = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    const validExtensions = ['.xlsx', '.xls'];
+    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+      alert('Invalid file type. Please upload an Excel file (.xlsx or .xls)');
+      event.target.value = '';
+      return;
+    }
+
+    const confirmImport = window.confirm(
+      `Are you sure you want to import grades from "${file.name}"?\n\nThis will update existing grades and create new ones where needed.`
+    );
+
+    if (!confirmImport) {
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      setLoading((l) => ({ ...l, importing: true }));
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('course_id', String(selectedCourse));
+      formData.append('section_id', String(selectedSection));
+      if (selectedPeriodId) {
+        formData.append('academic_period_id', String(selectedPeriodId));
+      }
+
+      const response = await fetch(API_ENDPOINTS.IMPORT_CLASS_RECORD, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        let message = `Import completed successfully!\n\n`;
+        message += `• Grades inserted: ${result.inserted}\n`;
+        message += `• Grades updated: ${result.updated}\n`;
+        message += `• Grades unchanged: ${result.skipped || 0}\n`;
+        message += `• Students processed: ${result.processed_students}\n`;
+        message += `• Activities mapped: ${result.total_activities || 'N/A'}`;
+        
+        if (result.errors && result.errors.length > 0) {
+          message += `\n\nWarnings:\n${result.errors.slice(0, 5).join('\n')}`;
+          if (result.errors.length > 5) {
+            message += `\n... and ${result.errors.length - 5} more`;
+          }
+        }
+        
+        alert(message);
+
+        // Refresh the data after successful import
+        // Trigger a re-fetch of students with grades
+        if (selectedSection && selectedCourse) {
+          const course = courses.find((c) => String(c.id) === String(selectedCourse));
+          const yearLevel = course?.year_level ?? null;
+          
+          let query = `section_id=${encodeURIComponent(String(selectedSection))}`;
+          if (yearLevel) {
+            query += `&year_level=${encodeURIComponent(String(yearLevel))}`;
+          }
+          query += `&include_grades=true`;
+          
+          const res = await apiGet(`${API_ENDPOINTS.STUDENTS}?${query}`);
+          const list = res.data ?? res.students ?? res ?? [];
+          if (Array.isArray(list)) {
+            const mapped = list.map((st: any) => ({
+              id: st.id ?? st.user_id ?? null,
+              student_code: st.student_id ?? null,
+              name: st.name ?? `${st.first_name ?? ''} ${st.last_name ?? ''}`,
+              email: st.email ?? st.user_email ?? '',
+              status: st.status ?? 'active',
+              grades: st.grades ?? st.activity_grades ?? []
+            }));
+            setStudents(mapped);
+          }
+        }
+      } else {
+        alert(`Import failed: ${result.message}`);
+      }
+    } catch (error: any) {
+      console.error('Import failed:', error);
+      alert('Failed to import class record: ' + (error.message || 'Unknown error'));
+    } finally {
+      setLoading((l) => ({ ...l, importing: false }));
+      // Reset file input
+      event.target.value = '';
     }
   };
 
@@ -803,7 +917,9 @@ const GradeInput = () => {
               <div>
                 <Button
                   onClick={() => {
-                    const url = `/teacher/grade-input-edit?course=${selectedCourse}&section=${selectedSection}&term=${selectedTerm}&semester=${selectedSemester}&period_id=${selectedPeriodId || ''}`;
+                    // Use import.meta.env.BASE_URL to get the correct base path (/ui/ in production, / in dev)
+                    const basePath = import.meta.env.BASE_URL || '/';
+                    const url = `${basePath}teacher/grade-input-edit?course=${selectedCourse}&section=${selectedSection}&term=${selectedTerm}&semester=${selectedSemester}&period_id=${selectedPeriodId || ''}`;
                     window.open(url, "_blank", "noopener,noreferrer");
                   }}
                 >
@@ -1003,26 +1119,74 @@ const GradeInput = () => {
             <CardDescription className="text-xs">Import or export class record for offline editing</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Hidden file input for import */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportClassRecord}
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              className="hidden"
+              aria-label="Import Excel file"
+              title="Select Excel file to import"
+            />
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border-2 border-dashed border-border rounded-lg p-4">
+              <div 
+                className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${
+                  loading.importing 
+                    ? 'border-primary/50 bg-primary/5' 
+                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                }`}
+                onClick={handleImportClick}
+              >
                 <div className="flex items-center gap-3">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  {loading.importing ? (
+                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  ) : (
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  )}
                   <div className="flex-1">
-                    <p className="text-sm font-medium mb-1">Import Excel File</p>
-                    <p className="text-xs text-muted-foreground mb-2">Upload edited class record (.xlsx, .xls)</p>
+                    <p className="text-sm font-medium mb-1">
+                      {loading.importing ? 'Importing...' : 'Import Excel File'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {loading.importing 
+                        ? 'Processing grades from Excel file...' 
+                        : 'Upload edited class record (.xlsx, .xls)'}
+                    </p>
+                    {!loading.importing && (
+                      <Button size="sm" variant="outline" className="mt-1" disabled={!selectedCourse || !selectedSection}>
+                        <Upload className="h-3 w-3 mr-1" />
+                        Choose File
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
               
-              <div className="border border-border rounded-lg p-4 bg-muted/30">
+              <div 
+                className="border border-border rounded-lg p-4 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={handleExportClassRecordExcel}
+              >
                 <div className="flex items-center gap-3">
                   <FileSpreadsheet className="h-8 w-8 text-primary" />
                   <div className="flex-1">
                     <p className="text-sm font-medium mb-1">Export to Excel</p>
                     <p className="text-xs text-muted-foreground mb-2">Download current class record for offline editing</p>
+                    <Button size="sm" variant="outline" className="mt-1" disabled={!selectedCourse || !selectedSection}>
+                      <Download className="h-3 w-3 mr-1" />
+                      Download
+                    </Button>
                   </div>
                 </div>
               </div>
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                <strong>Tip:</strong> Export the class record first to get the correct template format. 
+                Edit grades in Excel (only modify score columns), then import the file back to update grades in the system.
+              </p>
             </div>
           </CardContent>
         </Card>
