@@ -1,8 +1,10 @@
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 
+// NOTE: apiKey is injected at build time from environment variables
+// DO NOT hardcode API keys in public files
 const firebaseConfig = {
-  apiKey: "AIzaSyBqzSYcI1o4KBP-HP0d00ytunedAZtdOIM",
+  apiKey: self.firebaseConfig?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "marantha-tokens.firebaseapp.com",
   projectId: "marantha-tokens",
   storageBucket: "marantha-tokens.firebasestorage.app",
