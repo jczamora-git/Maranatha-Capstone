@@ -10,6 +10,7 @@ import { ArrowLeft, Search, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { API_ENDPOINTS, apiGet } from '@/lib/api';
+import EmailLoadingModal from '@/components/EmailLoadingModal';
 
 interface EnrollmentFormData {
   // Enrollment Type
@@ -148,6 +149,15 @@ export default function AdviserManualEnrollment() {
 
   // Enrollment period state
   const [activeEnrollmentPeriodId, setActiveEnrollmentPeriodId] = useState<number | null>(null);
+
+  // Account creation state
+  const [createAccount, setCreateAccount] = useState(false);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPhone, setAccountPhone] = useState('');
+
+  // Email loading modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
 
   // Get enrollment type from router state on mount
   useEffect(() => {
@@ -971,6 +981,11 @@ export default function AdviserManualEnrollment() {
       if (!formData.permanent_province.trim()) newErrors.permanent_province = 'Permanent province required';
     }
 
+    if (createAccount) {
+      if (!accountEmail.trim()) newErrors.account_email = 'Account email required';
+      if (!accountPhone.trim()) newErrors.account_phone = 'Account contact number required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -988,6 +1003,12 @@ export default function AdviserManualEnrollment() {
     }
 
     setIsSubmitting(true);
+
+    // Show email modal if account creation is enabled
+    if (createAccount) {
+      setShowEmailModal(true);
+      setEmailSuccess(false);
+    }
 
     try {
       const formDataObj = new FormData();
@@ -1008,6 +1029,12 @@ export default function AdviserManualEnrollment() {
         formDataObj.append('selected_student_id', String(selectedStudentId));
       }
 
+      if (createAccount) {
+        formDataObj.append('create_account', '1');
+        formDataObj.append('account_email', accountEmail);
+        formDataObj.append('account_phone', accountPhone);
+      }
+
       const response = await fetch(API_ENDPOINTS.ADVISER_ENROLLMENT_SUBMIT, {
         method: 'POST',
         body: formDataObj
@@ -1017,14 +1044,20 @@ export default function AdviserManualEnrollment() {
         throw new Error('Failed to create enrollment');
       }
 
-      toast({
-        title: 'Success',
-        description: 'Enrollment created successfully'
-      });
-
-      navigate('/admin/enrollments');
+      // Set email success if account was created
+      if (createAccount) {
+        setEmailSuccess(true);
+      } else {
+        // If no account creation, show success toast and navigate immediately
+        toast({
+          title: 'Success',
+          description: 'Enrollment created successfully'
+        });
+        navigate('/admin/enrollments');
+      }
     } catch (error) {
       console.error('Error creating enrollment:', error);
+      setShowEmailModal(false); // Hide modal on error
       toast({
         title: 'Error',
         description: 'Failed to create enrollment',
@@ -1032,6 +1065,17 @@ export default function AdviserManualEnrollment() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEmailModalComplete = () => {
+    setShowEmailModal(false);
+    if (emailSuccess) {
+      toast({
+        title: 'Success',
+        description: 'Enrollment created successfully'
+      });
+      navigate('/admin/enrollments');
     }
   };
 
@@ -1160,6 +1204,83 @@ export default function AdviserManualEnrollment() {
               )}
             </div>
           </div>
+
+          {/* Optional Account Creation */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">Optional Account Creation</h2>
+              <p className="text-teal-100 text-sm mt-1">Create a student user account for payments</p>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                <Checkbox
+                  id="create_account"
+                  checked={createAccount}
+                  onCheckedChange={(checked) => {
+                    const enabled = Boolean(checked);
+                    setCreateAccount(enabled);
+                    if (!enabled) {
+                      setAccountEmail('');
+                      setAccountPhone('');
+                      setErrors(prev => {
+                        const next = { ...prev };
+                        delete next.account_email;
+                        delete next.account_phone;
+                        return next;
+                      });
+                    }
+                  }}
+                />
+                <Label htmlFor="create_account" className="font-medium text-gray-700 cursor-pointer">
+                  Create user account for this student
+                </Label>
+              </div>
+
+              {createAccount && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="account_email" className="font-medium text-gray-700">Account Email *</Label>
+                    <Input
+                      id="account_email"
+                      type="email"
+                      value={accountEmail}
+                      onChange={(e) => setAccountEmail(e.target.value)}
+                      className={`mt-2 ${errors.account_email ? 'border-red-500' : ''}`}
+                      placeholder="student@example.com"
+                    />
+                    {errors.account_email && (
+                      <p className="text-sm text-red-600 mt-1">{errors.account_email}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="account_phone" className="font-medium text-gray-700">Account Contact Number *</Label>
+                    <Input
+                      id="account_phone"
+                      type="tel"
+                      value={accountPhone}
+                      onChange={(e) => setAccountPhone(e.target.value)}
+                      className={`mt-2 ${errors.account_phone ? 'border-red-500' : ''}`}
+                      placeholder="09XX-XXX-XXXX"
+                    />
+                    {errors.account_phone && (
+                      <p className="text-sm text-red-600 mt-1">{errors.account_phone}</p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-800">
+                        <strong>Secure Setup:</strong> A password setup link will be sent to the provided email address after enrollment creation.
+                        The student/parent can set their password securely through the email link.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Student Information Card */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
@@ -1806,6 +1927,17 @@ export default function AdviserManualEnrollment() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Email Loading Modal */}
+        <EmailLoadingModal
+          isOpen={showEmailModal}
+          isSuccess={emailSuccess}
+          emailType="confirmation"
+          customMessage="Creating enrollment and sending account setup email..."
+          customSuccessMessage="Enrollment created and account setup email sent successfully"
+          onComplete={handleEmailModalComplete}
+          autoCloseDuration={3000}
+        />
       </div>
     </DashboardLayout>
   );

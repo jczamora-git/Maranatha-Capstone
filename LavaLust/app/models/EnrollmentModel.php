@@ -42,24 +42,48 @@ class EnrollmentModel extends Model
                 'grade_level' => $data['grade_level'] ?? '',
                 'enrollment_period_id' => $data['enrollment_period_id'] ?? null,
                 'status' => 'Pending',
-                'created_user_id' => $data['user_id'] ?? null,
+                'created_user_id' => $data['created_user_id'] ?? $data['user_id'] ?? null,
+                'created_student_id' => $data['created_student_id'] ?? null,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
             // Insert enrollment
-            $this->db->table('enrollments')->insert($enrollment);
-            
-            // Get the newly created enrollment ID by querying back
-            $enrollmentQuery = "SELECT `id` FROM `enrollments` WHERE `created_user_id` = ? AND `grade_level` = ? ORDER BY `id` DESC LIMIT 1";
-            $stmt = $this->db->raw($enrollmentQuery, [$data['user_id'], $data['grade_level']]);
-            $result = $stmt->fetch();
-            
-            if (!$result || !isset($result['id'])) {
+            $insertResult = $this->db->table('enrollments')->insert($enrollment);
+
+            // Prefer direct insert return value when available
+            $enrollmentId = null;
+            if (is_numeric($insertResult) && (int)$insertResult > 0) {
+                $enrollmentId = (int)$insertResult;
+            }
+
+            // Use DB helper methods only if available in this driver instance
+            if (empty($enrollmentId) && method_exists($this->db, 'insert_id')) {
+                $enrollmentId = $this->db->insert_id();
+            }
+            if (empty($enrollmentId) && method_exists($this->db, 'last_id')) {
+                $enrollmentId = $this->db->last_id();
+            }
+
+            // Fallback lookup if insert id is unavailable in current DB driver
+            if (empty($enrollmentId)) {
+                if (isset($data['user_id']) && $data['user_id'] !== null) {
+                    $enrollmentQuery = "SELECT `id` FROM `enrollments` WHERE `created_user_id` = ? AND `grade_level` = ? ORDER BY `id` DESC LIMIT 1";
+                    $stmt = $this->db->raw($enrollmentQuery, [$data['user_id'], $data['grade_level']]);
+                } else {
+                    $enrollmentQuery = "SELECT `id` FROM `enrollments` WHERE `created_user_id` IS NULL AND `grade_level` = ? ORDER BY `id` DESC LIMIT 1";
+                    $stmt = $this->db->raw($enrollmentQuery, [$data['grade_level']]);
+                }
+
+                $result = $stmt->fetch();
+                if ($result && isset($result['id'])) {
+                    $enrollmentId = $result['id'];
+                }
+            }
+
+            if (empty($enrollmentId)) {
                 throw new Exception('Failed to create enrollment record');
             }
-            
-            $enrollmentId = $result['id'];
 
             // Insert enrollment learner info
             if (isset($data['learner']) && !empty($data['learner'])) {
@@ -416,9 +440,9 @@ class EnrollmentModel extends Model
              try {
                  $gradeLevel = $enrollment['grade_level'] ?? '';
                  
-                 // Only Tuition fees are required for enrollment
+                 // Sum all required active fees for the student's grade level
                  // Match grade level if year_level is set, otherwise apply to all grades
-                 $query = "SELECT SUM(amount) as total FROM school_fees WHERE fee_type = 'Tuition' AND is_required = 1 AND is_active = 1 AND (year_level IS NULL OR year_level = ?)";
+                 $query = "SELECT SUM(amount) as total FROM school_fees WHERE is_required = 1 AND is_active = 1 AND (year_level IS NULL OR year_level = ?)";
                  $stmt = $this->db->raw($query, [$gradeLevel]);
                  $feeResult = $stmt->fetch();
                  

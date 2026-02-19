@@ -545,6 +545,184 @@ class UserController extends Controller
     }
 
     /**
+     * API: Validate set password token
+     * POST /api/auth/validate-set-password-token
+     * Body JSON: { token }
+     */
+    public function api_validate_set_password_token()
+    {
+        api_set_json_headers();
+
+        try {
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+
+            $token = isset($json_data['token']) ? trim($json_data['token']) : '';
+
+            if (empty($token)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token is required.']);
+                return;
+            }
+
+            // Find token record with account_setup type
+            $reset = $this->db->table('password_resets')
+                ->where('token', $token)
+                ->where('type', 'account_setup')
+                ->get();
+
+            if (!$reset) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid token.']);
+                return;
+            }
+
+            // Check if already used
+            if ((int)$reset['used'] === 1) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token has already been used.']);
+                return;
+            }
+
+            // Check expiry
+            $expiresAt = strtotime($reset['expires_at']);
+            if ($expiresAt === false || $expiresAt < time()) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token has expired.']);
+                return;
+            }
+
+            // Get user info
+            $user = $this->UserModel->find($reset['user_id']);
+            if (!$user) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'User not found.']);
+                return;
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'user' => [
+                    'id' => $user['id'],
+                    'email' => $user['email'],
+                    'first_name' => $user['first_name'],
+                    'last_name' => $user['last_name'],
+                    'role' => $user['role']
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * API: Set password with token (for account setup)
+     * POST /api/auth/set-password
+     * Body JSON: { token, password }
+     */
+    public function api_set_password_with_token()
+    {
+        api_set_json_headers();
+
+        try {
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+
+            $token = isset($json_data['token']) ? trim($json_data['token']) : '';
+            $password = isset($json_data['password']) ? $json_data['password'] : '';
+
+            if (empty($token) || empty($password)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token and password are required.']);
+                return;
+            }
+
+            // Validate password strength
+            if (strlen($password) < 8) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters long.']);
+                return;
+            }
+
+            if (!preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Password must contain at least one uppercase letter, one lowercase letter, and one number.']);
+                return;
+            }
+
+            // Find token record with account_setup type
+            $reset = $this->db->table('password_resets')
+                ->where('token', $token)
+                ->where('type', 'account_setup')
+                ->get();
+
+            if (!$reset) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid token.']);
+                return;
+            }
+
+            // Check if already used
+            if ((int)$reset['used'] === 1) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token has already been used.']);
+                return;
+            }
+
+            // Check expiry
+            $expiresAt = strtotime($reset['expires_at']);
+            if ($expiresAt === false || $expiresAt < time()) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token has expired.']);
+                return;
+            }
+
+            // Get user
+            $user = $this->UserModel->find($reset['user_id']);
+            if (!$user) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'User not found.']);
+                return;
+            }
+
+            // Update password
+            $updated = $this->UserModel->update_user($user['id'], ['password' => $password]);
+
+            if (!$updated) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to set password.']);
+                return;
+            }
+
+            // Mark token as used
+            $this->db->table('password_resets')->where('id', $reset['id'])->update([
+                'used' => 1,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Password set successfully.',
+                'user' => [
+                    'id' => $user['id'],
+                    'email' => $user['email'],
+                    'first_name' => $user['first_name'],
+                    'last_name' => $user['last_name'],
+                    'role' => $user['role']
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Verify email address using encrypted token
      * GET /api/users/verify-email?token=xxx
      */

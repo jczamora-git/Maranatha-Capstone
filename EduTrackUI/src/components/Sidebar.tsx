@@ -32,7 +32,8 @@ import {
   X,
   DollarSign,
   CalendarClock,
-  Radio
+  Radio,
+  Shirt
 } from "lucide-react";
 
 interface SidebarItemProps {

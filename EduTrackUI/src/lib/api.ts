@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
   CHECK: `${API_BASE_URL}/api/auth/check`,
   CHECK_STUDENT: `${API_BASE_URL}/api/auth/check-student`,
   SET_PASSWORD: `${API_BASE_URL}/api/auth/set-password`,
+  VALIDATE_SET_PASSWORD_TOKEN: `${API_BASE_URL}/api/auth/validate-set-password-token`,
+  SET_PASSWORD_WITH_TOKEN: `${API_BASE_URL}/api/auth/set-password-with-token`,
   SETUP_PAYMENT_PIN: `${API_BASE_URL}/api/auth/setup-payment-pin`,
   VERIFY_PAYMENT_PIN: `${API_BASE_URL}/api/auth/verify-payment-pin`,
   REQUEST_PIN_RESET: `${API_BASE_URL}/api/auth/request-pin-reset`,
@@ -71,6 +73,16 @@ export const API_ENDPOINTS = {
   SCHOOL_FEE_BY_ID: (id: string | number) => `${API_BASE_URL}/api/school-fees/${id}`,
   SCHOOL_FEES_TOGGLE_STATUS: (id: string | number) => `${API_BASE_URL}/api/school-fees/${id}/toggle-status`,
   SCHOOL_FEES_FOR_STUDENT: (student_id: string | number) => `${API_BASE_URL}/api/school-fees/student/${student_id}`,
+
+  // Tuition Packages
+  TUITION_PACKAGES: `${API_BASE_URL}/api/tuition-packages`,
+  TUITION_PACKAGES_ACTIVE: `${API_BASE_URL}/api/tuition-packages/active`,
+  TUITION_PACKAGE_BY_ID: (id: string | number) => `${API_BASE_URL}/api/tuition-packages/${id}`,
+
+  // Uniform Items
+  UNIFORM_ITEMS: `${API_BASE_URL}/api/uniform-items`,
+  UNIFORM_ITEM_BY_ID: (id: string | number) => `${API_BASE_URL}/api/uniform-items/${id}`,
+  UNIFORM_ITEM_TOGGLE: (id: string | number) => `${API_BASE_URL}/api/uniform-items/${id}/toggle`,
   
   // Payments
   PAYMENTS: `${API_BASE_URL}/api/payments`,
@@ -88,6 +100,18 @@ export const API_ENDPOINTS = {
   PAYMENT_PLANS: `${API_BASE_URL}/api/payment-plans`,
   PAYMENT_PLAN_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-plans/${id}`,
   PAYMENT_PLAN_INSTALLMENTS: (plan_id: string | number) => `${API_BASE_URL}/api/payment-plans/${plan_id}/installments`,
+  
+  // Payment Schedule Templates
+  PAYMENT_SCHEDULE_TEMPLATES: `${API_BASE_URL}/api/payment-schedule-templates`,
+  PAYMENT_SCHEDULE_TEMPLATE_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-schedule-templates/${id}`,
+  PAYMENT_SCHEDULE_TEMPLATE_TOGGLE_STATUS: (id: string | number) => `${API_BASE_URL}/api/payment-schedule-templates/${id}/toggle-status`,
+  
+  // Payment Penalties
+  PAYMENT_PENALTIES_RECORD: `${API_BASE_URL}/api/payment-penalties/record`,
+  PAYMENT_PENALTY_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-penalties/${id}`,
+  PAYMENT_PENALTY_BY_INSTALLMENT: (installment_id: string | number) => `${API_BASE_URL}/api/payment-penalties/installment/${installment_id}`,
+  PAYMENT_PENALTY_BY_STUDENT: (student_id: string | number) => `${API_BASE_URL}/api/payment-penalties/student/${student_id}`,
+  PAYMENT_PENALTY_WAIVE: (id: string | number) => `${API_BASE_URL}/api/payment-penalties/${id}/waive`,
   
   // Sections
   SECTIONS: `${API_BASE_URL}/api/sections`,

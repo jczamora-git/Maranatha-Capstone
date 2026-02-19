@@ -724,3 +724,105 @@ VERIFYHTML;
 
     return $html;
 }
+
+/**
+ * Generate set password email for account setup
+ *
+ * @param string $firstName User's first name
+ * @param string $resetUrl Set password URL with token
+ * @return string HTML email content
+ */
+function generate_set_password_email($firstName, $resetUrl)
+{
+    $banner = generate_email_banner();
+    $title = generate_email_title('Welcome to Maranatha! 🎓', 'Complete Your Account Setup');
+    $footer = generate_email_footer();
+
+    $html = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f9fafb;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+        {$banner}
+        {$title}
+
+        <!-- Content Section -->
+        <tr>
+            <td style="background: #ffffff; padding: 40px 32px; color: #1f2937;">
+                <p style="color: #4b5563; font-size: 16px; line-height: 1.7; margin: 0 0 24px 0;">Hi <strong>{$firstName}</strong>,</p>
+                <p style="color: #4b5563; font-size: 15px; line-height: 1.7; margin: 0 0 32px 0;">Your enrollment has been successfully submitted! To complete your account setup and access your student portal, please set your password below.</p>
+
+                <!-- CTA Button -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align: center; padding: 24px 0;">
+                            <a href="{$resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #1754cf 0%, #26d9d9 100%); color: #ffffff; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px;">Set Your Password</a>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Features Section -->
+                <div style="margin: 32px 0;">
+                    <div style="font-weight: 700; color: #1f2937; font-size: 16px; margin-bottom: 16px;">What You'll Get Access To:</div>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                <div style="display: flex; gap: 12px;">
+                                    <div style="color: #26d9d9; font-size: 18px; font-weight: bold;">✓</div>
+                                    <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">Track your enrollment status and requirements</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                <div style="display: flex; gap: 12px;">
+                                    <div style="color: #26d9d9; font-size: 18px; font-weight: bold;">✓</div>
+                                    <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">Make secure online payments for tuition and fees</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                <div style="display: flex; gap: 12px;">
+                                    <div style="color: #26d9d9; font-size: 18px; font-weight: bold;">✓</div>
+                                    <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">View payment history and transaction records</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 0;">
+                                <div style="display: flex; gap: 12px;">
+                                    <div style="color: #26d9d9; font-size: 18px; font-weight: bold;">✓</div>
+                                    <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">Access enrollment forms and application status</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Security Alert -->
+                <div style="background: #fef3c7; border-left: 5px solid #d97706; padding: 16px; border-radius: 8px; margin: 32px 0; font-size: 14px; color: #78350f;">
+                    <div style="font-weight: 700; margin-bottom: 8px;">⚠️ Security Notice</div>
+                    <div>This link expires in 1 hour for your security. If you didn't request this account setup, please contact the school administration immediately.</div>
+                </div>
+
+                <!-- Fallback Link -->
+                <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0;">
+                    <strong>Link not working?</strong> Copy and paste this URL: <br>
+                    <span style="word-break: break-all; color: #1754cf;">{$resetUrl}</span>
+                </p>
+            </td>
+        </tr>
+
+        {$footer}
+    </table>
+</body>
+</html>
+HTML;
+
+    return $html;
+}

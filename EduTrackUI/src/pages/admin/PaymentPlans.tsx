@@ -22,7 +22,8 @@ import {
   AlertCircle,
   Eye,
   Edit,
-  FileText
+  FileText,
+  Settings
 } from "lucide-react";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
@@ -39,13 +40,25 @@ type PaymentPlan = {
   total_tuition: number;
   total_paid: number;
   balance: number;
-  schedule_type: "Full Payment" | "Monthly" | "Quarterly" | "Semi-Annual" | "Custom";
+  schedule_type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral";
   number_of_installments: number;
   status: "Active" | "Completed" | "Overdue" | "Cancelled";
   start_date?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
+};
+
+type ScheduleTemplate = {
+  id: string | number;
+  name: string;
+  description: string;
+  schedule_type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral";
+  number_of_installments: number;
+  status: "active" | "inactive";
+  installments?: any[];
+  created_at?: string;
+  updated_at?: string;
 };
 
 type Installment = {
@@ -111,6 +124,7 @@ export default function PaymentPlans() {
   const [schoolFees, setSchoolFees] = useState<SchoolFee[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
+  const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -118,9 +132,11 @@ export default function PaymentPlans() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [isTemplateSelectOpen, setIsTemplateSelectOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaymentPlan | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
   const [isEditingInstallments, setIsEditingInstallments] = useState(false);
   const [editedInstallments, setEditedInstallments] = useState<Installment[]>([]);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
@@ -143,12 +159,12 @@ export default function PaymentPlans() {
     enrollment_id: "",
     academic_period_id: "",
     total_tuition: "",
-    schedule_type: "Quarterly" as "Full Payment" | "Monthly" | "Quarterly" | "Semi-Annual" | "Custom",
+    schedule_type: "Quarterly" as "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral",
     number_of_installments: "4",
     start_date: new Date().toISOString().split('T')[0],
   });
 
-  const PAYMENT_TYPES = ["Full Payment", "Quarterly", "Semi-Annual", "Monthly", "Custom"];
+  const PAYMENT_TYPES = ["Monthly", "Quarterly", "Semestral", "Tri Semestral"];
   const STATUS_OPTIONS = ["All", "Active", "Completed", "Overdue", "Cancelled"];
   const PAYMENT_METHODS = ["Cash", "Check", "Bank Transfer", "GCash", "PayMaya", "Others"];
 
@@ -224,12 +240,13 @@ export default function PaymentPlans() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [plansRes, enrollmentsRes, feesRes, periodsRes, paymentsRes] = await Promise.all([
+      const [plansRes, enrollmentsRes, feesRes, periodsRes, paymentsRes, templatesRes] = await Promise.all([
         apiGet(API_ENDPOINTS.PAYMENT_PLANS),
         apiGet(API_ENDPOINTS.ADMIN_ENROLLMENTS),
         apiGet(API_ENDPOINTS.SCHOOL_FEES),
         apiGet(API_ENDPOINTS.ACADEMIC_PERIODS),
-        apiGet(API_ENDPOINTS.PAYMENTS)
+        apiGet(API_ENDPOINTS.PAYMENTS),
+        apiGet(API_ENDPOINTS.PAYMENT_SCHEDULE_TEMPLATES)
       ]);
 
       if (plansRes.success) setPaymentPlans(plansRes.data || []);
@@ -240,6 +257,11 @@ export default function PaymentPlans() {
       if (feesRes.success) setSchoolFees(feesRes.data || []);
       if (periodsRes.success) setAcademicPeriods(periodsRes.data || []);
       if (paymentsRes.success) setPayments(paymentsRes.data || []);
+      if (templatesRes.success) {
+        // Filter only active templates
+        const activeTemplates = (templatesRes.data || []).filter((t: ScheduleTemplate) => t.status === 'active');
+        setScheduleTemplates(activeTemplates);
+      }
     } catch (err) {
       setError("Failed to load payment plans");
     } finally {
@@ -280,7 +302,7 @@ export default function PaymentPlans() {
     const confirmed = await confirmFn({
       title: "Confirm Installment Changes",
       description: "Are you sure you want to save these changes? This will update the due dates and amounts for all installments.",
-      actionText: "Save Changes",
+      confirmText: "Save Changes",
       cancelText: "Cancel"
     });
 
@@ -407,9 +429,25 @@ export default function PaymentPlans() {
     }
   };
 
+  const handleTemplateSelect = (template: ScheduleTemplate) => {
+    setSelectedTemplate(template);
+    setForm({
+      ...form,
+      schedule_type: template.schedule_type,
+      number_of_installments: template.number_of_installments.toString()
+    });
+    setIsTemplateSelectOpen(false);
+    setIsCreateOpen(true);
+  };
+
   const handleCreate = async () => {
     if (!form.student_id || !form.enrollment_id || !form.academic_period_id || !form.total_tuition) {
       setError("Please fill all required fields");
+      return;
+    }
+
+    if (!selectedTemplate) {
+      setError("Please select a payment schedule template");
       return;
     }
 
@@ -423,6 +461,7 @@ export default function PaymentPlans() {
         balance: parseFloat(form.total_tuition),
         schedule_type: form.schedule_type,
         number_of_installments: parseInt(form.number_of_installments),
+        template_id: selectedTemplate.id,
         status: "Active",
         start_date: form.start_date
       });
@@ -451,6 +490,7 @@ export default function PaymentPlans() {
       start_date: new Date().toISOString().split('T')[0],
     });
     setStudentSearchQuery("");
+    setSelectedTemplate(null);
   };
 
   const filteredStudentSuggestions = enrollments.filter((enrollment) => {
@@ -506,7 +546,7 @@ export default function PaymentPlans() {
     active: paymentPlans.filter(p => p.status === "Active").length,
     completed: paymentPlans.filter(p => p.status === "Completed").length,
     overdue: paymentPlans.filter(p => p.status === "Overdue").length,
-    totalBalance: paymentPlans.reduce((sum, p) => sum + (parseFloat(p.balance) || 0), 0),
+    totalBalance: paymentPlans.reduce((sum, p) => sum + (Number(p.balance) || 0), 0),
   };
 
   if (!user || user.role !== "admin") {
@@ -522,10 +562,20 @@ export default function PaymentPlans() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Payment Plans & Installments</h1>
             <p className="text-muted-foreground mt-1">Manage student payment schedules and track installments</p>
           </div>
-          <Button onClick={() => setIsCreateOpen(true)} className="bg-gradient-to-r from-blue-600 to-cyan-500">
-            <Plus className="h-4 w-4 mr-2" />
-            New Payment Plan
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => navigate("/admin/installment-schedules")} 
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Schedule Management
+            </Button>
+            <Button onClick={() => setIsTemplateSelectOpen(true)} className="bg-gradient-to-r from-blue-600 to-cyan-500">
+              <Plus className="h-4 w-4 mr-2" />
+              New Payment Plan
+            </Button>
+          </div>
         </div>
 
         {/* Alert Messages */}
@@ -668,7 +718,7 @@ export default function PaymentPlans() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleViewPlan(plan)}
+                          onClick={() => navigate(`/admin/payment-plans/${plan.id}`)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -689,11 +739,106 @@ export default function PaymentPlans() {
           </CardContent>
         </Card>
 
+        {/* Template Selection Dialog */}
+        <Dialog open={isTemplateSelectOpen} onOpenChange={setIsTemplateSelectOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="border-b pb-4">
+              <DialogTitle className="text-xl font-semibold">Select Payment Schedule Template</DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Choose a payment schedule template for this payment plan
+              </p>
+            </DialogHeader>
+            <div className="py-4">
+              {scheduleTemplates.length === 0 ? (
+                <div className="text-center py-16">
+                  <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium mb-2">No active templates available</p>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Please create a payment schedule template first
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsTemplateSelectOpen(false);
+                      navigate("/admin/installment-schedules");
+                    }}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Go to Schedule Management
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {scheduleTemplates.map((template) => (
+                    <div
+                      key={template.id}
+                      onClick={() => handleTemplateSelect(template)}
+                      className="p-6 border-2 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-lg">{template.name}</h3>
+                          <p className="text-sm text-muted-foreground">{template.description}</p>
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-800">
+                          {template.schedule_type}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 mt-4 pt-4 border-t">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium">
+                            {template.number_of_installments} Installments
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-600">Active</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Create Payment Plan Dialog */}
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Dialog open={isCreateOpen} onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="border-b pb-4">
               <DialogTitle className="text-xl font-semibold">Create Payment Plan</DialogTitle>
+              {selectedTemplate && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">
+                        Selected Template: {selectedTemplate.name}
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        {selectedTemplate.schedule_type} • {selectedTemplate.number_of_installments} Installments
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsCreateOpen(false);
+                        setIsTemplateSelectOpen(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      Change
+                    </Button>
+                  </div>
+                </div>
+              )}
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="relative">
@@ -836,14 +981,16 @@ export default function PaymentPlans() {
                   <Select 
                     value={form.schedule_type} 
                     onValueChange={(v: any) => {
-                      let installments = "1";
-                      if (v === "Quarterly") installments = "4";
-                      else if (v === "Semi-Annual") installments = "2";
-                      else if (v === "Monthly") installments = "10";
+                      let installments = "4";
+                      if (v === "Monthly") installments = "10";
+                      else if (v === "Quarterly") installments = "4";
+                      else if (v === "Semestral") installments = "2";
+                      else if (v === "Tri Semestral") installments = "3";
                       setForm({ ...form, schedule_type: v, number_of_installments: installments });
                     }}
+                    disabled={!!selectedTemplate}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={selectedTemplate ? "bg-muted" : ""}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -852,6 +999,11 @@ export default function PaymentPlans() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedTemplate && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Locked by selected template
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -861,17 +1013,24 @@ export default function PaymentPlans() {
                     min="1"
                     value={form.number_of_installments}
                     onChange={(e) => setForm({ ...form, number_of_installments: e.target.value })}
-                    disabled={form.schedule_type !== "Custom"}
+                    disabled
+                    className="bg-muted"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Based on payment type
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsCreateOpen(false);
+                resetForm();
+              }}>
                 Cancel
               </Button>
-              <Button onClick={handleCreate}>
+              <Button onClick={handleCreate} disabled={!selectedTemplate}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Plan
               </Button>

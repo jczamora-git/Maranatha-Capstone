@@ -50,7 +50,7 @@ const InstallmentPlans = () => {
   const location = useLocation();
   const { user } = useAuth();
   usePaymentPageLock(); // Protect this page - redirects to setup-pin if payment section not unlocked
-  const [selectedPaymentType, setSelectedPaymentType] = useState<"Monthly" | "Quarterly" | "Semi-Annual" | "Custom">("Quarterly");
+  const [selectedPaymentType, setSelectedPaymentType] = useState<"Monthly" | "Quarterly" | "Semestral" | "Tri Semestral">("Quarterly");
   const [numberOfInstallments, setNumberOfInstallments] = useState<number>(5);
   const [discountTemplates, setDiscountTemplates] = useState<DiscountTemplate[]>([]);
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
@@ -94,19 +94,14 @@ const InstallmentPlans = () => {
       placement: 'right',
     },
     {
-      target: '.semiannual-plan',
-      content: 'Semi-Annual Plan: Pay in 2 semi-annual installments (every 6 months).',
+      target: '.semestral-plan',
+      content: 'Semestral Plan: Pay in 2 semestral installments (every semester).',
       placement: 'right',
     },
     {
-      target: '.custom-plan',
-      content: 'Custom Plan: Choose from 3, 5, 6, 7, 8, or 9 installments. This gives you flexibility without overlapping standard payment schedules.',
+      target: '.trisemestral-plan',
+      content: 'Tri Semestral Plan: Pay in 3 installments spread across the school year.',
       placement: 'right',
-    },
-    {
-      target: '.custom-installments-setting',
-      content: 'Use the dropdown or +/- buttons to select from available custom installment options: 3, 5, 6, 7, 8, or 9 payments. These options avoid overlapping with standard plans (Monthly=10, Quarterly=4, Semi-Annual=2).',
-      placement: 'top',
     },
     {
       target: '.payment-summary',
@@ -138,13 +133,6 @@ const InstallmentPlans = () => {
 
     // Track current tour step
     setCurrentTourIndex(index);
-
-    // Step 5: Auto-select custom plan
-    if (index === 5) {
-      console.log('Step 5: Auto-selecting Custom plan');
-      setSelectedPaymentType('Custom');
-      setNumberOfInstallments(5); // Use 5 as demo value (available in custom range)
-    }
 
     // Smooth scroll to center the target element in viewport
     if (status === 'running' || status === 'waiting') {
@@ -235,19 +223,19 @@ const InstallmentPlans = () => {
   const displaySchoolYear = runDemoInstallmentTour ? demoData.schoolYear : enrollment.school_year;
   const displayGradeLevel = runDemoInstallmentTour ? demoData.gradeLevel : enrollment.grade_level;
 
-  const handlePaymentTypeChange = (value: "Monthly" | "Quarterly" | "Semi-Annual" | "Custom") => {
+  const handlePaymentTypeChange = (value: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral") => {
     setSelectedPaymentType(value);
     // Auto-set installments based on type
-    if (value === "Quarterly") setNumberOfInstallments(4);
-    else if (value === "Semi-Annual") setNumberOfInstallments(2);
-    else if (value === "Monthly") setNumberOfInstallments(10);
-    else if (value === "Custom") setNumberOfInstallments(5); // Default to 5 for custom
+    if (value === "Monthly") setNumberOfInstallments(10);
+    else if (value === "Quarterly") setNumberOfInstallments(4);
+    else if (value === "Semestral") setNumberOfInstallments(2);
+    else if (value === "Tri Semestral") setNumberOfInstallments(3);
   };
 
   const perInstallmentAmount = Number(tuitionFee.amount) / numberOfInstallments;
 
   // Calculate due dates for each installment
-  const calculateDueDates = (startDate: Date, numInstallments: number, type: "Monthly" | "Quarterly" | "Semi-Annual" | "Custom") => {
+  const calculateDueDates = (startDate: Date, numInstallments: number, type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral") => {
     const dates: string[] = [];
     const currentDate = new Date(startDate);
 
@@ -256,12 +244,10 @@ const InstallmentPlans = () => {
         currentDate.setMonth(currentDate.getMonth() + 1);
       } else if (type === "Quarterly") {
         currentDate.setMonth(currentDate.getMonth() + 3);
-      } else if (type === "Semi-Annual") {
+      } else if (type === "Semestral") {
         currentDate.setMonth(currentDate.getMonth() + 6);
-      } else if (type === "Custom") {
-        // For custom, spread evenly across the year
-        const monthsInterval = Math.floor(10 / numInstallments); // 10 months spread
-        currentDate.setMonth(currentDate.getMonth() + monthsInterval);
+      } else if (type === "Tri Semestral") {
+        currentDate.setMonth(currentDate.getMonth() + 4);
       }
       dates.push(currentDate.toISOString().split('T')[0]);
     }
@@ -269,17 +255,18 @@ const InstallmentPlans = () => {
   };
 
   // Get period label for each installment
-  const getPeriodLabel = (installmentNumber: number, type: "Monthly" | "Quarterly" | "Semi-Annual" | "Custom") => {
+  const getPeriodLabel = (installmentNumber: number, type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral") => {
     if (type === "Monthly") {
       return `Month ${installmentNumber}`;
     } else if (type === "Quarterly") {
       const quarters = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
       return quarters[installmentNumber - 1] || `Quarter ${installmentNumber}`;
-    } else if (type === "Semi-Annual") {
+    } else if (type === "Semestral") {
       const semesters = ["1st Semester", "2nd Semester"];
-      return semesters[installmentNumber - 1] || `Period ${installmentNumber}`;
-    } else if (type === "Custom") {
-      return `Installment ${installmentNumber} of ${numberOfInstallments}`;
+      return semesters[installmentNumber - 1] || `Semester ${installmentNumber}`;
+    } else if (type === "Tri Semestral") {
+      const periods = ["1st Tri Semester", "2nd Tri Semester", "3rd Tri Semester"];
+      return periods[installmentNumber - 1] || `Period ${installmentNumber}`;
     }
     return `Installment ${installmentNumber}`;
   };
@@ -508,56 +495,56 @@ const InstallmentPlans = () => {
                       </div>
                     </button>
 
-                    {/* Semi-Annual Plan */}
+                    {/* Semestral Plan */}
                     <button
-                      onClick={() => handlePaymentTypeChange("Semi-Annual")}
+                      onClick={() => handlePaymentTypeChange("Semestral")}
                       className={`p-4 border-2 rounded-lg transition-all text-left ${
-                        selectedPaymentType === "Semi-Annual"
+                        selectedPaymentType === "Semestral"
                           ? "border-green-500 bg-green-50 dark:bg-green-950/20"
                           : "border-border hover:border-green-300"
-                      } semiannual-plan`}>
+                      } semestral-plan`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h5 className="font-semibold text-foreground mb-1">Semi-Annual Plan</h5>
-                          <p className="text-xs text-muted-foreground">2 semi-annual payments</p>
+                          <h5 className="font-semibold text-foreground mb-1">Semestral Plan</h5>
+                          <p className="text-xs text-muted-foreground">2 semestral payments</p>
                           <p className="text-sm font-bold text-green-600 mt-2">
-                            ₱{(Number(tuitionFee.amount) / 2).toLocaleString()} per period
+                            ₱{(Number(tuitionFee.amount) / 2).toLocaleString()} per semester
                           </p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                          selectedPaymentType === "Semi-Annual"
+                          selectedPaymentType === "Semestral"
                             ? "border-green-500 bg-green-500"
                             : "border-muted-foreground"
                         }`}>
-                          {selectedPaymentType === "Semi-Annual" && (
+                          {selectedPaymentType === "Semestral" && (
                             <div className="w-2 h-2 bg-white rounded-full" />
                           )}
                         </div>
                       </div>
                     </button>
 
-                    {/* Custom Plan */}
+                    {/* Tri Semestral Plan */}
                     <button
-                      onClick={() => handlePaymentTypeChange("Custom")}
+                      onClick={() => handlePaymentTypeChange("Tri Semestral")}
                       className={`p-4 border-2 rounded-lg transition-all text-left ${
-                        selectedPaymentType === "Custom"
+                        selectedPaymentType === "Tri Semestral"
                           ? "border-green-500 bg-green-50 dark:bg-green-950/20"
                           : "border-border hover:border-green-300"
-                      } custom-plan`}>
+                      } trisemestral-plan`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h5 className="font-semibold text-foreground mb-1">Custom Plan</h5>
-                          <p className="text-xs text-muted-foreground">Choose your own payment schedule</p>
+                          <h5 className="font-semibold text-foreground mb-1">Tri Semestral Plan</h5>
+                          <p className="text-xs text-muted-foreground">3 tri-semestral payments</p>
                           <p className="text-sm font-bold text-green-600 mt-2">
-                            Flexible installments (3-9 payments)
+                            ₱{(Number(tuitionFee.amount) / 3).toLocaleString()} per period
                           </p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                          selectedPaymentType === "Custom"
+                          selectedPaymentType === "Tri Semestral"
                             ? "border-green-500 bg-green-500"
                             : "border-muted-foreground"
                         }`}>
-                          {selectedPaymentType === "Custom" && (
+                          {selectedPaymentType === "Tri Semestral" && (
                             <div className="w-2 h-2 bg-white rounded-full" />
                           )}
                         </div>
@@ -565,65 +552,6 @@ const InstallmentPlans = () => {
                     </button>
                   </div>
                 </div>
-
-                {/* Custom Installments Settings */}
-                {selectedPaymentType === "Custom" && (
-                  <div className="border-t pt-6 space-y-4 custom-installments-setting">
-                    <h4 className="font-semibold text-sm text-muted-foreground">Customize Number of Installments:</h4>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const currentIndex = [3, 5, 6, 7, 8, 9].indexOf(numberOfInstallments);
-                          if (currentIndex > 0) {
-                            setNumberOfInstallments([3, 5, 6, 7, 8, 9][currentIndex - 1]);
-                          }
-                        }}
-                        disabled={numberOfInstallments === 3}
-                        className="h-10 w-10 p-0"
-                      >
-                        -
-                      </Button>
-                      <div className="flex-1">
-                        <Select
-                          value={selectedPaymentType === "Custom" ? numberOfInstallments.toString() : ""}
-                          onValueChange={(value) => setNumberOfInstallments(parseInt(value))}
-                          disabled={selectedPaymentType !== "Custom"}
-                        >
-                          <SelectTrigger className="text-center text-lg font-bold">
-                            <SelectValue placeholder="Select installments" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="3">3 installments</SelectItem>
-                            <SelectItem value="5">5 installments</SelectItem>
-                            <SelectItem value="6">6 installments</SelectItem>
-                            <SelectItem value="7">7 installments</SelectItem>
-                            <SelectItem value="8">8 installments</SelectItem>
-                            <SelectItem value="9">9 installments</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const currentIndex = [3, 5, 6, 7, 8, 9].indexOf(numberOfInstallments);
-                          if (currentIndex < [3, 5, 6, 7, 8, 9].length - 1) {
-                            setNumberOfInstallments([3, 5, 6, 7, 8, 9][currentIndex + 1]);
-                          }
-                        }}
-                        disabled={numberOfInstallments === 9}
-                        className="h-10 w-10 p-0"
-                      >
-                        +
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Custom plans: 3, 5, 6, 7, 8, or 9 installments</p>
-                  </div>
-                )}
 
                 {/* Important Notice */}
                 <div className="border-t pt-6">

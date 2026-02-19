@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -40,7 +41,15 @@ import {
   Save,
   CalendarClock,
   Tag,
-  ChevronDown
+  ChevronDown,
+  Package,
+  Shirt,
+  GraduationCap,
+  HandCoins,
+  CalendarDays,
+  BookOpen,
+  Layers,
+  MoreHorizontal
 } from "lucide-react";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
@@ -143,6 +152,51 @@ const PAYMENT_TYPES = [
   "Book",
   "Uniform",
   "Other"
+];
+
+const PAYMENT_TYPE_PICKER_OPTIONS = [
+  {
+    value: "Tuition Full Payment",
+    label: "Tuition",
+    icon: GraduationCap,
+    className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+  },
+  {
+    value: "Miscellaneous",
+    label: "Miscellaneous",
+    icon: Layers,
+    className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+  },
+  {
+    value: "Contribution",
+    label: "Contribution",
+    icon: HandCoins,
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+  },
+  {
+    value: "Event Fee",
+    label: "Event Fee",
+    icon: CalendarDays,
+    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+  },
+  {
+    value: "Book",
+    label: "Book",
+    icon: BookOpen,
+    className: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+  },
+  {
+    value: "Uniform",
+    label: "Uniform",
+    icon: Shirt,
+    className: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+  },
+  {
+    value: "Other",
+    label: "Other",
+    icon: MoreHorizontal,
+    className: "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+  }
 ];
 
 const FEE_TYPES = [
@@ -727,6 +781,7 @@ const Payments = () => {
 
   // Dialogs
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isTypePickerOpen, setIsTypePickerOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -776,7 +831,7 @@ const Payments = () => {
     student_id: "",
     enrollment_id: "",
     academic_period_id: "",
-    payment_type: "Tuition Installment",
+    payment_type: "",
     payment_for: "",
     amount: "",
     payment_method: "Cash",
@@ -1001,7 +1056,7 @@ const Payments = () => {
     return `MCAFINV-${timestamp}`;
   };
 
-  const handleOpenCreate = async () => {
+  const handleOpenCreate = async (paymentType?: string) => {
     const activePeriod = academicPeriods.find(p => p.status === 'active');
     const invoiceNumber = await generateInvoiceNumber(); // Auto-generate unique invoice for cash
     
@@ -1009,7 +1064,7 @@ const Payments = () => {
       student_id: "",
       enrollment_id: "",
       academic_period_id: activePeriod?.id || "",
-      payment_type: "Tuition Full Payment",
+      payment_type: paymentType || "",
       payment_for: "",
       amount: "",
       payment_method: "Cash",
@@ -1021,6 +1076,10 @@ const Payments = () => {
     setPaymentStudentSearchQuery("");
     setShowPaymentStudentSuggestions(false);
     setIsCreateOpen(true);
+  };
+
+  const handleOpenTypePicker = () => {
+    setIsTypePickerOpen(true);
   };
 
   const handleCreate = async () => {
@@ -1574,9 +1633,15 @@ const filteredDiscounts = discountTemplates.filter((d) => {
     }
 
     const feeType = getPaymentTypeToFeeType(form.payment_type);
+    const selectedEnrollment = form.enrollment_id
+      ? enrollments.find((enrollment: any) => String(enrollment.id) === String(form.enrollment_id))
+      : null;
+    const selectedYearLevel = selectedEnrollment?.grade_level || selectedEnrollment?.year_level || null;
+
     console.log('Filtering school fees:', {
       payment_type: form.payment_type,
       feeType: feeType,
+      selectedYearLevel: selectedYearLevel,
       schoolFees_count: schoolFees.length,
       schoolFees_sample: schoolFees.slice(0, 3)
     });
@@ -1584,13 +1649,24 @@ const filteredDiscounts = discountTemplates.filter((d) => {
     const filtered = schoolFees.filter(fee => {
       const typeMatch = fee.fee_type === feeType;
       const activeMatch = fee.is_active;
-      
-      const matches = typeMatch && activeMatch;
-      if (matches) {
-        console.log('Fee matched:', fee.fee_name, { fee_type: fee.fee_type });
+
+      if (!typeMatch || !activeMatch) {
+        return false;
       }
-      
-      return matches;
+
+      if (feeType === "Tuition") {
+        if (!selectedYearLevel) {
+          return false;
+        }
+
+        if (fee.year_levels && fee.year_levels.length > 0) {
+          return fee.year_levels.includes(selectedYearLevel);
+        }
+
+        return fee.year_level === selectedYearLevel;
+      }
+
+      return true;
     });
 
     console.log('Filtered result count:', filtered.length, 'fees');
@@ -1716,10 +1792,25 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                   <Tag className="h-4 w-4 mr-2 text-amber-600" />
                   <span className="text-amber-700 font-medium">Discounts</span>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => navigate("/admin/tuition-packages")}
+                  className="!bg-white hover:!bg-blue-100 cursor-pointer"
+                >
+                  <Package className="h-4 w-4 mr-2 text-blue-600" />
+                  <span className="text-blue-700 font-medium">Tuition Packages</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => navigate("/admin/uniform-management")}
+                  className="!bg-white hover:!bg-green-100 cursor-pointer"
+                >
+                  <Shirt className="h-4 w-4 mr-2 text-green-600" />
+                  <span className="text-green-700 font-medium">Uniform Management</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button onClick={handleOpenCreate} className="bg-gradient-to-r from-blue-600 to-cyan-500">
+            <Button onClick={handleOpenTypePicker} className="bg-gradient-to-r from-blue-600 to-cyan-500">
               <Plus className="h-4 w-4 mr-2" />
               New Payment
             </Button>
@@ -1992,9 +2083,40 @@ const filteredDiscounts = discountTemplates.filter((d) => {
           </CardContent>
         </Card>
 
+        {/* Payment Type Picker */}
+        <Dialog open={isTypePickerOpen} onOpenChange={setIsTypePickerOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Select Payment Type</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              {PAYMENT_TYPE_PICKER_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant="outline"
+                    className={`h-20 flex-col gap-2 border ${option.className}`}
+                    onClick={() => {
+                      setIsTypePickerOpen(false);
+                      handleOpenCreate(option.value);
+                    }}
+                  >
+                    <Icon className="h-6 w-6" />
+                    <span className="text-xs font-semibold text-center leading-tight">
+                      {option.label}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Create Payment Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent onOpenAutoFocus={(e: any) => e.preventDefault()} className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Record New Payment</DialogTitle>
             </DialogHeader>
@@ -2054,6 +2176,13 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                               className="w-full px-4 py-2 text-left hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
                               onMouseDown={(e) => {
                                 e.preventDefault();
+                                if (!item.created_user_id) {
+                                  showAlert(
+                                    "error",
+                                    "This enrollee has no user account yet. Create the user account first before recording tuition payments."
+                                  );
+                                  return;
+                                }
                                 // Use created_user_id as student_id for payments
                                 setForm({ 
                                   ...form, 

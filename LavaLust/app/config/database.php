@@ -63,7 +63,7 @@ $database['main'] = array(
     'port'		=> '3306',
     'username'	=> 'root',
     'password'	=> '',
-    'database'	=> 'capstonedb',
+    'database'	=> 'maranatha_db',
     'charset'	=> 'utf8mb4',
     'dbprefix'	=> '',
     // Optional for SQLite

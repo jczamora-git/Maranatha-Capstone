@@ -84,7 +84,7 @@ interface PaymentPlan {
   total_tuition: number;
   total_paid: number;
   balance: number;
-  schedule_type: "Full Payment" | "Monthly" | "Quarterly" | "Semi-Annual" | "Custom";
+  schedule_type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral";
   number_of_installments: number;
   status: "Active" | "Completed" | "Overdue" | "Cancelled";
   start_date?: string;

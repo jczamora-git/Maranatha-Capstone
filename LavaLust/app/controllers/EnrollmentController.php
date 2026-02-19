@@ -67,6 +67,91 @@ class EnrollmentController extends Controller
                 $userId = null; // Admin-created enrollments don't have a user_id
             }
 
+            // Handle account creation if requested
+            $createdUserId = null;
+            $createdStudentId = null;
+            if ($isAdminCreated && isset($input['create_account']) && $input['create_account'] === '1') {
+                // Validate account creation fields
+                if (empty($input['account_email']) || empty($input['account_phone'])) {
+                    http_response_code(422);
+                    echo json_encode(['success' => false, 'message' => 'Account email and phone are required when creating account']);
+                    return;
+                }
+
+                // Check if email already exists
+                if ($this->UserModel->email_exists($input['account_email'])) {
+                    http_response_code(422);
+                    echo json_encode(['success' => false, 'message' => 'Email address already exists']);
+                    return;
+                }
+
+                // Create user account
+                $userData = [
+                    'email' => $input['account_email'],
+                    'password' => null, // Will be set via token
+                    'role' => 'enrollee',
+                    'first_name' => $input['learner_first_name'] ?? '',
+                    'middle_name' => $input['learner_middle_name'] ?? '',
+                    'last_name' => $input['learner_last_name'] ?? '',
+                    'phone' => $input['account_phone'],
+                    'status' => 'active',
+                    'must_change_password' => 1
+                ];
+                $createdUserId = $this->UserModel->create($userData);
+
+                if (!$createdUserId) {
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'message' => 'Failed to create user account']);
+                    return;
+                }
+
+                // Create student record (only for regular enrollments, not admin-created)
+                if (!$isAdminCreated) {
+                    $studentData = [
+                        'user_id' => $createdUserId,
+                        'student_id' => null, // Will be generated later
+                        'year_level' => $input['grade_level'] ?? '',
+                        'enrollment_id' => null // Will be set after enrollment creation
+                    ];
+                    $createdStudentId = $this->StudentModel->insert($studentData);
+
+                    if (!$createdStudentId) {
+                        // Rollback user creation
+                        $this->UserModel->delete_user($createdUserId);
+                        http_response_code(500);
+                        echo json_encode(['success' => false, 'message' => 'Failed to create student record']);
+                        return;
+                    }
+                }
+
+                // Generate password reset token
+                $token = bin2hex(random_bytes(32)); // 64 character token
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+                // Store token in password_resets table
+                $tokenData = [
+                    'email' => $input['account_email'],
+                    'user_id' => $createdUserId,
+                    'token' => $token,
+                    'type' => 'account_setup',
+                    'expires_at' => $expiresAt,
+                    'used' => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+                $this->db->table('password_resets')->insert($tokenData);
+
+                // Send email with set-password link
+                $resetLink = "http://localhost:5174/set-password?token=" . urlencode($token);
+                $emailBody = generate_set_password_email($input['learner_first_name'], $resetLink);
+                $emailResult = sendNotif($input['account_email'], 'Set Your Password - Maranatha Enrollment', $emailBody);
+
+                if (!$emailResult['success']) {
+                    // Log error but don't fail the enrollment
+                    error_log('Failed to send password setup email: ' . $emailResult['message']);
+                }
+            }
+
             // Validate required fields
             $errors = $this->validate_enrollment_input($input);
             if (!empty($errors)) {
@@ -78,6 +163,8 @@ class EnrollmentController extends Controller
             // Prepare enrollment data structure
             $enrollmentData = [
                 'user_id' => $userId,
+                'created_user_id' => $createdUserId,
+                'created_student_id' => $createdStudentId,
                 'enrollment_type' => $input['enrollment_type'] ?? 'New Student',
                 'grade_level' => $input['grade_level'] ?? '',
                 'enrollment_period_id' => $input['enrollment_period_id'] ?? null,
@@ -157,6 +244,11 @@ class EnrollmentController extends Controller
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Failed to create enrollment']);
                 return;
+            }
+
+            // Update student record with enrollment_id if account was created
+            if ($createdStudentId) {
+                $this->StudentModel->update_student($createdStudentId, ['enrollment_id' => $enrollmentId]);
             }
 
             http_response_code(201);
@@ -1216,4 +1308,6 @@ class EnrollmentController extends Controller
             echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
     }
+
+
 }

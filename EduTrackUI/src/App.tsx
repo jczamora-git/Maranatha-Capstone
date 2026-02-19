@@ -30,6 +30,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
+import SetPassword from "./pages/SetPassword";
 import UserManagement from "./pages/admin/UserManagement";
 import GradingSystem from "./pages/admin/GradingSystem";
 import SubjectAssignment from "./pages/admin/SubjectAssignment";
@@ -50,6 +51,10 @@ import SectionDetail from "./pages/admin/users/SectionDetail";
 import StudentGradeLevelManagement from "./pages/admin/users/StudentGradeLevelManagement";
 import Payments from "./pages/admin/Payments";
 import PaymentPlans from "./pages/admin/PaymentPlans";
+import InstallmentScheduleManagement from "./pages/admin/InstallmentScheduleManagement";
+import StudentInstallmentDetails from "./pages/admin/StudentInstallmentDetails";
+import TuitionPackages from "./pages/admin/TuitionPackages";
+import UniformManagement from "./pages/admin/UniformManagement";
 import RFIDAttendance from "./pages/admin/RFIDAttendance";
 import AdviserManualEnrollment from "./pages/teacher/AdviserManualEnrollment";
 
@@ -95,6 +100,8 @@ import MyProgress from "./pages/student/MyProgress";
 import CourseGradeDetail from "./pages/student/CourseGradeDetail";
 import StudentSettings from "./pages/student/StudentSettings";
 // StudentAttendanceQR removed - Attendance QR not used
+// Dev / Example components
+import { PaymentFormExample } from "./components/PaymentFormExample";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +129,7 @@ const AppContent = () => {
             <Route path="/auth/forgot-pin" element={<ForgotPin />} />
             <Route path="/auth/reset-pin" element={<ResetPin />} />
             <Route path="/verify-email" element={<EmailVerification />} />
+            <Route path="/set-password" element={<SetPassword />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             
             {/* Student Routes */}
@@ -217,6 +225,10 @@ const AppContent = () => {
               <>
                 <Route path="/admin/payments" element={<ProtectedRoute requiredRole="admin"><Payments /></ProtectedRoute>} />
                 <Route path="/admin/payment-plans" element={<ProtectedRoute requiredRole="admin"><PaymentPlans /></ProtectedRoute>} />
+                <Route path="/admin/payment-plans/:planId" element={<ProtectedRoute requiredRole="admin"><StudentInstallmentDetails /></ProtectedRoute>} />
+                <Route path="/admin/installment-schedules" element={<ProtectedRoute requiredRole="admin"><InstallmentScheduleManagement /></ProtectedRoute>} />
+                <Route path="/admin/tuition-packages" element={<ProtectedRoute requiredRole="admin"><TuitionPackages /></ProtectedRoute>} />
+                <Route path="/admin/uniform-management" element={<ProtectedRoute requiredRole="admin"><UniformManagement /></ProtectedRoute>} />
               </>
             )}
             {FEATURES.attendance && (
@@ -286,6 +298,23 @@ const AppContent = () => {
               </>
             )}
             
+            {/* Dev: Payment example route (remove or guard in production) */}
+            <Route
+              path="/dev/payment-example"
+              element={
+                <PaymentFormExample
+                  installment={{
+                    installment_id: 1,
+                    installment_number: 1,
+                    due_date: '2026-01-15',
+                    balance: 5000,
+                    amount: 5000,
+                    status: 'Pending'
+                  }}
+                />
+              }
+            />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

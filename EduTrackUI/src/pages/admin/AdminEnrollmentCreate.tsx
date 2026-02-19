@@ -9,6 +9,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { ArrowLeft, Search, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_ENDPOINTS, apiGet } from '@/lib/api';
+import EmailLoadingModal from '@/components/EmailLoadingModal';
 
 interface EnrollmentFormData {
   // Enrollment Type
@@ -128,6 +129,14 @@ export default function AdminEnrollmentCreate() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [createAccount, setCreateAccount] = useState(false);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPhone, setAccountPhone] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Email loading modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
 
   // Enrollment conflict modal state
   const [isEnrollmentConflictModalOpen, setIsEnrollmentConflictModalOpen] = useState(false);
@@ -830,6 +839,11 @@ export default function AdminEnrollmentCreate() {
     if (!formData.current_barangay.trim()) newErrors.current_barangay = 'Current barangay required';
     if (!formData.current_municipality.trim()) newErrors.current_municipality = 'Current municipality required';
     if (!formData.current_province.trim()) newErrors.current_province = 'Current province required';
+
+    if (createAccount) {
+      if (!accountEmail.trim()) newErrors.account_email = 'Account email required';
+      if (!accountPhone.trim()) newErrors.account_phone = 'Account contact number required';
+    }
     
     // Only validate permanent address if not using same as current
     if (!formData.same_as_current) {
@@ -855,7 +869,18 @@ export default function AdminEnrollmentCreate() {
       return;
     }
 
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
+    setShowConfirmDialog(false);
+
+    // Show email modal if account creation is enabled
+    if (createAccount) {
+      setShowEmailModal(true);
+      setEmailSuccess(false);
+    }
 
     try {
       const formDataObj = new FormData();
@@ -866,6 +891,12 @@ export default function AdminEnrollmentCreate() {
           formDataObj.append(key, value);
         }
       });
+
+      if (createAccount) {
+        formDataObj.append('create_account', '1');
+        formDataObj.append('account_email', accountEmail);
+        formDataObj.append('account_phone', accountPhone);
+      }
 
       // Add enrollment period ID
       if (activeEnrollmentPeriodId) {
@@ -884,14 +915,20 @@ export default function AdminEnrollmentCreate() {
         throw new Error('Failed to create enrollment');
       }
 
-      toast({
-        title: 'Success',
-        description: 'Enrollment created successfully'
-      });
-
-      navigate('/admin/enrollments');
+      // Set email success if account was created
+      if (createAccount) {
+        setEmailSuccess(true);
+      } else {
+        // If no account creation, show success toast and navigate immediately
+        toast({
+          title: 'Success',
+          description: 'Enrollment created successfully'
+        });
+        navigate('/admin/enrollments');
+      }
     } catch (error) {
       console.error('Error creating enrollment:', error);
+      setShowEmailModal(false); // Hide modal on error
       toast({
         title: 'Error',
         description: 'Failed to create enrollment',
@@ -899,6 +936,19 @@ export default function AdminEnrollmentCreate() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEmailModalComplete = () => {
+    setShowEmailModal(false);
+    if (emailSuccess) {
+      toast({
+        title: 'Success',
+        description: createAccount
+          ? 'Enrollment created successfully. An email has been sent to set up the account password.'
+          : 'Enrollment created successfully'
+      });
+      navigate('/admin/enrollments');
     }
   };
 
@@ -1132,6 +1182,82 @@ export default function AdminEnrollmentCreate() {
                   />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Optional Account Creation */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">Optional Account Creation</h2>
+              <p className="text-teal-100 text-sm mt-1">Create a student user account for payments</p>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                <Checkbox
+                  id="create_account"
+                  checked={createAccount}
+                  onCheckedChange={(checked) => {
+                    const enabled = Boolean(checked);
+                    setCreateAccount(enabled);
+                    if (!enabled) {
+                      setAccountEmail('');
+                      setAccountPhone('');
+                      setErrors(prev => {
+                        const next = { ...prev };
+                        delete next.account_email;
+                        delete next.account_phone;
+                        return next;
+                      });
+                    }
+                  }}
+                />
+                <Label htmlFor="create_account" className="font-medium text-gray-700 cursor-pointer">
+                  Create user account for this student
+                </Label>
+              </div>
+
+              {createAccount && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="account_email" className="font-medium text-gray-700">Account Email *</Label>
+                    <Input
+                      id="account_email"
+                      type="email"
+                      value={accountEmail}
+                      onChange={(e) => setAccountEmail(e.target.value)}
+                      className={`mt-2 ${errors.account_email ? 'border-red-500' : ''}`}
+                      placeholder="student@example.com"
+                    />
+                    {errors.account_email && (
+                      <p className="text-sm text-red-600 mt-1">{errors.account_email}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="account_phone" className="font-medium text-gray-700">Account Contact Number *</Label>
+                    <Input
+                      id="account_phone"
+                      type="tel"
+                      value={accountPhone}
+                      onChange={(e) => setAccountPhone(e.target.value)}
+                      className={`mt-2 ${errors.account_phone ? 'border-red-500' : ''}`}
+                      placeholder="09XX-XXX-XXXX"
+                    />
+                    {errors.account_phone && (
+                      <p className="text-sm text-red-600 mt-1">{errors.account_phone}</p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-800">
+                        <strong>Secure Setup:</strong> A password setup link will be sent to the provided email address after enrollment creation.
+                        The student/parent can set their password securely through the email link.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1667,6 +1793,57 @@ export default function AdminEnrollmentCreate() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Confirm Enrollment</DialogTitle>
+              <DialogDescription>
+                Review the details before saving this enrollment.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-sm text-gray-600">You are creating enrollment for:</p>
+                <p className="text-base font-semibold text-gray-900">
+                  {formData.learner_first_name} {formData.learner_middle_name} {formData.learner_last_name}
+                </p>
+                <p className="text-sm text-gray-600">Grade: {formData.grade_level || '—'}</p>
+              </div>
+
+              {createAccount && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-semibold text-blue-900">Account will be created</p>
+                  <div className="text-sm text-blue-800">
+                    <div><span className="font-semibold">Name:</span> {formData.learner_first_name} {formData.learner_middle_name} {formData.learner_last_name}</div>
+                    <div><span className="font-semibold">Email:</span> {accountEmail || '—'}</div>
+                    <div><span className="font-semibold">Contact:</span> {accountPhone || '—'}</div>
+                    <div><span className="font-semibold">Setup:</span> Password setup link will be sent via email</div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Confirm & Save'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Email Loading Modal */}
+        <EmailLoadingModal
+          isOpen={showEmailModal}
+          isSuccess={emailSuccess}
+          emailType="confirmation"
+          customMessage="Creating enrollment and sending account setup email..."
+          customSuccessMessage="Enrollment created and account setup email sent successfully"
+          onComplete={handleEmailModalComplete}
+          autoCloseDuration={3000}
+        />
       </div>
     </DashboardLayout>
   );

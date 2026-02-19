@@ -12,6 +12,7 @@ class PaymentPlanController extends Controller
         parent::__construct();
         $this->call->model('PaymentPlanModel');
         $this->call->model('InstallmentModel');
+        $this->call->model('PaymentScheduleTemplateModel');
     }
 
     /**
@@ -99,10 +100,20 @@ class PaymentPlanController extends Controller
             
             // Validate required fields
             if (empty($input['student_id']) || empty($input['academic_period_id']) || 
-                empty($input['total_tuition']) || empty($input['schedule_type'])) {
+                empty($input['total_tuition']) || empty($input['template_id'])) {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Missing required fields'
+                    'message' => 'Missing required fields (student_id, academic_period_id, total_tuition, template_id)'
+                ]);
+                return;
+            }
+
+            // Fetch template and its installments
+            $template = $this->PaymentScheduleTemplateModel->get_by_id($input['template_id']);
+            if (!$template || $template['status'] !== 'active') {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid or inactive payment schedule template'
                 ]);
                 return;
             }
@@ -124,8 +135,9 @@ class PaymentPlanController extends Controller
                 'total_tuition' => $input['total_tuition'],
                 'total_paid' => 0,
                 'balance' => $input['total_tuition'],
-                'schedule_type' => $input['schedule_type'],
-                'number_of_installments' => $input['number_of_installments'] ?? 1,
+                'schedule_type' => $template['schedule_type'],
+                'number_of_installments' => $template['number_of_installments'],
+                'template_id' => $input['template_id'],
                 'status' => 'Active'
             ];
 
@@ -139,13 +151,13 @@ class PaymentPlanController extends Controller
                 return;
             }
 
-            // Generate installments based on the academic period
-            $installments = $this->generate_installments(
+            // Generate installments from template
+            $installments = $this->generate_installments_from_template(
                 $plan_id,
                 $input['total_tuition'],
-                $input['number_of_installments'],
+                $template,
                 $input['academic_period_id'],
-                $input['schedule_type']
+                $input['start_date'] ?? date('Y-m-d')
             );
 
             $installments_created = $this->InstallmentModel->create_batch($installments);
@@ -286,11 +298,50 @@ class PaymentPlanController extends Controller
     }
 
     /**
+     * Update "Upon Enrollment" installments with actual enrollment date
+     * PUT /api/payment-plans/{id}/set-enrollment-date
+     */
+    public function set_enrollment_date($plan_id)
+    {
+        header('Content-Type: application/json');
+        
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (empty($input['enrollment_date'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'enrollment_date is required'
+                ]);
+                return;
+            }
+            
+            // Update all installments with NULL due_date (Upon Enrollment) for this plan
+            $updated = $this->db->table('installments')
+                ->where('payment_plan_id', $plan_id)
+                ->where('due_date', null)
+                ->update(['due_date' => $input['enrollment_date']]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Enrollment date set for Upon Enrollment installments',
+                'installments_updated' => $updated
+            ]);
+        } catch (Exception $e) {
+            error_log("Error setting enrollment date: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error setting enrollment date: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Generate installment schedule based on schedule type
-     * For Quarterly: Uses academic period start dates
-     * For Monthly: Spreads across 10 months (Aug-May school year)
-     * For Semi-Annual: 2 payments (start and midpoint)
-     * For Custom: Spreads evenly based on number of installments
+     * For Quarterly: 4 payments (Aug, Nov, Feb, May)
+     * For Monthly: 10 payments (Aug-May school year, 15th of each month)
+     * For Semestral: 2 payments (Aug, Jan)
+     * For Tri Semestral: 3 payments (Aug, Dec, Apr)
      */
     private function generate_installments($plan_id, $total_tuition, $num_installments, $academic_period_id, $schedule_type)
     {
@@ -330,14 +381,36 @@ class PaymentPlanController extends Controller
                 ];
             }
         }
-        // Semi-Annual: 2 payments
-        elseif ($schedule_type === 'Semi-Annual') {
+        // Semestral: 2 payments
+        elseif ($schedule_type === 'Semestral') {
             $due_dates = [
-                $start_year . '-08-15',  // Start of year
-                ($start_year + 1) . '-01-15'   // Midpoint
+                $start_year . '-08-15',  // 1st Semester
+                ($start_year + 1) . '-01-15'   // 2nd Semester
             ];
             
             for ($i = 0; $i < min($num_installments, 2); $i++) {
+                $installments[] = [
+                    'payment_plan_id' => $plan_id,
+                    'installment_number' => $i + 1,
+                    'amount_due' => $amount_per_installment,
+                    'amount_paid' => 0,
+                    'balance' => $amount_per_installment,
+                    'due_date' => $due_dates[$i],
+                    'status' => 'Pending',
+                    'late_fee' => 0,
+                    'days_overdue' => 0
+                ];
+            }
+        }
+        // Tri Semestral: 3 payments
+        elseif ($schedule_type === 'Tri Semestral') {
+            $due_dates = [
+                $start_year . '-08-15',  // 1st Tri Semester
+                $start_year . '-12-15',  // 2nd Tri Semester
+                ($start_year + 1) . '-04-15'   // 3rd Tri Semester
+            ];
+            
+            for ($i = 0; $i < min($num_installments, 3); $i++) {
                 $installments[] = [
                     'payment_plan_id' => $plan_id,
                     'installment_number' => $i + 1,
@@ -373,30 +446,132 @@ class PaymentPlanController extends Controller
                 ];
             }
         }
-        // Full Payment or Custom
-        else {
-            $current_date = new DateTime($start_year . '-08-15');
+
+        
+        return $installments;
+    }
+
+    /**
+     * Generate installments from template (NEW METHOD)
+     * Uses week-of-month scheduling from payment_schedule_installment_templates
+     */
+    private function generate_installments_from_template($plan_id, $total_amount, $template, $academic_period_id, $start_date)
+    {
+        $installments = [];
+        
+        // Get template installments
+        $template_installments = $template['installments'] ?? [];
+        
+        if (empty($template_installments)) {
+            error_log("No template installments found for template: " . $template['id']);
+            return $installments;
+        }
+        
+        // Get academic period for school year
+        $period = $this->db->table('academic_periods')
+                          ->where('id', $academic_period_id)
+                          ->get();
+        
+        $school_year = $period ? $period['school_year'] : date('Y') . '-' . (date('Y') + 1);
+        $year_parts = explode('-', $school_year);
+        $start_year = (int)$year_parts[0];
+        
+        // Calculate amount per installment
+        $num_installments = count($template_installments);
+        $amount_per_installment = round($total_amount / $num_installments, 2);
+        
+        // Adjust last installment for rounding differences
+        $total_allocated = $amount_per_installment * ($num_installments - 1);
+        $last_installment_amount = $total_amount - $total_allocated;
+        
+        foreach ($template_installments as $index => $template_inst) {
+            $due_date = $this->calculate_due_date_from_template(
+                $template_inst,
+                $start_year,
+                $start_date
+            );
             
-            for ($i = 1; $i <= $num_installments; $i++) {
-                $installments[] = [
-                    'payment_plan_id' => $plan_id,
-                    'installment_number' => $i,
-                    'amount_due' => $amount_per_installment,
-                    'amount_paid' => 0,
-                    'balance' => $amount_per_installment,
-                    'due_date' => $current_date->format('Y-m-d'),
-                    'status' => 'Pending',
-                    'late_fee' => 0,
-                    'days_overdue' => 0
-                ];
-                
-                // For custom, space out by 1 month
-                if ($i < $num_installments) {
-                    $current_date->modify('+1 month');
-                }
+            // Create installment data
+            $installment_data = [
+                'payment_plan_id' => $plan_id,
+                'installment_number' => $template_inst['installment_number'],
+                'amount_due' => ($index === $num_installments - 1) ? $last_installment_amount : $amount_per_installment,
+                'amount_paid' => 0,
+                'balance' => ($index === $num_installments - 1) ? $last_installment_amount : $amount_per_installment,
+                'status' => 'Pending',
+                'late_fee' => 0,
+                'days_overdue' => 0
+            ];
+            
+            // Only set due_date if it's not null (Upon Enrollment can be null for flexibility)
+            if ($due_date !== null) {
+                $installment_data['due_date'] = $due_date;
             }
+            
+            $installments[] = $installment_data;
         }
         
         return $installments;
+    }
+    
+    /**
+     * Calculate actual due date from template week-of-month rule
+     * Returns NULL for "Upon Enrollment" if no enrollment date provided (for flexibility)
+     */
+    private function calculate_due_date_from_template($template_inst, $start_year, $enrollment_date)
+    {
+        $week_of_month = $template_inst['week_of_month'];
+        $month = $template_inst['month'];
+        
+        // Handle "Upon Enrollment"
+        if ($week_of_month === 'Upon Enrollment') {
+            // If no enrollment date provided, return NULL for flexibility
+            // This allows setting the due date later when actual enrollment happens
+            if (empty($enrollment_date) || $enrollment_date === '0000-00-00') {
+                return null;
+            }
+            return $enrollment_date;
+        }
+        
+        // Parse month ("01" to "12")
+        $month_num = (int)$month;
+        
+        // Determine year (Jan-Jul is next year, Aug-Dec is current year)
+        $year = ($month_num >= 1 && $month_num <= 7) ? $start_year + 1 : $start_year;
+        
+        // Calculate day based on week
+        $day = $this->get_day_from_week($week_of_month, $year, $month_num);
+        
+        return sprintf('%04d-%02d-%02d', $year, $month_num, $day);
+    }
+    
+    /**
+     * Get actual day number from week-of-month label
+     */
+    private function get_day_from_week($week_label, $year, $month)
+    {
+        // Week definitions:
+        // 1st week = 1-7 → use day 5 (Friday of 1st week)
+        // 2nd week = 8-14 → use day 12 (Friday of 2nd week)
+        // 3rd week = 15-21 → use day 19 (Friday of 3rd week)
+        // 4th week = 22-28 → use day 26 (Friday of 4th week)
+        // Last week = use 2nd to last day of month
+        
+        switch ($week_label) {
+            case '1st week':
+                return 5;
+            case '2nd week':
+                return 12;
+            case '3rd week':
+                return 19;
+            case '4th week':
+                return 26;
+            case 'Last week':
+                // Get last day of month minus 1
+                $last_day = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+                return max(1, $last_day - 1);
+            default:
+                return 15; // Default to mid-month
+        }
     }
 }
