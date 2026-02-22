@@ -60,6 +60,13 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Environment variables
+
+Create a `.env.local` file (or edit the existing one) and set:
+
+- `VITE_API_BASE_URL` - LavaLust backend base URL
+- `VITE_SENTIMENT_API_URL` - Sentiment Flask API base URL (e.g. http://localhost:5000)
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/97cbf0d0-786f-489f-b209-4b8bc90ee59e) and click on Share -> Publish.

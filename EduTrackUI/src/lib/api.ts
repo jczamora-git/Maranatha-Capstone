@@ -203,6 +203,12 @@ export const API_ENDPOINTS = {
   // Announcements
   ANNOUNCEMENTS: `${API_BASE_URL}/api/announcements`,
   ANNOUNCEMENT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/announcements/${id}`,
+
+  // Feedback (Sentiment)
+  FEEDBACK: `${API_BASE_URL}/api/feedback`,
+  FEEDBACK_MY: `${API_BASE_URL}/api/feedback/my`,
+  FEEDBACK_SENTIMENT_UPDATE: (id: string | number) => `${API_BASE_URL}/api/feedback/${id}/sentiment`,
+  FEEDBACK_RESPONSE_UPDATE: (id: string | number) => `${API_BASE_URL}/api/feedback/${id}/response`,
   // Attendance
   ATTENDANCE: `${API_BASE_URL}/api/attendance`,
   ATTENDANCE_MARK: `${API_BASE_URL}/api/attendance/mark`,

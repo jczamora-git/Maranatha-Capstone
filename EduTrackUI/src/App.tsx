@@ -60,6 +60,7 @@ import UniformOrders from "./pages/admin/UniformOrders";
 import SchoolServiceManagement from "./pages/admin/SchoolServiceManagement";
 import RFIDAttendance from "./pages/admin/RFIDAttendance";
 import AdviserManualEnrollment from "./pages/teacher/AdviserManualEnrollment";
+import AdminSentimentAnalytics from "./pages/admin/SentimentAnalytics";
 
 // Enrollment pages
 import EnrollmentForm from "./pages/enrollment/EnrollmentForm";
@@ -103,6 +104,7 @@ import MyGrades from "./pages/student/MyGrades";
 import MyProgress from "./pages/student/MyProgress";
 import CourseGradeDetail from "./pages/student/CourseGradeDetail";
 import StudentSettings from "./pages/student/StudentSettings";
+import StudentFeedbackSentiment from "./pages/student/FeedbackSentiment";
 // StudentAttendanceQR removed - Attendance QR not used
 // Dev / Example components
 import { PaymentFormExample } from "./components/PaymentFormExample";
@@ -164,6 +166,7 @@ const AppContent = () => {
             {FEATURES.messages && (
               <Route path="/student/messages" element={<ProtectedRoute requiredRole="student"><StudentMessaging /></ProtectedRoute>} />
             )}
+            <Route path="/student/feedback" element={<ProtectedRoute requiredRole="student"><StudentFeedbackSentiment /></ProtectedRoute>} />
             
             {/* Enrollee Routes */}
             <Route path="/enrollee/dashboard" element={<ProtectedRoute requiredRole="enrollee"><EnrolleeDashboard /></ProtectedRoute>} />
@@ -282,6 +285,7 @@ const AppContent = () => {
               <Route path="/admin/campuses" element={<ProtectedRoute requiredRole="admin"><Suspense fallback={null}><LazyCampuses /></Suspense></ProtectedRoute>} />
             )}
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
+            <Route path="/admin/sentiment" element={<ProtectedRoute requiredRole="admin"><AdminSentimentAnalytics /></ProtectedRoute>} />
             
             {/* Enrollment Routes - Open to both enrollees and students */}
             {FEATURES.enrollment && (

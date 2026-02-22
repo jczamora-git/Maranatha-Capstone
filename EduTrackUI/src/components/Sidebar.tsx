@@ -28,6 +28,7 @@ import {
   Moon,
   Monitor,
   Mail,
+  MessageSquare,
   Menu,
   X,
   Coins,
@@ -192,6 +193,7 @@ export const Sidebar = () => {
     ...(FEATURES.attendance ? [{ to: "/admin/rfid-attendance", icon: Radio, label: "RFID Scanner" }] : []),
     ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
     ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
+    { to: "/admin/sentiment", icon: MessageSquare, label: "Sentiment" },
     ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : []),
   ];
 
@@ -211,6 +213,7 @@ export const Sidebar = () => {
     ...(FEATURES.enrollment ? [{ to: "/enrollment/my-enrollments", icon: FileText, label: "My Enrollments" }] : []),
     ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: Coins, label: "Payment" }] : []),
     ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
+    { to: "/student/feedback", icon: MessageSquare, label: "Feedback" },
     ...(FEATURES.grading ? [
       { to: "/student/grades", icon: Award, label: "My Grades" },
       { to: "/student/progress", icon: Calendar, label: "Progress" }

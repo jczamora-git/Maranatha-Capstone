@@ -382,6 +382,13 @@ $router->post('/api/announcements', 'AnnouncementController::api_create_announce
 $router->put('/api/announcements/{id}', 'AnnouncementController::api_update_announcement')->where_number('id');
 $router->delete('/api/announcements/{id}', 'AnnouncementController::api_delete_announcement')->where_number('id');
 
+// Feedback (Sentiment)
+$router->get('/api/feedback', 'FeedbackController::api_get_feedback');
+$router->get('/api/feedback/my', 'FeedbackController::api_get_my_feedback');
+$router->post('/api/feedback', 'FeedbackController::api_create_feedback');
+$router->put('/api/feedback/{id}/sentiment', 'FeedbackController::api_update_sentiment')->where_number('id');
+$router->put('/api/feedback/{id}/response', 'FeedbackController::api_update_response')->where_number('id');
+
 // API Routes - Campuses (Admin)
 $router->get('/api/campuses', 'CampusController::api_get_campuses');
 $router->get('/api/campuses/{id}', 'CampusController::api_get_campus')->where_number('id');
