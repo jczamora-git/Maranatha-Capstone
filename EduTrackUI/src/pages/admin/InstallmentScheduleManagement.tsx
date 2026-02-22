@@ -126,9 +126,35 @@ export default function InstallmentScheduleManagement() {
    }
   };
 
-  const handleEdit = (schedule: ScheduleTemplate) => {
-    setEditingSchedule(schedule);
-    setIsEditOpen(true);
+  const handleEdit = async (schedule: ScheduleTemplate) => {
+    setLoading(true);
+    setError("");
+    
+    try {
+      // Fetch full schedule details including installments
+      const res = await apiGet(API_ENDPOINTS.PAYMENT_SCHEDULE_TEMPLATE_BY_ID(schedule.id!));
+      
+      if (res.success && res.data) {
+        // Map API response to component structure
+        const scheduleData = {
+          ...res.data,
+          installments: (res.data.installments || []).map((inst: any) => ({
+            month: inst.month || "",
+            week: inst.week_of_month,
+            display: inst.label
+          }))
+        };
+        setEditingSchedule(scheduleData);
+        setIsEditOpen(true);
+      } else {
+        setError(res.message || "Failed to load schedule details");
+      }
+    } catch (err: any) {
+      console.error('Error fetching schedule details:', err);
+      setError(err.message || "Error loading schedule details");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveEdit = async () => {

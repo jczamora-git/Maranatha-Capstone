@@ -1,10 +1,10 @@
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 
-// NOTE: apiKey is injected at build time from environment variables
-// DO NOT hardcode API keys in public files
+// Firebase config is injected at build time by the Vite plugin in vite.config.ts.
+// The API key is kept in .env.local (gitignored) and never hardcoded here.
 const firebaseConfig = {
-  apiKey: self.firebaseConfig?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: self.firebaseConfig?.apiKey || "__FIREBASE_API_KEY__",
   authDomain: "marantha-tokens.firebaseapp.com",
   projectId: "marantha-tokens",
   storageBucket: "marantha-tokens.firebasestorage.app",

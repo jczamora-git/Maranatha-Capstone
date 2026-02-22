@@ -31,7 +31,7 @@ type UniformPrice = {
   size: string;
   price: number;
   half_price: number | null;
-  is_active: boolean;
+  is_active: boolean | number;
 };
 
 type UniformItem = {
@@ -70,6 +70,20 @@ type UniformOrder = {
   is_half_piece?: string | boolean | number;
   piece_type?: string;
   created_at: string;
+};
+
+type GroupedUniformPrice = UniformPrice & {
+  source_item_id: string;
+};
+
+type GroupedUniformItem = {
+  key: string;
+  item_name: string;
+  item_group: string;
+  is_pair: boolean;
+  allow_half_price: boolean;
+  is_active: boolean;
+  prices: GroupedUniformPrice[];
 };
 
 const PAYMENT_METHODS = ["Cash", "GCash", "Bank Transfer", "Check", "PayMaya", "Others"];
@@ -113,7 +127,7 @@ const UniformOrders = () => {
     try {
       const [ordersRes, studentsRes, itemsRes] = await Promise.all([
         apiGet(API_ENDPOINTS.UNIFORM_ORDERS),
-        apiGet(API_ENDPOINTS.STUDENTS_ENROLLEES),
+        apiGet(API_ENDPOINTS.STUDENTS),
         apiGet(API_ENDPOINTS.UNIFORM_ITEMS),
       ]);
 
@@ -139,14 +153,64 @@ const UniformOrders = () => {
     fetchData();
   }, [isAuthenticated, user, navigate]);
 
+  const groupedUniformItems = useMemo<GroupedUniformItem[]>(() => {
+    const map = new Map<string, GroupedUniformItem>();
+
+    uniformItems.forEach((item) => {
+      if (!item.is_active) return;
+
+      const key = `${item.item_name}||${item.item_group}`;
+      const existing = map.get(key);
+
+      const pricesWithSource: GroupedUniformPrice[] = (item.prices || []).map((price) => ({
+        ...price,
+        source_item_id: String(item.id),
+      }));
+
+      if (!existing) {
+        map.set(key, {
+          key,
+          item_name: item.item_name,
+          item_group: item.item_group,
+          is_pair: item.is_pair,
+          allow_half_price: item.allow_half_price,
+          is_active: item.is_active,
+          prices: pricesWithSource,
+        });
+        return;
+      }
+
+      existing.allow_half_price = existing.allow_half_price || item.allow_half_price;
+      existing.is_pair = existing.is_pair || item.is_pair;
+      existing.prices = [...existing.prices, ...pricesWithSource];
+    });
+
+    return Array.from(map.values()).map((group) => {
+      // Deduplicate by size inside grouped display; keep most recent price row id
+      const bySize = new Map<string, GroupedUniformPrice>();
+      [...group.prices]
+        .sort((a, b) => Number(b.id) - Number(a.id))
+        .forEach((p) => {
+          if (!bySize.has(p.size)) {
+            bySize.set(p.size, p);
+          }
+        });
+
+      return {
+        ...group,
+        prices: Array.from(bySize.values()),
+      };
+    });
+  }, [uniformItems]);
+
   const selectedItem = useMemo(
-    () => uniformItems.find((item) => String(item.id) === uniformItemId),
-    [uniformItems, uniformItemId]
+    () => groupedUniformItems.find((item) => item.key === uniformItemId),
+    [groupedUniformItems, uniformItemId]
   );
 
   const sizeOptions = useMemo(() => {
     if (!selectedItem) return [];
-    return selectedItem.prices.filter((price) => price.is_active);
+    return selectedItem.prices.filter((price) => Number(price.is_active) === 1);
   }, [selectedItem]);
 
   const filteredStudentSuggestions = useMemo(() => {
@@ -265,6 +329,11 @@ const UniformOrders = () => {
       return;
     }
 
+    if (!selectedPrice) {
+      showAlert("error", "Selected size is invalid for the chosen uniform item");
+      return;
+    }
+
     const qty = Number(quantity);
     if (!Number.isFinite(qty) || qty <= 0) {
       showAlert("error", "Quantity must be greater than 0");
@@ -297,7 +366,7 @@ const UniformOrders = () => {
     try {
       const payload: Record<string, any> = {
         student_id: Number(studentId),
-        uniform_item_id: Number(uniformItemId),
+        uniform_item_id: Number(selectedPrice.source_item_id),
         size,
         quantity: qty,
         payment_method: paymentMethod,
@@ -336,6 +405,21 @@ const UniformOrders = () => {
     return "bg-muted text-muted-foreground";
   };
 
+  const getOrderItemSuffix = (order: UniformOrder) => {
+    const isHalfPiece = order.is_half_piece === 1 || order.is_half_piece === "1" || order.is_half_piece === true;
+    const isPEUniform = (order.item_group || "").toLowerCase() === "pe" || (order.item_name || "").toLowerCase() === "pe uniform";
+
+    if (isHalfPiece && order.piece_type) {
+      return ` (${order.piece_type})`;
+    }
+
+    if (!isHalfPiece && isPEUniform) {
+      return " (Pair)";
+    }
+
+    return "";
+  };
+
   // Statistics
   const totalSales = orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
   const totalOrders = orders.length;
@@ -369,13 +453,24 @@ const UniformOrders = () => {
             <p className="text-muted-foreground">Create uniform orders and automatically log payment records.</p>
           </div>
 
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Uniform Order
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-gradient-to-r from-slate-50 to-gray-50 border-slate-200 hover:bg-slate-100"
+              onClick={() => navigate("/admin/uniform-management")}
+            >
+              <Shirt className="h-4 w-4 mr-2" />
+              Uniform Management
+            </Button>
+
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  New Uniform Order
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create Uniform Order</DialogTitle>
@@ -442,13 +537,11 @@ const UniformOrders = () => {
                       <SelectValue placeholder="Select uniform item" />
                     </SelectTrigger>
                     <SelectContent>
-                      {uniformItems
-                        .filter((item) => item.is_active)
-                        .map((item) => (
-                          <SelectItem key={item.id} value={String(item.id)}>
-                            {item.item_name} ({item.item_group})
-                          </SelectItem>
-                        ))}
+                      {groupedUniformItems.map((item) => (
+                        <SelectItem key={item.key} value={item.key}>
+                          {item.item_name} ({item.item_group})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -585,6 +678,7 @@ const UniformOrders = () => {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -684,7 +778,7 @@ const UniformOrders = () => {
                           <div>
                             <div className="font-medium">
                               {order.item_name}
-                              {(order.is_half_piece === 1 || order.is_half_piece === "1" || order.is_half_piece === true) && order.piece_type ? ` (${order.piece_type})` : ""}
+                              {getOrderItemSuffix(order)}
                             </div>
                             <div className="text-xs text-muted-foreground">{order.item_group}</div>
                           </div>

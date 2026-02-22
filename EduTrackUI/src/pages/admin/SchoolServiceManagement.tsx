@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -56,15 +56,6 @@ type ServiceFee = {
   year_level?: string | null;
 };
 
-type MonthlySummary = {
-  total_students: number;
-  paid_students: number;
-  unpaid_students: number;
-  total_revenue: number;
-  month: number;
-  year: number;
-};
-
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
@@ -89,7 +80,6 @@ const SchoolServiceManagement = () => {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [yearLevelFilter, setYearLevelFilter] = useState<string>("All Grades");
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [monthlySummary, setMonthlySummary] = useState<MonthlySummary | null>(null);
 
   // Payment dialog
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -109,12 +99,6 @@ const SchoolServiceManagement = () => {
       fetchData();
     }
   }, [isAuthenticated, user, navigate, selectedYear]);
-
-  useEffect(() => {
-    if (selectedMonth) {
-      fetchMonthlySummary();
-    }
-  }, [selectedMonth, selectedYear, servicePayments]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -176,17 +160,6 @@ const SchoolServiceManagement = () => {
     }
   };
 
-  const fetchMonthlySummary = async () => {
-    try {
-      const res = await apiGet(`${API_ENDPOINTS.SCHOOL_SERVICE_MONTHLY_SUMMARY}?year=${selectedYear}&month=${selectedMonth}`);
-      if (res?.success) {
-        setMonthlySummary(res.data);
-      }
-    } catch (error) {
-      console.error('Error fetching monthly summary:', error);
-    }
-  };
-
   const hasStudentPaidForMonth = (studentId: string, month: number): ServicePayment | undefined => {
     return servicePayments.find(
       p => p.student_id === studentId && 
@@ -215,6 +188,34 @@ const SchoolServiceManagement = () => {
     (fee) => String(fee.id) === String(selectedServiceFeeId)
   );
 
+  const serviceFeeName = selectedServiceFee?.fee_name?.trim() || "";
+
+  const monthlyComputedSummary = useMemo(() => {
+    const matchesSelectedFee = (payment: ServicePayment) => {
+      if (!serviceFeeName) return true;
+      const paymentFeeName = String(payment.payment_for || '').split(' - ')[0]?.trim();
+      return paymentFeeName === serviceFeeName;
+    };
+
+    const monthPayments = servicePayments.filter((payment) =>
+      Number(payment.service_period_year) === Number(selectedYear) &&
+      Number(payment.service_period_month) === Number(selectedMonth) &&
+      matchesSelectedFee(payment)
+    );
+
+    const approved = monthPayments.filter((payment) => payment.status === 'Approved');
+    const pending = monthPayments.filter((payment) => payment.status === 'Pending');
+
+    const paidStudentIds = new Set(approved.map((payment) => String(payment.student_id)));
+    const pendingStudentIds = new Set(pending.map((payment) => String(payment.student_id)));
+
+    return {
+      total_revenue: approved.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+      paid_students: paidStudentIds.size,
+      unpaid_students: pendingStudentIds.size,
+    };
+  }, [servicePayments, selectedYear, selectedMonth, serviceFeeName]);
+
   useEffect(() => {
     if (selectedServiceFee) {
       setServiceFeeAmount(Number(selectedServiceFee.amount));
@@ -234,11 +235,11 @@ const SchoolServiceManagement = () => {
 
   // Calculate yearly totals
   const yearlyTotalRevenue = servicePayments
-    .filter(p => p.service_period_year === selectedYear && (p.status === 'Approved' || p.status === 'Verified'))
+    .filter(p => p.service_period_year === selectedYear && p.status === 'Approved')
     .reduce((sum, p) => sum + Number(p.amount), 0);
 
   const yearlyPaymentCount = servicePayments
-    .filter(p => p.service_period_year === selectedYear && (p.status === 'Approved' || p.status === 'Verified'))
+    .filter(p => p.service_period_year === selectedYear && p.status === 'Approved')
     .length;
 
   if (!isAuthenticated) return null;
@@ -286,7 +287,7 @@ const SchoolServiceManagement = () => {
                     {MONTHS[selectedMonth - 1]} Revenue
                   </p>
                   <p className="text-2xl font-bold text-blue-700">
-                    ₱{monthlySummary?.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 }) || '0.00'}
+                    ₱{monthlyComputedSummary.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
@@ -302,7 +303,7 @@ const SchoolServiceManagement = () => {
                 <div>
                   <p className="text-sm text-green-600 font-semibold">Paid Students</p>
                   <p className="text-2xl font-bold text-green-700">
-                    {monthlySummary?.paid_students || 0}
+                    {monthlyComputedSummary.paid_students}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
@@ -318,7 +319,7 @@ const SchoolServiceManagement = () => {
                 <div>
                   <p className="text-sm text-yellow-600 font-semibold">Unpaid Students</p>
                   <p className="text-2xl font-bold text-yellow-700">
-                    {monthlySummary?.unpaid_students || 0}
+                    {monthlyComputedSummary.unpaid_students}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center">

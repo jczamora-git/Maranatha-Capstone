@@ -26,12 +26,16 @@ interface RoleCheckResult {
  * }
  */
 export function useRoleCheck(): RoleCheckResult {
-  const { user, isAuthenticated, checkUser } = useAuth();
+  const { user, isAuthenticated, authReady, checkUser } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   // Verify user role on component mount
   useEffect(() => {
     const verifyRole = async () => {
+      if (!authReady) {
+        return;
+      }
+
       setIsLoading(true);
       try {
         // Check if user exists in context
@@ -47,7 +51,7 @@ export function useRoleCheck(): RoleCheckResult {
     };
 
     verifyRole();
-  }, []);
+  }, [authReady, user, checkUser]);
 
   // Utility function to check if user has a specific role
   const hasRole = (role: 'admin' | 'teacher' | 'student'): boolean => {

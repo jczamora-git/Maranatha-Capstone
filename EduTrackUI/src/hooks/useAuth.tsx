@@ -7,6 +7,7 @@ interface User {
   email: string;
   name: string;
   first_name?: string;
+  middle_name?: string;
   last_name?: string;
   role: 'student' | 'teacher' | 'admin' | 'enrollee';
   status?: 'active' | 'inactive' | 'pending' | 'pending_verification';
@@ -27,9 +28,10 @@ interface RegistrationResponse {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, firstName: string, lastName: string, role: string) => Promise<RegistrationResponse>;
+  register: (email: string, password: string, firstName: string, middleName: string, lastName: string, role: string) => Promise<RegistrationResponse>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  authReady: boolean;
   checkUser: () => Promise<boolean>;
   updateUser: (updatedFields: Partial<User>) => void;
 }
@@ -46,7 +48,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
   });
+  const [authReady, setAuthReady] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        console.log('[Auth] Checking session...');
+        const response = await apiGet(API_ENDPOINTS.CHECK);
+        console.log('[Auth] Check response:', response);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (response.authenticated && response.user) {
+          console.log('[Auth] User authenticated:', response.user.email);
+          const userData: User = {
+            id: response.user.id.toString(),
+            email: response.user.email,
+            name: `${response.user.first_name} ${response.user.last_name}`,
+            first_name: response.user.first_name,
+            middle_name: response.user.middle_name,
+            last_name: response.user.last_name,
+            role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
+            status: response.user.status as 'active' | 'inactive' | 'pending' | 'pending_verification',
+            payment_pin_set: response.user.payment_pin_set || false,
+          };
+
+          setUser(userData);
+          localStorage.setItem('edutrack_user', JSON.stringify(userData));
+        } else {
+          console.log('[Auth] Not authenticated, clearing user');
+          setUser(null);
+          localStorage.removeItem('edutrack_user');
+        }
+      } catch (error) {
+        console.error('[Auth] Error checking session:', error);
+        if (!isMounted) {
+          return;
+        }
+        setUser(null);
+        localStorage.removeItem('edutrack_user');
+      } finally {
+        if (isMounted) {
+          console.log('[Auth] Auth ready');
+          setAuthReady(true);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -58,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: response.user.email,
           name: `${response.user.first_name} ${response.user.last_name}`,
           first_name: response.user.first_name,
+          middle_name: response.user.middle_name,
           last_name: response.user.last_name,
           role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
           status: response.user.status as 'active' | 'inactive' | 'pending' | 'pending_verification',
@@ -97,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string, 
     password: string, 
     firstName: string, 
+    middleName: string,
     lastName: string, 
     role: string
   ): Promise<RegistrationResponse> => {
@@ -105,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         first_name: firstName,
+        middle_name: middleName,
         last_name: lastName,
         role,
       });
@@ -147,41 +209,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: response.user.id.toString(),
           email: response.user.email,
           name: `${response.user.first_name} ${response.user.last_name}`,
+          first_name: response.user.first_name,
+          middle_name: response.user.middle_name,
+          last_name: response.user.last_name,
           role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
+          status: response.user.status as 'active' | 'inactive' | 'pending' | 'pending_verification',
           payment_pin_set: response.user.payment_pin_set || false,
         };
         
         setUser(userData);
         localStorage.setItem('edutrack_user', JSON.stringify(userData));
-        
-        // Navigate based on role
-        switch (userData.role) {
-          case 'enrollee':
-            navigate('/enrollee/dashboard');
-            break;
-          case 'student':
-            navigate('/student/dashboard');
-            break;
-          case 'teacher':
-            navigate('/teacher/dashboard');
-            break;
-          case 'admin':
-            navigate('/admin/dashboard');
-            break;
-        }
-        
+
         return true;
       }
+
+      setUser(null);
+      localStorage.removeItem('edutrack_user');
       
       return false;
     } catch (error) {
       console.error('Check user error:', error);
+      setUser(null);
+      localStorage.removeItem('edutrack_user');
       return false;
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, checkUser, updateUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, authReady, checkUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -9,6 +9,15 @@ import { AlertCircle, Upload, X, CheckCircle2, File, FileText, Package, Info } f
 import { API_ENDPOINTS } from "@/lib/api";
 import { EnrollmentFormData } from "../EnrollmentForm";
 
+/**
+ * Step 6: Document Submission  
+ * NOTE: File upload functionality has been disabled. All documents are submitted physically during enrollment.
+ * - Upload-related state variables and handlers are commented out
+ * - Upload UI (drag-drop, file list) has been removed
+ * - Only physical document checklist is active
+ * To re-enable uploads: restore code from git history and uncomment relevant sections
+ */
+
 interface Step6Props {
   formData: EnrollmentFormData;
   updateFormData: (updates: Partial<EnrollmentFormData>) => void;
@@ -30,12 +39,15 @@ interface DocumentRequirement {
 }
 
 const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStudent = false, isFirstTimer = true }: Step6Props) => {
-  const [dragActive, setDragActive] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{ file: File; name: string; documentType?: string }>>([]);
+  // File upload features commented out - all documents handled physically
+  // Uncomment these states to re-enable file uploads in the future
+  // const [dragActive, setDragActive] = useState(false);
+  // const [uploadedFiles, setUploadedFiles] = useState<Array<{ file: File; name: string; documentType?: string }>>([]);
   const [physicalDocs, setPhysicalDocs] = useState<PhysicalDocStatus>({});
   const [documentRequirements, setDocumentRequirements] = useState<DocumentRequirement[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Tour State
   const [runTour, setRunTour] = useState(false);
@@ -45,8 +57,8 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
       target: 'body',
       content: (
         <div className="text-left">
-          <h3 className="font-bold text-lg mb-2">📄 Document Upload</h3>
-          <p>Upload supporting documents or indicate physical submission for your enrollment.</p>
+          <h3 className="font-bold text-lg mb-2">📄 Document Submission</h3>
+          <p>Review required documents for physical submission during your enrollment visit.</p>
         </div>
       ),
       placement: 'center',
@@ -55,13 +67,14 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
     ...(formData.enrollment_type === 'Continuing Student' ? [
       {
         target: '.bg-green-50',
-        content: 'As a continuing student, your documents are already on file. No upload required!',
+        content: 'As a continuing student, your documents are already on file. No submission required!',
       },
     ] : [
       {
         target: '.bg-blue-50',
         content: 'Review the information about document requirements for your enrollment type.',
       },
+      /* Commented out - was used when file uploads were enabled
       {
         target: '.bg-orange-50',
         content: 'Remember: all uploads are optional. You can proceed without documents.',
@@ -74,13 +87,14 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
         target: 'input[type="file"]',
         content: 'Click this area to browse and select multiple files from your computer.',
       },
+      */
       {
         target: '.space-y-3',
-        content: 'Check the documents you plan to submit in person during enrollment.',
+        content: 'Review the documents you need to bring in person during enrollment.',
       },
       {
         target: 'input[type="checkbox"]',
-        content: 'Check this box for any document you will bring physically instead of uploading.',
+        content: 'Check this box to confirm you will bring each document physically.',
       },
     ]),
   ];
@@ -92,33 +106,34 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
     }));
   };
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
+  // File upload handlers commented out - uncomment to re-enable file uploads
+  // const handleFiles = (files: FileList | null) => {
+  //   if (!files) return;
 
-    const newFiles: File[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+  //   const newFiles: File[] = [];
+  //   for (let i = 0; i < files.length; i++) {
+  //     const file = files[i];
 
-      // Validate file type
-      const validTypes = ["application/pdf", "image/jpeg", "image/png"];
-      if (!validTypes.includes(file.type)) {
-        continue;
-      }
+  //     // Validate file type
+  //     const validTypes = ["application/pdf", "image/jpeg", "image/png"];
+  //     if (!validTypes.includes(file.type)) {
+  //       continue;
+  //     }
 
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        continue;
-      }
+  //     // Validate file size (max 10MB)
+  //     if (file.size > 10 * 1024 * 1024) {
+  //       continue;
+  //     }
 
-      newFiles.push(file);
-      setUploadedFiles((prev) => [
-        ...prev,
-        { file, name: file.name },
-      ]);
-    }
+  //     newFiles.push(file);
+  //     setUploadedFiles((prev) => [
+  //       ...prev,
+  //       { file, name: file.name },
+  //     ]);
+  //   }
 
-    updateFormData({ documents: [...formData.documents, ...newFiles] });
-  };
+  //   updateFormData({ documents: [...formData.documents, ...newFiles] });
+  // };
 
   useEffect(() => {
     const grade = formData.grade_level?.trim();
@@ -184,33 +199,77 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
     }
   };
 
-  const removeFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-    updateFormData({
-      documents: formData.documents.filter((_, i) => i !== index),
-    });
-  };
+  // File removal and drag-drop handlers commented out - uncomment to re-enable file uploads
+  // const removeFile = (index: number) => {
+  //   setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  //   updateFormData({
+  //     documents: formData.documents.filter((_, i) => i !== index),
+  //   });
+  // };
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
+  // const handleDrag = (e: React.DragEvent) => {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   if (e.type === "dragenter" || e.type === "dragover") {
+  //     setDragActive(true);
+  //   } else if (e.type === "dragleave") {
+  //     setDragActive(false);
+  //   }
+  // };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    handleFiles(e.dataTransfer.files);
-  };
+  // const handleDrop = (e: React.DragEvent) => {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   setDragActive(false);
+  //   handleFiles(e.dataTransfer.files);
+  // };
 
   const requiredDocumentList = documentRequirements.filter(req => req.is_required);
   const optionalDocumentList = documentRequirements.filter(req => !req.is_required);
   const allDocumentOptions = [...requiredDocumentList, ...optionalDocumentList];
+
+  // Validate physical document submission
+  useEffect(() => {
+    // Skip validation for continuing students (no docs required)
+    if (formData.enrollment_type === 'Continuing Student') {
+      setValidationError(null);
+      // only update parent if value would change
+      if (formData.documentsValid !== true) updateFormData({ documentsValid: true, physicalDocumentNames: [] });
+      return;
+    }
+
+    // Skip if no required documents loaded yet
+    if (requiredDocumentList.length === 0 || documentsLoading) {
+      setValidationError(null);
+      return;
+    }
+
+    // Check if all required documents are marked for physical submission
+    const uncheckedDocs = requiredDocumentList.filter(doc => {
+      const docKey = doc.id.toString();
+      return !physicalDocs[docKey];
+    });
+
+    // Get list of all documents marked for physical submission
+    const physicalDocNames = allDocumentOptions
+      .filter(doc => physicalDocs[doc.id.toString()])
+      .map(doc => doc.document_name);
+
+    const newValid = uncheckedDocs.length === 0;
+    if (!newValid) {
+      const docNames = uncheckedDocs.map(d => d.document_name).join(', ');
+      const message = `Please confirm you will bring the following required document${uncheckedDocs.length > 1 ? 's' : ''} physically: ${docNames}`;
+      if (validationError !== message) setValidationError(message);
+    } else {
+      if (validationError !== null) setValidationError(null);
+    }
+
+    // only update parent when validity actually changes to avoid re-render loops
+    const physicalDocsChanged = JSON.stringify(formData.physicalDocumentNames) !== JSON.stringify(physicalDocNames);
+    if (formData.documentsValid !== newValid || physicalDocsChanged) {
+      updateFormData({ documentsValid: newValid, physicalDocumentNames: physicalDocNames });
+    }
+  }, [physicalDocs, requiredDocumentList, formData.enrollment_type, documentsLoading]);
 
   return (
     <div className="space-y-6">
@@ -221,8 +280,8 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
             <div className="flex items-center gap-3">
               <FileText className="h-6 w-6 text-white" />
               <div>
-                <CardTitle className="text-white text-xl">Supporting Documents</CardTitle>
-                <p className="text-orange-100 text-sm mt-1">Upload documents to support your enrollment (all optional)</p>
+                <CardTitle className="text-white text-xl">Required Documents</CardTitle>
+                <p className="text-orange-100 text-sm mt-1">Bring required documents physically during your enrollment visit (file uploads are disabled)</p>
               </div>
             </div>
           </CardHeader>
@@ -254,11 +313,12 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
               {isFirstTimer 
-                ? "Please upload required documents or indicate if you'll submit physical copies."
-                : "Please upload updated documents if any information has changed, or indicate if you'll submit physical copies."}
+                ? "Please review the required documents below. You'll need to bring them during your enrollment visit for verification."
+                : "Please review the document requirements. Confirm which documents you'll bring during your enrollment visit."}
             </AlertDescription>
           </Alert>
           
+          {/* Alert about optional uploads commented out - was used when file uploads were enabled
           <Alert className="bg-orange-50 border-orange-200">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
@@ -267,6 +327,7 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
                 : "Returning students should provide updated documents or indicate physical submission. You can still proceed if documents are being submitted physically."}
             </AlertDescription>
           </Alert>
+          */}
         </>
       )}
 
@@ -279,86 +340,12 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
         </Alert>
       )}
 
-      {/* Only show upload section for non-continuing students */}
+      {/* Documents Checklist - Physical Submission Only */}
       {formData.enrollment_type !== 'Continuing Student' && (
-        <>
-      {/* Upload Area */}
-
-      {/* Upload Area */}
-      <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        className={`relative rounded-lg border-2 border-dashed p-8 transition-colors ${
-          dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50"
-        } ${errors.documents ? "border-red-500 bg-red-50" : ""}`}
-      >
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <Upload className="h-10 w-10 text-gray-400" />
-          <p className="text-center font-semibold text-gray-700">Drag and drop your files here</p>
-          <p className="text-center text-sm text-gray-500">or</p>
-          <Label htmlFor="fileInput" className="cursor-pointer">
-            <Button variant="outline" type="button" asChild>
-              <span>Click to select files</span>
-            </Button>
-          </Label>
-          <input
-            id="fileInput"
-            type="file"
-            multiple
-            onChange={(e) => handleFiles(e.currentTarget.files)}
-            accept=".pdf,.jpg,.jpeg,.png"
-            className="hidden"
-          />
-          <p className="text-xs text-gray-500 text-center">
-            Supported formats: PDF, JPG, PNG
-            <br />
-            Maximum file size: 10MB
-          </p>
-        </div>
-      </div>
-
-      {errors.documents && <p className="text-red-600 text-sm">{errors.documents}</p>}
-
-      {/* Uploaded Files */}
-      {uploadedFiles.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              Uploaded Files ({uploadedFiles.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {uploadedFiles.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <File className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium text-gray-800">{item.name}</p>
-                      <p className="text-xs text-gray-500">{(item.file.size / 1024 / 1024).toFixed(2)} MB</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeFile(index)}
-                    className="text-red-600 hover:text-red-800 transition-colors"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Documents Checklist */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Suggested Documents</CardTitle>
-          <p className="text-sm text-gray-600 mt-1">Check the box if you'll submit the document in person (face-to-face)</p>
+          <CardTitle className="text-base">Required Documents for Physical Submission</CardTitle>
+          <p className="text-sm text-gray-600 mt-1">Check the box to confirm you'll bring each document in person during enrollment</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {documentsLoading ? (
@@ -406,6 +393,17 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
           )}
         </CardContent>
       </Card>
+      )}
+
+      {/* Validation Error */}
+      {validationError && formData.enrollment_type !== 'Continuing Student' && (
+        <Alert className="bg-red-50 border-red-200">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <strong>Action Required:</strong> {validationError}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Physical Documents Summary */}
       {Object.values(physicalDocs).some(v => v) && (
@@ -429,13 +427,13 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
       )}
 
       {/* Tips */}
+      {formData.enrollment_type !== 'Continuing Student' && (
       <Alert className="bg-blue-50 border-blue-200">
         <AlertCircle className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-800">
-          <strong>Tips:</strong> Make sure documents are clear and readable. Photo copies from PDFs or scans should have good contrast. You can upload some documents now and submit others physically during your visit.
+          <strong>Important:</strong> All document verification will be done during your in-person enrollment visit. Please bring clear, readable copies of all required documents. Make sure photo copies and original documents are available for verification.
         </AlertDescription>
       </Alert>
-        </>
       )}
 
       <Joyride

@@ -45,17 +45,41 @@ interface DiscountTemplate {
   updated_at: string;
 }
 
+interface ScheduleInstallment {
+  id: number;
+  template_id: number;
+  installment_number: number;
+  month: string | null;
+  week_of_month: string;
+  label: string;
+}
+
+interface ScheduleTemplate {
+  id: number;
+  name: string;
+  description: string;
+  schedule_type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral";
+  number_of_installments: number;
+  is_default: number;
+  is_active: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  installments: ScheduleInstallment[];
+}
+
 const InstallmentPlans = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   usePaymentPageLock(); // Protect this page - redirects to setup-pin if payment section not unlocked
-  const [selectedPaymentType, setSelectedPaymentType] = useState<"Monthly" | "Quarterly" | "Semestral" | "Tri Semestral">("Quarterly");
-  const [numberOfInstallments, setNumberOfInstallments] = useState<number>(5);
+  const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<ScheduleTemplate | null>(null);
   const [discountTemplates, setDiscountTemplates] = useState<DiscountTemplate[]>([]);
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [pendingPlanData, setPendingPlanData] = useState<any>(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
   // Demo tour state
   const [runDemoInstallmentTour, setRunDemoInstallmentTour] = useState(false);
   const [currentTourIndex, setCurrentTourIndex] = useState(0);
@@ -174,6 +198,33 @@ const InstallmentPlans = () => {
     }
   }, [state, navigate]);
 
+  // Fetch schedule templates
+  useEffect(() => {
+    const fetchScheduleTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const data = await apiGet(API_ENDPOINTS.PAYMENT_SCHEDULE_TEMPLATES);
+        if (data.success && data.data) {
+          const activeTemplates = data.data.filter((t: ScheduleTemplate) => t.is_active === 1);
+          setScheduleTemplates(activeTemplates);
+          
+          // Auto-select Quarterly template as default if available
+          const defaultTemplate = activeTemplates.find((t: ScheduleTemplate) => t.schedule_type === "Quarterly") || activeTemplates[0];
+          if (defaultTemplate) {
+            setSelectedTemplate(defaultTemplate);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching schedule templates:', err);
+        toast.error("Failed to load payment schedules");
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchScheduleTemplates();
+  }, []);
+
   // Fetch discount templates
   useEffect(() => {
     const fetchDiscountTemplates = async () => {
@@ -190,12 +241,7 @@ const InstallmentPlans = () => {
     fetchDiscountTemplates();
   }, []);
 
-  // Set correct installments on mount based on default selection
-  useEffect(() => {
-    if (selectedPaymentType === "Quarterly") {
-      setNumberOfInstallments(4);
-    }
-  }, []); // Run only on mount
+  // Removed - now using schedule templates instead of hardcoded types
   useEffect(() => {
     const demoTourCompleted = localStorage.getItem('demoInstallmentTourCompleted');
     if (!demoTourCompleted) {
@@ -223,75 +269,74 @@ const InstallmentPlans = () => {
   const displaySchoolYear = runDemoInstallmentTour ? demoData.schoolYear : enrollment.school_year;
   const displayGradeLevel = runDemoInstallmentTour ? demoData.gradeLevel : enrollment.grade_level;
 
-  const handlePaymentTypeChange = (value: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral") => {
-    setSelectedPaymentType(value);
-    // Auto-set installments based on type
-    if (value === "Monthly") setNumberOfInstallments(10);
-    else if (value === "Quarterly") setNumberOfInstallments(4);
-    else if (value === "Semestral") setNumberOfInstallments(2);
-    else if (value === "Tri Semestral") setNumberOfInstallments(3);
+  const handleTemplateChange = (template: ScheduleTemplate) => {
+    setSelectedTemplate(template);
   };
 
-  const perInstallmentAmount = Number(tuitionFee.amount) / numberOfInstallments;
+  const perInstallmentAmount = selectedTemplate 
+    ? Number(tuitionFee.amount) / selectedTemplate.number_of_installments
+    : 0;
 
-  // Calculate due dates for each installment
-  const calculateDueDates = (startDate: Date, numInstallments: number, type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral") => {
-    const dates: string[] = [];
-    const currentDate = new Date(startDate);
-
-    for (let i = 1; i <= numInstallments; i++) {
-      if (type === "Monthly") {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-      } else if (type === "Quarterly") {
-        currentDate.setMonth(currentDate.getMonth() + 3);
-      } else if (type === "Semestral") {
-        currentDate.setMonth(currentDate.getMonth() + 6);
-      } else if (type === "Tri Semestral") {
-        currentDate.setMonth(currentDate.getMonth() + 4);
+  // Calculate actual due dates from schedule template
+  const calculateDueDatesFromTemplate = (template: ScheduleTemplate) => {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    
+    return template.installments.map((inst) => {
+      // If "Upon Enrollment", use current date
+      if (inst.week_of_month === "Upon Enrollment") {
+        return new Date().toISOString().split('T')[0];
       }
-      dates.push(currentDate.toISOString().split('T')[0]);
-    }
-    return dates;
+      
+      // Parse month from template
+      const month = parseInt(inst.month || "1") - 1; // Month is 0-indexed
+      
+      // Determine year - if month is before current month, it's next year
+      let year = currentYear;
+      if (month < currentMonth) {
+        year = currentYear + 1;
+      }
+      
+      // Get the day based on week of month
+      let day = 1;
+      if (inst.week_of_month.includes("1st")) day = 7;
+      else if (inst.week_of_month.includes("2nd")) day = 14;
+      else if (inst.week_of_month.includes("3rd")) day = 21;
+      else if (inst.week_of_month.includes("4th") || inst.week_of_month.includes("Last")) day = 28;
+      
+      const dueDate = new Date(year, month, day);
+      return dueDate.toISOString().split('T')[0];
+    });
   };
 
-  // Get period label for each installment
-  const getPeriodLabel = (installmentNumber: number, type: "Monthly" | "Quarterly" | "Semestral" | "Tri Semestral") => {
-    if (type === "Monthly") {
-      return `Month ${installmentNumber}`;
-    } else if (type === "Quarterly") {
-      const quarters = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
-      return quarters[installmentNumber - 1] || `Quarter ${installmentNumber}`;
-    } else if (type === "Semestral") {
-      const semesters = ["1st Semester", "2nd Semester"];
-      return semesters[installmentNumber - 1] || `Semester ${installmentNumber}`;
-    } else if (type === "Tri Semestral") {
-      const periods = ["1st Tri Semester", "2nd Tri Semester", "3rd Tri Semester"];
-      return periods[installmentNumber - 1] || `Period ${installmentNumber}`;
-    }
-    return `Installment ${installmentNumber}`;
-  };
+  // Removed - now using labels from database schedule templates
 
   const handleProceedToPayment = async () => {
-    try {
-      // Calculate due dates
-      const startDate = new Date();
-      const dueDates = calculateDueDates(startDate, numberOfInstallments, selectedPaymentType);
+    if (!selectedTemplate) {
+      toast.error("Please select a payment schedule");
+      return;
+    }
 
-      // Create payment plan data (don't submit yet, just prepare)
+    try {
+      // Calculate actual due dates from template
+      const dueDates = calculateDueDatesFromTemplate(selectedTemplate);
+
+      // Create payment plan data using template's installment schedule
       const paymentPlanData = {
         student_id: user?.id,
         enrollment_id: enrollment.id,
         academic_period_id: enrollment.academic_period_id,
         total_tuition: Number(tuitionFee.amount),
-        schedule_type: selectedPaymentType,
-        number_of_installments: numberOfInstallments,
+        schedule_type: selectedTemplate.schedule_type,
+        template_id: selectedTemplate.id,
+        number_of_installments: selectedTemplate.number_of_installments,
         start_date: new Date().toISOString().split('T')[0],
-        installments: Array.from({ length: numberOfInstallments }, (_, index) => ({
-          installment_number: index + 1,
+        installments: selectedTemplate.installments.map((inst, index) => ({
+          installment_number: inst.installment_number,
           amount_due: perInstallmentAmount,
           due_date: dueDates[index],
           status: "Pending",
-          period_label: getPeriodLabel(index + 1, selectedPaymentType)
+          period_label: inst.label
         }))
       };
 
@@ -341,12 +386,12 @@ const InstallmentPlans = () => {
             enrollment,
             tuitionFee,
             paymentType: 'Installment Payment',
-            installmentPlan: selectedPaymentType,
-            numberOfInstallments,
+            installmentPlan: selectedTemplate?.schedule_type,
+            numberOfInstallments: selectedTemplate?.number_of_installments,
             amountPerInstallment: perInstallmentAmount,
             paymentPlanId: paymentPlanId,
             installmentNumber: 1,
-            periodLabel: getPeriodLabel(1, selectedPaymentType),
+            periodLabel: selectedTemplate?.installments[0]?.label || "First Installment",
             paymentPlan: res.data,
             installment: firstInstallment // Pass the first installment data
           }
@@ -438,119 +483,63 @@ const InstallmentPlans = () => {
                 <div className="space-y-3">
                   <h4 className="font-semibold text-sm text-muted-foreground">Payment Frequency:</h4>
                   
-                  <div className="grid gap-3">
-                    {/* Monthly Plan */}
-                    <button
-                      onClick={() => handlePaymentTypeChange("Monthly")}
-                      className={`p-4 border-2 rounded-lg transition-all text-left ${
-                        selectedPaymentType === "Monthly"
-                          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                          : "border-border hover:border-green-300"
-                      } monthly-plan`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="font-semibold text-foreground mb-1">Monthly Plan</h5>
-                          <p className="text-xs text-muted-foreground">10 monthly payments</p>
-                          <p className="text-sm font-bold text-green-600 mt-2">
-                            ₱{(Number(tuitionFee.amount) / 10).toLocaleString()} per month
-                          </p>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                          selectedPaymentType === "Monthly"
-                            ? "border-green-500 bg-green-500"
-                            : "border-muted-foreground"
-                        }`}>
-                          {selectedPaymentType === "Monthly" && (
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          )}
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Quarterly Plan */}
-                    <button
-                      onClick={() => handlePaymentTypeChange("Quarterly")}
-                      className={`p-4 border-2 rounded-lg transition-all text-left ${
-                        selectedPaymentType === "Quarterly"
-                          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                          : "border-border hover:border-green-300"
-                      } quarterly-plan`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="font-semibold text-foreground mb-1">Quarterly Plan (Recommended)</h5>
-                          <p className="text-xs text-muted-foreground">4 quarterly payments</p>
-                          <p className="text-sm font-bold text-green-600 mt-2">
-                            ₱{(Number(tuitionFee.amount) / 4).toLocaleString()} per quarter
-                          </p>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                          selectedPaymentType === "Quarterly"
-                            ? "border-green-500 bg-green-500"
-                            : "border-muted-foreground"
-                        }`}>
-                          {selectedPaymentType === "Quarterly" && (
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          )}
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Semestral Plan */}
-                    <button
-                      onClick={() => handlePaymentTypeChange("Semestral")}
-                      className={`p-4 border-2 rounded-lg transition-all text-left ${
-                        selectedPaymentType === "Semestral"
-                          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                          : "border-border hover:border-green-300"
-                      } semestral-plan`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="font-semibold text-foreground mb-1">Semestral Plan</h5>
-                          <p className="text-xs text-muted-foreground">2 semestral payments</p>
-                          <p className="text-sm font-bold text-green-600 mt-2">
-                            ₱{(Number(tuitionFee.amount) / 2).toLocaleString()} per semester
-                          </p>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                          selectedPaymentType === "Semestral"
-                            ? "border-green-500 bg-green-500"
-                            : "border-muted-foreground"
-                        }`}>
-                          {selectedPaymentType === "Semestral" && (
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          )}
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Tri Semestral Plan */}
-                    <button
-                      onClick={() => handlePaymentTypeChange("Tri Semestral")}
-                      className={`p-4 border-2 rounded-lg transition-all text-left ${
-                        selectedPaymentType === "Tri Semestral"
-                          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                          : "border-border hover:border-green-300"
-                      } trisemestral-plan`}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="font-semibold text-foreground mb-1">Tri Semestral Plan</h5>
-                          <p className="text-xs text-muted-foreground">3 tri-semestral payments</p>
-                          <p className="text-sm font-bold text-green-600 mt-2">
-                            ₱{(Number(tuitionFee.amount) / 3).toLocaleString()} per period
-                          </p>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                          selectedPaymentType === "Tri Semestral"
-                            ? "border-green-500 bg-green-500"
-                            : "border-muted-foreground"
-                        }`}>
-                          {selectedPaymentType === "Tri Semestral" && (
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  </div>
+                  {loadingTemplates ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                      <p className="text-sm text-muted-foreground mt-2">Loading payment schedules...</p>
+                    </div>
+                  ) : scheduleTemplates.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                      <p className="text-sm text-muted-foreground">No payment schedules available</p>
+                      <p className="text-xs text-muted-foreground mt-1">Please contact the admin</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {scheduleTemplates.map((template) => {
+                        const isSelected = selectedTemplate?.id === template.id;
+                        const amountPerInstallment = Number(tuitionFee.amount) / template.number_of_installments;
+                        
+                        return (
+                          <button
+                            key={template.id}
+                            onClick={() => handleTemplateChange(template)}
+                            className={`p-4 border-2 rounded-lg transition-all text-left ${
+                              isSelected
+                                ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                : "border-border hover:border-green-300"
+                            } ${template.schedule_type.toLowerCase()}-plan`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h5 className="font-semibold text-foreground mb-1">
+                                  {template.name}
+                                  {template.schedule_type === "Quarterly" && " (Recommended)"}
+                                </h5>
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  {template.description}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {template.number_of_installments} installments
+                                </p>
+                                <p className="text-sm font-bold text-green-600 mt-2">
+                                  ₱{amountPerInstallment.toLocaleString()} per installment
+                                </p>
+                              </div>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
+                                isSelected
+                                  ? "border-green-500 bg-green-500"
+                                  : "border-muted-foreground"
+                              }`}>
+                                {isSelected && (
+                                  <div className="w-2 h-2 bg-white rounded-full" />
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Important Notice */}
@@ -607,7 +596,10 @@ const InstallmentPlans = () => {
                 {/* Payment Type */}
                 <div className="space-y-1 pb-4 border-b border-border">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Payment Type</p>
-                  <p className="text-sm font-semibold text-blue-600">{selectedPaymentType} ({numberOfInstallments} installments)</p>
+                  <p className="text-sm font-semibold text-blue-600">
+                    {selectedTemplate?.name || "No plan selected"}
+                    {selectedTemplate && ` (${selectedTemplate.number_of_installments} installments)`}
+                  </p>
                 </div>
 
                 {/* Tuition Information */}
@@ -621,7 +613,9 @@ const InstallmentPlans = () => {
                     <span className="text-lg font-bold text-blue-600">₱{perInstallmentAmount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Total for {numberOfInstallments} installment(s):</span>
+                    <span className="text-xs text-muted-foreground">
+                      Total for {selectedTemplate?.number_of_installments || 0} installment(s):
+                    </span>
                     <span className="text-sm font-medium text-foreground">₱{Number(tuitionFee.amount).toLocaleString()}</span>
                   </div>
                 </div>
@@ -629,7 +623,7 @@ const InstallmentPlans = () => {
                 {/* Proceed Button */}
                 <Button
                   onClick={handleProceedToPayment}
-                  disabled={isCreatingPlan}
+                  disabled={isCreatingPlan || !selectedTemplate || loadingTemplates}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 text-sm rounded-lg proceed-to-pay-btn"
                 >
                   {isCreatingPlan ? (
@@ -678,11 +672,11 @@ const InstallmentPlans = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Plan Type:</span>
-                    <span className="font-semibold text-foreground">{selectedPaymentType}</span>
+                    <span className="font-semibold text-foreground">{selectedTemplate?.name}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Number of Installments:</span>
-                    <span className="font-semibold text-foreground">{numberOfInstallments}</span>
+                    <span className="font-semibold text-foreground">{selectedTemplate?.number_of_installments}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Total Tuition:</span>
@@ -701,9 +695,14 @@ const InstallmentPlans = () => {
                 <div className="max-h-48 overflow-y-auto space-y-2 installment-schedule">
                   {pendingPlanData.installments.slice(0, 4).map((inst: any, index: number) => (
                     <div key={index} className="flex justify-between items-center text-sm p-2 bg-muted/30 rounded">
-                      <span className="text-muted-foreground">
-                        #{inst.installment_number} - {new Date(inst.due_date).toLocaleDateString()}
-                      </span>
+                      <div className="flex-1">
+                        <span className="text-muted-foreground font-medium block">
+                          #{inst.installment_number} - {inst.period_label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Due: {new Date(inst.due_date).toLocaleDateString()}
+                        </span>
+                      </div>
                       <span className="font-medium">₱{inst.amount_due.toLocaleString()}</span>
                     </div>
                   ))}
@@ -713,6 +712,14 @@ const InstallmentPlans = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Warning */}
+              {/* Overdue charge info */}
+              <div className="bg-muted/10 dark:bg-muted/800 p-3 rounded-lg border border-muted/20 dark:border-muted/700">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Overdue Charge:</strong> A 5% overdue charge of the installment amount will be applied for late payments. Please ensure timely payment to avoid additional fees.
+                </p>
               </div>
 
               {/* Warning */}

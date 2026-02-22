@@ -38,8 +38,11 @@ class UniformOrdersController extends Controller
         $stmt = $this->db->raw(
             "SELECT id, price, half_price, is_active
              FROM uniform_prices
-             WHERE uniform_item_id = ? AND size = ?
-             LIMIT 1",
+                         WHERE uniform_item_id = ?
+                             AND TRIM(size) = TRIM(?)
+                             AND is_active = 1
+                         ORDER BY id DESC
+                         LIMIT 1",
             [$uniformItemId, $size]
         );
 
@@ -237,12 +240,24 @@ class UniformOrdersController extends Controller
                 $usedTx = 'beginTransaction';
             }
 
+            $isPEUniform = strtolower(trim($item['item_group'] ?? '')) === 'pe';
+            $peSuffix = '';
+            if ($isPEUniform) {
+                if ($isHalfPiece === 1 && !empty($pieceType)) {
+                    $peSuffix = ' (' . $pieceType . ')';
+                } else {
+                    $peSuffix = ' (Pair)';
+                }
+            }
+
+            $paymentFor = trim($item['item_name'] . $peSuffix . ' (' . $size . ') x' . $quantity);
+
             $paymentData = [
                 'student_id' => $studentId,
                 'enrollment_id' => $enrollmentId,
                 'academic_period_id' => $academicPeriodId,
                 'payment_type' => 'Uniform',
-                'payment_for' => trim($item['item_name'] . ' (' . $size . ') x' . $quantity),
+                'payment_for' => $paymentFor,
                 'amount' => $totalAmount,
                 'total_discount' => 0,
                 'payment_method' => $paymentMethod,

@@ -51,7 +51,7 @@ const Step7ReviewSubmit = ({ formData, updateFormData, errors, isReturningStuden
     ] : [
       {
         target: '.documents-info',
-        content: 'Review the documents you\'ve uploaded or plan to submit physically.',
+        content: 'Review the documents you confirmed to submit physically during your enrollment visit.',
       },
     ]),
     {
@@ -228,22 +228,30 @@ const Step7ReviewSubmit = ({ formData, updateFormData, errors, isReturningStuden
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Documents Uploaded ({formData.documents.length})</CardTitle>
+            <CardTitle className="text-base">
+              Documents for Physical Submission ({formData.physicalDocumentNames?.length || 0})
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {formData.documents.length > 0 ? (
-              <ul className="list-disc list-inside space-y-1">
-                {formData.documents.map((doc, index) => (
-                  <li key={index} className="text-gray-900">
-                    {doc.name}
-                  </li>
-                ))}
-              </ul>
+          <CardContent className="space-y-2 text-sm documents-info">
+            {formData.physicalDocumentNames && formData.physicalDocumentNames.length > 0 ? (
+              <>
+                <p className="text-gray-700 mb-2">
+                  <strong>You will bring the following documents during your enrollment visit:</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  {formData.physicalDocumentNames.map((docName, index) => (
+                    <li key={index} className="text-gray-900">
+                      {docName}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-purple-700 mt-3 text-xs">
+                  📋 Please bring clear, readable copies of all documents listed above for verification.
+                </p>
+              </>
             ) : (
               <p className="text-yellow-700">
-                {formData.enrollment_type === 'Returning Student' 
-                  ? "No documents uploaded. Please add updated documents or confirm physical submission."
-                  : "No documents uploaded. Please add documents before submitting."}
+                No documents marked for physical submission. Please return to Step 6 and confirm which documents you will bring.
               </p>
             )}
           </CardContent>

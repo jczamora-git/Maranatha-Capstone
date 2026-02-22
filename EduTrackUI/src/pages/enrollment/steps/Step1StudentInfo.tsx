@@ -36,13 +36,17 @@ const Step1StudentInfo = ({ formData, updateFormData, errors, isReturningStudent
   
   // Pre-populate name from user profile on mount
   useEffect(() => {
-    if (user && !formData.learner_first_name && !formData.learner_last_name) {
-      updateFormData({
-        learner_first_name: user.first_name || "",
-        learner_last_name: user.last_name || "",
-      });
+    if (!user) return;
+
+    const updates: Partial<EnrollmentFormData> = {};
+    if (!formData.learner_first_name && user.first_name) updates.learner_first_name = user.first_name;
+    if (!formData.learner_middle_name && user.middle_name) updates.learner_middle_name = user.middle_name;
+    if (!formData.learner_last_name && user.last_name) updates.learner_last_name = user.last_name;
+
+    if (Object.keys(updates).length > 0) {
+      updateFormData(updates);
     }
-  }, [user, formData.learner_first_name, formData.learner_last_name, updateFormData]);
+  }, [user, formData.learner_first_name, formData.learner_middle_name, formData.learner_last_name, updateFormData]);
 
   const today = new Date();
   const maxDateString = today.toISOString().split("T")[0];
@@ -161,20 +165,7 @@ const Step1StudentInfo = ({ formData, updateFormData, errors, isReturningStudent
         {errors.gender && <p className="text-red-600 text-sm mt-1">{errors.gender}</p>}
       </div>
 
-      {/* PSA Birth Certificate Number */}
-      <div>
-        <Label htmlFor="psaCert" className="text-gray-700 font-semibold">
-          PSA Birth Certificate Number
-        </Label>
-        <Input
-          id="psaCert"
-          value={formData.psa_birth_cert_number}
-          onChange={(e) => updateFormData({ psa_birth_cert_number: e.target.value })}
-          placeholder="e.g., 2016-2294"
-          className="mt-2"
-        />
-        <p className="text-gray-500 text-sm mt-1">From the child's birth certificate</p>
-      </div>
+      {/* PSA Birth Certificate Number removed — optional field (handled outside form) */}
 
       {/* Grade Level */}
       <div id="grade-level-container" className="col-span-1 sm:col-span-2">

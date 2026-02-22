@@ -671,7 +671,7 @@ export default function EnrollmentDetail() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
               {currentStep === 1 ? <span>Review enrollment information and check all required fields are completed.</span> :
-               currentStep === 2 ? <span>Verify submitted documents. Documents may be optional—verify manually if needed.</span> :
+               currentStep === 2 ? <span>Verify submitted documents. Document verification is required to maintain complete system records before final approval.</span> :
                currentStep === 3 ? <span>Review payment history and verify all required fees have been paid.</span> :
                enrollment.status === 'Approved' ? <span className="text-green-700 font-medium">✓ Enrollment has been approved.</span> :
                enrollment.status === 'Rejected' ? <span className="text-red-700 font-medium">✕ Enrollment has been rejected. Reason: {enrollment.rejection_reason}</span> :

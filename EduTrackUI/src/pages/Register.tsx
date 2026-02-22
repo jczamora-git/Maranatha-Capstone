@@ -108,6 +108,7 @@ const Register = () => {
         formData.parentEmail,
         formData.password,
         formData.childFirstName,
+        formData.childMiddleName,
         formData.childLastName,
         "enrollee"
       );

@@ -1,4 +1,4 @@
-import { AlertCircle, FileText, CheckCircle2, XCircle, Package, RotateCcw } from 'lucide-react';
+import { AlertCircle, CheckCircle2, XCircle, Package, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -62,30 +62,51 @@ export function EnrollmentStep2({
 }: EnrollmentStep2Props) {
   const [requiredDocs, setRequiredDocs] = useState<DocumentRequirement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
-  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
-  const [selectedVerificationMethod, setSelectedVerificationMethod] = useState<'Physical' | 'Digital' | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [rejectionNotes, setRejectionNotes] = useState('');
-  const [requestResubmission, setRequestResubmission] = useState(true);
+  const [selectedDocId, setSelectedDocId] = useState<number | string | null>(null);
+  const [selectedVerificationMethod, setSelectedVerificationMethod] = useState<'Physical' | null>(null);
+  // Upload rejection flow is disabled for now (physical-only verification policy).
+  // Keep these states and related UI code commented for future upload feature re-enable.
+  // const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  // const [rejectionReason, setRejectionReason] = useState('');
+  // const [rejectionNotes, setRejectionNotes] = useState('');
+  // const [requestResubmission, setRequestResubmission] = useState(true);
   const [lastFetchKey, setLastFetchKey] = useState<string>('');
   const [manuallyCheckedDocs, setManuallyCheckedDocs] = useState<Set<string>>(new Set());
 
-  const openVerifyDialog = (docId: number) => {
-    setSelectedDocId(docId);
-    setSelectedVerificationMethod(null);
-    setVerifyDialogOpen(true);
+  // Helper function to get document status
+  const getDocumentStatus = (docName: string) => {
+    const doc = enrollment.documents?.find((d: Document) => 
+      d.document_type.toLowerCase().includes(docName.toLowerCase()) ||
+      docName.toLowerCase().includes(d.document_type.toLowerCase())
+    );
+    return doc || null;
   };
+
+  // Check if all required documents are verified
+  const isStepComplete = requiredDocs.filter(req => req.is_required).every(req => {
+    const doc = getDocumentStatus(req.document_name);
+    const status = doc?.verification_status;
+    const isManuallyChecked = manuallyCheckedDocs.has(req.document_name);
+    return status === 'Verified' || isManuallyChecked;
+  });
+
+  // Upload verification flow disabled (no document uploads).
+  // const openVerifyDialog = (docId: number) => {
+  //   setSelectedDocId(docId);
+  //   setSelectedVerificationMethod(null);
+  //   setVerifyDialogOpen(true);
+  // };
 
   const handleVerifyConfirm = () => {
     if (!selectedVerificationMethod) return;
 
     // Check if this is a document ID (number) or document name (string)
-    if (typeof selectedDocId === 'number') {
-      // It's a document verification
-      handleVerifyDocument(selectedDocId);
-    } else if (typeof selectedDocId === 'string') {
+    // Upload verification by document ID is disabled for now (physical-only flow).
+    // if (typeof selectedDocId === 'number') {
+    //   handleVerifyDocument(selectedDocId);
+    // } else
+    if (typeof selectedDocId === 'string') {
       // It's a manual check (document name)
       const docName = selectedDocId;
       try {
@@ -137,20 +158,21 @@ export function EnrollmentStep2({
     setVerifyDialogOpen(false);
   };
 
-  const openRejectDialog = (docId: number) => {
-    setSelectedDocId(docId);
-    setRejectionReason('');
-    setRejectionNotes('');
-    setRequestResubmission(true);
-    setRejectDialogOpen(true);
-  };
+  // Upload rejection flow disabled (no document uploads).
+  // const openRejectDialog = (docId: number) => {
+  //   setSelectedDocId(docId);
+  //   setRejectionReason('');
+  //   setRejectionNotes('');
+  //   setRequestResubmission(true);
+  //   setRejectDialogOpen(true);
+  // };
 
-  const handleRejectConfirm = () => {
-    if (selectedDocId && rejectionReason) {
-      handleRejectDocument(selectedDocId);
-      setRejectDialogOpen(false);
-    }
-  };
+  // const handleRejectConfirm = () => {
+  //   if (typeof selectedDocId === 'number' && rejectionReason) {
+  //     handleRejectDocument(selectedDocId);
+  //     setRejectDialogOpen(false);
+  //   }
+  // };
 
   const toggleManualCheck = async (docName: string) => {
     const isChecked = manuallyCheckedDocs.has(docName);
@@ -202,13 +224,12 @@ export function EnrollmentStep2({
     }
 
     // If checking, open modal to confirm verification method
-    setSelectedDocId(null); // Clear doc ID since we're using doc name
+    setSelectedDocId(null);
     setSelectedVerificationMethod(null);
-    const docNameToSave = docName;
     setVerifyDialogOpen(true);
     
     // Store the doc name for later use in handleVerifyConfirm
-    setSelectedDocId(docName as any); // Reusing selectedDocId to store docName
+    setSelectedDocId(docName);
   };
 
   useEffect(() => {
@@ -284,14 +305,6 @@ export function EnrollmentStep2({
 
     fetchDocumentRequirements();
   }, [enrollment.grade_level, enrollment.enrollment_type, enrollment.is_returning_student, lastFetchKey]);
-
-  const getDocumentStatus = (docName: string) => {
-    const doc = enrollment.documents?.find((d: Document) => 
-      d.document_type.toLowerCase().includes(docName.toLowerCase()) ||
-      docName.toLowerCase().includes(d.document_type.toLowerCase())
-    );
-    return doc || null;
-  };
 
   return (
     <div className="space-y-6">
@@ -415,151 +428,23 @@ export function EnrollmentStep2({
         </div>
       )}
 
-      {/* Uploaded Documents - Skip for Continuing Students */}
+      {/*
+        Upload-related UI is intentionally disabled based on current school policy
+        (physical verification only for this step).
+
+        Keep this block for future re-enable of digital uploads/review/rejection flow.
+      */}
+      {/**
       {enrollment.enrollment_type !== 'Continuing Student' && (
         <>
-          {/* Check if there are any uploaded (digital) documents */}
           {enrollment.documents?.some((d: Document) => d.is_current_version !== false && d.submission_method !== 'Physical') ? (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-          <h2 className="text-lg font-semibold text-white">Uploaded Documents</h2>
-          <p className="text-blue-100 text-sm mt-1">Review and verify submitted documents</p>
-        </div>
-        <div className="p-6">
-          {enrollment.documents?.length === 0 ? (
-            <div className="rounded-lg border-2 border-gray-200 p-6 bg-gray-50 text-center">
-              <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">No documents uploaded yet</p>
-              <p className="text-sm text-gray-500 mt-1">Student has not uploaded any documents</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {enrollment.documents?.filter((d: Document) => d.is_current_version !== false).map((doc: Document) => {
-                const docStatus = statusConfig[doc.verification_status];
-                return (
-                  <div key={doc.id} className="p-4 rounded-lg border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all bg-white">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-semibold text-gray-900">{doc.document_type}</h4>
-                            {doc.submission_method && (
-                              <Badge variant="outline" className="text-xs">
-                                {doc.submission_method}
-                              </Badge>
-                            )}
-                            {doc.resubmission_count && doc.resubmission_count > 0 && (
-                              <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                                Resubmitted {doc.resubmission_count}x
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600">{doc.file_name}</p>
-                        </div>
-                      </div>
-                      <Badge className={docStatus.bg}>
-                        <span className={docStatus.text}>{doc.verification_status}</span>
-                      </Badge>
-                    </div>
-                    
-                    {doc.verified_date && (
-                      <p className="text-xs text-gray-500 mb-3">
-                        Verified: {new Date(doc.verified_date).toLocaleDateString()}
-                      </p>
-                    )}
-                    
-                    {/* Rejection Info */}
-                    {doc.verification_status === 'Rejected' && doc.rejection_reason && (
-                      <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded">
-                        <p className="text-xs font-semibold text-red-800">Rejected: {doc.rejection_reason}</p>
-                        {doc.verification_notes && (
-                          <p className="text-xs text-red-700 mt-1">{doc.verification_notes}</p>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Physical Verification Status */}
-                    {doc.submission_method !== 'Uploaded' && doc.physical_verification_status && (
-                      <div className="mb-3 flex items-center gap-2">
-                        <span className="text-xs text-gray-600">Physical Document:</span>
-                        <Badge
-                          variant="outline"
-                          className={
-                            doc.physical_verification_status === 'Checked'
-                              ? 'bg-green-50 text-green-700 border-green-200 text-xs'
-                              : doc.physical_verification_status === 'Missing'
-                              ? 'bg-red-50 text-red-700 border-red-200 text-xs'
-                              : 'bg-yellow-50 text-yellow-700 border-yellow-200 text-xs'
-                          }
-                        >
-                          {doc.physical_verification_status}
-                        </Badge>
-                      </div>
-                    )}
-
-                    {doc.verification_status === 'Pending' && (
-                      <div className="space-y-2 pt-3 border-t border-gray-200">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => openVerifyDialog(doc.id)}
-                            disabled={actionLoading}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Verify
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                            onClick={() => openRejectDialog(doc.id)}
-                            disabled={actionLoading}
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                        {doc.submission_method !== 'Uploaded' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
-                            onClick={() => {/* Mark physical as checked */}}
-                          >
-                            <Package className="w-4 h-4 mr-1" />
-                            Mark Physical Document as Checked
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Request Resubmission for Rejected Docs */}
-                    {doc.verification_status === 'Rejected' && (
-                      <div className="pt-3 border-t border-gray-200">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
-                          onClick={() => {/* Request resubmission */}}
-                        >
-                          <RotateCcw className="w-4 h-4 mr-1" />
-                          Request Resubmission
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+              ... Uploaded Documents UI ...
             </div>
           ) : null}
         </>
       )}
+      */}
 
       {/* Document Verification Note - Skip for Continuing Students */}
       {enrollment.enrollment_type !== 'Continuing Student' && (
@@ -567,9 +452,9 @@ export function EnrollmentStep2({
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-blue-900">Document Verification is Optional</p>
+              <p className="text-sm font-semibold text-blue-900">Document Verification is Required</p>
               <p className="text-sm text-blue-700 mt-1">
-                Documents can be verified manually during enrollment processing. You can proceed to final approval even if documents are not uploaded or verified in the system.
+                Documents must be verified manually during enrollment processing to keep complete system records. Please complete verification before proceeding to final approval.
               </p>
             </div>
           </div>
@@ -580,16 +465,25 @@ export function EnrollmentStep2({
       <div className="mt-8 bg-emerald-50 border border-emerald-200 rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-semibold text-emerald-900 text-lg">Document verification complete?</p>
+            <p className="font-semibold text-emerald-900 text-lg">
+              {isStepComplete ? 'Document verification complete?' : 'Document verification incomplete'}
+            </p>
             <p className="text-sm text-emerald-700 mt-1">
-              {enrollment.enrollment_type === 'Continuing Student' 
-                ? 'Click to confirm continuing student enrollment and proceed to final approval.'
-                : 'Click to confirm and proceed to final approval.'}
+              {isStepComplete 
+                ? (enrollment.enrollment_type === 'Continuing Student' 
+                    ? 'Click to confirm continuing student enrollment and proceed to final approval.'
+                    : 'Click to confirm and proceed to final approval.')
+                : 'All required documents must be verified before proceeding.'}
             </p>
           </div>
           <Button
             onClick={onComplete}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 text-base"
+            disabled={!isStepComplete}
+            className={`font-semibold px-6 py-3 text-base ${
+              isStepComplete 
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            }`}
           >
             Mark Complete → Next Step
           </Button>
@@ -600,14 +494,14 @@ export function EnrollmentStep2({
       <Dialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Verify Document</DialogTitle>
+            <DialogTitle>Confirm Physical Verification</DialogTitle>
             <DialogDescription>
-              How was this document verified? Select the verification method.
+              This will mark the selected required document as verified in person.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Verification Method *</Label>
+              <Label className="text-sm font-semibold">Verification Method</Label>
               <div className="space-y-2">
                 <button
                   onClick={() => setSelectedVerificationMethod('Physical')}
@@ -620,6 +514,11 @@ export function EnrollmentStep2({
                   <p className="font-semibold text-gray-900">Physical Verification</p>
                   <p className="text-xs text-gray-600 mt-1">Document was verified in person during enrollment</p>
                 </button>
+                {/*
+                  Digital verification option is disabled while upload flow is paused.
+                  Keep this button for future re-enable.
+                */}
+                {/**
                 <button
                   onClick={() => setSelectedVerificationMethod('Digital')}
                   className={`w-full p-3 text-left rounded-lg border-2 transition-all ${
@@ -631,6 +530,7 @@ export function EnrollmentStep2({
                   <p className="font-semibold text-gray-900">Digital Upload</p>
                   <p className="text-xs text-gray-600 mt-1">Document was uploaded and verified digitally</p>
                 </button>
+                */}
               </div>
             </div>
           </div>
@@ -649,75 +549,17 @@ export function EnrollmentStep2({
         </DialogContent>
       </Dialog>
 
-      {/* Document Rejection Dialog */}
+      {/*
+        Upload rejection dialog is disabled while document upload flow is paused.
+        Keep this block for future re-enable.
+      */}
+      {/**
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reject Document</DialogTitle>
-            <DialogDescription>
-              Provide a reason for rejecting this document. This will help the enrollee resubmit correctly.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="rejection-reason">Rejection Reason *</Label>
-              <Select value={rejectionReason} onValueChange={setRejectionReason}>
-                <SelectTrigger id="rejection-reason" className="mt-2">
-                  <SelectValue placeholder="Select a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Wrong Document Type">Wrong Document Type</SelectItem>
-                  <SelectItem value="Unclear/Illegible">Unclear/Illegible</SelectItem>
-                  <SelectItem value="Incomplete Information">Incomplete Information</SelectItem>
-                  <SelectItem value="Document Expired">Document Expired</SelectItem>
-                  <SelectItem value="Does Not Match Requirements">Does Not Match Requirements</SelectItem>
-                  <SelectItem value="Invalid Format">Invalid Format</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="rejection-notes">Additional Notes (Optional)</Label>
-              <Textarea
-                id="rejection-notes"
-                placeholder="Provide specific instructions for resubmission..."
-                value={rejectionNotes}
-                onChange={(e) => setRejectionNotes(e.target.value)}
-                className="mt-2"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex items-center space-x-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
-              <Checkbox
-                id="request-resubmission"
-                checked={requestResubmission}
-                onCheckedChange={(checked) => setRequestResubmission(checked as boolean)}
-              />
-              <Label
-                htmlFor="request-resubmission"
-                className="text-sm font-medium cursor-pointer text-orange-900"
-              >
-                <RotateCcw className="w-4 h-4 inline mr-1" />
-                Request resubmission from enrollee
-              </Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleRejectConfirm}
-              disabled={!rejectionReason}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Reject Document
-            </Button>
-          </DialogFooter>
+          ... Reject Document dialog ...
         </DialogContent>
       </Dialog>
+      */}
     </div>
   );
 }

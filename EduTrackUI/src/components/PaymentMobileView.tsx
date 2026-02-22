@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Clock, AlertCircle, CheckCircle2, BookOpen, Gift, Users, Calendar, Shirt, Zap, HelpCircle, Download, ClipboardList, Eye, ChevronRight, Package } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, BookOpen, Gift, Users, Calendar, Shirt, Zap, HelpCircle, Download, ClipboardList, Eye, ChevronRight, Package, FileText, CalendarClock } from 'lucide-react';
 import { PaymentItem, SchoolFee, Enrollment } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { InstallmentMobileView } from './InstallmentMobileView';
 
 // Helper function to get greeting based on time
 const getGreeting = (): string => {
@@ -44,6 +46,7 @@ interface PaymentMobileProps {
   paymentPlans?: any[];
   installments?: { [key: string]: any[] };
   handleViewInstallments?: (plan: any) => void;
+  onPayInstallment?: (installment: any, plan: any) => void;
   // Desktop modal props for mobile use
   showSchoolFeeModal?: boolean;
   setShowSchoolFeeModal?: (show: boolean) => void;
@@ -118,6 +121,7 @@ export const PaymentMobileView = ({
   paymentPlans = [],
   installments = {},
   handleViewInstallments,
+  onPayInstallment,
   showSchoolFeeModal,
   setShowSchoolFeeModal,
   selectedSchoolFee,
@@ -131,8 +135,37 @@ export const PaymentMobileView = ({
   tourStepIndex = 0,
   handleTourCallback,
 }: PaymentMobileProps) => {
+  const [showEmptyFeeTypes, setShowEmptyFeeTypes] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [activeDockTab, setActiveDockTab] = useState<'installments' | 'payments' | 'help'>('payments');
+
+  const handleTooltipShow = () => {
+    setShowTooltip(true);
+    
+    // Clear any existing timeout
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+    }
+    
+    // Auto-hide after 2 seconds
+    const timeout = setTimeout(() => {
+      setShowTooltip(false);
+    }, 2000);
+    
+    setTooltipTimeout(timeout);
+  };
+
+  const handleTooltipHide = () => {
+    setShowTooltip(false);
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+  };
+
   const getFeesForType = (feeType: string) => {
-    return allSchoolFees.filter(fee => fee.fee_type === feeType);
+    return availableSchoolFees.filter(fee => fee.fee_type === feeType);
   };
 
   const handleFeeIconClick = (feeType: string) => {
@@ -146,7 +179,19 @@ export const PaymentMobileView = ({
   const greeting = getGreeting();
 
   // Define all fee types in order
-  const allFeeTypes = ['Tuition', 'Miscellaneous', 'Contribution', 'Event Fee', 'Book', 'Uniform', 'Other'] as const;
+  const allFeeTypes = ['Tuition', 'Service Fee', 'Miscellaneous', 'Contribution', 'Event Fee', 'Book', 'Uniform', 'Other'] as const;
+
+  // Filter available fee types based on toggle state
+  const availableFeeTypes = allFeeTypes.filter((feeType) => {
+    if (!showEmptyFeeTypes) {
+      const feesOfType = getFeesForType(feeType);
+      return feesOfType.length > 0;
+    }
+    return true;
+  });
+
+  // Determine display mode: text for 2-4 fees, icons for 5+
+  const useTextDisplay = availableFeeTypes.length >= 2 && availableFeeTypes.length <= 4;
 
   // Joyride styling configuration
   const joyrideStyling = {
@@ -207,7 +252,17 @@ export const PaymentMobileView = ({
           skip: 'Skip tour',
         }}
       />
-      <div className="p-3 space-y-3 pb-24">
+      
+      {/* Conditionally render based on active dock tab */}
+      {activeDockTab === 'installments' ? (
+        <InstallmentMobileView
+          paymentPlans={paymentPlans}
+          installments={installments}
+          payments={payments}
+          onPayInstallment={onPayInstallment}
+        />
+      ) : (
+        <div className="p-3 space-y-3 pb-24">
       {/* Greeting Header */}
       <div id="payment-header" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-3 space-y-1">
         <p className="text-xs opacity-90">{greeting}</p>
@@ -248,45 +303,120 @@ export const PaymentMobileView = ({
 
       {/* Fee Type Icons Grid */}
       <div className="space-y-2" id="school-fees-section">
-        <h3 className="text-sm font-semibold text-gray-700">School Fees</h3>
-        <div className="grid grid-cols-7 gap-2">
-          {allFeeTypes.map((feeType) => {
-            const feeConfig = feeTypeIcons[feeType];
-            const feesOfType = getFeesForType(feeType);
-            const hasFees = feesOfType.length > 0;
-            const hasApprovedPayment = payments.some(p =>
-              (p.payment_for.toLowerCase().includes(feeType.toLowerCase()) ||
-                (feeType === 'Tuition' && p.payment_type.includes('Tuition'))) &&
-              p.status === 'Approved'
-            );
-            // Disable if: no fees available, already approved payment, or non-tuition without tuition payment
-            const isDisabled = !hasFees || hasApprovedPayment || (!hasTuitionPayment && feeType !== 'Tuition');
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">School Fees</h3>
+          <div 
+            className="relative"
+            onMouseEnter={handleTooltipShow}
+            onMouseLeave={handleTooltipHide}
+            onTouchStart={handleTooltipShow}
+          >
+            <Switch
+              checked={showEmptyFeeTypes}
+              onCheckedChange={setShowEmptyFeeTypes}
+              className="scale-75"
+            />
+            {/* Tooltip */}
+            <div className={`absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap transition-opacity pointer-events-none z-50 ${
+              showTooltip ? 'opacity-100' : 'opacity-0'
+            }`}>
+              {showEmptyFeeTypes ? 'Hide unavailable fees' : 'Show all fee types'}
+            </div>
+          </div>
+        </div>
 
-            return (
-              <button
-                key={feeType}
-                onClick={() => handleFeeIconClick(feeType)}
-                disabled={isDisabled}
-                title={feeType}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all relative group ${
-                  isDisabled
-                    ? 'opacity-35 cursor-not-allowed'
-                    : 'cursor-pointer hover:scale-110'
-                } ${hasApprovedPayment ? 'opacity-60' : ''}`}
-              >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasFees && !isDisabled ? feeConfig.color : 'bg-gray-100 text-gray-400'}`}>
-                  <div className="w-5 h-5">
+        {/* Text-based display for 2-4 fees */}
+        {useTextDisplay && (
+          <div className="space-y-2">
+            {availableFeeTypes.map((feeType) => {
+              const feeConfig = feeTypeIcons[feeType];
+              const feesOfType = getFeesForType(feeType);
+              const hasFees = feesOfType.length > 0;
+              const hasApprovedPayment = payments.some(p =>
+                (p.payment_for.toLowerCase().includes(feeType.toLowerCase()) ||
+                  (feeType === 'Tuition' && p.payment_type.includes('Tuition'))) &&
+                p.status === 'Approved'
+              );
+              const isDisabled = !hasFees || hasApprovedPayment || (!hasTuitionPayment && feeType !== 'Tuition');
+
+              return (
+                <button
+                  key={feeType}
+                  onClick={() => handleFeeIconClick(feeType)}
+                  disabled={isDisabled}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                    isDisabled
+                      ? 'opacity-35 cursor-not-allowed bg-gray-50 border-gray-200'
+                      : 'cursor-pointer hover:border-blue-500 hover:bg-blue-50 border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    hasFees && !isDisabled ? feeConfig.color : 'bg-gray-100 text-gray-400'
+                  }`}>
                     {feeConfig.icon}
                   </div>
-                </div>
-                {/* Tooltip (display below icon on mobile) */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                  {feeType}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="flex-1 text-left">
+                    <p className={`font-semibold text-sm ${isDisabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                      {feeType}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {feesOfType.length} {feesOfType.length === 1 ? 'fee' : 'fees'} available
+                    </p>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 ${isDisabled ? 'text-gray-300' : 'text-gray-400'}`} />
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Icon-based display for 5+ fees */}
+        {!useTextDisplay && (
+          <div className="grid grid-cols-8 gap-2">
+            {availableFeeTypes.map((feeType) => {
+              const feeConfig = feeTypeIcons[feeType];
+              const feesOfType = getFeesForType(feeType);
+              const hasFees = feesOfType.length > 0;
+              const hasApprovedPayment = payments.some(p =>
+                (p.payment_for.toLowerCase().includes(feeType.toLowerCase()) ||
+                  (feeType === 'Tuition' && p.payment_type.includes('Tuition'))) &&
+                p.status === 'Approved'
+              );
+              const isDisabled = !hasFees || hasApprovedPayment || (!hasTuitionPayment && feeType !== 'Tuition');
+
+              return (
+                <button
+                  key={feeType}
+                  onClick={() => handleFeeIconClick(feeType)}
+                  disabled={isDisabled}
+                  title={feeType}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all relative group ${
+                    isDisabled
+                      ? 'opacity-35 cursor-not-allowed'
+                      : 'cursor-pointer hover:scale-110'
+                  } ${hasApprovedPayment ? 'opacity-60' : ''}`}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasFees && !isDisabled ? feeConfig.color : 'bg-gray-100 text-gray-400'}`}>
+                    <div className="w-5 h-5">
+                      {feeConfig.icon}
+                    </div>
+                  </div>
+                  {/* Tooltip (display below icon on mobile) */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    {feeType}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {!showEmptyFeeTypes && availableFeeTypes.length === 0 && (
+          <div className="text-center py-4 text-gray-500">
+            <p className="text-xs">No fees available for your grade level</p>
+            <p className="text-xs mt-1">Toggle to see all fee categories</p>
+          </div>
+        )}
       </div>
 
       {/* Payment Details Section */}
@@ -318,8 +448,8 @@ export const PaymentMobileView = ({
           </Select>
         </div>
 
-        {/* Payment Items List - Minimal */}
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        {/* Payment Items List - Minimalist */}
+        <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
           {loading ? (
             <div className="text-center py-6">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
@@ -336,95 +466,53 @@ export const PaymentMobileView = ({
               return (
                 <div
                   key={payment.id}
-                  className="p-2 border border-border rounded-lg bg-card text-sm space-y-1"
+                  className="bg-white dark:bg-gray-800 rounded-xl p-3 space-y-2 border border-gray-100 dark:border-gray-700 shadow-sm"
                 >
+                  {/* Header: Title and Status */}
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-foreground line-clamp-1 text-xs">
-                        {payment.payment_for}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        Receipt: {payment.receipt_number} {payment.payment_date && `• ${new Date(payment.payment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-                      </p>
-                    </div>
-                    <Badge className={`${config.bg} flex-shrink-0`}>
-                      <span className={`${config.text}`}>{payment.status}</span>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1 line-clamp-2">
+                      {payment.payment_for}
+                    </h4>
+                    <Badge className={`${config.bg} border-0 flex-shrink-0`}>
+                      <span className={`${config.text} text-xs font-medium`}>{payment.status}</span>
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs">
-                      <p className="font-bold text-foreground">
+                  {/* Receipt and Date */}
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="font-mono">RCP-{payment.receipt_number}</span>
+                    {payment.payment_date && (
+                      <>
+                        <span>•</span>
+                        <span>{new Date(payment.payment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Amount Section */}
+                  <div className="pt-1 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Amount</span>
+                      <span className="text-base font-bold text-gray-900 dark:text-gray-100">
                         ₱{Number(payment.net_amount).toLocaleString()}
-                      </p>
-                      {Number(payment.total_discount) > 0 && (
-                        <p className="text-muted-foreground">
-                          Disc: ₱{Number(payment.total_discount).toLocaleString()}
-                        </p>
-                      )}
+                      </span>
                     </div>
-
-                    <div className="flex gap-1">
-                      {payment.proof_of_payment_url && (
-                        <button
-                          onClick={() => {
-                            const url = payment.proof_of_payment_url?.startsWith('/') 
-                              ? payment.proof_of_payment_url 
-                              : `/${payment.proof_of_payment_url}`;
-                            window.open(url, '_blank');
-                          }}
-                          className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors border border-blue-200"
-                          title="View Proof of Payment"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {(() => {
-                        // Check if this is an installment payment
-                        const isTuitionInstallment = payment.payment_type === 'Tuition Installment' && payment.installment_id;
-                        
-                        // Find the related payment plan
-                        let relatedPlan = null;
-                        if (isTuitionInstallment && paymentPlans.length > 0) {
-                          for (const plan of paymentPlans) {
-                            const planInstallments = installments[plan.id] || [];
-                            if (planInstallments.some((inst: any) => inst.id === payment.installment_id)) {
-                              relatedPlan = plan;
-                              break;
-                            }
-                          }
-                        }
-
-                        return (
-                          <>
-                            {relatedPlan && handleViewInstallments ? (
-                              <button
-                                onClick={() => handleViewInstallments(relatedPlan)}
-                                className="p-1.5 rounded text-orange-600 hover:bg-orange-50 transition-colors border border-orange-200"
-                                title="View Installment Details"
-                              >
-                                <Calendar className="w-3.5 h-3.5" />
-                              </button>
-                            ) : payment.status === 'Approved' ? (
-                              <button
-                                onClick={() => handleDownloadInvoice(payment.id)}
-                                className="p-1.5 rounded text-green-600 hover:bg-green-50 transition-colors border border-green-200"
-                                title="Download Invoice"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                              </button>
-                            ) : null}
-                          </>
-                        );
-                      })()}
-                    </div>
+                    {Number(payment.total_discount) > 0 && (
+                      <div className="flex items-baseline justify-between mt-0.5">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Discount</span>
+                        <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                          -₱{Number(payment.total_discount).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              <p className="text-xs">No payments found</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">No payments found</p>
+              <p className="text-xs mt-1">Try adjusting your search or filters</p>
             </div>
           )}
         </div>
@@ -446,67 +534,143 @@ export const PaymentMobileView = ({
           </ul>
         </CardContent>
       </Card>
-
-      {/* Tour Selection Popover */}
-      {tourOptions && tourOptions.length > 0 && (
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              className="fixed bottom-6 right-6 flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-lg z-40"
-              title="Payment Guide"
-            >
-              <HelpCircle className="w-6 h-6" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-0 border-0 shadow-lg" side="top" align="end" sideOffset={16}>
-            <div className="p-4 space-y-4">
-              {/* Header */}
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center">
-                    <HelpCircle className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <h3 className="font-semibold text-foreground">Choose a Tour</h3>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Select which guided tour you'd like to take to learn about different features.
-                </p>
-              </div>
-
-              {/* Tour Options */}
-              <div className="space-y-2">
-                {tourOptions.map((option: any) => (
-                  <button
-                    key={option.id}
-                  onClick={() => {
-                    // Execute the tour's onStart callback
-                    if (option.onStart) {
-                      option.onStart();
-                    }
-                  }}
-                  className="w-full p-3 rounded-lg border border-border hover:border-blue-400 hover:bg-blue-50/50 transition-all text-left group flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="text-blue-600 flex-shrink-0 mt-0.5">
-                      {option.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm text-foreground group-hover:text-blue-700 transition-colors">
-                        {option.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {option.description}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-blue-600 flex-shrink-0 transition-colors" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </PopoverContent>
-        </Popover>
+      </div>
       )}
+
+      {/* Floating Dock - Always visible */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+        <div className="bg-white/95 dark:bg-gray-900/95 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 px-6 py-3 flex items-center gap-1 backdrop-blur-xl relative">
+          {/* Animated indicator line */}
+          <div 
+            className="absolute bottom-1 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full transition-all duration-500 ease-in-out"
+            style={{
+              width: activeDockTab === 'payments' ? '70px' : '90px',
+              left: activeDockTab === 'installments' ? '20px' : activeDockTab === 'payments' ? 'calc(50% - 35px)' : 'calc(100% - 110px)'
+            }}
+          />
+          
+          {/* Installments Tab */}
+          <button
+            onClick={() => setActiveDockTab('installments')}
+            className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
+          >
+            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+              activeDockTab === 'installments' 
+                ? '-translate-y-full' 
+                : 'translate-y-0'
+            }`}>
+              <CalendarClock className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            </div>
+            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+              activeDockTab === 'installments' 
+                ? 'translate-y-0' 
+                : 'translate-y-full'
+            }`}>
+              <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
+                Installments
+              </span>
+            </div>
+          </button>
+
+          {/* Payments Tab */}
+          <button
+            onClick={() => setActiveDockTab('payments')}
+            className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
+          >
+            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+              activeDockTab === 'payments' 
+                ? '-translate-y-full' 
+                : 'translate-y-0'
+            }`}>
+              <FileText className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            </div>
+            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+              activeDockTab === 'payments' 
+                ? 'translate-y-0' 
+                : 'translate-y-full'
+            }`}>
+              <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
+                Payments
+              </span>
+            </div>
+          </button>
+
+          {/* Help Tab */}
+          {tourOptions && tourOptions.length > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  onClick={() => setActiveDockTab('help')}
+                  className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
+                >
+                  <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+                    activeDockTab === 'help' 
+                      ? '-translate-y-full' 
+                      : 'translate-y-0'
+                  }`}>
+                    <HelpCircle className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+                    activeDockTab === 'help' 
+                      ? 'translate-y-0' 
+                      : 'translate-y-full'
+                  }`}>
+                    <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
+                      Help
+                    </span>
+                  </div>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0 border-0 shadow-lg mb-2" side="top" align="center" sideOffset={8}>
+                <div className="p-4 space-y-4">
+                  {/* Header */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-5 h-5 rounded bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                        <HelpCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="font-semibold text-foreground">Choose a Tour</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Select which guided tour you'd like to take to learn about different features.
+                    </p>
+                  </div>
+
+                  {/* Tour Options */}
+                  <div className="space-y-2">
+                    {tourOptions.map((option: any) => (
+                      <button
+                        key={option.id}
+                        onClick={() => {
+                          // Execute the tour's onStart callback
+                          if (option.onStart) {
+                            option.onStart();
+                          }
+                        }}
+                        className="w-full p-3 rounded-lg border border-border hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all text-left group flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5">
+                            {option.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm text-foreground group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
+                              {option.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {option.description}
+                            </p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 flex-shrink-0 transition-colors" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
       </div>
     </>
   );
@@ -545,8 +709,15 @@ export const FeeTypeModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
-          {fees.map((fee) => (
+        {/* Scrollable container - max 5 items visible */}
+        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+          {fees.length === 0 ? (
+            <div className="text-center py-6 text-gray-500">
+              <p className="text-sm">No {feeType?.toLowerCase()} fees available</p>
+              <p className="text-xs mt-1">All fees have been paid or none match your grade level</p>
+            </div>
+          ) : (
+            fees.map((fee) => (
             <button
               key={fee.id}
               onClick={() => {
@@ -581,7 +752,8 @@ export const FeeTypeModal = ({
                 </div>
               </div>
             </button>
-          ))}
+          ))
+          )}
         </div>
       </DialogContent>
     </Dialog>

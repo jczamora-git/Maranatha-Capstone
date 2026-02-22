@@ -1619,13 +1619,6 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                   <Package className="h-4 w-4 mr-2 text-blue-600" />
                   <span className="text-blue-700 font-medium">Tuition Packages</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => navigate("/admin/uniform-management")}
-                  className="!bg-white hover:!bg-green-100 cursor-pointer"
-                >
-                  <Shirt className="h-4 w-4 mr-2 text-green-600" />
-                  <span className="text-green-700 font-medium">Uniform Management</span>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 

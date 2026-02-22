@@ -213,8 +213,8 @@ $config['sess_driver']             = 'file';
 $config['sess_cookie_name']        = 'LLSession';
 $config['sess_expiration']         = 7200;
 $config['sess_save_path']          = '';
-$config['sess_match_ip']           = TRUE;
-$config['sess_match_fingerprint']  = TRUE;
+$config['sess_match_ip']           = FALSE;  // Changed to FALSE - prevents logout on IP change
+$config['sess_match_fingerprint']  = FALSE;  // Changed to FALSE - prevents logout on fingerprint change
 $config['sess_time_to_update']     = 300;
 $config['sess_regenerate_destroy'] = TRUE;
 $config['sess_expire_on_close']    = FALSE;
@@ -229,12 +229,12 @@ $config['sess_expire_on_close']    = FALSE;
 |--------------------------------------------------------------------------
 */
 $config['cookie_prefix']           = '';
-$config['cookie_domain']           = '';
+$config['cookie_domain']           = 'localhost';  // Explicitly set to localhost for dev
 $config['cookie_path']             = '/';
-$config['cookie_secure']           = FALSE;
+$config['cookie_secure']           = FALSE;   // FALSE for HTTP backend (php -S)
 $config['cookie_expiration']       = 86400;
-$config['cookie_httponly']         = FALSE;
-$config['cookie_samesite']         = 'Lax';
+$config['cookie_httponly']         = TRUE;    // Prevents XSS attacks
+$config['cookie_samesite']         = 'Lax';   // Lax works for same-site (localhost)
 
 /*
 |--------------------------------------------------------------------------

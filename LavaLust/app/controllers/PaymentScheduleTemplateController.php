@@ -19,28 +19,43 @@ class PaymentScheduleTemplateController extends Controller
                $this->session->userdata('role') === 'admin';
     }
 
+    private function is_logged_in()
+    {
+        return $this->session->userdata('logged_in') === true;
+    }
+
     /**
      * Get all payment schedule templates
      * GET /api/payment-schedule-templates
+     * Accessible to all authenticated users (students, enrollees, admin)
+     * Non-admin users only see active templates
      */
     public function get_templates()
     {
         api_set_json_headers();
 
-        if (!$this->is_admin()) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+        // Allow any authenticated user to view templates
+        if (!$this->is_logged_in()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Authentication required']);
             return;
         }
 
         try {
             $filters = [];
             
+            // For non-admin users, only show active templates
+            if (!$this->is_admin()) {
+                $filters['status'] = 'active';
+            } else {
+                // Admin can filter by status if provided
+                if (!empty($_GET['status'])) {
+                    $filters['status'] = $_GET['status'];
+                }
+            }
+            
             if (!empty($_GET['schedule_type'])) {
                 $filters['schedule_type'] = $_GET['schedule_type'];
-            }
-            if (!empty($_GET['status'])) {
-                $filters['status'] = $_GET['status'];
             }
 
             $templates = $this->PaymentScheduleTemplateModel->get_all($filters);
@@ -62,14 +77,16 @@ class PaymentScheduleTemplateController extends Controller
     /**
      * Get single payment schedule template by ID
      * GET /api/payment-schedule-templates/{id}
+     * Accessible to all authenticated users
      */
     public function get_template($id)
     {
         api_set_json_headers();
 
-        if (!$this->is_admin()) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Access denied. Admin only.']);
+        // Allow any authenticated user to view template details
+        if (!$this->is_logged_in()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Authentication required']);
             return;
         }
 
@@ -77,6 +94,16 @@ class PaymentScheduleTemplateController extends Controller
             $template = $this->PaymentScheduleTemplateModel->get_by_id($id);
 
             if (!$template) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Template not found'
+                ]);
+                return;
+            }
+
+            // Non-admin users can only view active templates
+            if (!$this->is_admin() && $template['status'] !== 'active') {
                 http_response_code(404);
                 echo json_encode([
                     'success' => false,

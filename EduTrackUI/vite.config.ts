@@ -1,21 +1,55 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from 'vite-plugin-pwa';
 import fs from "fs";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// Custom plugin: replaces __FIREBASE_API_KEY__ placeholder in firebase-messaging-sw.js
+// so the real key never lives in a committed file.
+function injectFirebaseSWEnv(): import('vite').Plugin {
+  const swFileName = 'firebase-messaging-sw.js';
+
+  return {
+    name: 'inject-firebase-sw-env',
+    // Dev: intercept requests for the service worker and inject env vars on the fly
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url !== `/${swFileName}`) return next();
+        const swPath = path.resolve(__dirname, 'public', swFileName);
+        let content = fs.readFileSync(swPath, 'utf-8');
+        content = content.replace('__FIREBASE_API_KEY__', process.env.VITE_FIREBASE_API_KEY ?? '');
+        res.setHeader('Content-Type', 'application/javascript');
+        res.end(content);
+      });
+    },
+    // Build: replace placeholder in the output file after Vite copies public/ assets
+    closeBundle() {
+      const outDir = path.resolve(__dirname, 'dist');
+      const swOut = path.join(outDir, swFileName);
+      if (!fs.existsSync(swOut)) return;
+      let content = fs.readFileSync(swOut, 'utf-8');
+      content = content.replace('__FIREBASE_API_KEY__', process.env.VITE_FIREBASE_API_KEY ?? '');
+      fs.writeFileSync(swOut, content, 'utf-8');
+    }
+  };
+}
+
 // https://vitejs.dev/config/
-// Look for mkcert-generated certs in ./certs (relative to project root)
-const certDir = path.resolve(__dirname, "./certs");
-const certPath = path.join(certDir, "localhost.pem");
-const keyPath = path.join(certDir, "localhost-key.pem");
+// HTTPS disabled for development - uncomment below if needed for production testing
+// const certDir = path.resolve(__dirname, "./certs");
+// const certPath = path.join(certDir, "localhost.pem");
+// const keyPath = path.join(certDir, "localhost-key.pem");
+// const httpsConfig = fs.existsSync(certPath) && fs.existsSync(keyPath)
+//   ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
+//   : undefined;
 
-const httpsConfig = fs.existsSync(certPath) && fs.existsSync(keyPath)
-  ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
-  : undefined;
+export default defineConfig(({ mode }) => {
+  // Load env file so plugins can access VITE_* vars (process.env is populated by loadEnv)
+  const env = loadEnv(mode, process.cwd(), '');
+  Object.assign(process.env, env);
 
-export default defineConfig(({ mode }) => ({
+  return {
   // Set base path for production (when deployed to /ui/)
   base: mode === 'production' ? '/ui/' : '/',
   server: {
@@ -33,8 +67,9 @@ export default defineConfig(({ mode }) => ({
       '/api': {
         // Proxy API requests to the PHP backend (PHP dev server at localhost:3000)
         target: 'http://localhost:3000',
-        changeOrigin: true,
+        changeOrigin: false,  // Keep origin as localhost:5174 for cookie domain
         secure: false,
+        cookieDomainRewrite: 'localhost',  // Rewrite cookie domain to localhost
         configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq, req) => {
             // Forward cookies from the original request
@@ -42,6 +77,7 @@ export default defineConfig(({ mode }) => ({
               proxyReq.setHeader('cookie', req.headers.cookie as string);
             }
           });
+
         }
       }
     }
@@ -49,6 +85,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    injectFirebaseSWEnv(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'fonts/**/*'],
@@ -185,4 +222,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+  };
+});

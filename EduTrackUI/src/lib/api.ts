@@ -287,15 +287,56 @@ export async function apiPost(url: string, data: any) {
 }
 
 export async function apiGet(url: string) {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Important for session cookies
-  });
+  const request = async () => {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Important for session cookies
+      cache: 'no-store',
+    });
 
-  const text = await response.text();
+    const text = await response.text();
+    console.log(`[apiGet] ${url} - Status: ${response.status}, Text length: ${text.length}, Text:`, text.substring(0, 200));
+    return { response, text };
+  };
+
+  const checkSession = async (): Promise<boolean> => {
+    try {
+      const response = await fetch(API_ENDPOINTS.CHECK, {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) return false;
+
+      const text = await response.text();
+      if (!text) return false;
+
+      const parsed = JSON.parse(text);
+      return !!parsed?.authenticated;
+    } catch {
+      return false;
+    }
+  };
+
+  let { response, text } = await request();
+
+  // Handle occasional transient 401 due to session timing/race on first request.
+  if (response.status === 401) {
+    await new Promise(resolve => setTimeout(resolve, 250));
+    ({ response, text } = await request());
+  }
+
+  // If still 401, attempt session revalidation then retry once.
+  if (response.status === 401) {
+    const sessionOk = await checkSession();
+    if (sessionOk) {
+      ({ response, text } = await request());
+    }
+  }
 
   if (!response.ok) {
     try {

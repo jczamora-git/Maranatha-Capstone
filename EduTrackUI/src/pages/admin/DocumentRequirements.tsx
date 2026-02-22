@@ -61,7 +61,7 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   
   const [formData, setFormData] = useState({
-    grade_level: '',
+    grade_levels: [] as string[],
     enrollment_types: [] as string[], // Changed to array for multiple selection
     document_name: '',
     is_required: true,
@@ -105,7 +105,7 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
       setEditingId(requirement.id);
       setIsEditingGroup(false);
       setFormData({
-        grade_level: requirement.grade_level,
+        grade_levels: [requirement.grade_level],
         enrollment_types: requirement.enrollment_type ? [requirement.enrollment_type] : [],
         document_name: requirement.document_name,
         is_required: Boolean(requirement.is_required),
@@ -124,7 +124,7 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
         .map(r => r.enrollment_type as string);
       
       setFormData({
-        grade_level: requirement.grade_level,
+        grade_levels: [requirement.grade_level],
         enrollment_types: activeTypes,
         document_name: requirement.document_name,
         is_required: Boolean(firstReq.is_required),
@@ -136,7 +136,7 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
       setEditingId(null);
       setIsEditingGroup(false);
       setFormData({
-        grade_level: '',
+        grade_levels: [],
         enrollment_types: [],
         document_name: '',
         is_required: true,
@@ -149,10 +149,10 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
   };
 
   const handleSave = async () => {
-    if (!formData.grade_level || !formData.document_name) {
+    if (formData.grade_levels.length === 0 || !formData.document_name) {
       toast({
         title: 'Validation Error',
-        description: 'Grade level and document name are required',
+        description: 'At least one grade level and document name are required',
         variant: 'destructive'
       });
       return;
@@ -160,131 +160,58 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
 
     try {
       if (isEditingGroup) {
-        // Editing grouped document - activate/deactivate enrollment type variants
-        const existingReqs = requirements.filter(
-          r => r.grade_level === formData.grade_level && r.document_name === formData.document_name
-        );
+        // Editing grouped document - activate/deactivate enrollment type variants per selected grade level
+        for (const gradeLevel of formData.grade_levels) {
+          const existingReqs = requirements.filter(
+            r => r.grade_level === gradeLevel && r.document_name === formData.document_name
+          );
 
-        // If no types selected, it means "All Types" - activate the null type record
-        if (formData.enrollment_types.length === 0) {
-          // Deactivate all specific type records
-          for (const req of existingReqs) {
-            if (req.enrollment_type !== null && req.is_active) {
-              await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${req.id}/toggle`, {
-                method: 'PATCH',
-                credentials: 'include'
-              });
-            }
-          }
-          
-          // Activate or create/update the "All Types" (null) record
-          const allTypesReq = existingReqs.find(r => r.enrollment_type === null);
-          if (allTypesReq) {
-            // Update the All Types record with new properties
-            const updatePayload = {
-              grade_level: formData.grade_level,
-              enrollment_type: null,
-              document_name: formData.document_name,
-              is_required: formData.is_required,
-              display_order: formData.display_order,
-              description: formData.description,
-              is_active: true
-            };
-
-            const updateResponse = await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${allTypesReq.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify(updatePayload)
-            });
-
-            if (!updateResponse.ok) {
-              console.error(`Failed to update All Types requirement ${allTypesReq.id}:`, await updateResponse.text());
-            }
-
-            // Activate if it was inactive
-            if (!allTypesReq.is_active) {
-              await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${allTypesReq.id}/toggle`, {
-                method: 'PATCH',
-                credentials: 'include'
-              });
-            }
-          } else {
-            // Create new "All Types" record
-            const payload = {
-              grade_level: formData.grade_level,
-              enrollment_type: null,
-              document_name: formData.document_name,
-              is_required: formData.is_required,
-              display_order: formData.display_order,
-              description: formData.description,
-              is_active: true
-            };
-
-            await fetch(API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify(payload)
-            });
-          }
-        } else {
-          // Specific types are selected
-          // Deactivate the "All Types" (null) record if it exists
-          const allTypesReq = existingReqs.find(r => r.enrollment_type === null);
-          if (allTypesReq && allTypesReq.is_active) {
-            await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${allTypesReq.id}/toggle`, {
-              method: 'PATCH',
-              credentials: 'include'
-            });
-          }
-
-          // Handle specific enrollment types
-          for (const req of existingReqs) {
-            if (req.enrollment_type !== null) {
-              const shouldBeActive = formData.enrollment_types.includes(req.enrollment_type);
-              
-              // Toggle activation status if needed
-              if (req.is_active !== shouldBeActive) {
+          // If no types selected, it means "All Types" - activate the null type record
+          if (formData.enrollment_types.length === 0) {
+            // Deactivate all specific type records
+            for (const req of existingReqs) {
+              if (req.enrollment_type !== null && req.is_active) {
                 await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${req.id}/toggle`, {
                   method: 'PATCH',
                   credentials: 'include'
                 });
               }
-              
-              // Update properties for active types
-              if (shouldBeActive) {
-                const updatePayload = {
-                  grade_level: formData.grade_level,
-                  enrollment_type: req.enrollment_type,
-                  document_name: formData.document_name,
-                  is_required: formData.is_required,
-                  display_order: formData.display_order,
-                  description: formData.description,
-                  is_active: true
-                };
-
-                const updateResponse = await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${req.id}`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  credentials: 'include',
-                  body: JSON.stringify(updatePayload)
-                });
-
-                if (!updateResponse.ok) {
-                  console.error(`Failed to update requirement ${req.id}:`, await updateResponse.text());
-                }
-              }
             }
-          }
 
-          // Create new records for newly selected types that don't exist
-          for (const type of formData.enrollment_types) {
-            const exists = existingReqs.some(r => r.enrollment_type === type);
-            if (!exists) {
+            // Activate or create/update the "All Types" (null) record
+            const allTypesReq = existingReqs.find(r => r.enrollment_type === null);
+            if (allTypesReq) {
+              const updatePayload = {
+                grade_level: gradeLevel,
+                enrollment_type: null,
+                document_name: formData.document_name,
+                is_required: formData.is_required,
+                display_order: formData.display_order,
+                description: formData.description,
+                is_active: true
+              };
+
+              const updateResponse = await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${allTypesReq.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(updatePayload)
+              });
+
+              if (!updateResponse.ok) {
+                console.error(`Failed to update All Types requirement ${allTypesReq.id}:`, await updateResponse.text());
+              }
+
+              if (!allTypesReq.is_active) {
+                await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${allTypesReq.id}/toggle`, {
+                  method: 'PATCH',
+                  credentials: 'include'
+                });
+              }
+            } else {
               const payload = {
-                grade_level: formData.grade_level,
-                enrollment_type: type,
+                grade_level: gradeLevel,
+                enrollment_type: null,
                 document_name: formData.document_name,
                 is_required: formData.is_required,
                 display_order: formData.display_order,
@@ -299,6 +226,72 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
                 body: JSON.stringify(payload)
               });
             }
+          } else {
+            const allTypesReq = existingReqs.find(r => r.enrollment_type === null);
+            if (allTypesReq && allTypesReq.is_active) {
+              await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${allTypesReq.id}/toggle`, {
+                method: 'PATCH',
+                credentials: 'include'
+              });
+            }
+
+            for (const req of existingReqs) {
+              if (req.enrollment_type !== null) {
+                const shouldBeActive = formData.enrollment_types.includes(req.enrollment_type);
+
+                if (req.is_active !== shouldBeActive) {
+                  await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${req.id}/toggle`, {
+                    method: 'PATCH',
+                    credentials: 'include'
+                  });
+                }
+
+                if (shouldBeActive) {
+                  const updatePayload = {
+                    grade_level: gradeLevel,
+                    enrollment_type: req.enrollment_type,
+                    document_name: formData.document_name,
+                    is_required: formData.is_required,
+                    display_order: formData.display_order,
+                    description: formData.description,
+                    is_active: true
+                  };
+
+                  const updateResponse = await fetch(`${API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS}/${req.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(updatePayload)
+                  });
+
+                  if (!updateResponse.ok) {
+                    console.error(`Failed to update requirement ${req.id}:`, await updateResponse.text());
+                  }
+                }
+              }
+            }
+
+            for (const type of formData.enrollment_types) {
+              const exists = existingReqs.some(r => r.enrollment_type === type);
+              if (!exists) {
+                const payload = {
+                  grade_level: gradeLevel,
+                  enrollment_type: type,
+                  document_name: formData.document_name,
+                  is_required: formData.is_required,
+                  display_order: formData.display_order,
+                  description: formData.description,
+                  is_active: true
+                };
+
+                await fetch(API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify(payload)
+                });
+              }
+            }
           }
         }
 
@@ -307,9 +300,19 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
           description: 'Requirements updated successfully'
         });
       } else if (editingId) {
+        if (formData.grade_levels.length !== 1) {
+          toast({
+            title: 'Validation Error',
+            description: 'Single requirement edit supports exactly one grade level. Use Add for multi-level creation.',
+            variant: 'destructive'
+          });
+          return;
+        }
+
         // Update single requirement
         const payload = {
           ...formData,
+          grade_level: formData.grade_levels[0],
           enrollment_type: formData.enrollment_types[0] || null
         };
 
@@ -335,30 +338,32 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
           ? formData.enrollment_types 
           : [null];
 
-        for (const enrollmentType of typesToSave) {
-          const payload = {
-            grade_level: formData.grade_level,
-            enrollment_type: enrollmentType,
-            document_name: formData.document_name,
-            is_required: formData.is_required,
-            display_order: formData.display_order,
-            description: formData.description,
-            is_active: true
-          };
+        for (const gradeLevel of formData.grade_levels) {
+          for (const enrollmentType of typesToSave) {
+            const payload = {
+              grade_level: gradeLevel,
+              enrollment_type: enrollmentType,
+              document_name: formData.document_name,
+              is_required: formData.is_required,
+              display_order: formData.display_order,
+              description: formData.description,
+              is_active: true
+            };
 
-          const response = await fetch(API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(payload)
-          });
+            const response = await fetch(API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify(payload)
+            });
 
-          if (!response.ok) throw new Error('Failed to create requirement');
+            if (!response.ok) throw new Error('Failed to create requirement');
+          }
         }
 
         toast({
           title: 'Success',
-          description: `${typesToSave.length} requirement${typesToSave.length > 1 ? 's' : ''} created successfully`
+          description: `${formData.grade_levels.length * typesToSave.length} requirement${(formData.grade_levels.length * typesToSave.length) > 1 ? 's' : ''} created successfully`
         });
       }
       
@@ -592,7 +597,6 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
                       <div className="space-y-4">
                         {Object.entries(documentGroups).map(([documentName, reqs]) => {
                           // Collect all enrollment types for this document
-                          const enrollmentTypes = reqs.map(r => r.enrollment_type).filter((t): t is string => t !== null);
                           const hasAllTypes = reqs.some(r => r.enrollment_type === null);
                           const firstReq = reqs[0];
                           
@@ -682,20 +686,40 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <Label htmlFor="grade_level">Grade Level *</Label>
-                <Select
-                  value={formData.grade_level}
-                  onValueChange={(value) => setFormData({ ...formData, grade_level: value })}
-                >
-                  <SelectTrigger id="grade_level" className="mt-2">
-                    <SelectValue placeholder="Select grade level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GRADE_LEVELS.map(grade => (
-                      <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Grade Levels *</Label>
+                <div className="mt-2 p-4 border rounded-md space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {GRADE_LEVELS.map((grade) => {
+                      const selected = formData.grade_levels.includes(grade);
+                      return (
+                        <button
+                          key={grade}
+                          type="button"
+                          onClick={() => {
+                            if (selected) {
+                              setFormData({
+                                ...formData,
+                                grade_levels: formData.grade_levels.filter(g => g !== grade)
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                grade_levels: [...formData.grade_levels, grade]
+                              });
+                            }
+                          }}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium border transition-all ${
+                            selected
+                              ? 'bg-green-600 text-white border-green-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-green-500'
+                          }`}
+                        >
+                          {grade}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -815,5 +839,5 @@ export default function DocumentRequirements({ embedded = false }: DocumentRequi
       </div>
   );
 
-  return embedded ? content : <DashboardLayout role="admin">{content}</DashboardLayout>;
+  return embedded ? content : <DashboardLayout>{content}</DashboardLayout>;
 }

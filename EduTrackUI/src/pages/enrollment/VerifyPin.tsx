@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { usePaymentPageLock } from '@/hooks/usePaymentPageLock';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
-import { Lock, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Lock, AlertCircle, ArrowLeft, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_ENDPOINTS, apiPost } from '@/lib/api';
 import { NumericKeypad } from '@/components/NumericKeypad';
@@ -18,12 +18,44 @@ export default function VerifyPin() {
   const [pin, setPin] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(0);
-  const maxAttempts = 3;
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockTimeRemaining, setLockTimeRemaining] = useState(0);
+
+  // Countdown timer for lock duration
+  useEffect(() => {
+    if (!isLocked || lockTimeRemaining <= 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setLockTimeRemaining((prev) => {
+        if (prev <= 1) {
+          setIsLocked(false);
+          setError('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLocked, lockTimeRemaining]);
+
+  // Format time remaining as MM:SS
+  const formatTimeRemaining = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleVerify = async () => {
     if (pin.length !== 6) {
       setError('Please enter your complete 6-digit PIN');
+      return;
+    }
+
+    if (isLocked && lockTimeRemaining > 0) {
+      setError(`Account locked. Try again in ${formatTimeRemaining(lockTimeRemaining)}`);
       return;
     }
 
@@ -41,23 +73,32 @@ export default function VerifyPin() {
         console.log('🔐 [VerifyPin] PIN verified successfully!');
         toast.success('PIN verified successfully');
         setPin('');
-        setAttempts(0);
+        setIsLocked(false);
+        setLockTimeRemaining(0);
         setError('');
         unlockPaymentSection();
         navigateToPayment();
       } else {
         console.log('🔐 [VerifyPin] PIN verification failed:', { response });
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
-
-        if (newAttempts >= maxAttempts) {
-          setError('Too many failed attempts. Please reset your PIN.');
-          toast.error('Account temporarily locked for security.');
+        
+        // Check if account is locked (backend sends this message)
+        if (response.message?.includes('locked') || response.message?.includes('Lock')) {
+          // Account is locked for 2 minutes
+          setIsLocked(true);
+          setLockTimeRemaining(2 * 60); // 2 minutes in seconds
+          setError('Too many failed attempts. Account locked for 2 minutes.');
+          toast.error('Account locked for security. Try again in 2 minutes.');
           setPin('');
         } else {
-          const remaining = maxAttempts - newAttempts;
-          setError(`Incorrect PIN. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`);
-          toast.error('Incorrect PIN');
+          // Show attempts remaining from backend
+          const attemptsRemaining = response.attempts_remaining ?? 0;
+          if (attemptsRemaining > 0) {
+            setError(`Incorrect PIN. ${attemptsRemaining} attempt${attemptsRemaining > 1 ? 's' : ''} remaining.`);
+            toast.error('Incorrect PIN');
+          } else {
+            setError('Incorrect PIN');
+            toast.error('Incorrect PIN');
+          }
           setPin('');
         }
       }
@@ -106,6 +147,19 @@ export default function VerifyPin() {
                 </div>
               )}
 
+              {/* Lock Countdown Timer */}
+              {isLocked && lockTimeRemaining > 0 && (
+                <div className="mb-3 flex gap-1.5 rounded-lg bg-orange-50 border border-orange-200 p-3">
+                  <Clock className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-orange-900 mb-1">Account Locked</p>
+                    <p className="text-[11px] leading-tight text-orange-700">
+                      Please wait <span className="font-mono font-bold">{formatTimeRemaining(lockTimeRemaining)}</span> before trying again
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Info Box */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3">
                 <p className="text-[11px] leading-tight text-blue-700">
@@ -119,7 +173,7 @@ export default function VerifyPin() {
                 onChange={handlePinChange}
                 maxLength={6}
                 onSubmit={handleVerify}
-                disabled={isVerifying || attempts >= maxAttempts}
+                disabled={isVerifying || isLocked}
               />
 
               {/* Forgot PIN Link */}

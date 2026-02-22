@@ -609,7 +609,6 @@ class PaymentController extends Controller
                 'payment_type' => $originalPayment['payment_type'],
                 'payment_for' => 'Refund - ' . ($originalPayment['payment_for'] ?? 'Payment'),
                 'amount' => $refundAmount,
-                'net_amount' => -$refundAmount, // Negative amount for refunds
                 'total_discount' => 0,
                 'payment_method' => $originalPayment['payment_method'] ?? 'Cash',
                 'payment_date' => $refundDate,

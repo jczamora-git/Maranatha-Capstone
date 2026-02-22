@@ -434,11 +434,7 @@ const Payment = () => {
             is_required: Boolean(fee.is_required),
           }));
           
-          // Find tuition fee
-          const tuition = transformedFees.find((fee: SchoolFee) => fee.fee_type === 'Tuition' && fee.is_active);
-          setTuitionFee(tuition || null);
-          
-          // Set all school fees
+          // Set all school fees (tuition will be selected based on enrollment grade level)
           setAllSchoolFees(transformedFees);
         }
       } catch (err) {
@@ -453,15 +449,47 @@ const Payment = () => {
     }
   }, [isEmailVerified]);
 
+  // Select tuition fee that matches the enrollment grade level (or global tuition if year_level is null)
+  useEffect(() => {
+    if (!enrollment || allSchoolFees.length === 0) return;
+
+    const matchedTuition = allSchoolFees.find((fee: SchoolFee) =>
+      fee.fee_type === 'Tuition' &&
+      fee.is_active &&
+      (!fee.year_level || fee.year_level === enrollment.grade_level)
+    );
+
+    setTuitionFee(matchedTuition || null);
+  }, [allSchoolFees, enrollment]);
+
   // Filter school fees based on existing payments
   useEffect(() => {
     if (!enrollment || allSchoolFees.length === 0) {
       setAvailableSchoolFees(allSchoolFees);
       return;
     }
+    // Determine if there's an existing payment plan for this enrollment
+    const hasPlanForEnrollment = paymentPlans.some((p) => String(p.enrollment_id) === String(enrollment.id));
 
     // Filter out fees that already have payment records (regardless of status)
     const filteredFees = allSchoolFees.filter((fee) => {
+      // Filter ALL fees by grade level (not just tuition)
+      // year_level can be null (applies to all grades) or must match the enrollment grade level
+      const gradeMatches = !fee.year_level || fee.year_level === enrollment.grade_level;
+      if (!gradeMatches) {
+        return false; // Skip fees that don't match the student's grade level
+      }
+
+      // If there's already a payment plan for this enrollment, hide tuition fees
+      if (hasPlanForEnrollment && fee.fee_type === 'Tuition') {
+        return false;
+      }
+
+      // If user is enrollee, hide all non-tuition fees
+      if (user?.role === 'enrollee' && fee.fee_type !== 'Tuition') {
+        return false;
+      }
+
       // Check if there's any payment for this specific fee
       const hasPayment = payments.some((payment) => {
         // Check enrollment match - use both enrollment_id and student_id for flexibility
@@ -484,7 +512,7 @@ const Payment = () => {
     });
 
     setAvailableSchoolFees(filteredFees);
-  }, [enrollment, payments, allSchoolFees, user?.id]);
+  }, [enrollment, payments, allSchoolFees, user?.id, user?.role, paymentPlans]);
 
   // Fetch discount templates
   useEffect(() => {
@@ -787,7 +815,7 @@ const Payment = () => {
             isOpen={selectedFeeTypeMobile !== null}
             onClose={() => setSelectedFeeTypeMobile(null)}
             feeType={selectedFeeTypeMobile}
-            fees={selectedFeeTypeMobile ? allSchoolFees.filter(f => f.fee_type === selectedFeeTypeMobile) : []}
+            fees={selectedFeeTypeMobile ? availableSchoolFees.filter(f => f.fee_type === selectedFeeTypeMobile) : []}
             onFeeSelect={handleSchoolFeeClick}
           />
         </>
@@ -935,7 +963,9 @@ const Payment = () => {
                     <CardContent>
                       <div className="space-y-3">
                         {pendingInstallments.slice(0, 2).map(inst => {
-                          const isOverdue = new Date(inst.due_date) < new Date();
+                          const isFirstInstallment = inst.installment_number === 1;
+                          // Treat the first installment as "required" instead of marking it overdue
+                          const isOverdue = !isFirstInstallment && new Date(inst.due_date) < new Date();
                           const daysUntilDue = Math.ceil((new Date(inst.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                           
                           // Check if this installment is locked (must pay previous installments first)
@@ -981,6 +1011,11 @@ const Payment = () => {
                                           OVERDUE
                                         </Badge>
                                       )}
+                                      {!isLocked && !isOverdue && isFirstInstallment && !isPaid && (
+                                        <Badge className="bg-blue-50 text-blue-800 text-xs border-0">
+                                          REQUIRED
+                                        </Badge>
+                                      )}
                                     </div>
                                     <div className="space-y-1">
                                       <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -1024,6 +1059,11 @@ const Payment = () => {
                                   {!isLocked && isOverdue && (
                                     <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
                                       Overdue
+                                    </Badge>
+                                  )}
+                                  {!isLocked && !isOverdue && isFirstInstallment && !isPaid && (
+                                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                      Required
                                     </Badge>
                                   )}
                                   <Button
@@ -1356,7 +1396,10 @@ const Payment = () => {
                   </div>
                 ) : (
                   <div className="text-center py-4 text-muted-foreground text-sm">
-                    {allSchoolFees.length === 0 ? "No school fees available" : "All fees have been paid"}
+                    {user?.role === 'enrollee' && availableSchoolFees.length === 0
+                      ? 'Fees coming soon — fees will be unlocked once you become a student.'
+                      : (allSchoolFees.length === 0 ? 'No school fees available' : 'All fees have been paid')
+                    }
                   </div>
                 )}
               </CardContent>
@@ -1766,16 +1809,20 @@ const Payment = () => {
                           amount_paid: installment.amount_paid
                         });
 
+                    // Determine visual variant for installment card
+                    const isFirstInstallment = installment.installment_number === 1;
+                    const cardVariant = isCardDisabled
+                      ? 'border-gray-300 bg-gray-50 opacity-60 cursor-not-allowed'
+                      : penaltyInfo?.hasPenalty
+                        ? 'border-red-200 bg-red-50 hover:bg-red-100'
+                        : (isFirstInstallment && !isPaid)
+                          ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
+                          : 'hover:bg-muted/50';
+
                     return (
                     <div
                       key={installment.id}
-                      className={`flex items-center justify-between p-4 border rounded-lg transition-all ${
-                        isCardDisabled 
-                          ? 'border-gray-300 bg-gray-50 opacity-60 cursor-not-allowed' 
-                          : penaltyInfo?.hasPenalty
-                          ? 'border-red-200 bg-red-50 hover:bg-red-100'
-                          : 'hover:bg-muted/50'
-                      }`}
+                      className={`flex items-center justify-between p-4 border rounded-lg transition-all ${cardVariant}`}
                       title={
                         isLocked ? 'Locked - Pay previous installments first' :
                         isCardDisabled && !isLocked ? `Cannot pay - Pending payment awaiting approval (Submitted: ${new Date(unapprovedPayment!.payment_date).toLocaleDateString()})` : ''
@@ -1859,10 +1906,13 @@ const Payment = () => {
                                 badgeClass = 'bg-blue-100 text-blue-800';
                               }
                             } else {
-                              // No payment record - check if overdue
+                              // No payment record - treat first installment as 'Required' to encourage payment
                               const today = new Date();
                               const dueDate = new Date(installment.due_date);
-                              if (dueDate < today) {
+                              if (installment.installment_number === 1) {
+                                displayStatus = 'Required';
+                                badgeClass = 'bg-blue-100 text-blue-800';
+                              } else if (dueDate < today) {
                                 displayStatus = 'Overdue';
                                 badgeClass = 'bg-red-100 text-red-800';
                               } else {

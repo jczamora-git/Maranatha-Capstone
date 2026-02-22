@@ -11,15 +11,19 @@ type Role = 'admin' | 'teacher' | 'student' | 'enrollee';
  * @returns Object containing user data and authentication status
  */
 export function useRoleBasedAuth(requiredRole: Role | Role[]) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, authReady } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!authReady) {
+      return;
+    }
+
     const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     if (!isAuthenticated || !user?.role || !allowedRoles.includes(user.role as Role)) {
       navigate('/auth');
     }
-  }, [isAuthenticated, user, requiredRole, navigate]);
+  }, [authReady, isAuthenticated, user, requiredRole, navigate]);
 
-  return { user, isAuthenticated };
+  return { user, isAuthenticated, authReady };
 }

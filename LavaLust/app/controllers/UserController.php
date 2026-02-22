@@ -977,35 +977,50 @@ class UserController extends Controller
 
     public function check()
     {
-         api_set_json_headers();
+        api_set_json_headers();
         
-        $isAuthenticated = $this->session->userdata('logged_in') === true;
-        
-        $userData = null;
-        if ($isAuthenticated) {
-            $user_id = $this->session->userdata('user_id');
-            // Fetch full user data to include payment_pin_set
-            $user = $this->db->select('*')
-                ->from('users')
-                ->where('id', $user_id)
-                ->get()
-                ->row();
+        try {
+            $isAuthenticated = $this->session->userdata('logged_in') === true;
             
-            $userData = [
-                'id' => $this->session->userdata('user_id'),
-                'email' => $this->session->userdata('email'),
-                'role' => $this->session->userdata('role'),
-                'first_name' => $this->session->userdata('first_name'),
-                'last_name' => $this->session->userdata('last_name'),
-                'payment_pin_set' => $user && !empty($user->payment_pin_hash)
-            ];
+            $userData = null;
+            if ($isAuthenticated) {
+                // Get user data from session and database
+                $user_id = $this->session->userdata('user_id');
+                
+                if ($user_id) {
+                    // Use the UserModel instead of direct DB query
+                    $user = $this->UserModel->find($user_id);
+                    
+                    if ($user) {
+                        $userData = [
+                            'id' => $user['id'],
+                            'email' => $user['email'],
+                            'role' => $user['role'],
+                            'first_name' => $user['first_name'],
+                            'middle_name' => $user['middle_name'] ?? null,
+                            'last_name' => $user['last_name'],
+                            'status' => $user['status'],
+                            'payment_pin_set' => !empty($user['payment_pin_hash'])
+                        ];
+                    }
+                }
+            }
+            
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'authenticated' => $isAuthenticated && $userData !== null,
+                'user' => $userData
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'authenticated' => false,
+                'user' => null,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
         }
-        
-        echo json_encode([
-            'success' => true,
-            'authenticated' => $isAuthenticated,
-            'user' => $userData
-        ]);
     }
 
     // ===================================
@@ -2348,8 +2363,8 @@ class UserController extends Controller
             $max_attempts = 3;
 
             if ($new_attempts >= $max_attempts) {
-                // Lock account for 15 minutes
-                $lock_until = date('Y-m-d H:i:s', time() + (15 * 60));
+                // Lock account for 2 minutes
+                $lock_until = date('Y-m-d H:i:s', time() + (2 * 60));
                 $this->db->table('users')
                     ->where('id', $user_id)
                     ->update([
@@ -2360,7 +2375,7 @@ class UserController extends Controller
                 http_response_code(200);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Account locked. Try again in 15 minutes.',
+                    'message' => 'Account locked. Try again in 2 minutes.',
                     'attempts_remaining' => 0
                 ]);
             } else {

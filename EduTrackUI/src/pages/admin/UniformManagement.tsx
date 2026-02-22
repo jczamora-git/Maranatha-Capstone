@@ -25,6 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { API_ENDPOINTS, apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useConfirm } from "@/components/Confirm";
 import { ArrowLeft, Pencil, Plus, Shirt, Trash2, ToggleLeft } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -85,12 +86,39 @@ const YEAR_LEVELS = [
   "Grade 6",
 ];
 
+const SIZE_OPTIONS = [
+  "#2",
+  "#4",
+  "#6",
+  "#8",
+  "#10",
+  "#12",
+  "#14",
+  "#16",
+  "#18",
+  "#20",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL",
+  "4XL",
+];
+
 const GROUP_COLORS: Record<ItemGroup, { card: string; badge: string; icon: string }> = {
   Dress:  { card: "border-pink-200 bg-gradient-to-br from-pink-50 to-pink-100/60",   badge: "bg-pink-100 text-pink-700 border-pink-300",   icon: "text-pink-500" },
   Blouse: { card: "border-violet-200 bg-gradient-to-br from-violet-50 to-violet-100/60", badge: "bg-violet-100 text-violet-700 border-violet-300", icon: "text-violet-500" },
   Skirt:  { card: "border-rose-200 bg-gradient-to-br from-rose-50 to-rose-100/60",     badge: "bg-rose-100 text-rose-700 border-rose-300",     icon: "text-rose-500" },
   Polo:   { card: "border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/60",     badge: "bg-blue-100 text-blue-700 border-blue-300",     icon: "text-blue-500" },
   PE:     { card: "border-teal-200 bg-gradient-to-br from-teal-50 to-teal-100/60",     badge: "bg-teal-100 text-teal-700 border-teal-300",     icon: "text-teal-500" },
+};
+
+const getDefaultGenderByCategory = (category: ItemGroup): Gender => {
+  if (category === "Dress" || category === "Blouse" || category === "Skirt") return "Female";
+  if (category === "Polo") return "Male";
+  return "All";
 };
 
 function emptyEditable(): EditableItem {
@@ -111,14 +139,19 @@ function emptyEditable(): EditableItem {
 const UniformManagement = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const confirm = useConfirm();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<UniformItem[]>([]);
+  const [orderedUniformItemIds, setOrderedUniformItemIds] = useState<Set<string>>(new Set());
   const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editable, setEditable] = useState<EditableItem>(emptyEditable());
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [batchPrice, setBatchPrice] = useState("");
+  const [batchHalfPrice, setBatchHalfPrice] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState<UniformItem | null>(null);
   const [filterGroup, setFilterGroup] = useState<ItemGroup | "All">("All");
@@ -132,6 +165,20 @@ const UniformManagement = () => {
     try {
       const res = await apiGet(API_ENDPOINTS.UNIFORM_ITEMS);
       setItems(Array.isArray(res?.data) ? res.data : []);
+
+      try {
+        const ordersRes = await apiGet(API_ENDPOINTS.UNIFORM_ORDERS);
+        const orders = Array.isArray(ordersRes?.data) ? ordersRes.data : [];
+        const usedIds = new Set<string>();
+        orders.forEach((order: any) => {
+          if (order?.uniform_item_id !== undefined && order?.uniform_item_id !== null) {
+            usedIds.add(String(order.uniform_item_id));
+          }
+        });
+        setOrderedUniformItemIds(usedIds);
+      } catch {
+        setOrderedUniformItemIds(new Set());
+      }
     } catch (err: any) {
       showAlert("error", err?.message || "Failed to load uniform items");
     } finally {
@@ -166,10 +213,22 @@ const UniformManagement = () => {
 
   const openCreate = () => {
     setEditable(emptyEditable());
+    setSelectedSizes([]);
+    setBatchPrice("");
+    setBatchHalfPrice("");
     setEditorOpen(true);
   };
 
   const openEdit = (item: UniformItem) => {
+    const mappedPrices = item.prices.length
+      ? item.prices.map((p) => ({
+          id: p.id,
+          size: p.size,
+          price: String(p.price ?? ""),
+          half_price: p.half_price !== null && p.half_price !== undefined ? String(p.half_price) : "",
+        }))
+      : [{ size: "", price: "", half_price: "" }];
+
     setEditable({
       id: item.id,
       item_name: item.item_name,
@@ -179,25 +238,35 @@ const UniformManagement = () => {
       is_pair: item.is_pair,
       allow_half_price: item.allow_half_price,
       is_active: item.is_active,
-      prices: item.prices.length
-        ? item.prices.map((p) => ({
-            id: p.id,
-            size: p.size,
-            price: String(p.price ?? ""),
-            half_price: p.half_price !== null && p.half_price !== undefined ? String(p.half_price) : "",
-          }))
-        : [{ size: "", price: "", half_price: "" }],
+      prices: mappedPrices,
     });
+    const mappedSizes = mappedPrices.filter((p) => p.size.trim() !== "").map((p) => p.size);
+    setSelectedSizes(mappedSizes);
+    const uniquePrices = Array.from(new Set(mappedPrices.map((p) => p.price).filter((v) => v !== "")));
+    const uniqueHalfPrices = Array.from(new Set(mappedPrices.map((p) => p.half_price).filter((v) => v !== "")));
+    setBatchPrice(uniquePrices.length === 1 ? uniquePrices[0] : "");
+    setBatchHalfPrice(uniqueHalfPrices.length === 1 ? uniqueHalfPrices[0] : "");
     setEditorOpen(true);
   };
 
   const closeEditor = () => {
     setEditorOpen(false);
     setEditable(emptyEditable());
+    setSelectedSizes([]);
+    setBatchPrice("");
+    setBatchHalfPrice("");
   };
 
   const patchEditable = (patch: Partial<EditableItem>) =>
     setEditable((prev) => ({ ...prev, ...patch }));
+
+  const handleCategoryChange = (category: ItemGroup) => {
+    patchEditable({
+      item_group: category,
+      applicable_gender: getDefaultGenderByCategory(category),
+      allow_half_price: category === "PE" ? true : editable.allow_half_price,
+    });
+  };
 
   const toggleLevel = (level: string) => {
     setEditable((prev) => ({
@@ -208,17 +277,61 @@ const UniformManagement = () => {
     }));
   };
 
-  // prices rows
-  const addPriceRow = () =>
-    patchEditable({ prices: [...editable.prices, { size: "", price: "", half_price: "" }] });
+  const toggleSizeSelection = (size: string) => {
+    setSelectedSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+    );
+  };
 
-  const updatePriceRow = (index: number, patch: Partial<UniformPrice>) =>
-    patchEditable({
-      prices: editable.prices.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+  const removeConfiguredSize = (size: string) => {
+    patchEditable({ prices: editable.prices.filter((row) => row.size !== size) });
+    setSelectedSizes((prev) => prev.filter((s) => s !== size));
+  };
+
+  // Auto-compute half price from main price when half-price mode is enabled (PE default flow)
+  useEffect(() => {
+    if (!editable.allow_half_price) return;
+    if (batchPrice === "" || isNaN(Number(batchPrice))) {
+      setBatchHalfPrice("");
+      return;
+    }
+
+    const computed = (Number(batchPrice) / 2).toFixed(2);
+    setBatchHalfPrice(computed);
+  }, [batchPrice, editable.allow_half_price]);
+
+  // Auto-apply current price fields to selected sizes (no apply button needed)
+  useEffect(() => {
+    if (selectedSizes.length === 0) return;
+    if (batchPrice === "" || isNaN(Number(batchPrice)) || Number(batchPrice) < 0) return;
+
+    setEditable((prev) => {
+      const map = new Map<string, UniformPrice>();
+      prev.prices.forEach((row) => {
+        if (!row.size.trim()) return;
+        map.set(row.size, row);
+      });
+
+      selectedSizes.forEach((size) => {
+        const existing = map.get(size);
+        map.set(size, {
+          id: existing?.id,
+          size,
+          price: batchPrice,
+          half_price: prev.allow_half_price ? batchHalfPrice : "",
+        });
+      });
+
+      const ordered = Array.from(map.values()).sort(
+        (a, b) => SIZE_OPTIONS.indexOf(a.size) - SIZE_OPTIONS.indexOf(b.size)
+      );
+
+      return {
+        ...prev,
+        prices: ordered,
+      };
     });
-
-  const removePriceRow = (index: number) =>
-    patchEditable({ prices: editable.prices.filter((_, i) => i !== index) });
+  }, [selectedSizes, batchPrice, batchHalfPrice]);
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
@@ -240,6 +353,16 @@ const UniformManagement = () => {
       return;
     }
 
+    const confirmed = await confirm({
+      title: editable.id ? "Update Uniform Item" : "Create Uniform Item",
+      description: `${editable.id ? "Update" : "Create"} "${editable.item_name || "this item"}" with ${validPrices.length} size(s)?`,
+      confirmText: editable.id ? "Update" : "Create",
+      cancelText: "Cancel",
+      variant: "default",
+    });
+
+    if (!confirmed) return;
+
     setSaving(true);
     try {
       const payload = {
@@ -253,7 +376,7 @@ const UniformManagement = () => {
         prices: validPrices.map((p) => ({
           size: p.size.trim(),
           price: Number(p.price),
-          half_price: p.half_price !== "" ? Number(p.half_price) : null,
+          half_price: editable.allow_half_price && p.half_price !== "" ? Number(p.half_price) : null,
         })),
       };
 
@@ -277,12 +400,29 @@ const UniformManagement = () => {
   // ── Delete ─────────────────────────────────────────────────────────────────
 
   const handleDelete = async (item: UniformItem) => {
+    if (orderedUniformItemIds.has(String(item.id))) {
+      showAlert("error", "There is an orders for this item you cant delete this");
+      return;
+    }
+
     try {
       await apiDelete(API_ENDPOINTS.UNIFORM_ITEM_BY_ID(item.id));
       showAlert("success", "Uniform item deleted");
       await fetchItems();
     } catch (err: any) {
-      showAlert("error", err?.message || "Failed to delete uniform item");
+      const rawMessage = String(err?.message || "");
+      const normalized = rawMessage.toLowerCase();
+
+      if (
+        normalized.includes("student_uniform_orders") ||
+        normalized.includes("cannot delete or update a parent row") ||
+        normalized.includes("foreign key constraint fails")
+      ) {
+        showAlert("error", "There is an orders for this item you cant delete this");
+        return;
+      }
+
+      showAlert("error", rawMessage || "Failed to delete uniform item");
     }
   };
 
@@ -322,11 +462,11 @@ const UniformManagement = () => {
           <div>
             <Button
               variant="ghost"
-              onClick={() => navigate("/admin/payments")}
+              onClick={() => navigate("/admin/uniform-orders")}
               className="mb-6 gap-2 text-base font-medium hover:bg-muted"
             >
               <ArrowLeft className="h-5 w-5" />
-              Back to Payments
+              Back to Uniform Orders
             </Button>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Uniform Management
@@ -373,6 +513,7 @@ const UniformManagement = () => {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredItems.map((item) => {
               const colors = GROUP_COLORS[item.item_group] ?? GROUP_COLORS["Polo"];
+              const hasOrders = orderedUniformItemIds.has(String(item.id));
               return (
                 <Card
                   key={item.id}
@@ -503,6 +644,8 @@ const UniformManagement = () => {
                         variant="destructive"
                         size="sm"
                         className="h-8 text-xs"
+                        title={hasOrders ? "Cannot delete: item has existing orders" : "Delete item"}
+                        disabled={hasOrders}
                         onClick={() => setDeleteTarget(item)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -548,7 +691,7 @@ const UniformManagement = () => {
                   <Label className="text-xs font-semibold uppercase tracking-wide">Category *</Label>
                   <Select
                     value={editable.item_group}
-                    onValueChange={(v) => patchEditable({ item_group: v as ItemGroup })}
+                    onValueChange={(v) => handleCategoryChange(v as ItemGroup)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -646,81 +789,100 @@ const UniformManagement = () => {
 
               {/* Sizes & Prices */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold uppercase tracking-wide">Sizes &amp; Prices *</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addPriceRow} className="h-7 text-xs">
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Add Size
-                  </Button>
-                </div>
+                <Label className="text-xs font-semibold uppercase tracking-wide">Sizes &amp; Prices *</Label>
 
-                <div className="rounded-xl border border-slate-200 overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="text-left px-3 py-2 font-semibold text-slate-500 text-xs">Size</th>
-                        <th className="text-left px-3 py-2 font-semibold text-slate-500 text-xs">Price (₱)</th>
-                        {editable.allow_half_price && (
-                          <th className="text-left px-3 py-2 font-semibold text-slate-500 text-xs">Half Price (₱)</th>
-                        )}
-                        <th className="w-10" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {editable.prices.map((row, index) => (
-                        <tr key={index} className="border-b border-slate-100 last:border-0">
-                          <td className="px-2 py-1.5">
-                            <Input
-                              value={row.size}
-                              onChange={(e) => updatePriceRow(index, { size: e.target.value })}
-                              placeholder="e.g. S, M, L, XL"
-                              className="h-8 text-sm"
-                            />
-                          </td>
-                          <td className="px-2 py-1.5">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={row.price}
-                              onChange={(e) => updatePriceRow(index, { price: e.target.value })}
-                              placeholder="0.00"
-                              className="h-8 text-sm"
-                            />
-                          </td>
-                          {editable.allow_half_price && (
-                            <td className="px-2 py-1.5">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={row.half_price}
-                                onChange={(e) => updatePriceRow(index, { half_price: e.target.value })}
-                                placeholder="0.00"
-                                className="h-8 text-sm"
-                              />
-                            </td>
-                          )}
-                          <td className="px-2 py-1.5">
-                            <button
-                              type="button"
-                              onClick={() => removePriceRow(index)}
-                              className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-all"
+                <div className="space-y-3 rounded-xl border border-slate-200 p-3">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 mb-2">Select Sizes</p>
+                    <div className="flex flex-wrap gap-2">
+                      {SIZE_OPTIONS.map((size) => {
+                        const selected = selectedSizes.includes(size);
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => toggleSizeSelection(size)}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold border-2 transition-all ${
+                              selected
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={`grid gap-3 ${editable.allow_half_price ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
+                    <div>
+                      <Label className="text-xs">Price (₱)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={batchPrice}
+                        onChange={(e) => setBatchPrice(e.target.value)}
+                        placeholder="0.00"
+                        className="h-8 text-sm mt-1"
+                      />
+                    </div>
+
+                    {editable.allow_half_price && (
+                      <div>
+                        <Label className="text-xs">Half Price (₱)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={batchHalfPrice}
+                          readOnly
+                          placeholder="Auto (50% of price)"
+                          className="h-8 text-sm mt-1"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-end">
+                      <p className="text-xs text-slate-500 w-full text-right">
+                        Selected sizes auto-update with this price
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 mb-2">Configured Sizes</p>
+                    {editable.prices.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic">No sizes added yet</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {editable.prices
+                          .slice()
+                          .sort((a, b) => SIZE_OPTIONS.indexOf(a.size) - SIZE_OPTIONS.indexOf(b.size))
+                          .map((row) => (
+                            <div
+                              key={row.id || row.size}
+                              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {editable.prices.length === 0 && (
-                        <tr>
-                          <td colSpan={4} className="px-3 py-4 text-center text-slate-400 text-sm italic">
-                            No sizes added yet
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                              <span className="text-xs font-semibold">{row.size}</span>
+                              <span className="text-xs text-slate-600">₱{Number(row.price || 0).toLocaleString()}</span>
+                              {editable.allow_half_price && row.half_price !== "" && (
+                                <span className="text-xs text-slate-500">½ ₱{Number(row.half_price).toLocaleString()}</span>
+                              )}
+                              <button
+                                type="button"
+                                title="Remove size"
+                                onClick={() => removeConfiguredSize(row.size)}
+                                className="text-red-500 hover:text-red-600"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

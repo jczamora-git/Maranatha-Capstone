@@ -130,8 +130,34 @@ class PaymentModel extends Model
             $data['receipt_number'] = $this->generate_receipt_number();
         }
 
-        // Insert payment record
-        $payment_id = $this->db->table($this->table)->insert($data);
+        // Insert payment record with retry for rare duplicate receipt collisions
+        $payment_id = false;
+        $maxAttempts = 5;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $payment_id = $this->db->table($this->table)->insert($data);
+                if ($payment_id) {
+                    break;
+                }
+            } catch (Throwable $e) {
+                $message = strtolower($e->getMessage());
+                $isDuplicateReceipt =
+                    strpos($message, 'duplicate entry') !== false &&
+                    strpos($message, 'receipt_number') !== false;
+
+                if (!$isDuplicateReceipt || $attempt === $maxAttempts) {
+                    throw $e;
+                }
+
+                $data['receipt_number'] = $this->generate_receipt_number();
+                continue;
+            }
+
+            // If insert returned false and we still have attempts, regenerate receipt and retry.
+            if ($attempt < $maxAttempts) {
+                $data['receipt_number'] = $this->generate_receipt_number();
+            }
+        }
 
         // If this is a Tuition Installment payment, update installment and payment plan
         if ($payment_id && !empty($data['installment_id']) && $data['payment_type'] === 'Tuition Installment') {
@@ -246,8 +272,28 @@ class PaymentModel extends Model
     {
         $prefix = 'RCP-';
         $date = date('Ym');
-        $random = rand(1000, 9999);
-        return $prefix . $date . '-' . $random;
+
+        // Ensure uniqueness before returning.
+        for ($i = 0; $i < 20; $i++) {
+            $random = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $candidate = $prefix . $date . '-' . $random;
+
+            if (!$this->receipt_number_exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        // Fallback with timestamp fragment to avoid exhausting attempts.
+        return $prefix . $date . '-' . substr((string) microtime(true), -6);
+    }
+
+    private function receipt_number_exists($receiptNumber)
+    {
+        $existing = $this->db->table($this->table)
+                             ->where('receipt_number', $receiptNumber)
+                             ->get();
+
+        return !empty($existing) && $existing !== false && $existing !== null;
     }
 
     /**

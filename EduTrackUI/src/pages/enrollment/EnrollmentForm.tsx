@@ -63,6 +63,8 @@ export interface EnrollmentFormData {
 
   // Step 6: Documents
   documents: File[];
+  documentsValid?: boolean;
+  physicalDocumentNames?: string[]; // List of document names to be submitted physically
 
   // Agreement
   agreed_to_terms: boolean;
@@ -114,6 +116,8 @@ const initialFormData: EnrollmentFormData = {
   guardian_contact: "",
   guardian_email: "",
   documents: [],
+  documentsValid: undefined,
+  physicalDocumentNames: [],
   agreed_to_terms: false,
 };
 
@@ -467,7 +471,10 @@ const EnrollmentForm = () => {
         }
         break;
       case 6:
-        // All documents are optional
+        // Validate physical document submission for non-continuing students
+        if (formData.enrollment_type !== 'Continuing Student' && formData.documentsValid === false) {
+          newErrors.documents = "Please confirm you will bring all required documents physically";
+        }
         break;
       case 7:
         if (!formData.agreed_to_terms) {
