@@ -1218,6 +1218,53 @@ class EnrollmentController extends Controller
     }
 
     /**
+     * Get enrollment discounts
+     * GET /api/enrollments/{id}/discounts
+     */
+    public function api_get_enrollment_discounts()
+    {
+        api_set_json_headers();
+
+        try {
+            if (!$this->session->userdata('logged_in')) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            // Extract enrollment ID from URL: /api/enrollments/{id}/discounts
+            $enrollmentId = segment(3);
+            if (!is_numeric($enrollmentId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid enrollment ID']);
+                return;
+            }
+
+            // Use raw SQL for LEFT JOIN to avoid malformed query-builder output (e.g., leftJOIN)
+            $sql = "SELECT ed.*, 
+                           dt.name as template_name, 
+                           dt.type as template_type, 
+                           dt.value as template_value,
+                           dt.value_type as template_value_type
+                    FROM enrollment_discounts ed
+                    LEFT JOIN discount_templates dt ON ed.template_id = dt.id
+                    WHERE ed.enrollment_id = ?";
+
+            $stmt = $this->db->raw($sql, [$enrollmentId]);
+            $discounts = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+            echo json_encode([
+                'success' => true,
+                'data' => $discounts
+            ]);
+        } catch (Exception $e) {
+            error_log('Get enrollment discounts error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Create enrollment discount record
      * POST /api/enrollments/{id}/discounts
      * 
@@ -1304,6 +1351,78 @@ class EnrollmentController extends Controller
             }
         } catch (Exception $e) {
             error_log('Create enrollment discount error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Update enrollment discount record (link to payment)
+     * PUT /api/enrollments/{enrollment_id}/discounts/{discount_id}
+     * 
+     * Body: {
+     *   "payment_id": 123
+     * }
+     */
+    public function api_update_enrollment_discount()
+    {
+        api_set_json_headers();
+
+        try {
+            if (!$this->session->userdata('logged_in')) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            // Extract enrollment ID and discount ID from URL: /api/enrollments/{enrollment_id}/discounts/{discount_id}
+            $enrollmentId = segment(3);
+            $discountId = segment(5);
+            
+            if (!is_numeric($enrollmentId) || !is_numeric($discountId)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid enrollment or discount ID']);
+                return;
+            }
+
+            // Get request data
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            if (!$data) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'No input data provided']);
+                return;
+            }
+
+            // Prepare update data
+            $updateData = [];
+            if (isset($data['payment_id'])) {
+                $updateData['payment_id'] = $data['payment_id'];
+            }
+
+            if (empty($updateData)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'No valid fields to update']);
+                return;
+            }
+
+            // Update the enrollment_discounts record
+            $result = $this->db->table('enrollment_discounts')
+                ->where('id', $discountId)
+                ->where('enrollment_id', $enrollmentId)
+                ->update($updateData);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Enrollment discount updated successfully'
+                ]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Discount record not found or no changes made']);
+            }
+        } catch (Exception $e) {
+            error_log('Update enrollment discount error: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }

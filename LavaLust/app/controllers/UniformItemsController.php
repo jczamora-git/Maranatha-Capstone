@@ -82,12 +82,45 @@ class UniformItemsController extends Controller
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $items = array_map([$this, 'format_item'], $rows);
+            
+            // Consolidate duplicate items by item_name, merging all their prices
+            $consolidated = [];
+            $seen = [];
+            
+            foreach ($items as $item) {
+                $key = $item['item_name'] . '|' . $item['item_group'];
+                
+                if (!isset($seen[$key])) {
+                    // First time seeing this item name - add it
+                    $seen[$key] = count($consolidated);
+                    $consolidated[] = $item;
+                } else {
+                    // Duplicate found - merge prices, preferring values from the duplicate
+                    $idx = $seen[$key];
+                    $consolidated[$idx]['prices'] = array_merge(
+                        $consolidated[$idx]['prices'],
+                        $item['prices']
+                    );
+                    // Update other fields if the duplicate has different values
+                    if (!empty($item['applicable_levels'])) {
+                        $consolidated[$idx]['applicable_levels'] = array_unique(
+                            array_merge(
+                                $consolidated[$idx]['applicable_levels'],
+                                $item['applicable_levels']
+                            )
+                        );
+                    }
+                    if ($item['applicable_gender'] !== 'All' && $consolidated[$idx]['applicable_gender'] === 'All') {
+                        $consolidated[$idx]['applicable_gender'] = $item['applicable_gender'];
+                    }
+                }
+            }
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
-                'data'    => $items,
-                'count'   => count($items)
+                'data'    => $consolidated,
+                'count'   => count($consolidated)
             ]);
         } catch (Exception $e) {
             http_response_code(500);

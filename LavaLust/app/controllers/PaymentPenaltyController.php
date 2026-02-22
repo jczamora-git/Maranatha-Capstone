@@ -5,9 +5,9 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  * Payment Penalty Controller
  * 
  * Handles penalty-related operations:
- * - Recording penalties when payments are made
- * - Waiving penalties (admin only)
+ * - Recording penalties when payments are made (penalties are ALWAYS charged)
  * - Retrieving penalty history
+ * - Mandatory student explanations for late payments (record-keeping only)
  */
 class PaymentPenaltyController extends Controller
 {
@@ -15,15 +15,21 @@ class PaymentPenaltyController extends Controller
     {
         parent::__construct();
         $this->call->model('PaymentPenaltyModel');
-        $this->call->helper('jwt_helper');
-        
-        // Verify authentication
-        $this->user = verify_jwt_token();
-        if (!$this->user) {
+        // Load explanation model for mandatory student explanations
+        $this->call->model('LatePaymentExplanationModel');
+
+        // Require an active session
+        if (!$this->session->userdata('logged_in')) {
             http_response_code(401);
             echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
             exit;
         }
+
+        // Build a user object from session data (used in role checks below)
+        $this->user = (object) [
+            'id'   => $this->session->userdata('user_id'),
+            'role' => $this->session->userdata('role'),
+        ];
     }
 
     /**
@@ -55,11 +61,7 @@ class PaymentPenaltyController extends Controller
                 'installment_id' => $input['installment_id'],
                 'penalty_amount' => $input['penalty_amount'],
                 'days_overdue' => $input['days_overdue'],
-                'payment_id' => $input['payment_id'] ?? null,
-                'waived' => 0,
-                'waived_by' => null,
-                'waived_at' => null,
-                'waived_reason' => null
+                'payment_id' => $input['payment_id'] ?? null
             ];
 
             $penaltyId = $this->PaymentPenaltyModel->create($penaltyData);
@@ -80,65 +82,6 @@ class PaymentPenaltyController extends Controller
             echo json_encode([
                 'status' => 'error',
                 'message' => 'Failed to record penalty: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Waive a penalty (admin only)
-     * PUT /api/payment-penalties/{id}/waive
-     * 
-     * Body: {
-     *   reason: string
-     * }
-     */
-    public function waive_penalty($penaltyId)
-    {
-        try {
-            // Check admin permission
-            if ($this->user->role !== 'admin' && $this->user->role !== 'finance') {
-                http_response_code(403);
-                echo json_encode([
-                    'status' => 'error',
-                    'message' => 'Only admin or finance users can waive penalties'
-                ]);
-                return;
-            }
-
-            $input = json_decode(file_get_contents('php://input'), true);
-            
-            if (!isset($input['reason']) || trim($input['reason']) === '') {
-                http_response_code(400);
-                echo json_encode([
-                    'status' => 'error',
-                    'message' => 'Waiver reason is required'
-                ]);
-                return;
-            }
-
-            $waiveData = [
-                'waived' => 1,
-                'waived_by' => $this->user->id,
-                'waived_at' => date('Y-m-d H:i:s'),
-                'waived_reason' => $input['reason']
-            ];
-
-            $success = $this->PaymentPenaltyModel->waive_penalty($penaltyId, $waiveData);
-
-            if ($success) {
-                echo json_encode([
-                    'status' => 'success',
-                    'message' => 'Penalty waived successfully'
-                ]);
-            } else {
-                throw new Exception('Failed to waive penalty');
-            }
-
-        } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Failed to waive penalty: ' . $e->getMessage()
             ]);
         }
     }
@@ -216,6 +159,87 @@ class PaymentPenaltyController extends Controller
             echo json_encode([
                 'status' => 'error',
                 'message' => 'Failed to fetch penalties: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Student submits a mandatory explanation for late payment
+     * POST /api/payment-penalties/submit-explanation
+     * Body: { installment_id, penalty_amount, days_overdue, explanation }
+     * 
+     * NOTE: This is NOT a waiver - penalty is ALWAYS charged.
+     * This is just a required explanation for record-keeping.
+     */
+    public function submit_explanation()
+    {
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (!isset($input['installment_id']) || !isset($input['penalty_amount'])) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Missing required fields']);
+                return;
+            }
+
+            if (!isset($input['explanation']) || trim($input['explanation']) === '') {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Explanation is required for late payments']);
+                return;
+            }
+
+            $explanationData = [
+                'student_id' => $this->user->id,
+                'installment_id' => $input['installment_id'],
+                'penalty_amount' => $input['penalty_amount'],
+                'days_overdue' => $input['days_overdue'] ?? 0,
+                'explanation' => trim($input['explanation']),
+                'submitted_at' => date('Y-m-d H:i:s'),
+                'viewed_by_admin' => 0,
+                'admin_notes' => null
+            ];
+
+            $id = $this->LatePaymentExplanationModel->create($explanationData);
+
+            if ($id) {
+                http_response_code(201);
+                echo json_encode([
+                    'status' => 'success', 
+                    'message' => 'Late payment explanation submitted. Penalty will still apply.',
+                    'data' => ['id' => $id]
+                ]);
+            } else {
+                throw new Exception('Failed to save explanation');
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to submit explanation: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get all late payment explanations for current student
+     * GET /api/payment-penalties/waiver-requests
+     * 
+     * NOTE: Despite the "waiver-requests" name (kept for backward compatibility),
+     * these are mandatory explanations - penalties are always charged.
+     */
+    public function get_student_explanations()
+    {
+        try {
+            $explanations = $this->LatePaymentExplanationModel->get_by_student($this->user->id);
+
+            echo json_encode([
+                'status' => 'success',
+                'data' => $explanations
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Failed to fetch explanations: ' . $e->getMessage()
             ]);
         }
     }

@@ -12,6 +12,8 @@ class PaymentController extends Controller
         parent::__construct();
         $this->call->model('PaymentModel');
         $this->call->model('PaymentDiscountApplicationModel');
+        $this->call->model('PaymentPenaltyModel');
+        $this->call->database();
     }
 
     /**
@@ -54,6 +56,57 @@ class PaymentController extends Controller
     }
 
     /**
+     * Check if a service period has already been paid
+     * GET /api/payments/check-service-period?student_id=123&month=3&year=2026
+     */
+    public function check_service_period()
+    {
+        header('Content-Type: application/json');
+        
+        try {
+            $student_id = $this->io->get('student_id');
+            $month = $this->io->get('month');
+            $year = $this->io->get('year');
+            
+            if (empty($student_id) || empty($month) || empty($year)) {
+                echo json_encode([
+                    'success' => false,
+                    'paid' => false,
+                    'message' => 'student_id, month, and year are required'
+                ]);
+                return;
+            }
+
+            // Check if this student already paid for this service period
+            $result = $this->db->table('payments')
+                ->where('student_id', $student_id)
+                ->where('is_recurring_service', 1)
+                ->where('service_period_month', $month)
+                ->where('service_period_year', $year)
+                ->where_in('status', ['Approved', 'Verified', 'Pending'])
+                ->get();
+
+            $paid = !empty($result);
+
+            echo json_encode([
+                'success' => true,
+                'paid' => $paid,
+                'student_id' => $student_id,
+                'month' => $month,
+                'year' => $year
+            ]);
+
+        } catch (Exception $e) {
+            error_log('Check service period error: ' . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'paid' => false,
+                'message' => 'Error checking service period'
+            ]);
+        }
+    }
+
+    /**
      * Get all payments with optional filters
      * GET /api/payments
      */
@@ -90,6 +143,17 @@ class PaymentController extends Controller
             }
 
             $payments = $this->PaymentModel->get_all($filters);
+
+            // Add has_been_refunded flag to each payment
+            foreach ($payments as &$payment) {
+                $refundCheck = $this->db->raw(
+                    "SELECT COUNT(*) as refund_count FROM payments WHERE original_payment_id = ? AND is_refund = 1",
+                    [$payment['id']]
+                );
+                $refundRows = $refundCheck ? $refundCheck->fetchAll(PDO::FETCH_ASSOC) : [];
+                $payment['has_been_refunded'] = !empty($refundRows) && intval($refundRows[0]['refund_count'] ?? 0) > 0;
+            }
+            unset($payment); // Break reference
 
             echo json_encode([
                 'success' => true,
@@ -233,12 +297,111 @@ class PaymentController extends Controller
                 $data['proof_of_payment_url'] = $proof_of_payment_url;
             }
 
+            // Extract penalty information (don't save to payments table)
+            $penalty_amount = isset($data['penalty_amount']) ? $data['penalty_amount'] : 0;
+            $days_overdue = isset($data['days_overdue']) ? $data['days_overdue'] : 0;
+            $installment_id = isset($data['installment_id']) ? $data['installment_id'] : null;
+            $explanation_id = isset($data['explanation_id']) ? $data['explanation_id'] : null;
+            
+            // Remove penalty fields from payment data (these go to payment_installment_penalties table)
+            unset($data['penalty_amount']);
+            unset($data['days_overdue']);
+            unset($data['explanation_id']);
+
+            // Handle recurring service payments (like Service Fee)
+            if (isset($data['is_recurring_service']) && $data['is_recurring_service'] == 1) {
+                // Validate service period fields
+                if (empty($data['service_period_month']) || empty($data['service_period_year'])) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Service period month and year are required for recurring service payments'
+                    ]);
+                    return;
+                }
+
+                // Check if this service period has already been paid
+                $existingPayment = $this->db->table('payments')
+                    ->where('student_id', $data['student_id'])
+                    ->where('is_recurring_service', 1)
+                    ->where('service_period_month', $data['service_period_month'])
+                    ->where('service_period_year', $data['service_period_year'])
+                    ->where_in('status', ['Approved', 'Verified', 'Pending'])
+                    ->get();
+
+                if (!empty($existingPayment)) {
+                    $monthName = date('F', mktime(0, 0, 0, $data['service_period_month'], 1));
+                    echo json_encode([
+                        'success' => false,
+                        'message' => "Service Fee for {$monthName} {$data['service_period_year']} has already been paid"
+                    ]);
+                    return;
+                }
+            }
+
             // Note: We don't check for duplicate reference numbers here since the frontend
             // already generates unique references and validates them. This avoids false positives.
 
             $paymentId = $this->PaymentModel->create($data);
 
             if ($paymentId) {
+                // Debug logging
+                error_log('Payment created with ID: ' . $paymentId);
+                error_log('Penalty amount: ' . $penalty_amount);
+                error_log('Installment ID: ' . $installment_id);
+                error_log('Days overdue: ' . $days_overdue);
+                
+                // If there's a penalty, create a penalty record
+                if ($penalty_amount > 0 && $installment_id) {
+                    error_log('Entering penalty creation block...');
+                    try {
+                        // Get the original installment amount
+                        error_log('Fetching installment data for ID: ' . $installment_id);
+                        $installment = $this->db->table('installments')
+                            ->where('id', $installment_id)
+                            ->get();
+                        
+                        error_log('Installment query result: ' . print_r($installment, true));
+                        
+                        // get() returns a single row as associative array
+                        $original_amount = ($installment && isset($installment['amount_due'])) ? $installment['amount_due'] : 0;
+                        
+                        error_log('Original amount: ' . $original_amount);
+                        
+                        $penaltyData = [
+                            'installment_id' => $installment_id,
+                            'penalty_percentage' => 5.00, // 5% as per school policy
+                            'penalty_amount' => $penalty_amount,
+                            'original_amount' => $original_amount,
+                            'days_overdue' => $days_overdue,
+                            'applied_at' => date('Y-m-d H:i:s')
+                        ];
+                        
+                        // Include explanation_id if provided
+                        if ($explanation_id) {
+                            $penaltyData['explanation_id'] = $explanation_id;
+                        }
+                        
+                        error_log('Penalty data to insert: ' . print_r($penaltyData, true));
+                        
+                        $penaltyId = $this->PaymentPenaltyModel->create($penaltyData);
+                        
+                        error_log('PaymentPenaltyModel->create returned: ' . ($penaltyId ? $penaltyId : 'false'));
+                        
+                        if ($penaltyId) {
+                            error_log('SUCCESS: Penalty record created (ID: ' . $penaltyId . ') for installment ' . $installment_id . ': ₱' . $penalty_amount);
+                        } else {
+                            error_log('FAILED: create() returned false for installment ' . $installment_id);
+                        }
+                    } catch (Throwable $e) {
+                        error_log('EXCEPTION creating penalty record: ' . $e->getMessage());
+                        error_log('Error file: ' . $e->getFile() . ' line ' . $e->getLine());
+                        error_log('Error trace: ' . $e->getTraceAsString());
+                        // Don't fail the payment if penalty record fails
+                    }
+                } else {
+                    error_log('Penalty creation skipped - penalty_amount: ' . $penalty_amount . ', installment_id: ' . $installment_id);
+                }
+                
                 $payment = $this->PaymentModel->get_payment($paymentId);
                 
                 echo json_encode([
@@ -343,6 +506,156 @@ class PaymentController extends Controller
             echo json_encode([
                 'success' => false,
                 'message' => 'Error deleting payment'
+            ]);
+        }
+    }
+
+    /**
+     * Create a refund payment linked to an original payment
+     * POST /api/payments/{id}/refund
+     * Body: { amount: number, reason: string, remarks?: string, payment_date?: string, received_by?: int }
+     */
+    public function create_refund($id)
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $refundAmount = isset($input['amount']) ? floatval($input['amount']) : 0;
+            $refundReason = trim($input['reason'] ?? '');
+
+            if ($refundAmount <= 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Refund amount must be greater than 0'
+                ]);
+                return;
+            }
+
+            if ($refundReason === '') {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Refund reason is required'
+                ]);
+                return;
+            }
+
+            $originalPayment = $this->PaymentModel->get_payment($id);
+            if (!$originalPayment) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Original payment not found'
+                ]);
+                return;
+            }
+
+            if (!empty($originalPayment['is_refund']) && intval($originalPayment['is_refund']) === 1) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Cannot refund a refund record'
+                ]);
+                return;
+            }
+
+            if (($originalPayment['status'] ?? '') !== 'Approved') {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Only approved payments can be refunded'
+                ]);
+                return;
+            }
+
+            $originalNetAmount = isset($originalPayment['net_amount'])
+                ? floatval($originalPayment['net_amount'])
+                : (floatval($originalPayment['amount']) - floatval($originalPayment['total_discount'] ?? 0));
+
+            $refundedStmt = $this->db->raw(
+                "SELECT COALESCE(SUM(amount), 0) as refunded_total
+                 FROM payments
+                 WHERE original_payment_id = ? AND is_refund = 1 AND status != 'Rejected'",
+                [$id]
+            );
+            $refundedRows = $refundedStmt ? $refundedStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $alreadyRefunded = !empty($refundedRows) ? floatval($refundedRows[0]['refunded_total'] ?? 0) : 0;
+            $remainingRefundable = max(0, $originalNetAmount - $alreadyRefunded);
+
+            if ($refundAmount > $remainingRefundable) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Refund amount exceeds remaining refundable amount of ₱' . number_format($remainingRefundable, 2)
+                ]);
+                return;
+            }
+
+            $usedTx = null;
+            if (method_exists($this->db, 'transaction')) {
+                $this->db->transaction();
+                $usedTx = 'transaction';
+            } elseif (method_exists($this->db, 'beginTransaction')) {
+                $this->db->beginTransaction();
+                $usedTx = 'beginTransaction';
+            }
+
+            $refundDate = !empty($input['payment_date']) ? $input['payment_date'] : date('Y-m-d');
+            $remarks = trim($input['remarks'] ?? '');
+            if ($remarks === '') {
+                $remarks = 'Refund for payment ' . ($originalPayment['receipt_number'] ?? ('#' . $id));
+            }
+
+            $refundData = [
+                'student_id' => $originalPayment['student_id'] ?? null,
+                'enrollment_id' => $originalPayment['enrollment_id'] ?? null,
+                'academic_period_id' => $originalPayment['academic_period_id'],
+                'payment_type' => $originalPayment['payment_type'],
+                'payment_for' => 'Refund - ' . ($originalPayment['payment_for'] ?? 'Payment'),
+                'amount' => $refundAmount,
+                'net_amount' => -$refundAmount, // Negative amount for refunds
+                'total_discount' => 0,
+                'payment_method' => $originalPayment['payment_method'] ?? 'Cash',
+                'payment_date' => $refundDate,
+                'reference_number' => null,
+                'installment_id' => $originalPayment['installment_id'] ?? null,
+                'status' => 'Approved',
+                'is_refund' => 1,
+                'refund_reason' => $refundReason,
+                'original_payment_id' => $id,
+                'remarks' => $remarks,
+                'received_by' => $input['received_by'] ?? null
+            ];
+
+            $refundId = $this->PaymentModel->create($refundData);
+            if (!$refundId) {
+                throw new Exception('Failed to create refund payment record');
+            }
+
+            // Reverse installment/payment-plan totals if original payment was linked to installment
+            if (!empty($originalPayment['installment_id'])) {
+                $this->reverse_installment_refund(intval($originalPayment['installment_id']), $refundAmount);
+            }
+
+            if (($usedTx === 'transaction' || $usedTx === 'beginTransaction') && method_exists($this->db, 'commit')) {
+                $this->db->commit();
+            }
+
+            $refundPayment = $this->PaymentModel->get_payment($refundId);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Refund created successfully',
+                'data' => $refundPayment
+            ]);
+        } catch (Exception $e) {
+            if (method_exists($this->db, 'roll_back')) {
+                $this->db->roll_back();
+            } elseif (method_exists($this->db, 'rollback')) {
+                $this->db->rollback();
+            } elseif (method_exists($this->db, 'rollBack')) {
+                $this->db->rollBack();
+            }
+
+            error_log('Create refund error: ' . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error creating refund: ' . $e->getMessage()
             ]);
         }
     }
@@ -714,4 +1027,128 @@ class PaymentController extends Controller
             ]);
         }
     }
+
+    /**
+     * Get all payment penalties (for admin overview)
+     * GET /api/payment-installment-penalties
+     */
+    public function get_all_penalties()
+    {
+        header('Content-Type: application/json');
+        
+        try {
+            $penalties = $this->db->table('payment_installment_penalties')
+                ->order_by('applied_at', 'DESC')
+                ->get_all();
+
+            echo json_encode([
+                'success' => true,
+                'data' => $penalties,
+                'count' => count($penalties),
+                'total_penalty_amount' => array_sum(array_map(function($p) {
+                    return floatval($p['penalty_amount']);
+                }, $penalties))
+            ]);
+
+        } catch (Exception $e) {
+            error_log('Get penalties error: ' . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error retrieving penalties: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Reverse installment totals when a refund is created
+     */
+    private function reverse_installment_refund($installmentId, $refundAmount)
+    {
+        $installment = $this->db->table('installments')
+            ->where('id', $installmentId)
+            ->get();
+
+        if (!$installment) {
+            return false;
+        }
+
+        $currentAmountPaid = floatval($installment['amount_paid'] ?? 0);
+        $amountDue = floatval($installment['amount_due'] ?? 0);
+
+        $newAmountPaid = max(0, $currentAmountPaid - $refundAmount);
+        $newBalance = max(0, $amountDue - $newAmountPaid);
+
+        $newStatus = 'Pending';
+        if ($newBalance <= 0) {
+            $newStatus = 'Paid';
+        } elseif ($newAmountPaid > 0) {
+            $newStatus = 'Partial';
+        }
+
+        $today = date('Y-m-d');
+        if ($newStatus !== 'Paid' && !empty($installment['due_date']) && $installment['due_date'] < $today) {
+            $newStatus = 'Overdue';
+        }
+
+        $this->db->table('installments')
+            ->where('id', $installmentId)
+            ->update([
+                'amount_paid' => $newAmountPaid,
+                'balance' => $newBalance,
+                'status' => $newStatus,
+                'paid_date' => $newStatus === 'Paid' ? ($installment['paid_date'] ?: date('Y-m-d')) : null,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+        if (!empty($installment['payment_plan_id'])) {
+            $this->recalculate_payment_plan_totals(intval($installment['payment_plan_id']));
+        }
+
+        return true;
+    }
+
+    /**
+     * Recalculate payment plan totals from installments
+     */
+    private function recalculate_payment_plan_totals($paymentPlanId)
+    {
+        $plan = $this->db->table('payment_plans')
+            ->where('id', $paymentPlanId)
+            ->get();
+
+        if (!$plan) {
+            return false;
+        }
+
+        $installments = $this->db->table('installments')
+            ->where('payment_plan_id', $paymentPlanId)
+            ->get_all();
+
+        $totalPaid = 0;
+        foreach ($installments as $installment) {
+            $totalPaid += floatval($installment['amount_paid'] ?? 0);
+        }
+
+        $planTotal = floatval($plan['total_tuition'] ?? 0);
+        $newBalance = max(0, $planTotal - $totalPaid);
+
+        $newStatus = 'Active';
+        if ($newBalance <= 0) {
+            $newStatus = 'Completed';
+        } elseif ($totalPaid <= 0) {
+            $newStatus = 'Active';
+        }
+
+        $this->db->table('payment_plans')
+            ->where('id', $paymentPlanId)
+            ->update([
+                'total_paid' => $totalPaid,
+                'balance' => $newBalance,
+                'status' => $newStatus,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+        return true;
+    }
 }
+

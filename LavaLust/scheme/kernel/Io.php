@@ -133,14 +133,17 @@ Class Io {
   	 */
 	public function get($index = NULL)
 	{
-		if($index === NULL && !empty($_GET)) {
+		if(($index === NULL || $index === '') && !empty($_GET)) {
 			$get = array();
 			foreach($_GET as $key => $value) {
 				$get[$key] = $value;
 			}
 			return $get;
 		}
-		return $_GET[$index];
+		if($index === NULL || $index === '') {
+			return array();
+		}
+		return isset($_GET[$index]) ? $_GET[$index] : NULL;
 	}
 
 	/**

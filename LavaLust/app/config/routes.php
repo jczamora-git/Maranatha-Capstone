@@ -64,6 +64,7 @@ $router->get('/api/auth/check', 'UserController::check');
 $router->post('/api/auth/setup-payment-pin', 'UserController::api_setup_payment_pin');
 $router->post('/api/auth/verify-payment-pin', 'UserController::api_verify_payment_pin');
 $router->post('/api/auth/request-pin-reset', 'UserController::api_request_pin_reset');
+$router->post('/api/auth/verify-pin-reset-token', 'UserController::api_verify_pin_reset_token');
 $router->post('/api/auth/reset-pin', 'UserController::api_reset_pin');
 // Password reset request (sends reset email)
 $router->post('/api/auth/request-reset', 'UserController::api_request_password_reset');
@@ -272,8 +273,20 @@ $router->put('/api/uniform-items/{id}', 'UniformItemsController::api_update_item
 $router->put('/api/uniform-items/{id}/toggle', 'UniformItemsController::api_toggle_item')->where_number('id');
 $router->delete('/api/uniform-items/{id}', 'UniformItemsController::api_delete_item')->where_number('id');
 
+// API Routes - Uniform Orders
+$router->get('/api/uniform-orders', 'UniformOrdersController::api_get_orders');
+$router->post('/api/uniform-orders', 'UniformOrdersController::api_create_order');
+
+// API Routes - School Services (Monthly Service Fee, etc.)
+$router->get('/api/school-services/service-fee-amount', 'SchoolServiceController::get_service_fee_amount');
+$router->get('/api/school-services/payments', 'SchoolServiceController::get_service_payments');
+$router->get('/api/school-services/students', 'SchoolServiceController::get_students');
+$router->get('/api/school-services/monthly-summary', 'SchoolServiceController::get_monthly_summary');
+$router->post('/api/school-services/create-payment', 'SchoolServiceController::create_service_payment');
+
 // API Routes - Payments
 $router->get('/api/payments/check-reference', 'PaymentController::check_reference');
+$router->get('/api/payments/check-service-period', 'PaymentController::check_service_period');
 $router->get('/api/payments/applicable-discounts', 'PaymentController::get_applicable_discounts');
 $router->get('/api/payments', 'PaymentController::get_payments');
 $router->get('/api/payments/student/{student_id}', 'PaymentController::get_payments_by_student')->where_number('student_id');
@@ -281,6 +294,7 @@ $router->get('/api/payments/{id}', 'PaymentController::get_payment')->where_numb
 $router->get('/api/payments/{id}/discounts', 'PaymentController::get_payment_discounts')->where_number('id');
 $router->post('/api/payments', 'PaymentController::create_payment');
 $router->post('/api/payments/{id}/discounts', 'PaymentController::apply_discount')->where_number('id');
+$router->post('/api/payments/{id}/refund', 'PaymentController::create_refund')->where_number('id');
 $router->put('/api/payments/{id}', 'PaymentController::update_payment')->where_number('id');
 $router->put('/api/payments/{id}/recalculate', 'PaymentController::recalculate_totals')->where_number('id');
 $router->delete('/api/payments/{id}', 'PaymentController::delete_payment')->where_number('id');
@@ -290,13 +304,29 @@ $router->delete('/api/payments/{payment_id}/discounts/{discount_id}', 'PaymentCo
 $router->post('/api/payments/{id}/upload-proof', 'PaymentController::upload_proof')->where_number('id');
 
 // API Routes - Payment Penalties
+$router->get('/api/payment-installment-penalties', 'PaymentController::get_all_penalties');
 $router->get('/api/payment-penalties/{id}', 'PaymentPenaltyController::get_by_id')->where_number('id');
 $router->get('/api/payment-penalties/installment/{installment_id}', 'PaymentPenaltyController::get_by_installment')->where_number('installment_id');
 $router->get('/api/payment-penalties/student/{student_id}', 'PaymentPenaltyController::get_by_student')->where_number('student_id');
 $router->post('/api/payment-penalties/record', 'PaymentPenaltyController::record_penalty');
-$router->put('/api/payment-penalties/{id}/waive', 'PaymentPenaltyController::waive_penalty')->where_number('id');
+// Student submits mandatory explanation for late payment (penalty is still charged)
+$router->post('/api/payment-penalties/submit-explanation', 'PaymentPenaltyController::submit_explanation');
+// DEPRECATED: old endpoint name for backward compatibility during transition
+$router->post('/api/payment-penalties/request-waiver', 'PaymentPenaltyController::submit_explanation');
+// Student views their submitted explanations (name kept for backward compat)
+$router->get('/api/payment-penalties/waiver-requests', 'PaymentPenaltyController::get_student_explanations');
+// REMOVED: $router->put('/api/payment-penalties/{id}/waive', ...) - penalties are ALWAYS charged per school policy
 $router->delete('/api/payments/{id}/delete-proof', 'PaymentController::delete_proof')->where_number('id');
 $router->get('/api/payments/{id}/proof-info', 'PaymentController::get_proof_info')->where_number('id');
+
+// API Routes - GCash Proof-of-Payment Upload Sessions
+// Admin endpoints (JWT required inside controller)
+$router->post('/api/gcash-sessions', 'GcashUploadSessionController::create_session');
+$router->get('/api/gcash-sessions/{token}/status', 'GcashUploadSessionController::session_status');
+$router->put('/api/gcash-sessions/{token}/viewed', 'GcashUploadSessionController::mark_viewed');
+// Public endpoints (no JWT — token acts as auth)
+$router->get('/api/gcash-sessions/{token}/info', 'GcashUploadSessionController::session_info');
+$router->post('/api/gcash-sessions/{token}/upload', 'GcashUploadSessionController::upload_proof');
 
 // API Routes - Discount Templates (Admin)
 $router->get('/api/admin/discount-templates', 'DiscountController::api_discount_templates_get');
@@ -317,6 +347,7 @@ $router->get('/api/payment-plans/{id}/installments', 'PaymentPlanController::get
 $router->post('/api/payment-plans', 'PaymentPlanController::create_plan');
 $router->put('/api/payment-plans/{id}', 'PaymentPlanController::update_plan')->where_number('id');
 $router->put('/api/payment-plans/{id}/set-enrollment-date', 'PaymentPlanController::set_enrollment_date')->where_number('id');
+$router->put('/api/payment-plans/installments/{id}', 'PaymentPlanController::update_installment')->where_number('id');
 $router->delete('/api/payment-plans/{id}', 'PaymentPlanController::delete_plan')->where_number('id');
 
 // API Routes - Payment Schedule Templates (Admin)
@@ -406,6 +437,8 @@ $router->get('/api/enrollments/{id}/status', 'EnrollmentController::api_get_enro
 $router->get('/api/enrollments/{id}/payments', 'EnrollmentController::api_get_enrollment_payments')->where_number('id');
 $router->get('/api/adviser/enrollments/{id}/payments', 'EnrollmentAdminController::api_adviser_enrollment_payments')->where_number('id');
 $router->get('/api/enrollments/{id}/preview-for-continuing', 'EnrollmentController::api_get_enrollment_preview_for_continuing')->where_number('id');
+$router->put('/api/enrollments/{enrollment_id}/discounts/{discount_id}', 'EnrollmentController::api_update_enrollment_discount')->where_number(['enrollment_id', 'discount_id']);
+$router->get('/api/enrollments/{id}/discounts', 'EnrollmentController::api_get_enrollment_discounts')->where_number('id');
 $router->post('/api/enrollments/{id}/discounts', 'EnrollmentController::api_create_enrollment_discount')->where_number('id');
 $router->get('/api/enrollments/{id}', 'EnrollmentController::api_get_enrollment')->where_number('id');
 $router->get('/api/enrollments', 'EnrollmentController::api_get_enrollments');

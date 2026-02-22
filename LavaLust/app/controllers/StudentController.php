@@ -271,6 +271,7 @@ class StudentController extends Controller
             $student_id = $json_data['student_id'] ?? '';
             $year_level = $json_data['year_level'] ?? 'Nursery 1';
             $status = $json_data['status'] ?? 'active';
+            $gender = $json_data['gender'] ?? null;
 
             if (empty($user_id)) {
                 http_response_code(400);
@@ -298,6 +299,11 @@ class StudentController extends Controller
                 'year_level' => $year_level,
                 'status' => $status
             ];
+
+            // Add gender if provided
+            if (!empty($gender) && in_array($gender, ['Male', 'Female'])) {
+                $studentData['gender'] = $gender;
+            }
 
             // If student_id is provided, insert directly with validation
             if (!empty($student_id)) {
@@ -450,6 +456,15 @@ class StudentController extends Controller
 
             if (array_key_exists('status', $json_data)) {
                 $updateData['status'] = $json_data['status'];
+            }
+
+            if (array_key_exists('gender', $json_data)) {
+                $gender = $json_data['gender'];
+                if (!empty($gender) && in_array($gender, ['Male', 'Female'])) {
+                    $updateData['gender'] = $gender;
+                } else if (empty($gender)) {
+                    $updateData['gender'] = null;
+                }
             }
 
             if (empty($updateData)) {

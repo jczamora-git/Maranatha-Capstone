@@ -5,19 +5,29 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  * Payment Penalty Model
  * 
  * Handles database operations for payment_installment_penalties table
+ * NOTE: Penalties are ALWAYS charged per school policy - no waiving
  */
 class PaymentPenaltyModel extends Model
 {
+    protected $table = 'payment_installment_penalties';
+    
     /**
      * Create a new penalty record
      */
     public function create($data)
     {
         try {
-            $this->db->table('payment_installment_penalties')->insert($data);
-            return $this->db->insert_id();
-        } catch (Exception $e) {
-            error_log('PaymentPenaltyModel::create error: ' . $e->getMessage());
+            error_log('PaymentPenaltyModel::create called with data: ' . print_r($data, true));
+            
+            $penalty_id = $this->db->table('payment_installment_penalties')->insert($data);
+            
+            error_log('PaymentPenaltyModel::create - Insert returned: ' . print_r($penalty_id, true));
+            
+            return $penalty_id;
+        } catch (Throwable $e) {
+            error_log('PaymentPenaltyModel::create ERROR: ' . $e->getMessage());
+            error_log('Error file: ' . $e->getFile() . ' line ' . $e->getLine());
+            error_log('Error trace: ' . $e->getTraceAsString());
             return false;
         }
     }
@@ -34,12 +44,10 @@ class PaymentPenaltyModel extends Model
                     i.installment_number,
                     i.due_date,
                     i.balance,
-                    pp.student_id,
-                    CONCAT(u.first_name, " ", u.last_name) as waived_by_name
+                    pp.student_id
                 ')
                 ->left_join('installments i', 'i.installment_id = pip.installment_id')
                 ->left_join('payment_plans pp', 'pp.payment_plan_id = i.payment_plan_id')
-                ->left_join('users u', 'u.user_id = pip.waived_by')
                 ->where('pip.penalty_id', $penaltyId)
                 ->get();
 
@@ -57,11 +65,7 @@ class PaymentPenaltyModel extends Model
     {
         try {
             return $this->db->table('payment_installment_penalties pip')
-                ->select('
-                    pip.*,
-                    CONCAT(u.first_name, " ", u.last_name) as waived_by_name
-                ')
-                ->left_join('users u', 'u.user_id = pip.waived_by')
+                ->select('pip.*')
                 ->where('pip.installment_id', $installmentId)
                 ->order_by('pip.created_at', 'DESC')
                 ->get_all();
@@ -83,12 +87,10 @@ class PaymentPenaltyModel extends Model
                     i.installment_number,
                     i.due_date,
                     i.balance,
-                    pp.tuition_package_name,
-                    CONCAT(u.first_name, " ", u.last_name) as waived_by_name
+                    pp.tuition_package_name
                 ')
                 ->join('installments i', 'i.installment_id = pip.installment_id')
                 ->join('payment_plans pp', 'pp.payment_plan_id = i.payment_plan_id')
-                ->left_join('users u', 'u.user_id = pip.waived_by')
                 ->where('pp.student_id', $studentId)
                 ->order_by('pip.created_at', 'DESC')
                 ->get_all();
@@ -99,55 +101,36 @@ class PaymentPenaltyModel extends Model
     }
 
     /**
-     * Waive a penalty
+     * Check if installment has any penalties
      */
-    public function waive_penalty($penaltyId, $waiveData)
-    {
-        try {
-            $this->db->table('payment_installment_penalties')
-                ->where('penalty_id', $penaltyId)
-                ->update($waiveData);
-
-            return $this->db->affected_rows() > 0;
-        } catch (Exception $e) {
-            error_log('PaymentPenaltyModel::waive_penalty error: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Check if installment has any unwaived penalties
-     */
-    public function has_unwaived_penalty($installmentId)
+    public function has_penalty($installmentId)
     {
         try {
             $result = $this->db->table('payment_installment_penalties')
                 ->where('installment_id', $installmentId)
-                ->where('waived', 0)
                 ->get();
 
             return !empty($result);
         } catch (Exception $e) {
-            error_log('PaymentPenaltyModel::has_unwaived_penalty error: ' . $e->getMessage());
+            error_log('PaymentPenaltyModel::has_penalty error: ' . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Get total unwaived penalties for an installment
+     * Get total penalties for an installment (all penalties are charged)
      */
-    public function get_total_unwaived_penalty($installmentId)
+    public function get_total_penalty($installmentId)
     {
         try {
             $result = $this->db->table('payment_installment_penalties')
                 ->select('SUM(penalty_amount) as total_penalty')
                 ->where('installment_id', $installmentId)
-                ->where('waived', 0)
                 ->get();
 
             return $result && isset($result[0]['total_penalty']) ? (float)$result[0]['total_penalty'] : 0;
         } catch (Exception $e) {
-            error_log('PaymentPenaltyModel::get_total_unwaived_penalty error: ' . $e->getMessage());
+            error_log('PaymentPenaltyModel::get_total_penalty error: ' . $e->getMessage());
             return 0;
         }
     }

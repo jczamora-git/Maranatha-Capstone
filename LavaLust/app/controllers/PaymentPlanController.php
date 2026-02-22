@@ -275,11 +275,32 @@ class PaymentPlanController extends Controller
             }
             if (isset($input['amount_due'])) {
                 $update_data['amount_due'] = $input['amount_due'];
-                // Recalculate balance
-                $installment = $this->InstallmentModel->get_installment($installment_id);
-                if ($installment) {
-                    $update_data['balance'] = $input['amount_due'] - $installment['amount_paid'];
+                // Only recalculate balance if not explicitly provided
+                if (!isset($input['balance'])) {
+                    $installment = $this->InstallmentModel->get_installment($installment_id);
+                    if ($installment) {
+                        $update_data['balance'] = $input['amount_due'] - $installment['amount_paid'];
+                    }
                 }
+            }
+            if (isset($input['amount_paid'])) {
+                $update_data['amount_paid'] = $input['amount_paid'];
+            }
+            if (isset($input['balance'])) {
+                // Allow explicit balance setting (e.g., 0 for discounted payments)
+                $update_data['balance'] = $input['balance'];
+            }
+            if (isset($input['status'])) {
+                $update_data['status'] = $input['status'];
+            }
+            if (isset($input['paid_date'])) {
+                $update_data['paid_date'] = $input['paid_date'];
+            }
+            if (isset($input['late_fee'])) {
+                $update_data['late_fee'] = $input['late_fee'];
+            }
+            if (isset($input['days_overdue'])) {
+                $update_data['days_overdue'] = $input['days_overdue'];
             }
             
             $result = $this->InstallmentModel->update($installment_id, $update_data);

@@ -1673,59 +1673,58 @@ class UserController extends Controller
             // Check if user exists
             $user = $this->db->table('users')->where('email', $email)->get();
 
-            // For security, always return success to prevent email enumeration
-            // Only send email if user actually exists
-            if ($user) {
-                // Generate reset token
-                $token = bin2hex(random_bytes(16));
-                $expiresAt = date('Y-m-d H:i:s', time() + 86400); // 24 hours
+            // USER REQUESTED: Send email to ANY address for flexibility
+            // Student can use any convenient email, they'll verify account ownership when resetting
+            
+            // Generate reset token
+            $token = bin2hex(random_bytes(16));
+            $expiresAt = date('Y-m-d H:i:s', time() + 86400); // 24 hours
 
-                // Delete any existing PIN reset tokens for this email
-                $this->db->table('password_resets')
-                    ->where('email', $email)
-                    ->where('type', 'pin')
-                    ->delete();
+            // Delete any existing PIN reset tokens for this email
+            $this->db->table('password_resets')
+                ->where('email', $email)
+                ->where('type', 'pin')
+                ->delete();
 
-                // Insert new token record (reuse password_resets table with type field)
-                $inserted = $this->db->table('password_resets')->insert([
-                    'email' => $email,
-                    'token' => $token,
-                    'type' => 'pin',
-                    'expires_at' => $expiresAt,
-                    'used' => 0,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ]);
+            // Insert new token record
+            $inserted = $this->db->table('password_resets')->insert([
+                'email' => $email,
+                'token' => $token,
+                'type' => 'pin',
+                'expires_at' => $expiresAt,
+                'used' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
 
-                if (!$inserted) {
-                    error_log('Failed to insert PIN reset token for: ' . $email);
-                    http_response_code(500);
-                    echo json_encode(['success' => false, 'message' => 'Failed to create reset token.']);
-                    return;
-                }
-
-                // Get portal URL from config
-                $portalUrl = rtrim(config_item('portal_url') ?: 'http://localhost:5173', '/');
-                
-                // Generate reset URL
-                $resetUrl = sprintf('%s/auth/reset-pin?token=%s', $portalUrl, $token);
-
-                // Get logo URL
-                $logoUrl = $portalUrl . '/assets/images/mcc-logo.png';
-
-                // Generate email HTML using helper
-                $this->call->helper('mail');
-                $this->call->helper('email_templates');
-                $emailBody = generate_pin_reset_email($user['first_name'], $resetUrl, $logoUrl);
-
-                // Send email
-                sendNotif($email, 'Reset Your Payment PIN - EduTrack', $emailBody);
-
-                error_log('PIN reset email sent to: ' . $email);
-            } else {
-                error_log('PIN reset requested for non-existent email: ' . $email);
-                // Don't reveal that email doesn't exist
+            if (!$inserted) {
+                error_log('Failed to insert PIN reset token for: ' . $email);
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to create reset token.']);
+                return;
             }
+
+            // Get portal URL from config
+            $portalUrl = rtrim(config_item('portal_url') ?: 'http://localhost:5173', '/');
+            
+            // Generate reset URL
+            $resetUrl = sprintf('%s/auth/reset-pin?token=%s', $portalUrl, $token);
+
+            // Get logo URL
+            $logoUrl = $portalUrl . '/assets/images/mcc-logo.png';
+
+            // Generate email HTML using helper
+            $this->call->helper('mail');
+            $this->call->helper('email_templates');
+            
+            // Use first name from user if exists, otherwise generic greeting
+            $firstName = $user ? $user['first_name'] : 'Student';
+            $emailBody = generate_pin_reset_email($firstName, $resetUrl, $logoUrl);
+
+            // Send email to the provided address
+            sendNotif($email, 'Reset Your Payment PIN - EduTrack', $emailBody);
+
+            error_log('PIN reset email sent to: ' . $email . ($user ? ' (registered user)' : ' (unregistered email)'));
 
             // Always return success for security
             echo json_encode([
@@ -1740,9 +1739,109 @@ class UserController extends Controller
     }
 
     /**
+     * API: Verify PIN reset token and identifier
+     * POST /api/auth/verify-pin-reset-token
+     * Body JSON: { token, identifier }
+     * This verifies the account BEFORE allowing PIN reset for security
+     */
+    public function api_verify_pin_reset_token()
+    {
+        api_set_json_headers();
+
+        try {
+            $raw_input = file_get_contents('php://input');
+            $json_data = json_decode($raw_input, true);
+
+            $token = isset($json_data['token']) ? trim($json_data['token']) : '';
+            $identifier = isset($json_data['identifier']) ? trim($json_data['identifier']) : '';
+
+            // Validate inputs
+            if (empty($token) || empty($identifier)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Token and identifier are required.']);
+                return;
+            }
+
+            // Find token record
+            $reset = $this->db->table('password_resets')
+                ->where('token', $token)
+                ->where('type', 'pin')
+                ->get();
+
+            if (!$reset) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid or expired reset link.']);
+                return;
+            }
+
+            // Check if token is expired
+            $now = new DateTime();
+            $expiresAt = new DateTime($reset['expires_at']);
+
+            if ($now > $expiresAt) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Reset link has expired. Please request a new one.']);
+                return;
+            }
+
+            // Check if already used
+            if ($reset['used'] == 1) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Reset link has already been used.']);
+                return;
+            }
+
+            // Find user by identifier
+            // First try to find user by student_id from students table
+            $student = $this->db->table('students')->where('student_id', $identifier)->get();
+            
+            $user = null;
+            if ($student && isset($student['user_id'])) {
+                // Get user from users table using user_id
+                $user = $this->db->table('users')->where('id', $student['user_id'])->get();
+            }
+            
+            // If not found, try student_number in users table (legacy support)
+            if (!$user) {
+                $user = $this->db->table('users')->where('student_number', $identifier)->get();
+            }
+            
+            // If still not found, try as email in users table
+            if (!$user) {
+                $user = $this->db->table('users')->where('email', $identifier)->get();
+            }
+
+            if (!$user) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Unable to verify your account. Please check your student ID or email and try again.'
+                ]);
+                return;
+            }
+
+            // Account verified successfully
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Account verified successfully.',
+                'data' => [
+                    'user_id' => $user['id'],
+                    'first_name' => $user['first_name'],
+                    'student_number' => $student ? $student['student_id'] : ($user['student_number'] ?? null)
+                ]
+            ]);
+        } catch (Exception $e) {
+            error_log('Exception in api_verify_pin_reset_token: ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error occurred.']);
+        }
+    }
+
+    /**
      * API: Reset PIN using token
      * POST /api/auth/reset-pin
-     * Body JSON: { token, new_pin }
+     * Body JSON: { token, new_pin, identifier }
+     * identifier can be student_id or registered email
      */
     public function api_reset_pin()
     {
@@ -1754,6 +1853,7 @@ class UserController extends Controller
 
             $token = isset($json_data['token']) ? trim($json_data['token']) : '';
             $newPin = isset($json_data['new_pin']) ? trim($json_data['new_pin']) : '';
+            $identifier = isset($json_data['identifier']) ? trim($json_data['identifier']) : '';
 
             // Validate inputs
             if (empty($token) || empty($newPin)) {
@@ -1798,12 +1898,32 @@ class UserController extends Controller
                 return;
             }
 
-            // Find user by email
-            $user = $this->db->table('users')->where('email', $reset['email'])->get();
+            // Find user by identifier
+            // First try to find user by student_id from students table
+            $student = $this->db->table('students')->where('student_id', $identifier)->get();
+            
+            $user = null;
+            if ($student && isset($student['user_id'])) {
+                // Get user from users table using user_id
+                $user = $this->db->table('users')->where('id', $student['user_id'])->get();
+            }
+            
+            // If not found, try student_number in users table (legacy support)
+            if (!$user) {
+                $user = $this->db->table('users')->where('student_number', $identifier)->get();
+            }
+            
+            // If still not found, try as email in users table
+            if (!$user) {
+                $user = $this->db->table('users')->where('email', $identifier)->get();
+            }
 
             if (!$user) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'User not found.']);
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Unable to verify your account. Please provide your student ID or registered email.'
+                ]);
                 return;
             }
 
@@ -1830,7 +1950,7 @@ class UserController extends Controller
                 'updated_at' => date('Y-m-d H:i:s')
             ]);
 
-            error_log('PIN reset successfully for user ID: ' . $user['id']);
+            error_log('PIN reset successfully for user ID: ' . $user['id'] . ' via token sent to: ' . $reset['email']);
 
             echo json_encode(['success' => true, 'message' => 'PIN reset successfully.']);
         } catch (Exception $e) {
