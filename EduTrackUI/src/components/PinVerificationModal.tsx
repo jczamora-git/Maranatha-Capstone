@@ -129,7 +129,7 @@ export function PinVerificationModal({
             <DialogTitle className="text-xl">Verify Payment PIN</DialogTitle>
             {paymentAmount && (
               <div className="text-base font-medium text-gray-900">
-                Amount: ₱{paymentAmount.toFixed(2)}
+                Amount: ₱{Number(paymentAmount).toFixed(2)}
               </div>
             )}
             <DialogDescription className="text-sm text-gray-600">

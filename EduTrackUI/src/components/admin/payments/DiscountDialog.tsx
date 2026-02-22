@@ -45,7 +45,8 @@ interface DiscountDialogProps {
     total_discount?: number;
     net_amount?: number;
   };
-  onDiscountsUpdated: () => void;
+  onDiscountsUpdated: (discounts?: any[]) => void;
+  excludeDiscountNames?: string[]; // Optional: exclude specific discount names (e.g., "Full Payment Discount")
 }
 
 export default function DiscountDialog({
@@ -53,6 +54,7 @@ export default function DiscountDialog({
   onOpenChange,
   payment,
   onDiscountsUpdated,
+  excludeDiscountNames = [],
 }: DiscountDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -83,7 +85,16 @@ export default function DiscountDialog({
       );
       const data = await response.json();
       if (data.success) {
-        setAvailableDiscounts(data.data || []);
+        // Filter out excluded discount names if specified
+        const allDiscounts = data.data || [];
+        const filteredDiscounts = excludeDiscountNames.length > 0
+          ? allDiscounts.filter((d: Discount) => 
+              !excludeDiscountNames.some(excludedName => 
+                d.discount_name.toLowerCase().includes(excludedName.toLowerCase())
+              )
+            )
+          : allDiscounts;
+        setAvailableDiscounts(filteredDiscounts);
       }
     } catch (error) {
       console.error('Error fetching discounts:', error);
@@ -149,6 +160,67 @@ export default function DiscountDialog({
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Special handling for enrollment discounts (payment.id === 0 means no payment record yet)
+      if (payment.id === 0) {
+        if (!payment.enrollment_id) {
+          throw new Error('Payment is not linked to an enrollment');
+        }
+
+        // Calculate discount amounts for enrollment discounts
+        const appliedDiscountsList = [];
+        for (const discountId of selectedDiscountIds) {
+          const discount = availableDiscounts.find((d) => d.id === discountId);
+          if (discount) {
+            const discountAmount = discount.discount_type === 'Percentage' 
+              ? (payment.amount * discount.discount_value) / 100 
+              : discount.discount_value;
+            
+            const enrollmentDiscountData = {
+              discount_template_id: discount.id,
+              discount_name: discount.discount_name,
+              discount_type: discount.discount_type,
+              discount_value: discount.discount_value,
+              discount_amount: discountAmount,
+              payment_id: null, // No payment yet
+              notes: `Applied via admin discount management (pending payment)`
+            };
+
+            console.log('Creating enrollment discount:', enrollmentDiscountData);
+
+            const res = await fetch(`/api/enrollments/${payment.enrollment_id}/discounts`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(enrollmentDiscountData),
+            });
+            
+            const data = await res.json();
+            console.log('Enrollment discount response:', data);
+            if (!data?.success) {
+              throw new Error(data?.message || 'Failed to apply enrollment discount');
+            }
+
+            appliedDiscountsList.push({
+              discount_id: discount.id,
+              discount_name: discount.discount_name,
+              discount_type: discount.discount_type,
+              discount_value: discount.discount_value,
+              value_type: discount.discount_type,
+              applied_amount: discountAmount
+            });
+          }
+        }
+
+        toast({
+          title: 'Success',
+          description: 'Enrollment discounts applied successfully',
+        });
+        onDiscountsUpdated(appliedDiscountsList);
+        onOpenChange(false);
+        setSaving(false);
+        return;
+      }
+
+      // Normal payment discount flow (payment.id > 0)
       // Determine which discounts to add and remove
       const currentIds = appliedDiscounts
         .map((d) => {
@@ -248,7 +320,27 @@ export default function DiscountDialog({
         title: 'Success',
         description: 'Discounts updated successfully',
       });
-      onDiscountsUpdated();
+      
+      // Fetch the updated discounts to pass to the callback
+      try {
+        const updatedDiscountsRes = await fetch(`/api/payments/${payment.id}/discounts`);
+        const updatedDiscountsData = await updatedDiscountsRes.json();
+        const discountsList = updatedDiscountsData?.success && updatedDiscountsData?.data 
+          ? updatedDiscountsData.data.map((d: any) => ({
+              discount_id: d.discount_id,
+              discount_name: d.discount_name,
+              discount_type: d.discount_type,
+              discount_value: d.discount_value,
+              value_type: d.value_type,
+              applied_amount: d.discount_amount
+            }))
+          : [];
+        onDiscountsUpdated(discountsList);
+      } catch (e) {
+        console.error('Error fetching updated discounts:', e);
+        onDiscountsUpdated([]);
+      }
+      
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating discounts:', error);

@@ -53,8 +53,11 @@ import Payments from "./pages/admin/Payments";
 import PaymentPlans from "./pages/admin/PaymentPlans";
 import InstallmentScheduleManagement from "./pages/admin/InstallmentScheduleManagement";
 import StudentInstallmentDetails from "./pages/admin/StudentInstallmentDetails";
+import GcashSessionPage from "./pages/admin/GcashSessionPage";
 import TuitionPackages from "./pages/admin/TuitionPackages";
 import UniformManagement from "./pages/admin/UniformManagement";
+import UniformOrders from "./pages/admin/UniformOrders";
+import SchoolServiceManagement from "./pages/admin/SchoolServiceManagement";
 import RFIDAttendance from "./pages/admin/RFIDAttendance";
 import AdviserManualEnrollment from "./pages/teacher/AdviserManualEnrollment";
 
@@ -65,6 +68,7 @@ import MyEnrollments from "./pages/enrollment/MyEnrollments";
 import Payment from "./pages/enrollment/Payment";
 import PaymentProcess from "./pages/enrollment/PaymentProcess";
 import InstallmentPlans from "./pages/enrollment/InstallmentPlans";
+import WaiverRequests from "./pages/enrollment/WaiverRequests";
 import SetupPin from "./pages/enrollment/SetupPin";
 import VerifyPin from "./pages/enrollment/VerifyPin";
 import EnrollmentDetail from "./pages/admin/EnrollmentDetail";
@@ -102,6 +106,8 @@ import StudentSettings from "./pages/student/StudentSettings";
 // StudentAttendanceQR removed - Attendance QR not used
 // Dev / Example components
 import { PaymentFormExample } from "./components/PaymentFormExample";
+// Public: GCash proof-of-payment upload page (scanned by student via QR)
+import PaymentProofUpload from "./pages/PaymentProofUpload";
 
 const queryClient = new QueryClient();
 
@@ -226,9 +232,12 @@ const AppContent = () => {
                 <Route path="/admin/payments" element={<ProtectedRoute requiredRole="admin"><Payments /></ProtectedRoute>} />
                 <Route path="/admin/payment-plans" element={<ProtectedRoute requiredRole="admin"><PaymentPlans /></ProtectedRoute>} />
                 <Route path="/admin/payment-plans/:planId" element={<ProtectedRoute requiredRole="admin"><StudentInstallmentDetails /></ProtectedRoute>} />
+                <Route path="/admin/gcash-session/:token" element={<ProtectedRoute requiredRole="admin"><GcashSessionPage /></ProtectedRoute>} />
                 <Route path="/admin/installment-schedules" element={<ProtectedRoute requiredRole="admin"><InstallmentScheduleManagement /></ProtectedRoute>} />
                 <Route path="/admin/tuition-packages" element={<ProtectedRoute requiredRole="admin"><TuitionPackages /></ProtectedRoute>} />
                 <Route path="/admin/uniform-management" element={<ProtectedRoute requiredRole="admin"><UniformManagement /></ProtectedRoute>} />
+                <Route path="/admin/uniform-orders" element={<ProtectedRoute requiredRole="admin"><UniformOrders /></ProtectedRoute>} />
+                <Route path="/admin/school-services" element={<ProtectedRoute requiredRole="admin"><SchoolServiceManagement /></ProtectedRoute>} />
               </>
             )}
             {FEATURES.attendance && (
@@ -295,9 +304,13 @@ const AppContent = () => {
                 <Route path="/enrollment/payment" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><Payment /></ProtectedRoute>} />
                 <Route path="/enrollment/payment-process" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><PaymentProcess /></ProtectedRoute>} />
                 <Route path="/enrollment/installment-plans" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><InstallmentPlans /></ProtectedRoute>} />
+                <Route path="/enrollment/waiver-requests" element={<ProtectedRoute requiredRole={["enrollee", "student"]}><WaiverRequests /></ProtectedRoute>} />
               </>
             )}
             
+            {/* Public: GCash proof upload (no auth — token is the credential) */}
+            <Route path="/payment-proof/:token" element={<PaymentProofUpload />} />
+
             {/* Dev: Payment example route (remove or guard in production) */}
             <Route
               path="/dev/payment-example"

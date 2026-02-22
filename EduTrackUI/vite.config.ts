@@ -22,6 +22,14 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 5174,
     proxy: {
+      '/uploads': {
+        // Proxy uploaded file requests to the PHP backend
+        // PHP server root is LavaLust/, files live at LavaLust/public/uploads/
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path: string) => '/public' + path,
+      },
       '/api': {
         // Proxy API requests to the PHP backend (PHP dev server at localhost:3000)
         target: 'http://localhost:3000',

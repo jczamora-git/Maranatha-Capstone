@@ -70,7 +70,7 @@ export const ConfirmProvider = ({ children }: { children: ReactNode }) => {
 
           {/* White body with description */}
           <div className="px-6 py-5 bg-white">
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
               {opts.description && (
                 <>
                   {opts.emphasis ? (

@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   SETUP_PAYMENT_PIN: `${API_BASE_URL}/api/auth/setup-payment-pin`,
   VERIFY_PAYMENT_PIN: `${API_BASE_URL}/api/auth/verify-payment-pin`,
   REQUEST_PIN_RESET: `${API_BASE_URL}/api/auth/request-pin-reset`,
+  VERIFY_PIN_RESET_TOKEN: `${API_BASE_URL}/api/auth/verify-pin-reset-token`,
   RESET_PIN: `${API_BASE_URL}/api/auth/reset-pin`,
   
   // Email Verification
@@ -83,10 +84,19 @@ export const API_ENDPOINTS = {
   UNIFORM_ITEMS: `${API_BASE_URL}/api/uniform-items`,
   UNIFORM_ITEM_BY_ID: (id: string | number) => `${API_BASE_URL}/api/uniform-items/${id}`,
   UNIFORM_ITEM_TOGGLE: (id: string | number) => `${API_BASE_URL}/api/uniform-items/${id}/toggle`,
+  UNIFORM_ORDERS: `${API_BASE_URL}/api/uniform-orders`,
+  
+  // School Services (Monthly Service Fee, etc.)
+  SCHOOL_SERVICE_FEE_AMOUNT: `${API_BASE_URL}/api/school-services/service-fee-amount`,
+  SCHOOL_SERVICE_PAYMENTS: `${API_BASE_URL}/api/school-services/payments`,
+  SCHOOL_SERVICE_STUDENTS: `${API_BASE_URL}/api/school-services/students`,
+  SCHOOL_SERVICE_MONTHLY_SUMMARY: `${API_BASE_URL}/api/school-services/monthly-summary`,
+  SCHOOL_SERVICE_CREATE_PAYMENT: `${API_BASE_URL}/api/school-services/create-payment`,
   
   // Payments
   PAYMENTS: `${API_BASE_URL}/api/payments`,
   PAYMENTS_CHECK_REFERENCE: `${API_BASE_URL}/api/payments/check-reference`,
+  PAYMENTS_CHECK_SERVICE_PERIOD: `${API_BASE_URL}/api/payments/check-service-period`,
   PAYMENT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payments/${id}`,
   PAYMENT_DISCOUNTS: (payment_id: string | number) => `${API_BASE_URL}/api/payments/${payment_id}/discounts`,
   PAYMENT_APPLY_DISCOUNT: (payment_id: string | number) => `${API_BASE_URL}/api/payments/${payment_id}/discounts`,
@@ -111,7 +121,18 @@ export const API_ENDPOINTS = {
   PAYMENT_PENALTY_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-penalties/${id}`,
   PAYMENT_PENALTY_BY_INSTALLMENT: (installment_id: string | number) => `${API_BASE_URL}/api/payment-penalties/installment/${installment_id}`,
   PAYMENT_PENALTY_BY_STUDENT: (student_id: string | number) => `${API_BASE_URL}/api/payment-penalties/student/${student_id}`,
-  PAYMENT_PENALTY_WAIVE: (id: string | number) => `${API_BASE_URL}/api/payment-penalties/${id}/waive`,
+  // REMOVED: PAYMENT_PENALTY_WAIVE - penalties are ALWAYS charged per school policy, no admin waiving
+  // Student late payment explanations (note: "waiver" in endpoint names is misleading - these are mandatory explanations, penalties are still charged)
+  STUDENT_REQUEST_PENALTY_WAIVER: `${API_BASE_URL}/api/payment-penalties/request-waiver`,  // Submit explanation
+  STUDENT_WAIVER_REQUESTS: `${API_BASE_URL}/api/payment-penalties/waiver-requests`,        // Get all explanations
+  STUDENT_WAIVER_REQUEST_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-penalties/waiver-requests/${id}`,
+
+  // GCash Upload Sessions (QR proof-of-payment airdrop)
+  GCASH_SESSIONS: `${API_BASE_URL}/api/gcash-sessions`,
+  GCASH_SESSION_STATUS: (token: string) => `${API_BASE_URL}/api/gcash-sessions/${token}/status`,
+  GCASH_SESSION_INFO: (token: string) => `${API_BASE_URL}/api/gcash-sessions/${token}/info`,
+  GCASH_SESSION_UPLOAD: (token: string) => `${API_BASE_URL}/api/gcash-sessions/${token}/upload`,
+  GCASH_SESSION_VIEWED: (token: string) => `${API_BASE_URL}/api/gcash-sessions/${token}/viewed`,
   
   // Sections
   SECTIONS: `${API_BASE_URL}/api/sections`,

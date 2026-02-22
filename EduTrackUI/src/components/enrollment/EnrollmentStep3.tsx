@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, DollarSign, Receipt, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Coins, Receipt, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from '@/hooks/useAuth';
 import { API_ENDPOINTS } from '@/lib/api';
@@ -164,7 +164,7 @@ export function EnrollmentStep3({ enrollment, onComplete }: EnrollmentStep3Props
                 <p className="text-2xl font-bold text-blue-700">₱{requiredFees.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-blue-600" />
+                <Coins className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>

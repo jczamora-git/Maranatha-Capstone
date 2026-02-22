@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { usePaymentPageLock } from "@/hooks/usePaymentPageLock";
@@ -11,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CreditCard, CheckCircle2, Clock, AlertCircle, Download, Search, PhilippinePeso, ArrowLeft, Calendar, Receipt, DollarSign } from "lucide-react";
+import { CreditCard, CheckCircle2, Clock, AlertCircle, Download, Search, PhilippinePeso, ArrowLeft, Calendar, Receipt, DollarSign, Lock, ChevronDown, ChevronUp, Coins } from "lucide-react";
 import { toast } from "sonner";
 import AccessLockedCard from "@/components/AccessLockedCard";
 import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
+import { calculateInstallmentPenalty } from "@/utils/penaltyCalculator";
+import { WaiverRequestModal } from "@/components/WaiverRequestModal";
 import Joyride, { CallBackProps, STATUS, EVENTS } from "react-joyride";
 import TourHelpButton from "@/components/TourHelpButton";
 import { PaymentMobileView, FeeTypeModal } from "@/components/PaymentMobileView";
@@ -25,7 +28,7 @@ interface PaymentItem {
   enrollment_id?: number;
   academic_period_id: number;
   receipt_number: string;
-  payment_type: 'Tuition Full Payment' | 'Tuition Installment' | 'Miscellaneous' | 'Contribution' | 'Event Fee' | 'Book' | 'Uniform' | 'Other';
+  payment_type: 'Tuition Full Payment' | 'Tuition Installment' | 'Miscellaneous' | 'Contribution' | 'Event Fee' | 'Book' | 'Uniform' | 'Service Fee' | 'Other';
   payment_for: string;
   amount: number;
   total_discount: number;
@@ -50,7 +53,7 @@ interface PaymentItem {
 interface SchoolFee {
   id: number;
   year_level: string | null;
-  fee_type: 'Tuition' | 'Miscellaneous' | 'Contribution' | 'Event Fee' | 'Book' | 'Uniform' | 'Other';
+  fee_type: 'Tuition' | 'Miscellaneous' | 'Contribution' | 'Event Fee' | 'Book' | 'Uniform' | 'Service Fee' | 'Other';
   fee_name: string;
   amount: number;
   is_required: boolean;
@@ -216,6 +219,13 @@ const Payment = () => {
   // Installment modal state
   const [showInstallmentModal, setShowInstallmentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PaymentPlan | null>(null);
+
+  // Waiver request modal state
+  const [showWaiverModal, setShowWaiverModal] = useState(false);
+  const [pendingPaymentNavigation, setPendingPaymentNavigation] = useState<any>(null);
+
+  // Installment schedule collapse state
+  const [isInstallmentScheduleExpanded, setIsInstallmentScheduleExpanded] = useState(true);
 
   // Tour states
   const [runTour, setRunTour] = useState(false);
@@ -555,17 +565,20 @@ const Payment = () => {
         (payment.payment_type === 'Tuition Full Payment' || payment.payment_type === 'Tuition Installment')
     );
 
-    setHasTuitionPayment(tuitionPaid);
+    // Check if user has any active payment plans
+    const hasPaymentPlan = paymentPlans.length > 0;
 
-    // If no tuition payment found, show payment plan selection modal
+    setHasTuitionPayment(tuitionPaid || hasPaymentPlan);
+
+    // If no tuition payment AND no payment plan found, show payment plan selection modal
     // But don't show if the auto-tour is currently running, during initial loading, or if tour should auto-start
     const tourCompleted = localStorage.getItem('payment-tour-completed');
     const shouldAutoStartTour = isEmailVerified && !loading && !tourCompleted;
     
-    if (!tuitionPaid && !loading && !isAutoTourRunning && !isInitialLoading && !shouldAutoStartTour) {
+    if (!tuitionPaid && !hasPaymentPlan && !loading && !loadingPlans && !isAutoTourRunning && !isInitialLoading && !shouldAutoStartTour) {
       setShowPaymentPlanModal(true);
     }
-  }, [enrollment, tuitionFee, payments, loading, isAutoTourRunning, isInitialLoading, isEmailVerified]);
+  }, [enrollment, tuitionFee, payments, paymentPlans, loading, loadingPlans, isAutoTourRunning, isInitialLoading, isEmailVerified]);
 
   const totalAmount = payments
     .filter((p) => p.status === "Pending" || p.status === "Verified")
@@ -805,6 +818,8 @@ const Payment = () => {
           </div>
         </div>
 
+
+
         {/* Summary Stats Cards */}
         <div id="summary-stats-section" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-muted/20">
@@ -856,6 +871,268 @@ const Payment = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Payment Details and Methods */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Upcoming & Overdue Installments Section */}
+            {(() => {
+              console.log('🔍 [Installment Schedule] Debug:', {
+                installmentsKeys: Object.keys(installments),
+                paymentPlansIds: paymentPlans.map(p => p.id),
+                paymentPlansCount: paymentPlans.length
+              });
+
+              const allInstallments = Object.entries(installments).flatMap(([planId, planInstallments]) => 
+                planInstallments.map(inst => {
+                  const plan = paymentPlans.find(p => String(p.id) === String(planId));
+                  if (!plan) {
+                    console.warn(`⚠️ Plan not found for ID: ${planId}`, {
+                      availablePlanIds: paymentPlans.map(p => p.id),
+                      lookingFor: planId
+                    });
+                  }
+                  return {
+                    ...inst,
+                    planId,
+                    plan,
+                    payment: payments.find(p => p.installment_id === inst.id),
+                    penaltyInfo: inst.installment_number === 1
+                      ? { hasPenalty: false, penaltyAmount: 0, totalDue: inst.balance || inst.amount_due, daysOverdue: 0, penaltyPercentage: 0 }
+                      : calculateInstallmentPenalty({
+                          due_date: inst.due_date,
+                          balance: inst.balance || inst.amount_due,
+                          status: inst.status,
+                          amount_paid: inst.amount_paid
+                        })
+                  };
+                })
+              );
+
+              const pendingInstallments = allInstallments
+                .filter(inst => inst.status !== 'Paid' && inst.plan) // Only show installments with valid plan
+                .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+
+              console.log('📋 [Installment Schedule] Pending installments:', {
+                totalInstallments: allInstallments.length,
+                pendingCount: pendingInstallments.length,
+                withoutPlan: allInstallments.filter(i => !i.plan).length
+              });
+
+              if (pendingInstallments.length === 0) return null;
+
+              return (
+                <Card className="shadow-lg border-0">
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setIsInstallmentScheduleExpanded(!isInstallmentScheduleExpanded)}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        <CardTitle className="text-xl">Installment Schedule</CardTitle>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        {isInstallmentScheduleExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </Button>
+                    </div>
+                    <CardDescription>Upcoming and overdue installment payments</CardDescription>
+                  </CardHeader>
+                  {isInstallmentScheduleExpanded && (
+                    <CardContent>
+                      <div className="space-y-3">
+                        {pendingInstallments.slice(0, 2).map(inst => {
+                          const isOverdue = new Date(inst.due_date) < new Date();
+                          const daysUntilDue = Math.ceil((new Date(inst.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                          
+                          // Check if this installment is locked (must pay previous installments first)
+                          const planInstallments = installments[inst.planId] || [];
+                          const sortedPlanInstallments = [...planInstallments].sort((a, b) => a.installment_number - b.installment_number);
+                          
+                          // Find the next unpaid installment in this plan
+                          const nextUnpaidIndex = sortedPlanInstallments.findIndex(i => {
+                            const payment = payments.find(p => p.installment_id === i.id);
+                            return !payment || (payment.status !== 'Approved' && payment.status !== 'Verified');
+                          });
+                          
+                          const currentIndex = sortedPlanInstallments.findIndex(i => i.id === inst.id);
+                          const isPaid = inst.payment && (inst.payment.status === 'Approved' || inst.payment.status === 'Verified');
+                          const isNextUnpaid = currentIndex === nextUnpaidIndex;
+                          const isLocked = !isPaid && !isNextUnpaid;
+                          
+                          return (
+                            <div 
+                              key={inst.id}
+                              className={`p-4 border rounded-lg ${
+                                isLocked
+                                  ? 'border-gray-300 bg-gray-50 opacity-60'
+                                  : isOverdue 
+                                  ? 'border-red-200 bg-red-50/50' 
+                                  : 'border-gray-200 bg-white'
+                              }`}
+                              title={isLocked ? 'Locked - Pay previous installments first' : ''}
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3 flex-1">
+                                  <div className={`w-10 h-10 rounded-lg ${isLocked ? 'bg-gray-200' : 'bg-blue-100'} flex items-center justify-center flex-shrink-0`}>
+                                    <span className={`text-sm font-bold ${isLocked ? 'text-gray-500' : 'text-blue-600'}`}>{inst.installment_number}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-semibold text-foreground">Installment #{inst.installment_number}</span>
+                                      {isLocked && (
+                                        <Lock className="w-3 h-3 text-gray-400" />
+                                      )}
+                                      {!isLocked && isOverdue && (
+                                        <Badge className="bg-red-100 text-red-800 text-xs border-0">
+                                          OVERDUE
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="space-y-1">
+                                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <Calendar className="w-3 h-3" />
+                                        Due: {new Date(inst.due_date).toLocaleDateString()}
+                                      </p>
+                                      {isLocked && (
+                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                          <Lock className="w-3 h-3" />
+                                          Pay previous installments first
+                                        </p>
+                                      )}
+                                      {!isLocked && isOverdue && inst.penaltyInfo?.hasPenalty && (
+                                        <div className="flex items-start gap-1 text-xs">
+                                          <AlertCircle className="w-3 h-3 text-red-600 mt-0.5 flex-shrink-0" />
+                                          <span className="text-red-600">
+                                            {inst.penaltyInfo.daysOverdue} days overdue
+                                          </span>
+                                        </div>
+                                      )}
+                                      {!isLocked && isOverdue && inst.penaltyInfo?.hasPenalty && (
+                                        <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+                                          <span className="text-orange-800">
+                                            Late fee (5%): <strong>₱{inst.penaltyInfo.penaltyAmount.toLocaleString()}</strong>
+                                          </span>
+                                          <div className="mt-1 pt-1 border-t border-orange-200">
+                                            <span className="text-orange-900 font-semibold">
+                                              Total due with penalty: ₱{inst.penaltyInfo.totalDue.toLocaleString()}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right flex flex-col items-end gap-2 flex-shrink-0">
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Balance</p>
+                                    <p className="text-lg font-bold text-foreground">₱{Number(inst.balance || inst.amount_due).toLocaleString()}</p>
+                                  </div>
+                                  {!isLocked && isOverdue && (
+                                    <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                                      Overdue
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    disabled={isLocked}
+                                    onClick={() => {
+                                      if (isLocked) return;
+                                      
+                                      if (!inst.plan) {
+                                        console.error('Payment plan not found for installment:', inst);
+                                        toast.error('Payment plan information is missing. Please refresh the page.');
+                                        return;
+                                      }
+                                      
+                                      const penaltyInfo = calculateInstallmentPenalty({
+                                        due_date: inst.due_date,
+                                        balance: inst.balance || inst.amount_due,
+                                        status: inst.status,
+                                        amount_paid: inst.amount_paid
+                                      });
+
+                                      // Exclude first installment from overdue/waiver flow
+                                      const effectiveHasPenalty = inst.installment_number === 1 ? false : penaltyInfo.hasPenalty;
+
+                                      const enrollmentData = enrollment || {
+                                        id: parseInt(inst.plan.enrollment_id || '0'),
+                                        student_id: parseInt(inst.plan.student_id),
+                                        academic_period_id: parseInt(inst.plan.academic_period_id),
+                                        school_year: inst.plan.academic_period.split(' ')[0] || '',
+                                        quarter: inst.plan.academic_period.split(' ').slice(1).join(' ') || '',
+                                        grade_level: ''
+                                      };
+
+                                      const tuitionFeeData = {
+                                        id: 0,
+                                        amount: inst.plan.total_tuition,
+                                        fee_name: 'Tuition Fee'
+                                      };
+
+                                      if (effectiveHasPenalty) {
+                                        setPendingPaymentNavigation({
+                                          enrollment: enrollmentData,
+                                          tuitionFee: tuitionFeeData,
+                                          installment: inst,
+                                          paymentType: 'Installment Payment',
+                                          amountPerInstallment: Number(inst.balance || inst.amount_due),
+                                          paymentPlanId: inst.planId,
+                                          penaltyAmount: penaltyInfo.penaltyAmount,
+                                          daysOverdue: penaltyInfo.daysOverdue,
+                                          installmentNumber: inst.installment_number,
+                                          waiverSubmitted: false
+                                        });
+                                        setShowWaiverModal(true);
+                                      } else {
+                                        navigate('/enrollment/payment-process', {
+                                          state: {
+                                            enrollment: enrollmentData,
+                                            tuitionFee: tuitionFeeData,
+                                            installment: inst,
+                                            paymentType: 'Installment Payment',
+                                            amountPerInstallment: Number(inst.balance || inst.amount_due),
+                                            paymentPlanId: inst.planId,
+                                            penaltyAmount: 0,
+                                            daysOverdue: 0,
+                                            installmentNumber: inst.installment_number,
+                                            waiverSubmitted: false
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    className={
+                                      isLocked 
+                                        ? "cursor-not-allowed" 
+                                        : isOverdue 
+                                        ? "bg-red-600 hover:bg-red-700" 
+                                        : "bg-blue-600 hover:bg-blue-700"
+                                    }
+                                  >
+                                    <Coins className="w-4 h-4 mr-1" />
+                                    Pay Now
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {pendingInstallments.length > 2 && (
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => {
+                              const firstPlan = paymentPlans[0];
+                              if (firstPlan) {
+                                setSelectedPlan(firstPlan);
+                                setShowInstallmentModal(true);
+                              }
+                            }}
+                          >
+                            View All {pendingInstallments.length} Installments
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })()}
+
             {/* Payment Items Card */}
             <Card id="payment-details-section" className="shadow-lg border-0">
               <CardHeader>
@@ -957,53 +1234,7 @@ const Payment = () => {
                               </p>
                             )}
 
-                            <div className="mt-2 flex justify-end gap-2">
-                              {(() => {
-                                // Check if this is a tuition installment payment
-                                const isTuitionInstallment = payment.payment_type === 'Tuition Installment' && payment.installment_id;
-                                
-                                // Find the related payment plan by checking which plan has this installment
-                                let relatedPlan = null;
-                                if (isTuitionInstallment) {
-                                  // Find the plan that contains the installment matching this payment
-                                  for (const plan of paymentPlans) {
-                                    const planInstallments = installments[plan.id] || [];
-                                    if (planInstallments.some(inst => inst.id === payment.installment_id)) {
-                                      relatedPlan = plan;
-                                      break;
-                                    }
-                                  }
-                                }
 
-                                return (
-                                  <>
-                                    {relatedPlan ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleViewInstallments(relatedPlan)}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <Calendar className="w-4 h-4" />
-                                        <span className="hidden sm:inline">View Details</span>
-                                        <span className="sm:hidden">Details</span>
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDownloadInvoice(payment.id)}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Download Invoice</span>
-                                        <span className="sm:hidden">Invoice</span>
-                                      </Button>
-                                    )}
-                                  </>
-                                );
-                              })()}
-                            </div>
                           </div>
                         </div>
                       );
@@ -1016,8 +1247,6 @@ const Payment = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Payment Methods and action buttons removed - payment processing moved to dedicated pages */}
           </div>
 
           {/* Right Column - Sidebar */}
@@ -1499,7 +1728,7 @@ const Payment = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Installment Schedule</h3>
                 <div className="space-y-3">
-                  {installments[selectedPlan.id]?.map((installment) => {
+                  {installments[selectedPlan.id]?.map((installment, index) => {
                     // Check if this installment should be disabled
                     const relatedPayment = payments.find(p => p.installment_id === installment.id);
                     const planPaymentsForThisInstallment = payments.filter(p => {
@@ -1509,10 +1738,33 @@ const Payment = () => {
                     const hasUnapprovedPayment = planPaymentsForThisInstallment.some(
                       p => p.status !== 'Approved' && p.status !== 'Verified'
                     );
-                    const isCardDisabled = !relatedPayment && hasUnapprovedPayment;
+                    
+                    // Find the next unpaid installment (first one without a paid/approved payment)
+                    const allInstallments = installments[selectedPlan.id] || [];
+                    const nextUnpaidIndex = allInstallments.findIndex(inst => {
+                      const payment = payments.find(p => p.installment_id === inst.id);
+                      return !payment || (payment.status !== 'Approved' && payment.status !== 'Verified');
+                    });
+                    
+                    // Lock installments: only allow the next unpaid one to be clickable
+                    const isNextUnpaid = index === nextUnpaidIndex;
+                    const isPaid = relatedPayment && (relatedPayment.status === 'Approved' || relatedPayment.status === 'Verified');
+                    const isLocked = !isPaid && !isNextUnpaid;
+                    const isCardDisabled = isLocked || (!relatedPayment && hasUnapprovedPayment);
+                    
                     const unapprovedPayment = planPaymentsForThisInstallment.find(
                       p => p.status !== 'Approved' && p.status !== 'Verified'
                     );
+                    
+                    // Calculate penalty for overdue installments (exclude first installment)
+                    const penaltyInfo = installment.installment_number === 1
+                      ? { hasPenalty: false, penaltyAmount: 0, totalDue: installment.balance || installment.amount_due, daysOverdue: 0, penaltyPercentage: 0 }
+                      : calculateInstallmentPenalty({
+                          due_date: installment.due_date,
+                          balance: installment.balance || installment.amount_due,
+                          status: installment.status,
+                          amount_paid: installment.amount_paid
+                        });
 
                     return (
                     <div
@@ -1520,9 +1772,14 @@ const Payment = () => {
                       className={`flex items-center justify-between p-4 border rounded-lg transition-all ${
                         isCardDisabled 
                           ? 'border-gray-300 bg-gray-50 opacity-60 cursor-not-allowed' 
+                          : penaltyInfo?.hasPenalty
+                          ? 'border-red-200 bg-red-50 hover:bg-red-100'
                           : 'hover:bg-muted/50'
                       }`}
-                      title={isCardDisabled ? `Cannot pay - Pending payment awaiting approval (Submitted: ${new Date(unapprovedPayment!.payment_date).toLocaleDateString()})` : ''}
+                      title={
+                        isLocked ? 'Locked - Pay previous installments first' :
+                        isCardDisabled && !isLocked ? `Cannot pay - Pending payment awaiting approval (Submitted: ${new Date(unapprovedPayment!.payment_date).toLocaleDateString()})` : ''
+                      }
                     >
                       <div className="flex items-center gap-4 flex-1">
                         <div className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-primary/10">
@@ -1530,7 +1787,12 @@ const Payment = () => {
                           <span className="font-bold text-primary">{installment.installment_number}</span>
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium">Installment #{installment.installment_number}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">Installment #{installment.installment_number}</p>
+                            {isLocked && (
+                              <Lock className="h-3 w-3 text-gray-400" />
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <Calendar className="h-3 w-3" />
                             Due: {new Date(installment.due_date).toLocaleDateString()}
@@ -1548,11 +1810,19 @@ const Payment = () => {
                               return null;
                             })()}
                           </p>
-                          {installment.days_overdue > 0 && (
-                            <p className="text-xs text-red-600">
-                              {installment.days_overdue} days overdue
-                              {installment.late_fee > 0 && ` • Late fee: ₱${installment.late_fee.toFixed(2)}`}
-                            </p>
+                          {penaltyInfo?.hasPenalty && (
+                            <div className="mt-1 p-2 bg-red-100 border border-red-200 rounded-md">
+                              <p className="text-xs text-red-700 font-semibold flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {penaltyInfo.daysOverdue} day{penaltyInfo.daysOverdue !== 1 ? 's' : ''} overdue
+                              </p>
+                              <p className="text-xs text-red-600 mt-0.5">
+                                Late fee ({penaltyInfo.penaltyPercentage}%): ₱{Number(penaltyInfo.penaltyAmount).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-red-800 font-bold mt-0.5">
+                                Total due with penalty: ₱{Number(penaltyInfo.totalDue).toFixed(2)}
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1617,17 +1887,28 @@ const Payment = () => {
                                 return null;
                               }
                               
+                              // Don't show pay button if locked
+                              if (isLocked) {
+                                return null;
+                              }
+                              
                               return (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
                                 title="Pay Installment"
+                                disabled={isCardDisabled}
                                 onClick={() => {
                                   if (!enrollment) {
                                     toast.error('Enrollment information not available');
                                     return;
                                   }
+
+                                  // Include penalty amount if overdue
+                                  const totalAmountDue = penaltyInfo?.hasPenalty 
+                                    ? Number(penaltyInfo.totalDue)
+                                    : (installment.balance || installment.amount_due);
 
                                   const navigationState = {
                                     enrollment,
@@ -1637,23 +1918,38 @@ const Payment = () => {
                                       fee_name: `Installment #${installment.installment_number} - ${selectedPlan.academic_period}`
                                     },
                                     paymentType: 'Installment Payment',
-                                    amountPerInstallment: installment.balance || installment.amount_due,
+                                    amountPerInstallment: totalAmountDue,
                                     paymentPlanId: selectedPlan.id,
                                     installmentNumber: installment.installment_number,
                                     periodLabel: `Installment ${installment.installment_number}`,
-                                    installment,
+                                    installment: {
+                                      ...installment,
+                                      penaltyInfo // Include penalty info
+                                    },
                                     paymentPlan: selectedPlan,
-                                    previousPayment: relatedPayment // Pass previous payment for reference validation
+                                    previousPayment: relatedPayment, // Pass previous payment for reference validation
+                                    penaltyAmount: penaltyInfo?.hasPenalty ? Number(penaltyInfo.penaltyAmount) : 0,
+                                    daysOverdue: penaltyInfo?.daysOverdue || 0,
+                                    waiverSubmitted: false
                                   };
 
-                                  // Navigate to payment process for this installment
-                                  navigate('/enrollment/payment-process', {
-                                    state: navigationState
-                                  });
-                                  setShowInstallmentModal(false);
+                                  // If there's a penalty, show waiver request modal first
+                                  // Do not show for first installment
+                                  if (penaltyInfo?.hasPenalty && installment.installment_number !== 1) {
+                                    setPendingPaymentNavigation(navigationState);
+                                    setShowInstallmentModal(false);
+                                    setShowWaiverModal(true);
+                                  } else {
+                                    // No penalty - proceed directly to payment
+                                    localStorage.setItem('pending_installment_payment', JSON.stringify(navigationState));
+                                    navigate('/enrollment/payment-process', {
+                                      state: navigationState
+                                    });
+                                    setShowInstallmentModal(false);
+                                  }
                                 }}
                               >
-                                <DollarSign className="h-4 w-4" />
+                                <Coins className="h-4 w-4" />
                               </Button>
                             );
                             })()}
@@ -1700,6 +1996,30 @@ const Payment = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Late Payment Explanation Modal (submission required when overdue - penalty is still charged) */}
+      <WaiverRequestModal
+        isOpen={showWaiverModal}
+        onClose={() => {
+          setShowWaiverModal(false);
+          setPendingPaymentNavigation(null);
+        }}
+        onSubmitted={(explanationId: number) => {
+          if (pendingPaymentNavigation) {
+            const navWithWaiver = { ...pendingPaymentNavigation, waiverSubmitted: true, explanationId };
+            localStorage.setItem('pending_installment_payment', JSON.stringify(navWithWaiver));
+            navigate('/enrollment/payment-process', {
+              state: navWithWaiver
+            });
+            setShowWaiverModal(false);
+            setPendingPaymentNavigation(null);
+          }
+        }}
+        installmentId={pendingPaymentNavigation?.installment?.id || 0}
+        penaltyAmount={pendingPaymentNavigation?.penaltyAmount || 0}
+        daysOverdue={pendingPaymentNavigation?.daysOverdue || 0}
+        installmentNumber={pendingPaymentNavigation?.installmentNumber || 1}
+      />
 
       {/* Tour Component */}
       <Joyride

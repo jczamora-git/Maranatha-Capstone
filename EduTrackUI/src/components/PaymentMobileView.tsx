@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Clock, AlertCircle, CheckCircle2, BookOpen, Gift, Users, Calendar, Shirt, Zap, HelpCircle, Download, ClipboardList, Eye, ChevronRight } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, BookOpen, Gift, Users, Calendar, Shirt, Zap, HelpCircle, Download, ClipboardList, Eye, ChevronRight, Package } from 'lucide-react';
 import { PaymentItem, SchoolFee, Enrollment } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -62,6 +62,7 @@ interface PaymentMobileProps {
 // Fee type icons
 const feeTypeIcons: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   'Tuition': { icon: <BookOpen className="w-5 h-5" />, color: 'bg-blue-100 text-blue-600', label: 'Tuition' },
+  'Service Fee': { icon: <Package className="w-5 h-5" />, color: 'bg-slate-100 text-slate-600', label: 'Service Fee' },
   'Miscellaneous': { icon: <Zap className="w-5 h-5" />, color: 'bg-purple-100 text-purple-600', label: 'Miscellaneous' },
   'Contribution': { icon: <Gift className="w-5 h-5" />, color: 'bg-green-100 text-green-600', label: 'Contribution' },
   'Event Fee': { icon: <Calendar className="w-5 h-5" />, color: 'bg-orange-100 text-orange-600', label: 'Event Fee' },
@@ -366,7 +367,12 @@ export const PaymentMobileView = ({
                     <div className="flex gap-1">
                       {payment.proof_of_payment_url && (
                         <button
-                          onClick={() => window.open(payment.proof_of_payment_url, '_blank')}
+                          onClick={() => {
+                            const url = payment.proof_of_payment_url?.startsWith('/') 
+                              ? payment.proof_of_payment_url 
+                              : `/${payment.proof_of_payment_url}`;
+                            window.open(url, '_blank');
+                          }}
                           className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors border border-blue-200"
                           title="View Proof of Payment"
                         >

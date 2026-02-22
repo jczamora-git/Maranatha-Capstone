@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle, FileText, ChevronLeft, ChevronRight, DollarSign, Receipt, Calendar, CreditCard } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle, FileText, ChevronLeft, ChevronRight, Coins, Receipt, Calendar, CreditCard } from 'lucide-react';
 import { API_ENDPOINTS } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { EnrollmentStep1 } from '@/components/enrollment/EnrollmentStep1';

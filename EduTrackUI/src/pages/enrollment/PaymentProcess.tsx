@@ -128,17 +128,40 @@ const PaymentProcess = () => {
 
   // Define state FIRST before using it in effects
   const state = location.state as PaymentProcessState;
+  
+  // Restore from localStorage if state is missing (e.g., on page reload)
+  const [restoredState, setRestoredState] = useState<PaymentProcessState | null>(null);
+  
+  useEffect(() => {
+    // If no state from navigation, try to restore from localStorage
+    if (!state) {
+      const savedPayment = localStorage.getItem('pending_installment_payment');
+      if (savedPayment) {
+        try {
+          const parsed = JSON.parse(savedPayment);
+          setRestoredState(parsed);
+          console.log('Restored payment data from localStorage:', parsed);
+        } catch (err) {
+          console.error('Failed to restore payment data:', err);
+          localStorage.removeItem('pending_installment_payment');
+        }
+      }
+    }
+  }, [state]);
 
   // Fetch installment data if this is an installment payment with a payment plan
   useEffect(() => {
+    const currentState = state || restoredState;
+    if (!currentState) return;
+
     const fetchInstallmentData = async () => {
-      const isInstallmentPayment = state?.paymentType === 'Installment Payment';
-      const paymentPlanId = (state as any)?.paymentPlanId;
-      const installmentNumber = (state as any)?.installmentNumber || 1;
+      const isInstallmentPayment = currentState?.paymentType === 'Installment Payment';
+      const paymentPlanId = (currentState as any)?.paymentPlanId;
+      const installmentNumber = (currentState as any)?.installmentNumber || 1;
 
       // First, check if installment was already passed from InstallmentPlans
-      if ((state as any)?.installment) {
-        setSelectedInstallment((state as any).installment);
+      if ((currentState as any)?.installment) {
+        setSelectedInstallment((currentState as any).installment);
         return;
       }
 
@@ -167,10 +190,8 @@ const PaymentProcess = () => {
       }
     };
 
-    if (state) {
-      fetchInstallmentData();
-    }
-  }, [state]);
+    fetchInstallmentData();
+  }, [state, restoredState]);
 
   // Auto-start demo tour for first-time users
   useEffect(() => {
@@ -243,33 +264,45 @@ const PaymentProcess = () => {
   }, [runDemoPaymentTour]);
 
   useEffect(() => {
+    const currentState = state || restoredState;
 
     // For installment payments, tuitionFee may not exist but installment/paymentPlan should
-    const isInstallmentPayment = state?.paymentType === 'Installment Payment';
-    const hasValidData = state && state.enrollment && (state.tuitionFee || (isInstallmentPayment && (state.installment || state.paymentPlan || state.paymentPlanId)));
+    const isInstallmentPayment = currentState?.paymentType === 'Installment Payment';
+    const hasValidData = currentState && currentState.enrollment && (currentState.tuitionFee || (isInstallmentPayment && (currentState.installment || currentState.paymentPlan || currentState.paymentPlanId)));
     
     if (!hasValidData) {
       console.log('Validation failed - redirecting');
       console.log('isInstallmentPayment:', isInstallmentPayment);
-      console.log('state.installment:', state?.installment);
-      console.log('state.paymentPlan:', state?.paymentPlan);
-      console.log('state.paymentPlanId:', state?.paymentPlanId);
+      console.log('currentState?.installment:', currentState?.installment);
+      console.log('currentState?.paymentPlan:', currentState?.paymentPlan);
+      console.log('currentState?.paymentPlanId:', currentState?.paymentPlanId);
       toast.error("Invalid payment data. Redirecting...");
+      localStorage.removeItem('pending_installment_payment'); // Clear invalid data
       navigate("/enrollment/payment");
     } else {
       console.log('Validation passed');
+
+      // Enforce waiver submission for overdue installment payments
+      const penaltyAmt = (currentState as any)?.penaltyAmount || 0;
+      const waiverSubmitted = (currentState as any)?.waiverSubmitted;
+      if (isInstallmentPayment && penaltyAmt > 0 && !waiverSubmitted) {
+        toast.error('An explanation for late payment must be submitted before proceeding. The penalty will still be charged.');
+        localStorage.removeItem('pending_installment_payment');
+        navigate('/enrollment/payment');
+      }
     }
-  }, [state, navigate, location.state]);
+  }, [state, restoredState, navigate, location.state]);
 
   // For installment payments, tuitionFee may not exist but installment/paymentPlan should
-  const isInstallmentPayment = state?.paymentType === 'Installment Payment';
-  const hasValidData = state && state.enrollment && (state.tuitionFee || (isInstallmentPayment && (state.installment || state.paymentPlan || state.paymentPlanId)));
+  const currentState = state || restoredState;
+  const isInstallmentPayment = currentState?.paymentType === 'Installment Payment';
+  const hasValidData = currentState && currentState.enrollment && (currentState.tuitionFee || (isInstallmentPayment && (currentState.installment || currentState.paymentPlan || currentState.paymentPlanId)));
   
   if (!hasValidData) {
     return null;
   }
 
-  const { enrollment, tuitionFee, paymentType, discount, amountPerInstallment, paymentPlanId, installmentNumber = 1, periodLabel = "1st Installment", schoolFee, feeType, feeName } = state as PaymentProcessState & { amountPerInstallment?: number; paymentPlanId?: number; installmentNumber?: number; periodLabel?: string; schoolFee?: any; feeType?: string; feeName?: string };
+  const { enrollment, tuitionFee, paymentType, discount, amountPerInstallment, paymentPlanId, installmentNumber = 1, periodLabel = "1st Installment", schoolFee, feeType, feeName, penaltyAmount = 0, daysOverdue = 0, explanationId } = currentState as PaymentProcessState & { amountPerInstallment?: number; paymentPlanId?: number; installmentNumber?: number; periodLabel?: string; schoolFee?: any; feeType?: string; feeName?: string; penaltyAmount?: number; daysOverdue?: number; explanationId?: number };
 
   
   // Determine if this is a school fee payment
@@ -285,8 +318,11 @@ const PaymentProcess = () => {
   const finalAmount = tuitionFee ? (tuitionFee.amount - discountAmount) : (amountPerInstallment || 0);
   const displayAmount = paymentType === "Installment Payment" && amountPerInstallment ? amountPerInstallment : finalAmount;
   
-  // For installment payments, the submission amount should be the per-installment amount only
-  const submissionAmount = paymentType === "Installment Payment" && amountPerInstallment ? amountPerInstallment : finalAmount;
+  // Add penalty to the total amount
+  const totalWithPenalty = displayAmount + penaltyAmount;
+  
+  // For installment payments, the submission amount should be the per-installment amount + penalty
+  const submissionAmount = paymentType === "Installment Payment" && amountPerInstallment ? (amountPerInstallment + penaltyAmount) : finalAmount;
 
   // Demo mock data (used only when demo tour is active)
   const demoData = {
@@ -306,7 +342,8 @@ const PaymentProcess = () => {
   const displaySchoolYear = runDemoPaymentTour ? demoData.schoolYear : enrollment.school_year;
   const displayGradeLevel = runDemoPaymentTour ? demoData.gradeLevel : enrollment.grade_level;
   const displayPaymentType = runDemoPaymentTour ? demoData.paymentTypeDisplay : paymentType;
-  const displayTuitionAmount = runDemoPaymentTour ? demoData.tuitionAmount : tuitionFee.amount;
+  // For installments, show the per-installment amount, not the total tuition
+  const displayTuitionAmount = runDemoPaymentTour ? demoData.tuitionAmount : (paymentType === "Installment Payment" && amountPerInstallment ? amountPerInstallment : tuitionFee.amount);
   const displayDiscountAmount = runDemoPaymentTour ? demoData.discountAmount : discountAmount;
   const displayDiscountName = runDemoPaymentTour ? demoData.discountName : (discount ? discount.name : '');
   const displayFinalAmount = runDemoPaymentTour ? demoData.finalAmount : finalAmount;
@@ -575,6 +612,15 @@ const PaymentProcess = () => {
           formData.append('installment_id', selectedInstallment.id.toString());
         }
         
+        // Add penalty information if applicable
+        if (penaltyAmount > 0) {
+          formData.append('penalty_amount', penaltyAmount.toString());
+          formData.append('days_overdue', daysOverdue.toString());
+          if (explanationId) {
+            formData.append('explanation_id', explanationId.toString());
+          }
+        }
+        
         // Add proof of payment file
         formData.append('proof_of_payment', proofOfPayment);
 
@@ -630,6 +676,10 @@ const PaymentProcess = () => {
           }
 
           toast.success("Payment submitted successfully! Your payment is now pending verification. Proof of payment has been recorded.");
+          
+          // Clear localStorage after successful submission
+          localStorage.removeItem('pending_installment_payment');
+          
           navigate("/enrollment/payment");
         } else {
           toast.error(res.message || "Failed to submit payment");
@@ -652,7 +702,8 @@ const PaymentProcess = () => {
           status: "Pending",
           remarks: isSchoolFeePayment ? remarks : (discount && paymentType === "Full Payment" ? `Applied ${discount.name}${remarks ? '. ' + remarks : ''}` : remarks),
           is_refund: 0,
-          ...(paymentType === "Installment Payment" && selectedInstallment?.id && { installment_id: selectedInstallment.id }) // Include installment ID for installment payments
+          ...(paymentType === "Installment Payment" && selectedInstallment?.id && { installment_id: selectedInstallment.id }), // Include installment ID for installment payments
+          ...(penaltyAmount > 0 && { penalty_amount: penaltyAmount, days_overdue: daysOverdue, ...(explanationId && { explanation_id: explanationId }) }) // Include penalty information if applicable
         };
 
 
@@ -683,6 +734,10 @@ const PaymentProcess = () => {
           }
 
           toast.success("Payment submitted successfully! Your payment is now pending verification.");
+          
+          // Clear localStorage after successful submission
+          localStorage.removeItem('pending_installment_payment');
+          
           navigate("/enrollment/payment");
         } else {
           toast.error(res.message || "Failed to submit payment");
@@ -927,7 +982,7 @@ const PaymentProcess = () => {
                 {/* Amount Breakdown */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{displayFeeName}:</span>
+                    <span className="text-muted-foreground">{displayPaymentType === "Installment Payment" ? "Original Amount:" : `${displayFeeName}:`}</span>
                     <span className="font-medium">₱{displayTuitionAmount.toLocaleString()}</span>
                   </div>
 
@@ -938,14 +993,21 @@ const PaymentProcess = () => {
                     </div>
                   )}
 
+                  {penaltyAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-orange-600">Charge Fee (Late Payment):</span>
+                      <span className="text-orange-600 font-medium">+₱{penaltyAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+
                   <div className="pt-2 border-t">
                     <div className="flex justify-between">
-                      <span className="font-semibold">{displayPaymentType === "Installment Payment" ? "Per Installment:" : "Total Amount:"}</span>
-                      <span className="text-xl font-bold text-blue-600">₱{(runDemoPaymentTour ? displayFinalAmount : displayAmount).toLocaleString()}</span>
+                      <span className="font-semibold">Total Amount:</span>
+                      <span className="text-xl font-bold text-blue-600">₱{(runDemoPaymentTour ? displayFinalAmount : totalWithPenalty).toLocaleString()}</span>
                     </div>
                     {!runDemoPaymentTour && paymentType === "Installment Payment" && state.numberOfInstallments && (
                       <div className="mt-1 text-sm text-muted-foreground">
-                        <span>Total for {state.numberOfInstallments} installment(s): ₱{finalAmount.toLocaleString()}</span>
+                        <span>Payment plan for {state.numberOfInstallments} installment(s)</span>
                       </div>
                     )}
                   </div>
@@ -970,6 +1032,19 @@ const PaymentProcess = () => {
                     </>
                   )}
                 </Button>
+
+                {/* Penalty Notice */}
+                {penaltyAmount > 0 && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs text-orange-800">
+                        <p className="font-semibold">Late Payment Penalty Applied</p>
+                        <p className="mt-1">This installment is {daysOverdue} day(s) overdue. A 5% late fee of ₱{penaltyAmount.toLocaleString()} has been added to your payment.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Info Notice */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -1096,7 +1171,7 @@ const PaymentProcess = () => {
           isOpen={showPinVerificationModal}
           onClose={() => setShowPinVerificationModal(false)}
           onVerified={handlePinVerified}
-          paymentAmount={displayAmount}
+          paymentAmount={totalWithPenalty}
           paymentDescription={`${displayPaymentType} - ${displaySchoolYear}`}
         />
       </div>

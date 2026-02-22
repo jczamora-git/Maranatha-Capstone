@@ -30,10 +30,11 @@ import {
   Mail,
   Menu,
   X,
-  DollarSign,
+  Coins,
   CalendarClock,
   Radio,
-  Shirt
+  Shirt,
+  Package
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -184,8 +185,10 @@ export const Sidebar = () => {
     { to: "/admin/dashboard", icon: BarChart3, label: "Dashboard" },
     { to: "/admin/users", icon: Users, label: "Manage Users" },
     ...(FEATURES.enrollment ? [{ to: "/admin/enrollments", icon: ClipboardList, label: "Enrollments" }] : []),
-    ...(FEATURES.payment ? [{ to: "/admin/payments", icon: DollarSign, label: "Payments" }] : []),
+    ...(FEATURES.payment ? [{ to: "/admin/payments", icon: Coins, label: "Payments" }] : []),
     ...(FEATURES.payment ? [{ to: "/admin/payment-plans", icon: CalendarClock, label: "Payment Plans" }] : []),
+    ...(FEATURES.payment ? [{ to: "/admin/uniform-orders", icon: Shirt, label: "Uniform Orders" }] : []),
+    ...(FEATURES.payment ? [{ to: "/admin/school-services", icon: Package, label: "School Services" }] : []),
     ...(FEATURES.attendance ? [{ to: "/admin/rfid-attendance", icon: Radio, label: "RFID Scanner" }] : []),
     ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
     ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
@@ -206,7 +209,7 @@ export const Sidebar = () => {
     { to: "/student/dashboard", icon: BarChart3, label: "Dashboard" },
     ...(FEATURES.courses && !isProd ? [{ to: "/student/courses", icon: BookOpen, label: "My Courses" }] : []),
     ...(FEATURES.enrollment ? [{ to: "/enrollment/my-enrollments", icon: FileText, label: "My Enrollments" }] : []),
-    ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: DollarSign, label: "Payment" }] : []),
+    ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: Coins, label: "Payment" }] : []),
     ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
     ...(FEATURES.grading ? [
       { to: "/student/grades", icon: Award, label: "My Grades" },

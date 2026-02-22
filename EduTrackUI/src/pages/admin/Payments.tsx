@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  DollarSign,
+  Coins,
   Search,
   Filter,
   Download,
@@ -49,12 +49,16 @@ import {
   CalendarDays,
   BookOpen,
   Layers,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2,
+  QrCode,
+  RotateCcw
 } from "lucide-react";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useConfirm } from "@/components/Confirm";
 import DiscountDialog from "@/components/admin/payments/DiscountDialog";
+import { Pagination } from "@/components/Pagination";
 
 type Payment = {
   id: string;
@@ -75,10 +79,15 @@ type Payment = {
   status: string;
   proof_of_payment_url?: string;
   is_refund: boolean;
+  has_been_refunded?: boolean;
+  original_payment_id?: string;
   remarks?: string;
   received_by_name?: string;
   verified_by_name?: string;
   verified_at?: string;
+  is_recurring_service?: boolean;
+  service_period_month?: number;
+  service_period_year?: number;
 };
 
 type Student = {
@@ -200,12 +209,11 @@ const PAYMENT_TYPE_PICKER_OPTIONS = [
 ];
 
 const FEE_TYPES = [
-  "Tuition",
+  "Service Fee",
   "Miscellaneous",
   "Contribution",
   "Event Fee",
   "Book",
-  "Uniform",
   "Other"
 ];
 
@@ -259,503 +267,11 @@ const DISCOUNT_STATUS = [
   "Revoked"
 ];
 
-// Mock Discounts Data
-const MOCK_DISCOUNTS: Discount[] = [
-  {
-    id: "1",
-    student_id: "31",
-    student_name: "John Michael Doe",
-    academic_period_id: "30",
-    academic_period: "2026-2027 - 1st Quarter",
-    discount_type: "Scholarship",
-    discount_name: "Academic Excellence Scholarship",
-    discount_amount: null,
-    discount_percentage: 50.00,
-    applies_to: "Tuition",
-    status: "Active",
-    approved_by: "Admin User",
-    approved_at: "2026-01-15T10:00:00",
-    valid_from: "2026-08-01",
-    valid_until: "2027-05-30",
-    remarks: "Maintained honor roll status"
-  },
-  {
-    id: "2",
-    student_id: "32",
-    student_name: "Maria Garcia",
-    academic_period_id: "30",
-    academic_period: "2026-2027 - 1st Quarter",
-    discount_type: "Sibling Discount",
-    discount_name: "10% Sibling Discount",
-    discount_amount: null,
-    discount_percentage: 10.00,
-    applies_to: "Tuition",
-    status: "Active",
-    approved_by: "Admin User",
-    approved_at: "2026-01-10T14:30:00",
-    valid_from: "2026-08-01",
-    valid_until: "2027-05-30",
-    remarks: "2nd child enrolled"
-  },
-  {
-    id: "3",
-    student_id: "33",
-    student_name: "Carlos Rodriguez",
-    academic_period_id: "30",
-    academic_period: "2026-2027 - 1st Quarter",
-    discount_type: "Early Bird",
-    discount_name: "Early Enrollment Discount",
-    discount_amount: 500.00,
-    discount_percentage: null,
-    applies_to: "Enrollment Fee",
-    status: "Active",
-    approved_by: "Admin User",
-    approved_at: "2026-01-05T09:00:00",
-    valid_from: "2026-01-01",
-    valid_until: "2026-07-31",
-    remarks: "Enrolled before July 2026"
-  },
-  {
-    id: "4",
-    student_id: "34",
-    student_name: "Sofia Chen",
-    academic_period_id: "30",
-    academic_period: "2026-2027 - 1st Quarter",
-    discount_type: "Financial Assistance",
-    discount_name: "Need-Based Grant",
-    discount_amount: null,
-    discount_percentage: 75.00,
-    applies_to: "All Fees",
-    status: "Active",
-    approved_by: "Principal Smith",
-    approved_at: "2026-01-20T11:00:00",
-    valid_from: "2026-08-01",
-    valid_until: "2027-05-30",
-    remarks: "Family experiencing financial hardship"
-  },
-  {
-    id: "5",
-    student_id: "30",
-    student_name: "Ahmed Hassan",
-    academic_period_id: "30",
-    academic_period: "2026-2027 - 1st Quarter",
-    discount_type: "Staff Discount",
-    discount_name: "Employee Child Discount",
-    discount_amount: null,
-    discount_percentage: 20.00,
-    applies_to: "Tuition",
-    status: "Active",
-    approved_by: "HR Director",
-    approved_at: "2026-01-08T08:00:00",
-    valid_from: "2026-08-01",
-    valid_until: "2027-05-30",
-    remarks: "Child of teaching staff"
-  },
-  {
-    id: "6",
-    student_id: "31",
-    student_name: "John Michael Doe",
-    academic_period_id: "29",
-    academic_period: "2025-2026 - 4th Quarter",
-    discount_type: "Scholarship",
-    discount_name: "Academic Excellence Scholarship",
-    discount_amount: null,
-    discount_percentage: 50.00,
-    applies_to: "Tuition",
-    status: "Expired",
-    approved_by: "Admin User",
-    approved_at: "2025-08-15T10:00:00",
-    valid_from: "2025-08-01",
-    valid_until: "2026-05-30",
-    remarks: "Previous year scholarship"
-  }
-];
+// Mock Discounts Data - REMOVED (use database instead)
 
-// Mock data for testing
-/* TEMPORARILY REMOVED
-const MOCK_PAYMENTS: Payment[] = [
-  {
-    id: "1",
-    student_id: "1",
-    student_name: "John Michael Doe",
-    student_number: "2024-001",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202401-0001",
-    payment_type: "Tuition Installment",
-    payment_for: "1st Quarter Tuition Fee",
-    amount: 5000.00,
-    payment_method: "Cash",
-    payment_date: "2024-01-15",
-    status: "Approved",
-    is_refund: false,
-    received_by_name: "Admin User",
-    verified_by_name: "Principal Smith",
-    verified_at: "2024-01-15T10:30:00"
-  },
-  {
-    id: "2",
-    student_id: "2",
-    student_name: "Jane Marie Smith",
-    student_number: "2024-002",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202401-0002",
-    payment_type: "Tuition Installment",
-    payment_for: "2nd Quarter Tuition Fee",
-    amount: 5000.00,
-    payment_method: "GCash",
-    payment_date: "2024-02-01",
-    reference_number: "GC-20240201-123456",
-    status: "Verified",
-    is_refund: false,
-    received_by_name: "Admin User",
-    verified_by_name: "Principal Smith",
-    verified_at: "2024-02-01T14:20:00",
-    remarks: "Paid via GCash mobile app"
-  },
-  {
-    id: "3",
-    student_id: "3",
-    student_name: "Carlos Rodriguez",
-    student_number: "2024-003",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202401-0003",
-    payment_type: "Miscellaneous",
-    payment_for: "School Supplies and Materials",
-    amount: 1500.00,
-    payment_method: "Bank Transfer",
-    payment_date: "2024-01-20",
-    reference_number: "BT-20240120-789012",
-    status: "Approved",
-    is_refund: false,
-    received_by_name: "Admin User"
-  },
-  {
-    id: "4",
-    student_id: "4",
-    student_name: "Maria Garcia",
-    student_number: "2024-004",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202401-0004",
-    payment_type: "Tuition Installment",
-    payment_for: "3rd Quarter Tuition Fee (Partial)",
-    amount: 2500.00,
-    payment_method: "Cash",
-    payment_date: "2024-01-25",
-    status: "Approved",
-    is_refund: false,
-    received_by_name: "Admin User",
-    remarks: "Partial payment - remaining balance: ₱2,500.00"
-  },
-  {
-    id: "5",
-    student_id: "5",
-    student_name: "Ahmed Hassan",
-    student_number: "2024-005",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202401-0005",
-    payment_type: "Event Fee",
-    payment_for: "Christmas Party Contribution",
-    amount: 500.00,
-    payment_method: "Cash",
-    payment_date: "2024-01-30",
-    status: "Pending",
-    is_refund: false,
-    received_by_name: "Admin User"
-  },
-  {
-    id: "6",
-    student_id: "1",
-    student_name: "John Michael Doe",
-    student_number: "2024-001",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202402-0001",
-    payment_type: "Tuition Installment",
-    payment_for: "2nd Quarter Tuition Fee (Full Payment)",
-    amount: 5000.00,
-    payment_method: "Check",
-    payment_date: "2024-02-02",
-    reference_number: "CHK-123456",
-    status: "Verified",
-    is_refund: false,
-    received_by_name: "Admin User",
-    verified_by_name: "Principal Smith",
-    verified_at: "2024-02-02T09:15:00"
-  },
-  {
-    id: "7",
-    student_id: "2",
-    student_name: "Jane Marie Smith",
-    student_number: "2024-002",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202402-0002",
-    payment_type: "Book",
-    payment_for: "Mathematics Textbook Grade 6",
-    amount: 850.00,
-    payment_method: "PayMaya",
-    payment_date: "2024-02-02",
-    reference_number: "PM-20240202-456789",
-    status: "Approved",
-    is_refund: false,
-    received_by_name: "Admin User"
-  },
-  {
-    id: "8",
-    student_id: "6",
-    student_name: "Sofia Chen",
-    student_number: "2024-006",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202402-0003",
-    payment_type: "Uniform",
-    payment_for: "PE Uniform Set",
-    amount: 1200.00,
-    payment_method: "Cash",
-    payment_date: "2024-02-02",
-    status: "Approved",
-    is_refund: false,
-    received_by_name: "Admin User"
-  },
-  {
-    id: "9",
-    student_id: "7",
-    student_name: "David Lee",
-    student_number: "2024-007",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202402-0004",
-    payment_type: "Tuition Installment",
-    payment_for: "1st Quarter Tuition - Installment 1 of 2",
-    amount: 2500.00,
-    payment_method: "GCash",
-    payment_date: "2024-02-02",
-    reference_number: "GC-20240202-987654",
-    status: "Pending",
-    is_refund: false,
-    received_by_name: "Admin User",
-    remarks: "First installment - second payment due March 1, 2024"
-  },
-  {
-    id: "10",
-    student_id: "3",
-    student_name: "Carlos Rodriguez",
-    student_number: "2024-003",
-    academic_period: "2024-2025 - 1st Semester",
-    receipt_number: "RCP-202402-0005",
-    payment_type: "Contribution",
-    payment_for: "Field Trip - Science Center Visit",
-    amount: 750.00,
-    payment_method: "Bank Transfer",
-    payment_date: "2024-02-02",
-    reference_number: "BT-20240202-321654",
-    status: "Verified",
-    is_refund: false,
-    received_by_name: "Admin User",
-    verified_by_name: "Principal Smith",
-    verified_at: "2024-02-02T11:45:00"
-  }
-];
-*/
+// Mock data - REMOVED (use database instead)
 
-// Mock School Fees Data
-/* TEMPORARILY REMOVED
-const MOCK_SCHOOL_FEES: SchoolFee[] = [
-  {
-    id: "1",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Enrollment Fee",
-    fee_name: "Enrollment Fee",
-    amount: 1500.00,
-    is_required: true,
-    is_active: true,
-    description: "One-time enrollment fee for all grade levels"
-  },
-  {
-    id: "2",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: "Grade 1",
-    year_levels: ["Grade 1"],
-    fee_type: "Tuition",
-    fee_name: "Quarterly Tuition Fee",
-    amount: 5000.00,
-    is_required: true,
-    is_active: true,
-    description: "Per quarter tuition fee for Grade 1"
-  },
-  {
-    id: "3",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: "Grade 2",
-    year_levels: ["Grade 2"],
-    fee_type: "Tuition",
-    fee_name: "Quarterly Tuition Fee",
-    amount: 5200.00,
-    is_required: true,
-    is_active: true,
-    description: "Per quarter tuition fee for Grade 2"
-  },
-  {
-    id: "4",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: "Grade 3",
-    year_levels: ["Grade 3"],
-    fee_type: "Tuition",
-    fee_name: "Quarterly Tuition Fee",
-    amount: 5500.00,
-    is_required: true,
-    is_active: true,
-    description: "Per quarter tuition fee for Grade 3"
-  },
-  {
-    id: "5",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Uniform",
-    fee_name: "School Uniform Set",
-    amount: 2000.00,
-    is_required: true,
-    is_active: true,
-    description: "Complete school uniform set (polo, pants/skirt)"
-  },
-  {
-    id: "6",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Uniform",
-    fee_name: "PE Uniform Set",
-    amount: 1200.00,
-    is_required: true,
-    is_active: true,
-    description: "Physical Education uniform set"
-  },
-  {
-    id: "7",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: "Kinder",
-    year_levels: ["Kinder"],
-    fee_type: "Book",
-    fee_name: "Kinder Learning Materials",
-    amount: 800.00,
-    is_required: true,
-    is_active: true,
-    description: "Complete set of learning materials for Kinder"
-  },
-  {
-    id: "8",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: "Grade 1",
-    year_levels: ["Grade 1"],
-    fee_type: "Book",
-    fee_name: "Grade 1 Textbooks",
-    amount: 1500.00,
-    is_required: true,
-    is_active: true,
-    description: "Complete set of textbooks for Grade 1"
-  },
-  {
-    id: "9",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Miscellaneous",
-    fee_name: "ID Card",
-    amount: 150.00,
-    is_required: true,
-    is_active: true,
-    description: "Student identification card"
-  },
-  {
-    id: "10",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Miscellaneous",
-    fee_name: "School Supplies Kit",
-    amount: 500.00,
-    is_required: false,
-    is_active: true,
-    description: "Optional basic school supplies kit"
-  },
-  {
-    id: "11",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Event Fee",
-    fee_name: "Annual Field Trip",
-    amount: 750.00,
-    is_required: false,
-    is_active: true,
-    due_date: "2024-03-15",
-    description: "Annual educational field trip"
-  },
-  {
-    id: "12",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Event Fee",
-    fee_name: "Christmas Party",
-    amount: 500.00,
-    is_required: false,
-    is_active: true,
-    due_date: "2024-12-01",
-    description: "Annual Christmas party contribution"
-  },
-  {
-    id: "13",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: "Nursery 1",
-    year_levels: ["Nursery 1"],
-    fee_type: "Tuition",
-    fee_name: "Quarterly Tuition Fee",
-    amount: 4000.00,
-    is_required: true,
-    is_active: true,
-    description: "Per quarter tuition fee for Nursery 1"
-  },
-  {
-    id: "14",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: "Nursery 2",
-    year_levels: ["Nursery 2"],
-    fee_type: "Tuition",
-    fee_name: "Quarterly Tuition Fee",
-    amount: 4200.00,
-    is_required: true,
-    is_active: true,
-    description: "Per quarter tuition fee for Nursery 2"
-  },
-  {
-    id: "15",
-    academic_period_id: "1",
-    academic_period: "2024-2025 - 1st Semester",
-    year_level: null,
-    year_levels: [],
-    fee_type: "Contribution",
-    fee_name: "Building Fund",
-    amount: 1000.00,
-    is_required: false,
-    is_active: true,
-    description: "School building improvement fund"
-  }
-];
-*/
+// Mock School Fees Data - REMOVED (use database instead)
 
 const Payments = () => {
   const { user, isAuthenticated } = useAuth();
@@ -768,7 +284,7 @@ const Payments = () => {
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [schoolFees, setSchoolFees] = useState<SchoolFee[]>([]);
-  const [discounts, setDiscounts] = useState<Discount[]>(MOCK_DISCOUNTS);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [discountTemplates, setDiscountTemplates] = useState<DiscountTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -778,6 +294,8 @@ const Payments = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
+  const [viewMode, setViewMode] = useState<"payments" | "refunds">("payments"); // Toggle between payments and refunds
+  const [summaryView, setSummaryView] = useState<"payment" | "fee">("payment");
 
   // Dialogs
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -785,8 +303,17 @@ const Payments = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isRejectOpen, setIsRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectTargetPayment, setRejectTargetPayment] = useState<Payment | null>(null);
+  const [isRefundOpen, setIsRefundOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundTargetPayment, setRefundTargetPayment] = useState<Payment | null>(null);
   const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
   const [discountDialogPayment, setDiscountDialogPayment] = useState<Payment | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 15;
 
   // School Fees Panel
   const [isFeesPanelOpen, setIsFeesPanelOpen] = useState(false);
@@ -796,12 +323,13 @@ const Payments = () => {
   const [isEditingFee, setIsEditingFee] = useState(false);
   const [selectedFee, setSelectedFee] = useState<SchoolFee | null>(null);
   const [feeForm, setFeeForm] = useState({
-    fee_type: "Tuition",
+    fee_type: "Miscellaneous",
     fee_name: "",
     year_levels: [] as string[],
     amount: "",
     is_required: true,
     is_active: true,
+    is_recurring: false,
     due_date: "",
     description: ""
   });
@@ -838,10 +366,20 @@ const Payments = () => {
     payment_date: new Date().toISOString().split('T')[0],
     reference_number: "",
     status: "Approved",
-    remarks: ""
+    remarks: "",
+    proof_of_payment_url: "",
+    is_recurring_service: false,
+    service_period_month: new Date().getMonth() + 1, // Current month (1-12)
+    service_period_year: new Date().getFullYear()
   });
 
   const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [paidServicePeriods, setPaidServicePeriods] = useState<{month: number, year: number}[]>([]);
+
+  // GCash session state (for payment modal)
+  const [gcashToken, setGcashToken] = useState<string | null>(null);
+  const [gcashSessionLoading, setGcashSessionLoading] = useState(false);
+  const [gcashProofReceived, setGcashProofReceived] = useState(false);
 
   const showAlert = (type: "success" | "error" | "info", message: string) => {
     setAlert({ type, message });
@@ -928,19 +466,18 @@ const Payments = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch payments - use mock data if API fails
+      // Fetch payments from API
       try {
-        const paymentsRes = await apiGet('/api/payments');
-        if (paymentsRes && paymentsRes.success && paymentsRes.data?.length > 0) {
-          const normalizedPayments = (paymentsRes.data || []).map((payment: Payment) => ({
-            ...payment,
-            net_amount: Number(payment.net_amount ?? payment.amount ?? 0)
-          }));
-          setPayments(normalizedPayments);
+        const paymentsRes = await apiGet(API_ENDPOINTS.PAYMENTS);
+        console.log('Payments API Response:', paymentsRes);
+        if (paymentsRes && paymentsRes.success) {
+          setPayments(paymentsRes.data || []);
+        } else {
+          setPayments([]);
         }
       } catch (err) {
-        console.log('Using mock payment data');
-        // Keep mock data already set in state
+        console.error('Error fetching payments:', err);
+        setPayments([]);
       }
 
       // Fetch payment plans to filter out students who already have plans
@@ -1056,9 +593,57 @@ const Payments = () => {
     return `MCAFINV-${timestamp}`;
   };
 
+  // GCash QR session helpers
+  const handleOpenGcashQr = async () => {
+    if (!form.student_id) {
+      showAlert("error", "Please select a student first");
+      return;
+    }
+    setGcashSessionLoading(true);
+    setGcashProofReceived(false);
+    try {
+      const res = await apiPost(API_ENDPOINTS.GCASH_SESSIONS, {
+        user_id: form.student_id,
+        amount_due: parseFloat(form.amount) || 0,
+        payment_description: form.payment_for || "General Payment",
+      });
+      if (res.success && res.token) {
+        setGcashToken(res.token);
+        window.open(`/admin/gcash-session/${res.token}`, '_blank');
+      } else {
+        showAlert("error", res.message || 'Failed to create GCash session');
+      }
+    } catch {
+      showAlert("error", 'Failed to create GCash session');
+    } finally {
+      setGcashSessionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!gcashToken) return;
+    const handler = (e: StorageEvent) => {
+      if (e.key === `gcash_proof_${gcashToken}` && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data.ocr_reference) {
+            setForm(prev => ({ ...prev, reference_number: data.ocr_reference }));
+          }
+          if (data.file_url) {
+            setForm(prev => ({ ...prev, proof_of_payment_url: data.file_url }));
+          }
+          setGcashProofReceived(true);
+        } catch {}
+        localStorage.removeItem(`gcash_proof_${gcashToken}`);
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [gcashToken]);
+
   const handleOpenCreate = async (paymentType?: string) => {
     const activePeriod = academicPeriods.find(p => p.status === 'active');
-    const invoiceNumber = await generateInvoiceNumber(); // Auto-generate unique invoice for cash
+    // const invoiceNumber = await generateInvoiceNumber(); // Auto-generate unique invoice for cash - TEMPORARILY DISABLED
     
     setForm({
       student_id: "",
@@ -1069,12 +654,15 @@ const Payments = () => {
       amount: "",
       payment_method: "Cash",
       payment_date: new Date().toISOString().split('T')[0],
-      reference_number: invoiceNumber,
-      status: "Pending",
-      remarks: ""
+      reference_number: "", // invoiceNumber (commented out - use official receipt invoice)
+      status: paymentType === "Tuition Full Payment" ? "Pending" : "Approved",
+      remarks: "",
+      proof_of_payment_url: ""
     });
     setPaymentStudentSearchQuery("");
     setShowPaymentStudentSuggestions(false);
+    setGcashToken(null);
+    setGcashProofReceived(false);
     setIsCreateOpen(true);
   };
 
@@ -1092,6 +680,10 @@ const Payments = () => {
       const payload = {
         ...form,
         amount: parseFloat(form.amount),
+        enrollment_id: form.enrollment_id || null,
+        reference_number: form.reference_number || null,
+        remarks: form.remarks || null,
+        proof_of_payment_url: form.proof_of_payment_url || null,
         receipt_number: generateReceiptNumber(),
         received_by: user?.id
       };
@@ -1122,7 +714,8 @@ const Payments = () => {
       payment_date: payment.payment_date,
       reference_number: payment.reference_number || "",
       status: payment.status,
-      remarks: payment.remarks || ""
+      remarks: payment.remarks || "",
+      proof_of_payment_url: payment.proof_of_payment_url || ""
     });
     setIsEditOpen(true);
   };
@@ -1133,7 +726,11 @@ const Payments = () => {
     try {
       const payload = {
         ...form,
-        amount: parseFloat(form.amount)
+        amount: parseFloat(form.amount),
+        enrollment_id: form.enrollment_id || null,
+        reference_number: form.reference_number || null,
+        remarks: form.remarks || null,
+        proof_of_payment_url: form.proof_of_payment_url || null
       };
 
       const res = await apiPut(`/api/payments/${selectedPayment.id}`, payload);
@@ -1206,6 +803,93 @@ const Payments = () => {
     }
   };
 
+  const handleOpenRejectPayment = (payment: Payment) => {
+    setRejectTargetPayment(payment);
+    setRejectReason("");
+    setIsRejectOpen(true);
+  };
+
+  const handleRejectPayment = async () => {
+    if (!rejectTargetPayment) return;
+
+    const reason = rejectReason.trim();
+    if (!reason) {
+      showAlert("error", "Please enter a reason for rejection");
+      return;
+    }
+
+    try {
+      const res = await apiPut(`/api/payments/${rejectTargetPayment.id}`, {
+        status: 'Rejected',
+        remarks: reason
+      });
+
+      if (res && res.success) {
+        showAlert("success", "Payment rejected successfully");
+        setIsRejectOpen(false);
+        setRejectTargetPayment(null);
+        setRejectReason("");
+        fetchData();
+      } else {
+        showAlert("error", res?.message || "Failed to reject payment");
+      }
+    } catch (error: any) {
+      showAlert("error", error.message || "Error rejecting payment");
+    }
+  };
+
+  const handleOpenRefundPayment = (payment: Payment) => {
+    setRefundTargetPayment(payment);
+    setRefundReason("");
+    setRefundAmount(getNetAmount(payment).toFixed(2));
+    setIsRefundOpen(true);
+  };
+
+  const handleRefundPayment = async () => {
+    if (!refundTargetPayment) return;
+
+    const amount = parseFloat(refundAmount);
+    const reason = refundReason.trim();
+    const maxRefundable = getNetAmount(refundTargetPayment);
+
+    if (!amount || amount <= 0) {
+      showAlert("error", "Please enter a valid refund amount");
+      return;
+    }
+
+    if (amount > maxRefundable) {
+      showAlert("error", `Refund amount cannot exceed ₱${maxRefundable.toFixed(2)}`);
+      return;
+    }
+
+    if (!reason) {
+      showAlert("error", "Please enter a reason for refund");
+      return;
+    }
+
+    try {
+      const res = await apiPost(`/api/payments/${refundTargetPayment.id}/refund`, {
+        amount,
+        reason,
+        payment_date: new Date().toISOString().split('T')[0],
+        received_by: user?.id
+      });
+
+      if (res?.success) {
+        showAlert("success", "Refund created successfully");
+        setIsRefundOpen(false);
+        setRefundReason("");
+        setRefundAmount("");
+        setRefundTargetPayment(null);
+        fetchData();
+      } else {
+        showAlert("error", res?.message || "Failed to create refund");
+      }
+    } catch (error: any) {
+      showAlert("error", error.message || "Error creating refund");
+    }
+  };
+
   // School Fees Handlers
   const handleOpenFeesPanel = () => {
     setIsFeesPanelOpen(true);
@@ -1215,12 +899,13 @@ const Payments = () => {
 
   const resetFeeForm = () => {
     setFeeForm({
-      fee_type: "Tuition",
+      fee_type: "Miscellaneous",
       fee_name: "",
       year_levels: [],
       amount: "",
       is_required: true,
       is_active: true,
+      is_recurring: false,
       due_date: "",
       description: ""
     });
@@ -1229,6 +914,12 @@ const Payments = () => {
   };
 
   const handleEditFee = (fee: SchoolFee) => {
+    // If it's a Tuition fee, redirect to tuition-packages page
+    if (fee.fee_type === 'Tuition') {
+      navigate('/admin/tuition-packages');
+      return;
+    }
+    
     setSelectedFee(fee);
     
     // Build year_levels array from the fee
@@ -1251,6 +942,7 @@ const Payments = () => {
       amount: fee.amount.toString(),
       is_required: fee.is_required,
       is_active: fee.is_active,
+      is_recurring: (fee as any).is_recurring || false,
       due_date: fee.due_date || "",
       description: fee.description || ""
     });
@@ -1277,6 +969,7 @@ const Payments = () => {
         amount: parseFloat(feeForm.amount),
         is_required: feeForm.is_required ? 1 : 0,
         is_active: feeForm.is_active ? 1 : 0,
+        is_recurring: feeForm.is_recurring ? 1 : 0,
         due_date: feeForm.due_date || null,
         description: feeForm.description || null
       };
@@ -1349,6 +1042,7 @@ const Payments = () => {
               amount: payload.amount,
               is_required: payload.is_required,
               is_active: 1,
+              is_recurring: payload.is_recurring,
               due_date: payload.due_date,
               description: payload.description
             };
@@ -1362,6 +1056,7 @@ const Payments = () => {
               amount: payload.amount,
               is_required: payload.is_required,
               is_active: 1,
+              is_recurring: payload.is_recurring,
               due_date: payload.due_date,
               description: payload.description
             };
@@ -1570,8 +1265,27 @@ const Payments = () => {
     const matchesDate = (!dateFromFilter || p.payment_date >= dateFromFilter) &&
                        (!dateToFilter || p.payment_date <= dateToFilter);
 
-    return matchesSearch && matchesType && matchesStatus && matchesDate;
+    // Filter by view mode: payments (is_refund = 0) or refunds (is_refund = 1)
+    const matchesViewMode = viewMode === "payments" ? !p.is_refund : p.is_refund;
+
+    return matchesSearch && matchesType && matchesStatus && matchesDate && matchesViewMode;
   });
+
+  const totalItems = filteredPayments.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, paymentTypeFilter, statusFilter, dateFromFilter, dateToFilter, viewMode]);
+
+  const pagedPayments = filteredPayments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Filtered School Fees - with grouping for display only
   const filteredSchoolFees = (() => {
@@ -1616,6 +1330,21 @@ const filteredDiscounts = discountTemplates.filter((d) => {
     );
   }).slice(0, 10);
 
+  // Get selected student's year level
+  const getSelectedStudentYearLevel = (): string | null => {
+    if (!form.student_id) return null;
+
+    if (form.payment_type === "Tuition Full Payment" && form.enrollment_id) {
+      // For tuition payments, get from enrollment
+      const enrollment = enrollments.find((e: any) => String(e.id) === String(form.enrollment_id));
+      return enrollment?.grade_level || enrollment?.year_level || null;
+    } else {
+      // For other payments, get from student
+      const student = students.find((s: any) => String(s.user_id) === String(form.student_id));
+      return student?.year_level || null;
+    }
+  };
+
   // Map payment type to fee type
   const getPaymentTypeToFeeType = (paymentType: string): string => {
     if (paymentType === "Tuition Full Payment" || paymentType === "Tuition Installment") {
@@ -1625,7 +1354,23 @@ const filteredDiscounts = discountTemplates.filter((d) => {
     return paymentType;
   };
 
-  // Filter school fees for payment form based on selected payment type (no academic_period filtering needed)
+  // Check if payment type has any active fees
+  const hasActiveFeesForPaymentType = (paymentType: string): boolean => {
+    const feeType = getPaymentTypeToFeeType(paymentType);
+    return schoolFees.some(fee => fee.fee_type === feeType && fee.is_active);
+  };
+
+  // Check if payment type has any active fees excluding Service Fee
+  const hasActiveFeesExcludingServiceFee = (paymentType: string): boolean => {
+    const feeType = getPaymentTypeToFeeType(paymentType);
+    return schoolFees.some(fee =>
+      fee.fee_type === feeType &&
+      fee.is_active &&
+      fee.fee_type !== 'Service Fee'
+    );
+  };
+
+  // Filter school fees for payment form based on selected payment type and student year level
   const paymentFormSchoolFees = (() => {
     if (!form.payment_type) {
       console.log('Missing payment_type');
@@ -1633,10 +1378,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
     }
 
     const feeType = getPaymentTypeToFeeType(form.payment_type);
-    const selectedEnrollment = form.enrollment_id
-      ? enrollments.find((enrollment: any) => String(enrollment.id) === String(form.enrollment_id))
-      : null;
-    const selectedYearLevel = selectedEnrollment?.grade_level || selectedEnrollment?.year_level || null;
+    const selectedYearLevel = getSelectedStudentYearLevel();
 
     console.log('Filtering school fees:', {
       payment_type: form.payment_type,
@@ -1654,18 +1396,21 @@ const filteredDiscounts = discountTemplates.filter((d) => {
         return false;
       }
 
-      if (feeType === "Tuition") {
-        if (!selectedYearLevel) {
-          return false;
-        }
-
+      // If a student is selected, filter by their year level
+      if (selectedYearLevel) {
         if (fee.year_levels && fee.year_levels.length > 0) {
-          return fee.year_levels.includes(selectedYearLevel);
+          // Fee has specific year levels - check if student's level is included
+          return fee.year_levels.includes(selectedYearLevel) || fee.year_levels.includes("All Grades");
+        } else if (fee.year_level) {
+          // Fee has single year level - check if it matches student's level or is "All Grades"
+          return fee.year_level === selectedYearLevel || fee.year_level === "All Grades";
+        } else {
+          // Fee is for all grades (year_level is null)
+          return true;
         }
-
-        return fee.year_level === selectedYearLevel;
       }
 
+      // No student selected - show all fees of this type
       return true;
     });
 
@@ -1714,21 +1459,95 @@ const filteredDiscounts = discountTemplates.filter((d) => {
   })();
 
   // Statistics
-  // Only sum payments that are already paid (exclude pending)
-  const paidPayments = filteredPayments.filter(p => p.status === 'Approved' || p.status === 'Verified');
-  const totalPayments = paidPayments.reduce((sum, p) => sum + getNetAmount(p), 0);
-  const pendingCount = filteredPayments.filter(p => p.status === 'Pending').length;
-  const verifiedCount = filteredPayments.filter(p => p.status === 'Verified').length;
-  const approvedCount = filteredPayments.filter(p => p.status === 'Approved').length;
+  // For payments view: exclude refund records AND refunded payments
+  // For refunds view: only include refund records
+  const paidPayments = viewMode === "payments"
+    ? filteredPayments.filter(p => 
+        (p.status === 'Approved' || p.status === 'Verified') && !p.is_refund && !p.has_been_refunded
+      )
+    : filteredPayments.filter(p => 
+        (p.status === 'Approved' || p.status === 'Verified') && p.is_refund
+      );
+  
+  const totalPayments = viewMode === "payments"
+    ? paidPayments.reduce((sum, p) => sum + getNetAmount(p), 0)
+    : paidPayments.reduce((sum, p) => Math.abs(getNetAmount(p)), 0); // Show positive total for refunds
+  
+  const pendingCount = filteredPayments.filter(p => p.status === 'Pending' && !p.is_refund).length;
+  const verifiedCount = filteredPayments.filter(p => p.status === 'Verified' && !p.is_refund).length;
+  const approvedCount = filteredPayments.filter(p => p.status === 'Approved' && !p.is_refund && !p.has_been_refunded).length;
 
-  const getStatusBadge = (status: string) => {
+  const feeTypeSummary = (() => {
+    const totals = {
+      tuition: 0,
+      serviceFee: 0,
+      uniform: 0,
+      miscellaneous: 0,
+      contribution: 0,
+      eventFee: 0,
+      book: 0,
+      others: 0
+    };
+
+    paidPayments.forEach((payment) => {
+      const amount = getNetAmount(payment);
+      const isServiceFee = payment.payment_type === 'Service Fee';
+
+      if (isServiceFee) {
+        totals.serviceFee += amount;
+        return;
+      }
+
+      if (payment.payment_type === 'Tuition Full Payment' || payment.payment_type === 'Tuition Installment') {
+        totals.tuition += amount;
+      } else if (payment.payment_type === 'Uniform') {
+        totals.uniform += amount;
+      } else if (payment.payment_type === 'Miscellaneous') {
+        totals.miscellaneous += amount;
+      } else if (payment.payment_type === 'Contribution') {
+        totals.contribution += amount;
+      } else if (payment.payment_type === 'Event Fee') {
+        totals.eventFee += amount;
+      } else if (payment.payment_type === 'Book') {
+        totals.book += amount;
+      } else if (payment.payment_type === 'Other') {
+        totals.others += amount;
+      }
+    });
+
+    return [
+      { key: 'tuition', label: 'Tuition', total: totals.tuition, className: "bg-gradient-to-br from-blue-50 to-blue-100", iconBg: "bg-blue-200", iconColor: "text-blue-700", icon: GraduationCap },
+      { key: 'service_fee', label: 'Service Fee', total: totals.serviceFee, className: "bg-gradient-to-br from-slate-50 to-slate-100", iconBg: "bg-slate-200", iconColor: "text-slate-700", icon: Package },
+      { key: 'uniform', label: 'Uniform', total: totals.uniform, className: "bg-gradient-to-br from-rose-50 to-rose-100", iconBg: "bg-rose-200", iconColor: "text-rose-700", icon: Shirt },
+      { key: 'miscellaneous', label: 'Miscellaneous', total: totals.miscellaneous, className: "bg-gradient-to-br from-slate-50 to-slate-100", iconBg: "bg-slate-200", iconColor: "text-slate-700", icon: Layers },
+      { key: 'contribution', label: 'Contribution', total: totals.contribution, className: "bg-gradient-to-br from-emerald-50 to-emerald-100", iconBg: "bg-emerald-200", iconColor: "text-emerald-700", icon: HandCoins },
+      { key: 'event_fee', label: 'Event Fee', total: totals.eventFee, className: "bg-gradient-to-br from-amber-50 to-amber-100", iconBg: "bg-amber-200", iconColor: "text-amber-700", icon: CalendarDays },
+      { key: 'book', label: 'Book', total: totals.book, className: "bg-gradient-to-br from-indigo-50 to-indigo-100", iconBg: "bg-indigo-200", iconColor: "text-indigo-700", icon: BookOpen },
+      { key: 'others', label: 'Others', total: totals.others, className: "bg-gradient-to-br from-gray-50 to-gray-100", iconBg: "bg-gray-200", iconColor: "text-gray-700", icon: MoreHorizontal }
+    ];
+  })();
+
+  const getStatusBadge = (payment: Payment) => {
+    // Show "Refunded" badge for approved payments that have been refunded (only in payment records view)
+    if (viewMode === "payments" && payment.status === 'Approved' && payment.has_been_refunded) {
+      return 'bg-orange-100 text-orange-800 border-orange-300';
+    }
+    
     const variants: Record<string, string> = {
       'Pending': 'bg-yellow-100 text-yellow-800 border-yellow-300',
       'Verified': 'bg-blue-100 text-blue-800 border-blue-300',
       'Approved': 'bg-green-100 text-green-800 border-green-300',
       'Rejected': 'bg-red-100 text-red-800 border-red-300'
     };
-    return variants[status] || 'bg-gray-100 text-gray-800 border-gray-300';
+    return variants[payment.status] || 'bg-gray-100 text-gray-800 border-gray-300';
+  };
+
+  const getStatusText = (payment: Payment) => {
+    // Show "Refunded" text for approved payments that have been refunded (only in payment records view)
+    if (viewMode === "payments" && payment.status === 'Approved' && payment.has_been_refunded) {
+      return 'Refunded';
+    }
+    return payment.status;
   };
 
   const getPaymentMethodIcon = (method: string) => {
@@ -1817,64 +1636,125 @@ const filteredDiscounts = discountTemplates.filter((d) => {
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-600 font-semibold">Total Collected</p>
-                  <p className="text-2xl font-bold text-blue-700">₱{Number(totalPayments).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-600 font-semibold">Approved</p>
-                  <p className="text-2xl font-bold text-green-700">{approvedCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-100">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-600 font-semibold">Verified</p>
-                  <p className="text-2xl font-bold text-blue-700">{verifiedCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-yellow-600 font-semibold">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-700">{pendingCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-yellow-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Summary Toggle */}
+        <div className="flex items-center gap-2 mb-4">
+          <Button
+            variant={summaryView === "payment" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSummaryView("payment")}
+          >
+            Payment Summary
+          </Button>
+          <Button
+            variant={summaryView === "fee" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSummaryView("fee")}
+          >
+            Fee Summary
+          </Button>
         </div>
+
+        {summaryView === "payment" ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card className={viewMode === "payments" 
+              ? "border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100"
+              : "border-0 shadow-lg bg-gradient-to-br from-orange-50 to-red-100"
+            }>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={viewMode === "payments" 
+                      ? "text-sm text-blue-600 font-semibold"
+                      : "text-sm text-orange-600 font-semibold"
+                    }>
+                      {viewMode === "payments" ? "Total Collected" : "Total Refunds"}
+                    </p>
+                    <p className={viewMode === "payments" 
+                      ? "text-2xl font-bold text-blue-700"
+                      : "text-2xl font-bold text-orange-700"
+                    }>
+                      ₱{Number(totalPayments).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className={viewMode === "payments" 
+                    ? "w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center"
+                    : "w-12 h-12 rounded-full bg-orange-200 flex items-center justify-center"
+                  }>
+                    <Coins className={viewMode === "payments" 
+                      ? "h-6 w-6 text-blue-600"
+                      : "h-6 w-6 text-orange-600"
+                    } />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-600 font-semibold">Approved</p>
+                    <p className="text-2xl font-bold text-green-700">{approvedCount}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-600 font-semibold">Verified</p>
+                    <p className="text-2xl font-bold text-blue-700">{verifiedCount}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-yellow-600 font-semibold">Pending</p>
+                    <p className="text-2xl font-bold text-yellow-700">{pendingCount}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-yellow-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {feeTypeSummary.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Card key={item.key} className={`border-0 shadow-lg ${item.className}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground font-semibold">{item.label}</p>
+                        <p className="text-2xl font-bold text-gray-800">
+                          ₱{Number(item.total).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${item.iconBg}`}>
+                        <Icon className={`h-6 w-6 ${item.iconColor}`} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         {/* Filters */}
         <Card className="mb-6 border-0 shadow-lg">
@@ -1934,10 +1814,21 @@ const filteredDiscounts = discountTemplates.filter((d) => {
         {/* Payments Table */}
         <Card className="shadow-lg border-0">
           <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Receipt className="h-5 w-5" />
-              Payment Records ({filteredPayments.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <Receipt className="h-5 w-5" />
+                {viewMode === "payments" ? "Payment Records" : "Refund Lists"} ({filteredPayments.length})
+              </CardTitle>
+              <Button
+                variant={viewMode === "refunds" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode(viewMode === "payments" ? "refunds" : "payments")}
+                className={viewMode === "refunds" ? "bg-purple-600 hover:bg-purple-700" : ""}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                {viewMode === "payments" ? "Show Refunds" : "Show Payments"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -1955,7 +1846,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPayments.map((payment) => (
+                  {pagedPayments.map((payment) => (
                     <tr key={payment.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -1996,8 +1887,8 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={getStatusBadge(payment.status)}>
-                          {payment.status}
+                        <Badge className={getStatusBadge(payment)}>
+                          {getStatusText(payment)}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -2043,27 +1934,24 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                               <CheckCircle className="h-4 w-4 text-green-600" />
                             </Button>
                           )}
-                          {(payment.payment_type === 'Tuition Full Payment' || payment.payment_type === 'Tuition Installment') && payment.status !== 'Approved' && (
+                          {(payment.status === 'Pending' || payment.status === 'Verified') && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setDiscountDialogPayment(payment);
-                                setIsDiscountDialogOpen(true);
-                              }}
-                              title="Manage Discounts"
+                              onClick={() => handleOpenRejectPayment(payment)}
+                              title="Reject Payment"
                             >
-                              <Tag className="h-4 w-4 text-purple-600" />
+                              <XCircle className="h-4 w-4 text-red-600" />
                             </Button>
                           )}
-                          {payment.payment_type === 'Tuition Installment' && (
+                          {payment.status === 'Approved' && !payment.is_refund && !payment.has_been_refunded && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => navigate(`/admin/payment-plans?student_id=${payment.student_id}`)}
-                              title="View Payment Plan"
+                              onClick={() => handleOpenRefundPayment(payment)}
+                              title="Refund Payment"
                             >
-                              <CalendarClock className="h-4 w-4 text-blue-600" />
+                              <RotateCcw className="h-4 w-4 text-orange-600" />
                             </Button>
                           )}
                         </div>
@@ -2083,6 +1971,17 @@ const filteredDiscounts = discountTemplates.filter((d) => {
           </CardContent>
         </Card>
 
+        {totalItems > 0 && (
+          <div className="mt-6 px-2">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(p) => setCurrentPage(p)}
+            />
+          </div>
+        )}
+
         {/* Payment Type Picker */}
         <Dialog open={isTypePickerOpen} onOpenChange={setIsTypePickerOpen}>
           <DialogContent className="max-w-2xl">
@@ -2090,26 +1989,163 @@ const filteredDiscounts = discountTemplates.filter((d) => {
               <DialogTitle>Select Payment Type</DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              {/* Service Fee Button - Always shown and redirects to school services */}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-20 flex-col gap-2 border bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"
+                onClick={() => {
+                  setIsTypePickerOpen(false);
+                  navigate('/admin/school-services');
+                }}
+              >
+                <Package className="h-6 w-6" />
+                <span className="text-xs font-semibold text-center leading-tight">
+                  Service Fee
+                </span>
+              </Button>
+
+              {/* Other Payment Types - Check for fees excluding Service Fee */}
               {PAYMENT_TYPE_PICKER_OPTIONS.map((option) => {
                 const Icon = option.icon;
+                // Uniform is always enabled and redirects to uniform orders
+                const isUniform = option.value === "Uniform";
+                const hasFees = isUniform ? true : hasActiveFeesExcludingServiceFee(option.value);
                 return (
                   <Button
                     key={option.value}
                     type="button"
                     variant="outline"
-                    className={`h-20 flex-col gap-2 border ${option.className}`}
+                    disabled={!hasFees}
+                    className={`h-20 flex-col gap-2 border ${option.className} ${!hasFees ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => {
-                      setIsTypePickerOpen(false);
-                      handleOpenCreate(option.value);
+                      if (isUniform) {
+                        setIsTypePickerOpen(false);
+                        navigate('/admin/uniform-orders');
+                      } else if (hasFees) {
+                        setIsTypePickerOpen(false);
+                        handleOpenCreate(option.value);
+                      }
                     }}
                   >
                     <Icon className="h-6 w-6" />
                     <span className="text-xs font-semibold text-center leading-tight">
                       {option.label}
                     </span>
+                    {!hasFees && !isUniform && (
+                      <span className="text-[10px] text-muted-foreground mt-1">
+                        No fees
+                      </span>
+                    )}
                   </Button>
                 );
               })}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reject Payment Dialog */}
+        <Dialog open={isRejectOpen} onOpenChange={setIsRejectOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Reject Payment</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to reject this payment? Please provide a reason.
+              </p>
+              {rejectTargetPayment && (
+                <div className="rounded-md border p-3 bg-muted/40 text-sm">
+                  <p><span className="font-medium">Student:</span> {rejectTargetPayment.student_name}</p>
+                  <p><span className="font-medium">Receipt:</span> {rejectTargetPayment.receipt_number}</p>
+                </div>
+              )}
+              <div>
+                <Label>Rejection Reason *</Label>
+                <Textarea
+                  placeholder="Enter reason for rejection"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsRejectOpen(false);
+                  setRejectReason("");
+                  setRejectTargetPayment(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRejectPayment}
+              >
+                Reject Payment
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Refund Payment Dialog */}
+        <Dialog open={isRefundOpen} onOpenChange={setIsRefundOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Refund Payment</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              {refundTargetPayment && (
+                <div className="rounded-md border p-3 bg-muted/40 text-sm space-y-1">
+                  <p><span className="font-medium">Student:</span> {refundTargetPayment.student_name}</p>
+                  <p><span className="font-medium">Receipt:</span> {refundTargetPayment.receipt_number}</p>
+                  <p><span className="font-medium">Max Refundable:</span> ₱{getNetAmount(refundTargetPayment).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                </div>
+              )}
+
+              <div>
+                <Label>Refund Amount *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label>Refund Reason *</Label>
+                <Textarea
+                  placeholder="Enter reason for refund"
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsRefundOpen(false);
+                  setRefundReason("");
+                  setRefundAmount("");
+                  setRefundTargetPayment(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRefundPayment}
+              >
+                Confirm Refund
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -2254,7 +2290,17 @@ const filteredDiscounts = discountTemplates.filter((d) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Payment Type *</Label>
-                  <Select value={form.payment_type} onValueChange={(v) => setForm({ ...form, payment_type: v })}>
+                  <Select value={form.payment_type} onValueChange={(v) => {
+                    const newForm = { ...form, payment_type: v, status: v === "Tuition Full Payment" ? "Pending" : "Approved" };
+                    // Clear enrollment_id when switching away from Tuition Full Payment
+                    if (v !== "Tuition Full Payment") {
+                      newForm.enrollment_id = "";
+                    }
+                    setForm(newForm);
+                    // Clear student selection when switching payment types
+                    setPaymentStudentSearchQuery("");
+                    setShowPaymentStudentSuggestions(false);
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select payment type" />
                     </SelectTrigger>
@@ -2271,12 +2317,14 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                   <Select 
                     value={form.payment_method} 
                     onValueChange={async (v) => {
-                      const invoiceNumber = v === "Cash" ? await generateInvoiceNumber() : "";
+                      // const invoiceNumber = v === "Cash" ? await generateInvoiceNumber() : ""; // TEMPORARILY DISABLED
                       setForm({ 
                         ...form, 
                         payment_method: v,
-                        reference_number: invoiceNumber
+                        reference_number: ""
                       });
+                      setGcashToken(null);
+                      setGcashProofReceived(false);
                     }}
                   >
                     <SelectTrigger>
@@ -2352,17 +2400,58 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                 </div>
               </div>
 
-              <div>
-                <Label>
-                  {form.payment_method === "Cash" ? "Invoice Number" : "Reference Number"}
-                  {form.payment_method !== "Cash" && " (Check #, Transaction ID, etc.)"}
-                </Label>
-                <Input
-                  placeholder={form.payment_method === "Cash" ? "Auto-generated invoice number" : "Enter reference number"}
-                  value={form.reference_number}
-                  onChange={(e) => setForm({ ...form, reference_number: e.target.value })}
-                />
-              </div>
+              {form.payment_method === "GCash" ? (
+                <div className="space-y-3">
+                  {/* GCash QR uploader */}
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <p className="text-xs text-blue-700 mb-2 font-medium">
+                      Let the student upload their GCash screenshot by scanning a QR code.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+                      onClick={handleOpenGcashQr}
+                      disabled={gcashSessionLoading || !form.student_id}
+                    >
+                      {gcashSessionLoading
+                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating session…</>
+                        : <><QrCode className="h-4 w-4 mr-2" />Open GCash QR Uploader</>}
+                    </Button>
+                    {!form.student_id && (
+                      <p className="text-[10px] text-blue-400 mt-1.5 text-center">Select a student first to enable</p>
+                    )}
+                    {gcashProofReceived && (
+                      <div className="mt-2 flex items-center gap-2 text-green-700 text-xs font-medium">
+                        <CheckCircle className="h-4 w-4" />
+                        Proof received — reference auto-filled below
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <Label>GCash Reference Number</Label>
+                    <Input
+                      placeholder="Auto-filled from QR upload, or enter manually"
+                      value={form.reference_number}
+                      onChange={(e) => setForm({ ...form, reference_number: e.target.value.replace(/\D/g, "") })}
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label>
+                    {form.payment_method === "Cash" ? "Invoice Number" : "Reference Number"}
+                    {form.payment_method !== "Cash" && " (Check #, Transaction ID, etc.)"}
+                  </Label>
+                  <Input
+                    placeholder={form.payment_method === "Cash" ? "Enter official receipt invoice number" : "Enter reference number"}
+                    value={form.reference_number}
+                    onChange={(e) => setForm({ ...form, reference_number: e.target.value })}
+                  />
+                </div>
+              )}
 
               <div>
                 <Label>Payment Status *</Label>
@@ -2484,8 +2573,8 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Status</Label>
-                    <Badge className={getStatusBadge(selectedPayment.status)}>
-                      {selectedPayment.status}
+                    <Badge className={getStatusBadge(selectedPayment)}>
+                      {getStatusText(selectedPayment)}
                     </Badge>
                   </div>
                 </div>
@@ -2559,6 +2648,24 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                         {selectedPayment.verified_at ? new Date(selectedPayment.verified_at).toLocaleString() : '-'}
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {selectedPayment.payment_method === "GCash" && selectedPayment.proof_of_payment_url && (
+                  <div className="pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        const url = selectedPayment.proof_of_payment_url?.startsWith('/') 
+                          ? selectedPayment.proof_of_payment_url 
+                          : `/${selectedPayment.proof_of_payment_url}`;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Proof of Payment
+                    </Button>
                   </div>
                 )}
               </div>
@@ -2788,7 +2895,13 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                           value={feeForm.fee_name}
                           onChange={(e) => setFeeForm({ ...feeForm, fee_name: e.target.value })}
                           className="mt-1"
+                          disabled={isEditingFee && selectedFee?.fee_name === 'Service Fee'}
                         />
+                        {isEditingFee && selectedFee?.fee_name === 'Service Fee' && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Service Fee name cannot be changed
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -2890,6 +3003,19 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                           />
                           <Label htmlFor="is_active" className="text-sm font-normal cursor-pointer">
                             Active
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="is_recurring"
+                            checked={feeForm.is_recurring}
+                            onChange={(e) => setFeeForm({ ...feeForm, is_recurring: e.target.checked })}
+                            className="rounded"
+                          />
+                          <Label htmlFor="is_recurring" className="text-sm font-normal cursor-pointer">
+                            Recurring (monthly)
                           </Label>
                         </div>
                       </div>

@@ -12,17 +12,23 @@ import { Badge } from "@/components/ui/badge";
 import {
   Calendar,
   ArrowLeft,
-  DollarSign,
+  Coins,
   Edit,
   CheckCircle,
   User,
   FileText,
   AlertCircle,
-  XCircle
+  XCircle,
+  QrCode,
+  Loader2,
+  Tag,
+  ShieldOff
 } from "lucide-react";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useConfirm } from "@/components/Confirm";
+import DiscountDialog from "@/components/admin/payments/DiscountDialog";
+import { calculateInstallmentPenalty, type PenaltyInfo } from "@/utils/penaltyCalculator";
 
 type PaymentPlan = {
   id: string;
@@ -58,6 +64,10 @@ type Installment = {
   days_overdue: number;
 };
 
+type InstallmentWithPenalty = Installment & {
+  penaltyInfo: PenaltyInfo;
+};
+
 export default function StudentInstallmentDetails() {
   const navigate = useNavigate();
   const { planId } = useParams<{ planId: string }>();
@@ -65,16 +75,16 @@ export default function StudentInstallmentDetails() {
   const confirmFn = useConfirm();
 
   const [plan, setPlan] = useState<PaymentPlan | null>(null);
-  const [installments, setInstallments] = useState<Installment[]>([]);
+  const [installments, setInstallments] = useState<InstallmentWithPenalty[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const [isEditingInstallments, setIsEditingInstallments] = useState(false);
-  const [editedInstallments, setEditedInstallments] = useState<Installment[]>([]);
+  const [editedInstallments, setEditedInstallments] = useState<InstallmentWithPenalty[]>([]);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [selectedInstallment, setSelectedInstallment] = useState<Installment | null>(null);
+  const [selectedInstallment, setSelectedInstallment] = useState<InstallmentWithPenalty | null>(null);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
   const [paymentForm, setPaymentForm] = useState({
@@ -85,7 +95,68 @@ export default function StudentInstallmentDetails() {
     remarks: ""
   });
 
+  // GCash QR uploader state
+  const [gcashToken, setGcashToken] = useState<string | null>(null);
+  const [gcashSessionLoading, setGcashSessionLoading] = useState(false);
+  const [gcashProofReceived, setGcashProofReceived] = useState(false);
+
+  // Discount dialog state
+  const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
+  const [selectedInstallmentForDiscount, setSelectedInstallmentForDiscount] = useState<InstallmentWithPenalty | null>(null);
+
+  // Penalty records (read-only - penalties are ALWAYS charged per school policy)
+  const [penaltyRecords, setPenaltyRecords] = useState<any[]>([]);
+
+  // Installment discounts (stored in localStorage before payment)
+  const [installmentDiscounts, setInstallmentDiscounts] = useState<{ [installmentId: string]: { amount: number, templates: any[] } }>({});
+
   const PAYMENT_METHODS = ["Cash", "Check", "Bank Transfer", "GCash", "PayMaya", "Others"];
+
+  // ---- GCash QR Session helpers ----
+  const handleOpenGcashQr = async () => {
+    if (!selectedInstallment || !plan) return;
+    setGcashSessionLoading(true);
+    setGcashProofReceived(false);
+    try {
+      const res = await apiPost(API_ENDPOINTS.GCASH_SESSIONS, {
+        installment_id: selectedInstallment.id,
+        plan_id: plan.id,
+        user_id: plan.student_id,
+        installment_number: selectedInstallment.installment_number,
+        amount_due: selectedInstallment.balance
+      });
+      if (res.success && res.token) {
+        setGcashToken(res.token);
+        // Open the GCash session page in a new tab
+        window.open(`/admin/gcash-session/${res.token}`, '_blank');
+      } else {
+        setError(res.message || 'Failed to create GCash session');
+      }
+    } catch {
+      setError('Failed to create GCash session');
+    } finally {
+      setGcashSessionLoading(false);
+    }
+  };
+
+  // Listen for proof upload result broadcast from the GCash session tab
+  useEffect(() => {
+    if (!gcashToken) return;
+    const handler = (e: StorageEvent) => {
+      if (e.key === `gcash_proof_${gcashToken}` && e.newValue) {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (data.ocr_reference) {
+            setPaymentForm(prev => ({ ...prev, reference_number: data.ocr_reference }));
+          }
+          setGcashProofReceived(true);
+        } catch {}
+        localStorage.removeItem(`gcash_proof_${gcashToken}`);
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [gcashToken]);
 
   const generateReceiptNumber = () => {
     const date = new Date();
@@ -140,8 +211,39 @@ export default function StudentInstallmentDetails() {
     }
     if (planId) {
       fetchData();
+      // Load installment discounts from localStorage
+      const storedDiscounts = localStorage.getItem(`installment_discounts_${planId}`);
+      if (storedDiscounts) {
+        try {
+          setInstallmentDiscounts(JSON.parse(storedDiscounts));
+        } catch (e) {
+          console.error("Failed to parse stored discounts:", e);
+        }
+      }
     }
   }, [user, planId]);
+
+  // Fetch penalties when installments are loaded
+  useEffect(() => {
+    if (installments.length > 0) {
+      fetchPenalties();
+    }
+  }, [installments.length]);
+
+  const fetchPenalties = async () => {
+    try {
+      const penalties: any[] = [];
+      for (const inst of installments) {
+        const res = await apiGet(API_ENDPOINTS.PAYMENT_PENALTY_BY_INSTALLMENT(inst.id));
+        if (res.success && res.data) {
+          penalties.push(...res.data);
+        }
+      }
+      setPenaltyRecords(penalties);
+    } catch (err) {
+      console.error("Failed to fetch penalties:", err);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -157,8 +259,20 @@ export default function StudentInstallmentDetails() {
       }
       if (installmentsRes.success) {
         const installmentData = installmentsRes.data || [];
-        setInstallments(installmentData);
-        setEditedInstallments(installmentData);
+        // Calculate penalties for each installment (exclude first installment from overdue logic)
+        const installmentsWithPenalties = installmentData.map((inst: Installment) => ({
+          ...inst,
+          penaltyInfo: inst.installment_number === 1 
+            ? { hasPenalty: false, penaltyAmount: 0, totalDue: inst.balance, daysOverdue: 0, penaltyPercentage: 0 }
+            : calculateInstallmentPenalty({
+                due_date: inst.due_date,
+                balance: inst.balance,
+                status: inst.status,
+                amount_paid: inst.amount_paid
+              })
+        }));
+        setInstallments(installmentsWithPenalties);
+        setEditedInstallments(installmentsWithPenalties);
       }
       if (paymentsRes.success) {
         setPayments(paymentsRes.data || []);
@@ -214,14 +328,25 @@ export default function StudentInstallmentDetails() {
     setEditedInstallments(updated);
   };
 
-  const handlePayInstallment = async (installment: Installment) => {
+  const handlePayInstallment = async (installment: InstallmentWithPenalty) => {
     setSelectedInstallment(installment);
-    const invoiceNumber = await generateInvoiceNumber();
+    // const invoiceNumber = await generateInvoiceNumber(); // Temporarily disabled: manual OR/invoice entry for Cash
+    
+    // Calculate the amount to pay considering discount
+    const discount = installmentDiscounts[installment.id];
+    const baseAmount = Number(installment.balance);
+    const discountedAmount = discount ? baseAmount - Number(discount.amount) : baseAmount;
+    
+    // Default amount includes penalty if overdue
+    const defaultAmount = installment.penaltyInfo?.hasPenalty 
+      ? discountedAmount + Number(installment.penaltyInfo.penaltyAmount)
+      : discountedAmount;
+      
     setPaymentForm({
-      amount: installment.balance.toString(),
+      amount: defaultAmount.toFixed(2),
       payment_method: "Cash",
       payment_date: new Date().toISOString().split('T')[0],
-      reference_number: invoiceNumber,
+      reference_number: "",
       remarks: ""
     });
     setIsPaymentOpen(true);
@@ -239,10 +364,17 @@ export default function StudentInstallmentDetails() {
     }
 
     const paymentAmount = parseFloat(paymentForm.amount);
-    const installmentBalance = selectedInstallment.balance;
+    const installmentBalance = Number(selectedInstallment.balance);
+    
+    // Calculate max allowed considering discount
+    const discount = installmentDiscounts[selectedInstallment.id];
+    const discountedBalance = discount ? installmentBalance - Number(discount.amount) : installmentBalance;
+    const maxAllowedAmount = selectedInstallment.penaltyInfo?.hasPenalty 
+      ? discountedBalance + Number(selectedInstallment.penaltyInfo.penaltyAmount)
+      : discountedBalance;
 
-    if (paymentAmount > installmentBalance) {
-      setError(`Payment amount cannot exceed remaining balance (₱${installmentBalance.toFixed(2)})`);
+    if (paymentAmount > maxAllowedAmount) {
+      setError(`Payment amount cannot exceed ${selectedInstallment.penaltyInfo?.hasPenalty ? 'total due with penalty' : 'remaining balance'} (₱${maxAllowedAmount.toFixed(2)})`);
       return;
     }
 
@@ -264,13 +396,21 @@ export default function StudentInstallmentDetails() {
     setIsSubmittingPayment(true);
 
     try {
-      const res = await apiPost(API_ENDPOINTS.PAYMENTS, {
+      // Calculate discount and amounts for payment record
+      const discountAmount = installmentDiscounts[selectedInstallment.id]?.amount || 0;
+      const originalAmount = Number(selectedInstallment.amount_due);
+      const penaltyAmount = selectedInstallment.penaltyInfo?.hasPenalty 
+        ? Number(selectedInstallment.penaltyInfo.penaltyAmount) 
+        : 0;
+      
+      const paymentData: any = {
         student_id: plan.student_id,
         enrollment_id: plan.enrollment_id,
         academic_period_id: plan.academic_period_id,
         payment_type: "Tuition Installment",
         payment_for: `Installment #${selectedInstallment.installment_number} - ${plan.academic_period}`,
-        amount: paymentAmount,
+        amount: originalAmount + penaltyAmount, // Original amount + penalty
+        total_discount: discountAmount, // Discount applied (net_amount auto-calculated by DB)
         payment_method: paymentForm.payment_method,
         payment_date: paymentForm.payment_date,
         reference_number: paymentForm.reference_number,
@@ -279,10 +419,80 @@ export default function StudentInstallmentDetails() {
         status: "Approved",
         receipt_number: generateReceiptNumber(),
         received_by: user?.id
-      });
+      };
+
+      // Include penalty data if installment is overdue (admin payment - no explanation required)
+      if (selectedInstallment.penaltyInfo?.hasPenalty) {
+        paymentData.penalty_amount = penaltyAmount;
+        paymentData.days_overdue = selectedInstallment.penaltyInfo.daysOverdue;
+        // No explanation_id since this is admin-recorded
+      }
+
+      const res = await apiPost(API_ENDPOINTS.PAYMENTS, paymentData);
 
       if (res.success) {
-        setSuccess("Payment recorded successfully");
+        const paymentId = res.data?.id || res.id;
+        
+        // Always update the installment after payment
+        try {
+          const discount = installmentDiscounts[selectedInstallment.id];
+          const amountDue = Number(selectedInstallment.amount_due);
+          const discountAmount = discount ? Number(discount.amount) : 0;
+          const penaltyAmount = selectedInstallment.penaltyInfo?.hasPenalty 
+            ? Number(selectedInstallment.penaltyInfo.penaltyAmount) 
+            : 0;
+          
+          const installmentUpdate: any = {
+            amount_paid: amountDue + penaltyAmount, // Original amount + penalty (discount tracked in payment)
+            balance: 0,
+            status: 'Paid',
+            paid_date: paymentForm.payment_date
+          };
+          
+          // Add penalty details if applicable
+          if (selectedInstallment.penaltyInfo?.hasPenalty) {
+            installmentUpdate.late_fee = penaltyAmount;
+            installmentUpdate.days_overdue = selectedInstallment.penaltyInfo.daysOverdue;
+          }
+          
+          await apiPut(`${API_ENDPOINTS.PAYMENT_PLANS}/installments/${selectedInstallment.id}`, installmentUpdate);
+          
+          // If there's a discount, link it to the payment
+          if (discount && plan.enrollment_id && paymentId) {
+            const enrollmentDiscountsRes = await apiGet(`/api/enrollments/${plan.enrollment_id}/discounts`);
+            if (enrollmentDiscountsRes.success && enrollmentDiscountsRes.data) {
+              // Get the discount template IDs from the localStorage discount data
+              const discountTemplateIds = discount.templates.map((t: any) => t.discount_id);
+              
+              // Find the discount records that match these templates and have no payment_id yet
+              const unlinkedDiscounts = enrollmentDiscountsRes.data.filter(
+                (d: any) => d.payment_id === null && discountTemplateIds.includes(d.template_id)
+              );
+              
+              // Link each discount to the payment
+              for (const discountRecord of unlinkedDiscounts) {
+                await apiPut(`/api/enrollments/${plan.enrollment_id}/discounts/${discountRecord.id}`, {
+                  payment_id: paymentId
+                });
+              }
+            }
+            
+            // Clear the discount from localStorage since it's now attached to the payment
+            const updatedDiscounts = { ...installmentDiscounts };
+            delete updatedDiscounts[selectedInstallment.id];
+            setInstallmentDiscounts(updatedDiscounts);
+            localStorage.setItem(`installment_discounts_${planId}`, JSON.stringify(updatedDiscounts));
+          }
+        } catch (updateErr) {
+          console.error("Error updating installment or linking discount:", updateErr);
+          // Don't fail the whole operation, payment was still recorded
+        }
+        
+        // Penalty is automatically recorded by the backend when payment data includes penalty_amount
+        const successMessage = selectedInstallment.penaltyInfo?.hasPenalty 
+          ? `Payment recorded successfully (including ₱${Number(selectedInstallment.penaltyInfo.penaltyAmount).toFixed(2)} late fee)`
+          : "Payment recorded successfully";
+        setSuccess(successMessage);
         setIsPaymentOpen(false);
         setPaymentForm({
           amount: "",
@@ -302,6 +512,14 @@ export default function StudentInstallmentDetails() {
       setIsSubmittingPayment(false);
     }
   };
+
+  // REMOVED: handleWaivePenalty - penalties are ALWAYS charged per school policy
+
+  const getInstallmentPenalties = (installmentId: string) => {
+    return penaltyRecords.filter(p => String(p.installment_id) === String(installmentId));
+  };
+
+  // REMOVED: getInstallmentWaivedPenalties - penalties are ALWAYS charged, no waiving
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
@@ -409,7 +627,7 @@ export default function StudentInstallmentDetails() {
           <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-3">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <Coins className="h-5 w-5 text-green-600" />
                 <p className="text-sm text-green-600 font-semibold">Payment Progress</p>
               </div>
               <p className="text-2xl font-bold text-green-900">
@@ -522,12 +740,21 @@ export default function StudentInstallmentDetails() {
                               </span>
                             )}
                           </p>
-                          {installment.days_overdue > 0 && (
-                            <p className="text-xs text-red-600 font-medium mt-1">
-                              {installment.days_overdue} days overdue
-                              {installment.late_fee > 0 && ` • Late fee: ₱${installment.late_fee.toFixed(2)}`}
-                            </p>
+                          {installment.penaltyInfo?.hasPenalty && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                              <p className="text-xs text-red-700 font-semibold flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {installment.penaltyInfo.daysOverdue} day{installment.penaltyInfo.daysOverdue !== 1 ? 's' : ''} overdue
+                              </p>
+                              <p className="text-xs text-red-600 mt-1">
+                                Late fee ({installment.penaltyInfo.penaltyPercentage}%): ₱{Number(installment.penaltyInfo.penaltyAmount).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-red-800 font-bold mt-1">
+                                Total due with penalty: ₱{Number(installment.penaltyInfo.totalDue).toFixed(2)}
+                              </p>
+                            </div>
                           )}
+                          {/* REMOVED: Waived penalties display - penalties are ALWAYS charged per school policy */}
                         </>
                       ) : (
                         <div className="flex gap-3 mt-2">
@@ -559,6 +786,16 @@ export default function StudentInstallmentDetails() {
                       <p className="font-bold text-lg">
                         ₱{Number(installment.amount_due).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                       </p>
+                      {installmentDiscounts[installment.id] && (
+                        <>
+                          <p className="text-sm text-amber-600 font-medium">
+                            Discount: -₱{Number(installmentDiscounts[installment.id].amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-sm text-blue-600 font-bold">
+                            Net Amount: ₱{(Number(installment.amount_due) - Number(installmentDiscounts[installment.id].amount)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      )}
                       {installment.amount_paid > 0 && (
                         <p className="text-sm text-green-600 font-medium">
                           Paid: ₱{Number(installment.amount_paid).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
@@ -573,13 +810,28 @@ export default function StudentInstallmentDetails() {
                         <Badge className={getInstallmentStatusBadge(installment.status)}>
                           {installment.status}
                         </Badge>
+                        {installment.installment_number === 1 && (installment.status === 'Pending' || installment.status === 'Partial' || installment.status === 'Overdue') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedInstallmentForDiscount(installment);
+                              setIsDiscountDialogOpen(true);
+                            }}
+                            className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                          >
+                            <Tag className="h-3 w-3 mr-1" />
+                            Discount
+                          </Button>
+                        )}
+                        {/* REMOVED: Waive Penalty button - penalties are ALWAYS charged per school policy */}
                         {(installment.status === 'Pending' || installment.status === 'Partial' || installment.status === 'Overdue') && (
                           <Button
                             size="sm"
                             onClick={() => handlePayInstallment(installment)}
                             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                           >
-                            <DollarSign className="h-3 w-3 mr-1" />
+                            <Coins className="h-3 w-3 mr-1" />
                             Pay Now
                           </Button>
                         )}
@@ -630,11 +882,42 @@ export default function StudentInstallmentDetails() {
                       <p className="text-xs text-muted-foreground">Amount Due</p>
                       <p className="font-medium">₱{Number(selectedInstallment.amount_due).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
                     </div>
+                    {installmentDiscounts[selectedInstallment.id] && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Discount Applied</p>
+                        <p className="font-medium text-amber-600">-₱{Number(installmentDiscounts[selectedInstallment.id].amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                    )}
                     <div>
                       <p className="text-xs text-muted-foreground">Balance</p>
                       <p className="font-medium text-orange-600">₱{Number(selectedInstallment.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
                     </div>
+                    {selectedInstallment.penaltyInfo?.hasPenalty && (
+                      <>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Days Overdue</p>
+                          <p className="font-medium text-red-600">{selectedInstallment.penaltyInfo.daysOverdue} days</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Late Fee ({selectedInstallment.penaltyInfo.penaltyPercentage}%)</p>
+                          <p className="font-medium text-red-600">₱{Number(selectedInstallment.penaltyInfo.penaltyAmount).toFixed(2)}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
+                  {selectedInstallment.penaltyInfo?.hasPenalty && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm font-semibold text-red-800">
+                        Total Amount Due (with penalty):
+                      </p>
+                      <p className="text-2xl font-bold text-red-700">
+                        ₱{Number(selectedInstallment.penaltyInfo.totalDue).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Balance: ₱{Number(selectedInstallment.balance).toFixed(2)} + Late Fee: ₱{Number(selectedInstallment.penaltyInfo.penaltyAmount).toFixed(2)}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Payment Form */}
@@ -646,10 +929,32 @@ export default function StudentInstallmentDetails() {
                     placeholder="0.00"
                     value={paymentForm.amount}
                     onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                    max={selectedInstallment.balance}
+                    max={selectedInstallment.penaltyInfo?.hasPenalty ? Number(selectedInstallment.penaltyInfo.totalDue) : Number(selectedInstallment.balance)}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Maximum: ₱{Number(selectedInstallment.balance).toFixed(2)}
+                    {(() => {
+                      const discount = installmentDiscounts[selectedInstallment.id];
+                      const baseBalance = Number(selectedInstallment.balance);
+                      const discountedBalance = discount ? baseBalance - Number(discount.amount) : baseBalance;
+                      
+                      if (selectedInstallment.penaltyInfo?.hasPenalty) {
+                        const totalWithPenalty = discountedBalance + Number(selectedInstallment.penaltyInfo.penaltyAmount);
+                        return (
+                          <>
+                            Maximum: ₱{totalWithPenalty.toFixed(2)}
+                            {discount && <span className="text-amber-600 font-medium"> (₱{baseBalance.toFixed(2)} - ₱{Number(discount.amount).toFixed(2)} discount + ₱{Number(selectedInstallment.penaltyInfo.penaltyAmount).toFixed(2)} late fee)</span>}
+                            {!discount && <span className="text-red-600 font-medium"> (includes ₱{Number(selectedInstallment.penaltyInfo.penaltyAmount).toFixed(2)} late fee)</span>}
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            Maximum: ₱{discountedBalance.toFixed(2)}
+                            {discount && <span className="text-amber-600 font-medium"> (₱{baseBalance.toFixed(2)} - ₱{Number(discount.amount).toFixed(2)} discount)</span>}
+                          </>
+                        );
+                      }
+                    })()}
                   </p>
                 </div>
 
@@ -659,9 +964,10 @@ export default function StudentInstallmentDetails() {
                     value={paymentForm.payment_method} 
                     onValueChange={async (v) => {
                       const newForm = { ...paymentForm, payment_method: v };
-                      if (v === "Cash") {
-                        newForm.reference_number = await generateInvoiceNumber();
-                      } else if (paymentForm.payment_method === "Cash") {
+                      // if (v === "Cash") {
+                      //   newForm.reference_number = await generateInvoiceNumber();
+                      // } else 
+                      if (paymentForm.payment_method === "Cash") {
                         newForm.reference_number = "";
                       }
                       setPaymentForm(newForm);
@@ -678,6 +984,33 @@ export default function StudentInstallmentDetails() {
                   </Select>
                 </div>
 
+                {/* GCash QR Uploader button */}
+                {paymentForm.payment_method === 'GCash' && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <p className="text-xs text-blue-700 mb-2 font-medium">
+                      Let the student upload their GCash screenshot by scanning a QR code.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+                      onClick={handleOpenGcashQr}
+                      disabled={gcashSessionLoading}
+                    >
+                      {gcashSessionLoading
+                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating session…</>
+                        : <><QrCode className="h-4 w-4 mr-2" />Open QR Uploader</>}
+                    </Button>
+                    {gcashProofReceived && (
+                      <div className="mt-2 flex items-center gap-2 text-green-700 text-xs font-medium">
+                        <CheckCircle className="h-4 w-4" />
+                        Proof received — reference auto-filled
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <Label>Payment Date *</Label>
                   <Input
@@ -690,7 +1023,7 @@ export default function StudentInstallmentDetails() {
                 <div>
                   <Label>Reference Number</Label>
                   <Input
-                    placeholder="Check number, Transaction ID, etc."
+                    placeholder="Enter official receipt invoice number"
                     value={paymentForm.reference_number}
                     onChange={(e) => setPaymentForm({ ...paymentForm, reference_number: e.target.value })}
                   />
@@ -712,12 +1045,70 @@ export default function StudentInstallmentDetails() {
                 Cancel
               </Button>
               <Button onClick={handleSubmitPayment} disabled={isSubmittingPayment}>
-                <DollarSign className="h-4 w-4 mr-2" />
+                <Coins className="h-4 w-4 mr-2" />
                 {isSubmittingPayment ? "Recording..." : "Record Payment"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Discount Dialog */}
+        {selectedInstallmentForDiscount && plan && (() => {
+          // Find the payment record associated with this installment
+          const installmentPayment = payments.find(p => p.installment_id === selectedInstallmentForDiscount.id);
+          
+          // For enrollment discounts (no payment yet), we use a virtual payment object
+          const paymentData = installmentPayment ? {
+            id: installmentPayment.id,
+            student_id: parseInt(plan.student_id),
+            enrollment_id: plan.enrollment_id ? parseInt(plan.enrollment_id) : installmentPayment.enrollment_id,
+            payment_type: "Tuition Installment",
+            amount: installmentPayment.amount,
+            total_discount: installmentPayment.total_discount || 0,
+            net_amount: installmentPayment.net_amount || installmentPayment.amount
+          } : {
+            id: 0, // Virtual payment ID for enrollment discount
+            student_id: parseInt(plan.student_id),
+            enrollment_id: plan.enrollment_id ? parseInt(plan.enrollment_id) : undefined,
+            payment_type: "Tuition Installment",
+            amount: selectedInstallmentForDiscount.amount_due,
+            total_discount: installmentDiscounts[selectedInstallmentForDiscount.id]?.amount || 0,
+            net_amount: selectedInstallmentForDiscount.amount_due - (installmentDiscounts[selectedInstallmentForDiscount.id]?.amount || 0)
+          };
+          
+          return (
+            <DiscountDialog
+              open={isDiscountDialogOpen}
+              onOpenChange={setIsDiscountDialogOpen}
+              payment={paymentData}
+              excludeDiscountNames={["Full Payment"]} // Exclude full payment discounts for installments
+              onDiscountsUpdated={(updatedDiscounts) => {
+                // Calculate total discount amount
+                const totalDiscount = updatedDiscounts.reduce((sum, d) => sum + d.applied_amount, 0);
+                
+                // Store discount in localStorage for pending installments
+                if (!installmentPayment) {
+                  const updatedInstallmentDiscounts = {
+                    ...installmentDiscounts,
+                    [selectedInstallmentForDiscount.id]: {
+                      amount: totalDiscount,
+                      templates: updatedDiscounts
+                    }
+                  };
+                  setInstallmentDiscounts(updatedInstallmentDiscounts);
+                  localStorage.setItem(`installment_discounts_${planId}`, JSON.stringify(updatedInstallmentDiscounts));
+                  setSuccess(`Discount of ₱${totalDiscount.toFixed(2)} applied to Installment #${selectedInstallmentForDiscount.installment_number}`);
+                }
+                
+                fetchData();
+                setIsDiscountDialogOpen(false);
+              }}
+            />
+          );
+        })()}
+
+        {/* REMOVED: Waive Penalty Dialog - penalties are ALWAYS charged per school policy */}
+
       </div>
     </DashboardLayout>
   );

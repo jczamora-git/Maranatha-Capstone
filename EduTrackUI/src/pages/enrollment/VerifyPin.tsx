@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { usePaymentPageLock } from '@/hooks/usePaymentPageLock';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lock, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_ENDPOINTS, apiPost } from '@/lib/api';
 import { NumericKeypad } from '@/components/NumericKeypad';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 
 export default function VerifyPin() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { unlockPaymentSection, navigateToPayment } = usePaymentPageLock();
   
   const [pin, setPin] = useState('');
@@ -123,12 +124,15 @@ export default function VerifyPin() {
 
               {/* Forgot PIN Link */}
               <div className="mt-3 text-center">
-                <Link
-                  to="/auth/forgot-pin"
+                <button
+                  type="button"
+                  onClick={() => navigate('/auth/forgot-pin', { 
+                    state: { email: user?.email || '' } 
+                  })}
                   className="text-[11px] text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
                 >
                   Forgot PIN?
-                </Link>
+                </button>
               </div>
 
               {/* Back Button */}

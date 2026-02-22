@@ -335,10 +335,12 @@ const UniformManagement = () => {
               Manage uniform items, sizes, and prices. Items here appear in student uniform order forms.
             </p>
           </div>
-          <Button onClick={openCreate} className="mt-14 gap-2 font-semibold">
-            <Plus className="h-4 w-4" />
-            Add Uniform Item
-          </Button>
+          <div className="mt-14">
+            <Button onClick={openCreate} className="gap-2 font-semibold">
+              <Plus className="h-4 w-4" />
+              Add Uniform Item
+            </Button>
+          </div>
         </div>
 
         {/* ── Filter tabs ── */}

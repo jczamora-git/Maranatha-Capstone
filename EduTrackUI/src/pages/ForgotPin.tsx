@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +10,19 @@ import { API_ENDPOINTS, apiPost } from '@/lib/api';
 import EmailLoadingModal from '@/components/EmailLoadingModal';
 
 export default function ForgotPin() {
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
+
+  // Pre-fill email if passed from VerifyPin page
+  useEffect(() => {
+    if (location.state?.email) {
+      setEmail(location.state.email);
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,9 +161,9 @@ export default function ForgotPin() {
               </div>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-xs text-amber-700">
-                For security reasons, you'll receive an email whether or not this address is registered.
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-700">
+                <strong>Note:</strong> You can use any email address you have access to. When you click the reset link, you'll need to verify your identity with your student ID (e.g., MCAF2025-00000) or registered email to complete the reset.
               </p>
             </div>
 

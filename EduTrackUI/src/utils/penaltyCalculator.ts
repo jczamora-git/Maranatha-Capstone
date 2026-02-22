@@ -29,7 +29,7 @@ export const calculateInstallmentPenalty = (installment: {
     hasPenalty: false,
     penaltyAmount: 0,
     daysOverdue: 0,
-    totalDue: installment.balance,
+    totalDue: Number(installment.balance),
     penaltyPercentage: 5.0
   };
 
@@ -58,15 +58,18 @@ export const calculateInstallmentPenalty = (installment: {
   // Calculate overdue days
   const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
 
+  // Ensure balance is a number (API might return string)
+  const balance = Number(installment.balance);
+
   // Calculate penalty (5% of remaining balance)
   const penaltyPercentage = 5.0;
-  const penaltyAmount = installment.balance * (penaltyPercentage / 100);
+  const penaltyAmount = balance * (penaltyPercentage / 100);
 
   return {
     hasPenalty: true,
     penaltyAmount: Math.round(penaltyAmount * 100) / 100, // Round to 2 decimals
     daysOverdue,
-    totalDue: installment.balance + penaltyAmount,
+    totalDue: balance + penaltyAmount,
     penaltyPercentage
   };
 };

@@ -14,7 +14,7 @@ import {
   Search,
   Plus,
   User,
-  DollarSign,
+  Coins,
   CalendarClock,
   CheckCircle,
   Clock,
@@ -23,7 +23,8 @@ import {
   Eye,
   Edit,
   FileText,
-  Settings
+  Settings,
+  ShieldAlert
 } from "lucide-react";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
@@ -125,6 +126,7 @@ export default function PaymentPlans() {
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
+  const [totalPenalties, setTotalPenalties] = useState<number>(0);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -240,13 +242,14 @@ export default function PaymentPlans() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [plansRes, enrollmentsRes, feesRes, periodsRes, paymentsRes, templatesRes] = await Promise.all([
+      const [plansRes, enrollmentsRes, feesRes, periodsRes, paymentsRes, templatesRes, penaltiesRes] = await Promise.all([
         apiGet(API_ENDPOINTS.PAYMENT_PLANS),
         apiGet(API_ENDPOINTS.ADMIN_ENROLLMENTS),
         apiGet(API_ENDPOINTS.SCHOOL_FEES),
         apiGet(API_ENDPOINTS.ACADEMIC_PERIODS),
         apiGet(API_ENDPOINTS.PAYMENTS),
-        apiGet(API_ENDPOINTS.PAYMENT_SCHEDULE_TEMPLATES)
+        apiGet(API_ENDPOINTS.PAYMENT_SCHEDULE_TEMPLATES),
+        apiGet('/api/payment-installment-penalties') // Fetch all penalties
       ]);
 
       if (plansRes.success) setPaymentPlans(plansRes.data || []);
@@ -262,8 +265,17 @@ export default function PaymentPlans() {
         const activeTemplates = (templatesRes.data || []).filter((t: ScheduleTemplate) => t.status === 'active');
         setScheduleTemplates(activeTemplates);
       }
+      
+      // Calculate total penalties from penalty records
+      if (penaltiesRes.success && penaltiesRes.data) {
+        const total = penaltiesRes.data.reduce((sum: number, penalty: any) => {
+          return sum + (Number(penalty.penalty_amount) || 0);
+        }, 0);
+        setTotalPenalties(total);
+      }
     } catch (err) {
       setError("Failed to load payment plans");
+      console.error('Fetch data error:', err);
     } finally {
       setLoading(false);
     }
@@ -547,6 +559,7 @@ export default function PaymentPlans() {
     completed: paymentPlans.filter(p => p.status === "Completed").length,
     overdue: paymentPlans.filter(p => p.status === "Overdue").length,
     totalBalance: paymentPlans.reduce((sum, p) => sum + (Number(p.balance) || 0), 0),
+    totalPenalties: totalPenalties,
   };
 
   if (!user || user.role !== "admin") {
@@ -583,7 +596,7 @@ export default function PaymentPlans() {
         {success && <AlertMessage type="success" message={success} onClose={() => setSuccess("")} />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -636,7 +649,23 @@ export default function PaymentPlans() {
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-orange-200 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-orange-600" />
+                  <Coins className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600 font-semibold">Total Penalties</p>
+                  <p className="text-2xl font-bold text-purple-700">
+                    ₱{stats.totalPenalties.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-purple-200 flex items-center justify-center">
+                  <ShieldAlert className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -1208,7 +1237,7 @@ export default function PaymentPlans() {
                                   onClick={() => handlePayInstallment(installment)}
                                   className="ml-2"
                                 >
-                                  <DollarSign className="h-3 w-3 mr-1" />
+                                  <Coins className="h-3 w-3 mr-1" />
                                   Pay
                                 </Button>
                               )}
@@ -1345,7 +1374,7 @@ export default function PaymentPlans() {
                 Cancel
               </Button>
               <Button onClick={handleSubmitPayment} disabled={isSubmittingPayment}>
-                <DollarSign className="h-4 w-4 mr-2" />
+                <Coins className="h-4 w-4 mr-2" />
                 {isSubmittingPayment ? "Recording..." : "Record Payment"}
               </Button>
             </div>
