@@ -66,6 +66,10 @@ const AdminSentimentAnalytics = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [responseDrafts, setResponseDrafts] = useState<Record<number, string>>({});
   const [savingResponseIds, setSavingResponseIds] = useState<Record<number, boolean>>({});
+  const [testText, setTestText] = useState("");
+  const [testResult, setTestResult] = useState<{ sentiment: SentimentLabel; confidence: number; probabilities: Record<string, number> } | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -253,6 +257,50 @@ const AdminSentimentAnalytics = () => {
         ...prev,
         [item.id]: false,
       }));
+    }
+  };
+
+  const handleSentimentTest = async () => {
+    if (!testText.trim()) {
+      setTestError("Enter text to test sentiment.");
+      return;
+    }
+
+    setIsTesting(true);
+    setTestError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: testText }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to reach sentiment service.");
+      }
+
+      const data = await response.json();
+      if (!data || !data.sentiment) {
+        throw new Error("Unexpected response from sentiment service.");
+      }
+
+      const normalized = normalizeSentiment(data.sentiment);
+      if (!normalized) {
+        throw new Error("Unsupported sentiment label returned.");
+      }
+
+      setTestResult({
+        sentiment: normalized,
+        confidence: data.confidence,
+        probabilities: data.probabilities ?? {},
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sentiment test failed.";
+      setTestError(message);
+      setTestResult(null);
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -500,6 +548,53 @@ const AdminSentimentAnalytics = () => {
                 <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
                   Run batch analysis after importing new feedback to refresh sentiment scores.
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Sentiment Testing</CardTitle>
+                <CardDescription>Quickly test a phrase against the model.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Textarea
+                  value={testText}
+                  onChange={(event) => setTestText(event.target.value)}
+                  placeholder="Type a sentence to test"
+                  rows={4}
+                />
+                <div className="flex justify-end">
+                  <Button onClick={handleSentimentTest} disabled={isTesting}>
+                    {isTesting ? "Testing..." : "Run test"}
+                  </Button>
+                </div>
+                {testError && (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-3 text-xs text-rose-700">
+                    {testError}
+                  </div>
+                )}
+                {testResult && (
+                  <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Sentiment</span>
+                      <Badge className={sentimentBadgeClass(testResult.sentiment)}>
+                        {testResult.sentiment}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Confidence</span>
+                      <span className="font-medium">{(testResult.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      {Object.entries(testResult.probabilities).map(([label, value]) => (
+                        <div key={label} className="flex items-center justify-between">
+                          <span>{label}</span>
+                          <span>{(value * 100).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
