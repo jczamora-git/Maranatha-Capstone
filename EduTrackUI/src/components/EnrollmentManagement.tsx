@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -108,6 +109,10 @@ export const EnrollmentManagement = () => {
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showPaidFirst, setShowPaidFirst] = useState(false);
+
+  // Payment status tracking
+  const [paidEnrollments, setPaidEnrollments] = useState<Set<number>>(new Set());
 
   // Modal for enrollment type selection
   const [enrollmentTypeModalOpen, setEnrollmentTypeModalOpen] = useState(false);
@@ -141,6 +146,40 @@ export const EnrollmentManagement = () => {
     if (!user) return;
     fetchEnrollments();
   }, [user]);
+
+  // Fetch payment status for enrollments
+  const fetchPaymentStatuses = async (enrollmentIds: number[]) => {
+    if (enrollmentIds.length === 0) return;
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.PAYMENTS_BY_ENROLLMENT}?enrollment_ids=${enrollmentIds.join(',')}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          // Only include enrollments with Approved payment status
+          const paidSet = new Set(
+            data.data
+              .filter((p: any) => p.status === 'Approved')
+              .map((p: any) => p.enrollment_id)
+          );
+          setPaidEnrollments(paidSet);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching payment statuses:', error);
+    }
+  };
+
+  // Fetch payment statuses when enrollments change
+  useEffect(() => {
+    if (enrollments.length > 0) {
+      const enrollmentIds = enrollments.map(e => e.id);
+      fetchPaymentStatuses(enrollmentIds);
+    }
+  }, [enrollments]);
 
   const fetchEnrollments = async () => {
     try {
@@ -220,7 +259,7 @@ export const EnrollmentManagement = () => {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, gradeFilter]);
+  }, [searchQuery, statusFilter, gradeFilter, showPaidFirst]);
 
   // Clamp currentPage to valid pages
   const totalItems = filteredEnrollments.length;
@@ -403,6 +442,21 @@ export const EnrollmentManagement = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label className="text-sm font-semibold">Display Options</Label>
+              <div className="flex items-center gap-3 p-3 mt-2 bg-gray-50 rounded-lg border-2 border-gray-200">
+                <Checkbox
+                  id="show-paid-first"
+                  checked={showPaidFirst}
+                  onCheckedChange={(checked) => setShowPaidFirst(checked as boolean)}
+                />
+                <Label htmlFor="show-paid-first" className="font-medium text-gray-700 cursor-pointer flex items-center gap-2">
+                  <span className="text-emerald-600">💰</span>
+                  Show Paid First
+                </Label>
+              </div>
+            </div>
           </div>
         </CardContent>
 
@@ -423,7 +477,16 @@ export const EnrollmentManagement = () => {
               {(() => {
                 const list = [...pagedEnrollments];
                 list.sort((a, b) => {
-                  // First, sort by status priority (Pending → Under Review → Verified → Approved)
+                  // If showPaidFirst is enabled, prioritize paid enrollments
+                  if (showPaidFirst) {
+                    const aPaid = paidEnrollments.has(a.id);
+                    const bPaid = paidEnrollments.has(b.id);
+                    
+                    if (aPaid && !bPaid) return -1;
+                    if (!aPaid && bPaid) return 1;
+                  }
+                  
+                  // Then, sort by status priority (Pending → Under Review → Verified → Approved)
                   const statusPriorityA = statusPriority[a.status] || 999;
                   const statusPriorityB = statusPriority[b.status] || 999;
                   
@@ -454,10 +517,15 @@ export const EnrollmentManagement = () => {
                           <div className="flex items-start justify-between">
                             <div>
                               <p className="font-bold text-xl">{enrollment.student_name}</p>
-                              <div className="flex items-center gap-2 mt-2">
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
                                 <Badge className="bg-white text-gray-900 font-semibold">
                                   {enrollment.enrollment_type || 'New Student'}
                                 </Badge>
+                                {paidEnrollments.has(enrollment.id) && enrollment.status !== 'Approved' && (
+                                  <Badge className="bg-emerald-600 text-white font-semibold">
+                                    Paid
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                             <Badge className={`${status.bgLight} ${status.text} font-semibold`}>
@@ -550,7 +618,7 @@ export const EnrollmentManagement = () => {
                             {status.icon}
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-semibold text-lg">{enrollment.student_name}</p>
                               <Badge variant="outline" className="text-xs">
                                 {enrollment.grade_level}
@@ -558,6 +626,11 @@ export const EnrollmentManagement = () => {
                               <Badge className="text-xs font-semibold bg-blue-100 text-blue-800 border-blue-200">
                                 {enrollment.enrollment_type || 'New Student'}
                               </Badge>
+                              {paidEnrollments.has(enrollment.id) && enrollment.status !== 'Approved' && (
+                                <Badge className="text-xs font-semibold bg-emerald-600 text-white">
+                                  Paid
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground">
                               ID: {enrollment.id}

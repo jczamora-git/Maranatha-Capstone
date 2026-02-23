@@ -152,6 +152,15 @@ class EnrollmentController extends Controller
                 }
             }
 
+            if ($isAdminCreated && ($input['enrollment_type'] ?? '') === 'Continuing Student') {
+                if (!empty($input['created_user_id'])) {
+                    $createdUserId = (int)$input['created_user_id'];
+                }
+                if (!empty($input['created_student_id'])) {
+                    $createdStudentId = (int)$input['created_student_id'];
+                }
+            }
+
             // Validate required fields
             $errors = $this->validate_enrollment_input($input);
             if (!empty($errors)) {
@@ -821,12 +830,20 @@ class EnrollmentController extends Controller
             $userId = $this->session->userdata('user_id');
             $userRole = $this->session->userdata('role');
             $studentName = isset($_GET['student_name']) ? trim($_GET['student_name']) : null;
+            $studentId = isset($_GET['student_id']) ? trim($_GET['student_id']) : null;
+            $lookupUserId = isset($_GET['user_id']) ? trim($_GET['user_id']) : null;
 
             // Build WHERE clause based on context
             $whereClause = '';
             $params = [];
 
-            if ($studentName && $userRole === 'admin') {
+            if ($userRole === 'admin' && !empty($studentId)) {
+                $whereClause = "WHERE e.created_student_id = ? AND e.status IN ('Approved', 'Verified', 'Pending')";
+                $params = [$studentId];
+            } elseif ($userRole === 'admin' && !empty($lookupUserId)) {
+                $whereClause = "WHERE e.created_user_id = ? AND e.status IN ('Approved', 'Verified', 'Pending')";
+                $params = [$lookupUserId];
+            } elseif ($studentName && $userRole === 'admin') {
                 // Admin searching by student name - split into words for better matching
                 $nameParts = preg_split('/\s+/', $studentName, -1, PREG_SPLIT_NO_EMPTY);
                 $searchTerms = array_map(fn($part) => '%' . $part . '%', $nameParts);

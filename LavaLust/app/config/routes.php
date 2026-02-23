@@ -287,6 +287,7 @@ $router->post('/api/school-services/create-payment', 'SchoolServiceController::c
 // API Routes - Payments
 $router->get('/api/payments/check-reference', 'PaymentController::check_reference');
 $router->get('/api/payments/check-service-period', 'PaymentController::check_service_period');
+$router->get('/api/payments/by-enrollment', 'PaymentController::by_enrollment');
 $router->get('/api/payments/applicable-discounts', 'PaymentController::get_applicable_discounts');
 $router->get('/api/payments', 'PaymentController::get_payments');
 $router->get('/api/payments/student/{student_id}', 'PaymentController::get_payments_by_student')->where_number('student_id');

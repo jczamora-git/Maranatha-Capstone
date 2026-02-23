@@ -97,6 +97,7 @@ export const API_ENDPOINTS = {
   PAYMENTS: `${API_BASE_URL}/api/payments`,
   PAYMENTS_CHECK_REFERENCE: `${API_BASE_URL}/api/payments/check-reference`,
   PAYMENTS_CHECK_SERVICE_PERIOD: `${API_BASE_URL}/api/payments/check-service-period`,
+  PAYMENTS_BY_ENROLLMENT: `${API_BASE_URL}/api/payments/by-enrollment`,
   PAYMENT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payments/${id}`,
   PAYMENT_DISCOUNTS: (payment_id: string | number) => `${API_BASE_URL}/api/payments/${payment_id}/discounts`,
   PAYMENT_APPLY_DISCOUNT: (payment_id: string | number) => `${API_BASE_URL}/api/payments/${payment_id}/discounts`,

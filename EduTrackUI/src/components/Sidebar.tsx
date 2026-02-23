@@ -193,7 +193,7 @@ export const Sidebar = () => {
     ...(FEATURES.attendance ? [{ to: "/admin/rfid-attendance", icon: Radio, label: "RFID Scanner" }] : []),
     ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
     ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
-    { to: "/admin/sentiment", icon: MessageSquare, label: "Sentiment" },
+    { to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" },
     ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : []),
   ];
 

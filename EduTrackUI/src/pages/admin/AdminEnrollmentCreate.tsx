@@ -129,6 +129,8 @@ export default function AdminEnrollmentCreate() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [selectedStudentPk, setSelectedStudentPk] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [createAccount, setCreateAccount] = useState(false);
   const [accountEmail, setAccountEmail] = useState('');
   const [accountPhone, setAccountPhone] = useState('');
@@ -155,6 +157,21 @@ export default function AdminEnrollmentCreate() {
       setShowSearchSection(state.enrollmentType === 'Returning Student' || state.enrollmentType === 'Continuing Student');
     }
   }, [location.state]);
+
+  // If enrollment type is Continuing Student, disable optional account creation
+  useEffect(() => {
+    if (formData.enrollment_type === 'Continuing Student') {
+      setCreateAccount(false);
+      setAccountEmail('');
+      setAccountPhone('');
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next.account_email;
+        delete next.account_phone;
+        return next;
+      });
+    }
+  }, [formData.enrollment_type]);
 
   // Check for open enrollment period, fallback to latest if not open
   useEffect(() => {
@@ -468,10 +485,15 @@ export default function AdminEnrollmentCreate() {
         
         const student = response.data[0]; // Take first match
         let enrollmentData = null;
+        setSelectedStudentId(student.student_id ?? null);
+        setSelectedStudentPk(student.id ?? null);
+        setSelectedUserId(student.user_id ?? null);
         
         // Try to fetch latest enrollment for this student
         try {
-          const enrollmentResponse = await apiGet(`${API_ENDPOINTS.ENROLLMENTS}/latest?student_name=${encodeURIComponent(searchQuery)}`);
+          const enrollmentResponse = await apiGet(
+            `${API_ENDPOINTS.ENROLLMENTS}/latest?student_id=${encodeURIComponent(student.id)}`
+          );
           if (enrollmentResponse.success && enrollmentResponse.data) {
             enrollmentData = enrollmentResponse.data;
           }
@@ -578,9 +600,8 @@ export default function AdminEnrollmentCreate() {
       
       // Try to fetch latest enrollment for this selected student
       try {
-        const fullName = `${selectedStudent.first_name} ${selectedStudent.last_name}`;
-        console.log('Fetching enrollment for:', fullName);
-        const enrollmentResponse = await apiGet(`${API_ENDPOINTS.ENROLLMENTS}/latest?student_name=${encodeURIComponent(fullName)}`);
+        console.log('Fetching enrollment for student ID:', selectedStudent.id);
+        const enrollmentResponse = await apiGet(`${API_ENDPOINTS.ENROLLMENTS}/latest?student_id=${encodeURIComponent(selectedStudent.id)}`);
         console.log('Enrollment response:', enrollmentResponse);
         
         if (enrollmentResponse.success && enrollmentResponse.data) {
@@ -664,6 +685,8 @@ export default function AdminEnrollmentCreate() {
       }));
       setPreviousEnrollmentFound(true);
       setSelectedStudentId(selectedStudent.student_id);
+      setSelectedStudentPk(selectedStudent.id ?? null);
+      setSelectedUserId(selectedStudent.user_id ?? null);
       
       const dataSource = enrollmentData ? 'enrollment' : 'student';
       toast({
@@ -906,6 +929,11 @@ export default function AdminEnrollmentCreate() {
       // Mark as admin-created enrollment
       formDataObj.append('is_admin_created', '1');
 
+      if (formData.enrollment_type === 'Continuing Student') {
+        if (selectedUserId) formDataObj.append('created_user_id', String(selectedUserId));
+        if (selectedStudentPk) formDataObj.append('created_student_id', String(selectedStudentPk));
+      }
+
       const response = await fetch(API_ENDPOINTS.ENROLLMENTS + '/submit', {
         method: 'POST',
         body: formDataObj
@@ -951,6 +979,8 @@ export default function AdminEnrollmentCreate() {
       navigate('/admin/enrollments');
     }
   };
+
+  const isGradeLocked = formData.enrollment_type === 'Continuing Student' && previousEnrollmentFound;
 
   return (
     <DashboardLayout>
@@ -1088,6 +1118,7 @@ export default function AdminEnrollmentCreate() {
                     onChange={(e) => handleChange('learner_first_name', e.target.value)}
                     className={`mt-2 ${errors.learner_first_name ? 'border-red-500' : ''}`}
                     placeholder="Juan"
+                    autoComplete="off"
                   />
                   {errors.learner_first_name && (
                     <p className="text-sm text-red-600 mt-1">{errors.learner_first_name}</p>
@@ -1101,6 +1132,7 @@ export default function AdminEnrollmentCreate() {
                     onChange={(e) => handleChange('learner_middle_name', e.target.value)}
                     className="mt-2"
                     placeholder="Dela"
+                    autoComplete="off"
                   />
                 </div>
                 <div>
@@ -1111,6 +1143,7 @@ export default function AdminEnrollmentCreate() {
                     onChange={(e) => handleChange('learner_last_name', e.target.value)}
                     className={`mt-2 ${errors.learner_last_name ? 'border-red-500' : ''}`}
                     placeholder="Cruz"
+                    autoComplete="off"
                   />
                   {errors.learner_last_name && (
                     <p className="text-sm text-red-600 mt-1">{errors.learner_last_name}</p>
@@ -1158,6 +1191,7 @@ export default function AdminEnrollmentCreate() {
                     aria-label="Select grade level"
                     value={formData.grade_level}
                     onChange={(e) => handleChange('grade_level', e.target.value)}
+                    disabled={isGradeLocked}
                     className={`mt-2 w-full px-3 py-2 border rounded-md text-sm ${
                       errors.grade_level ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -1185,81 +1219,83 @@ export default function AdminEnrollmentCreate() {
             </div>
           </div>
 
-          {/* Optional Account Creation */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
-              <h2 className="text-lg font-semibold text-white">Optional Account Creation</h2>
-              <p className="text-teal-100 text-sm mt-1">Create a student user account for payments</p>
-            </div>
-            <div className="p-6 space-y-6">
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                <Checkbox
-                  id="create_account"
-                  checked={createAccount}
-                  onCheckedChange={(checked) => {
-                    const enabled = Boolean(checked);
-                    setCreateAccount(enabled);
-                    if (!enabled) {
-                      setAccountEmail('');
-                      setAccountPhone('');
-                      setErrors(prev => {
-                        const next = { ...prev };
-                        delete next.account_email;
-                        delete next.account_phone;
-                        return next;
-                      });
-                    }
-                  }}
-                />
-                <Label htmlFor="create_account" className="font-medium text-gray-700 cursor-pointer">
-                  Create user account for this student
-                </Label>
+          {/* Optional Account Creation: hidden for Continuing Student */}
+          {formData.enrollment_type !== 'Continuing Student' && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                <h2 className="text-lg font-semibold text-white">Optional Account Creation</h2>
+                <p className="text-teal-100 text-sm mt-1">Create a student user account for payments</p>
               </div>
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <Checkbox
+                    id="create_account"
+                    checked={createAccount}
+                    onCheckedChange={(checked) => {
+                      const enabled = Boolean(checked);
+                      setCreateAccount(enabled);
+                      if (!enabled) {
+                        setAccountEmail('');
+                        setAccountPhone('');
+                        setErrors(prev => {
+                          const next = { ...prev };
+                          delete next.account_email;
+                          delete next.account_phone;
+                          return next;
+                        });
+                      }
+                    }}
+                  />
+                  <Label htmlFor="create_account" className="font-medium text-gray-700 cursor-pointer">
+                    Create user account for this student
+                  </Label>
+                </div>
 
-              {createAccount && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="account_email" className="font-medium text-gray-700">Account Email *</Label>
-                    <Input
-                      id="account_email"
-                      type="email"
-                      value={accountEmail}
-                      onChange={(e) => setAccountEmail(e.target.value)}
-                      className={`mt-2 ${errors.account_email ? 'border-red-500' : ''}`}
-                      placeholder="student@example.com"
-                    />
-                    {errors.account_email && (
-                      <p className="text-sm text-red-600 mt-1">{errors.account_email}</p>
-                    )}
-                  </div>
+                {createAccount && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="account_email" className="font-medium text-gray-700">Account Email *</Label>
+                      <Input
+                        id="account_email"
+                        type="email"
+                        value={accountEmail}
+                        onChange={(e) => setAccountEmail(e.target.value)}
+                        className={`mt-2 ${errors.account_email ? 'border-red-500' : ''}`}
+                        placeholder="student@example.com"
+                      />
+                      {errors.account_email && (
+                        <p className="text-sm text-red-600 mt-1">{errors.account_email}</p>
+                      )}
+                    </div>
 
-                  <div>
-                    <Label htmlFor="account_phone" className="font-medium text-gray-700">Account Contact Number *</Label>
-                    <Input
-                      id="account_phone"
-                      type="tel"
-                      value={accountPhone}
-                      onChange={(e) => setAccountPhone(e.target.value)}
-                      className={`mt-2 ${errors.account_phone ? 'border-red-500' : ''}`}
-                      placeholder="09XX-XXX-XXXX"
-                    />
-                    {errors.account_phone && (
-                      <p className="text-sm text-red-600 mt-1">{errors.account_phone}</p>
-                    )}
-                  </div>
+                    <div>
+                      <Label htmlFor="account_phone" className="font-medium text-gray-700">Account Contact Number *</Label>
+                      <Input
+                        id="account_phone"
+                        type="tel"
+                        value={accountPhone}
+                        onChange={(e) => setAccountPhone(e.target.value)}
+                        className={`mt-2 ${errors.account_phone ? 'border-red-500' : ''}`}
+                        placeholder="09XX-XXX-XXXX"
+                      />
+                      {errors.account_phone && (
+                        <p className="text-sm text-red-600 mt-1">{errors.account_phone}</p>
+                      )}
+                    </div>
 
-                  <div className="md:col-span-2">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-800">
-                        <strong>Secure Setup:</strong> A password setup link will be sent to the provided email address after enrollment creation.
-                        The student/parent can set their password securely through the email link.
-                      </p>
+                    <div className="md:col-span-2">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-800">
+                          <strong>Secure Setup:</strong> A password setup link will be sent to the provided email address after enrollment creation.
+                          The student/parent can set their password securely through the email link.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Current Address Card */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-visible">
@@ -1583,6 +1619,7 @@ export default function AdminEnrollmentCreate() {
                     onChange={(e) => handleChange('father_name', e.target.value)}
                     className="mt-2"
                     placeholder="Full name"
+                    autoComplete="off"
                   />
                 </div>
                 <div>
@@ -1593,6 +1630,7 @@ export default function AdminEnrollmentCreate() {
                     onChange={(e) => handleChange('mother_name', e.target.value)}
                     className="mt-2"
                     placeholder="Full name"
+                    autoComplete="off"
                   />
                 </div>
               </div>

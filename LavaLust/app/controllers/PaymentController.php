@@ -107,6 +107,76 @@ class PaymentController extends Controller
     }
 
     /**
+     * Get payments by enrollment IDs (batch lookup)
+     * GET /api/payments/by-enrollment?enrollment_ids=1,2,3,4
+     * Returns enrollment IDs that have associated payments
+     */
+    public function by_enrollment()
+    {
+        header('Content-Type: application/json');
+        
+        try {
+            $enrollment_ids_param = $this->io->get('enrollment_ids');
+            
+            if (empty($enrollment_ids_param)) {
+                echo json_encode([
+                    'success' => true,
+                    'data' => []
+                ]);
+                return;
+            }
+
+            // Parse comma-separated enrollment IDs
+            $enrollment_ids = array_map('intval', explode(',', $enrollment_ids_param));
+            $enrollment_ids = array_filter($enrollment_ids); // Remove zeros
+
+            if (empty($enrollment_ids)) {
+                echo json_encode([
+                    'success' => true,
+                    'data' => []
+                ]);
+                return;
+            }
+
+            // Build IN clause for raw SQL query
+            $placeholders = implode(',', array_fill(0, count($enrollment_ids), '?'));
+            
+            // Query payments table for these enrollment IDs using raw SQL
+            // Only return enrollments with Approved payments
+            $sql = "SELECT DISTINCT enrollment_id, status 
+                    FROM payments 
+                    WHERE enrollment_id IN ($placeholders) 
+                    AND enrollment_id IS NOT NULL 
+                    AND status = 'Approved'";
+            
+            $query = $this->db->raw($sql, $enrollment_ids);
+
+            $paid_enrollments = [];
+            if ($query) {
+                foreach ($query as $row) {
+                    $paid_enrollments[] = [
+                        'enrollment_id' => (int)$row['enrollment_id'],
+                        'status' => $row['status']
+                    ];
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'data' => $paid_enrollments
+            ]);
+
+        } catch (Exception $e) {
+            error_log('Get payments by enrollment error: ' . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'data' => [],
+                'message' => 'Error fetching payment status for enrollments'
+            ]);
+        }
+    }
+
+    /**
      * Get all payments with optional filters
      * GET /api/payments
      */
@@ -303,10 +373,14 @@ class PaymentController extends Controller
             $installment_id = isset($data['installment_id']) ? $data['installment_id'] : null;
             $explanation_id = isset($data['explanation_id']) ? $data['explanation_id'] : null;
             
-            // Remove penalty fields from payment data (these go to payment_installment_penalties table)
+            // Extract discount template IDs (don't save to payments table)
+            $discount_template_ids = isset($data['discount_template_ids']) ? $data['discount_template_ids'] : [];
+            
+            // Remove penalty and discount fields from payment data
             unset($data['penalty_amount']);
             unset($data['days_overdue']);
             unset($data['explanation_id']);
+            unset($data['discount_template_ids']);
 
             // Handle recurring service payments (like Service Fee)
             if (isset($data['is_recurring_service']) && $data['is_recurring_service'] == 1) {
@@ -402,6 +476,50 @@ class PaymentController extends Controller
                     error_log('Penalty creation skipped - penalty_amount: ' . $penalty_amount . ', installment_id: ' . $installment_id);
                 }
                 
+                // Apply discounts if any were provided
+                if (!empty($discount_template_ids) && is_array($discount_template_ids)) {
+                    error_log('Applying ' . count($discount_template_ids) . ' discounts to payment ' . $paymentId);
+                    
+                    // Get payment details to calculate discounts
+                    $payment = $this->PaymentModel->get_payment($paymentId);
+                    $original_amount = floatval($payment['amount']);
+                    
+                    foreach ($discount_template_ids as $template_id) {
+                        try {
+                            // Get discount template details
+                            $template = $this->db->table('discount_templates')
+                                ->where('id', $template_id)
+                                ->get();
+                            
+                            if ($template) {
+                                // Calculate discount amount
+                                $discount_amount = $this->PaymentDiscountApplicationModel->calculate_discount_amount(
+                                    $original_amount,
+                                    $template['value_type'],
+                                    $template['value']
+                                );
+                                
+                                // Apply the discount
+                                $result = $this->PaymentDiscountApplicationModel->apply_discount(
+                                    $paymentId,
+                                    $template_id,
+                                    $discount_amount
+                                );
+                                
+                                if ($result['success']) {
+                                    error_log("Applied discount '{$template['name']}' (₱{$discount_amount}) to payment {$paymentId}");
+                                } else {
+                                    error_log("Failed to apply discount {$template_id}: {$result['message']}");
+                                }
+                            }
+                        } catch (Exception $e) {
+                            error_log("Error applying discount {$template_id}: " . $e->getMessage());
+                            // Continue with other discounts even if one fails
+                        }
+                    }
+                }
+                
+                // Get updated payment with discounts applied
                 $payment = $this->PaymentModel->get_payment($paymentId);
                 
                 echo json_encode([

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
@@ -73,6 +74,7 @@ type Payment = {
   payment_for: string;
   amount: number;
   net_amount?: number;
+  total_discount?: number;
   payment_method: string;
   payment_date: string;
   reference_number?: string;
@@ -231,12 +233,12 @@ const YEAR_LEVELS = [
 ];
 
 const PAYMENT_METHODS = [
-  "Cash",
-  "Check",
-  "Bank Transfer",
-  "GCash",
-  "PayMaya",
-  "Others"
+  { value: "Cash", label: "Cash", enabled: true },
+  { value: "GCash", label: "GCash", enabled: true },
+  { value: "Check", label: "Check", enabled: false },
+  { value: "Bank Transfer", label: "Bank Transfer", enabled: false },
+  { value: "PayMaya", label: "PayMaya", enabled: false },
+  { value: "Others", label: "Others", enabled: false }
 ];
 
 const PAYMENT_STATUS = [
@@ -367,11 +369,11 @@ const Payments = () => {
     reference_number: "",
     status: "Approved",
     remarks: "",
-    proof_of_payment_url: "",
-    is_recurring_service: false,
-    service_period_month: new Date().getMonth() + 1, // Current month (1-12)
-    service_period_year: new Date().getFullYear()
+    proof_of_payment_url: ""
   });
+
+  // Selected discounts for current payment
+  const [selectedDiscountIds, setSelectedDiscountIds] = useState<string[]>([]);
 
   const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [paidServicePeriods, setPaidServicePeriods] = useState<{month: number, year: number}[]>([]);
@@ -387,6 +389,26 @@ const Payments = () => {
 
   const getNetAmount = (payment: Payment) =>
     Number(payment.net_amount ?? payment.amount ?? 0);
+
+  // Calculate discounted amount based on selected discounts
+  const calculateDiscountedAmount = (): { originalAmount: number; totalDiscount: number; finalAmount: number } => {
+    const originalAmount = parseFloat(form.amount) || 0;
+    let totalDiscount = 0;
+
+    selectedDiscountIds.forEach(discountId => {
+      const discount = discountTemplates.find(d => d.id === discountId);
+      if (discount && discount.is_active) {
+        if (discount.value_type === "Percentage") {
+          totalDiscount += (originalAmount * parseFloat(discount.value.toString())) / 100;
+        } else {
+          totalDiscount += parseFloat(discount.value.toString());
+        }
+      }
+    });
+
+    const finalAmount = Math.max(0, originalAmount - totalDiscount);
+    return { originalAmount, totalDiscount, finalAmount };
+  };
 
   // Group fees that have the same properties but different year levels
   const groupFeesByProperties = (fees: SchoolFee[]): SchoolFee[] => {
@@ -438,20 +460,30 @@ const Payments = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Auto-populate payment_for and amount when payment_type changes to Tuition Full Payment
+  // Auto-populate payment_for and amount when enrollment is selected for Tuition Full Payment
   useEffect(() => {
-    if (form.payment_type === "Tuition Full Payment") {
-      // Find tuition fee from school_fees (no academic_period_id needed - reusable)
-      const tuitionFee = schoolFees.find(
-        f => f.fee_type === 'Tuition' && f.is_active
-      );
+    if (form.payment_type === "Tuition Full Payment" && form.enrollment_id && form.student_id) {
+      // Get the selected enrollment's grade level
+      const enrollment = enrollments.find((e: any) => String(e.id) === String(form.enrollment_id));
+      const gradeLevel = enrollment?.grade_level || enrollment?.year_level;
       
-      if (tuitionFee) {
-        setForm(prev => ({
-          ...prev,
-          payment_for: tuitionFee.fee_name,
-          amount: tuitionFee.amount.toString()
-        }));
+      if (gradeLevel) {
+        // Find tuition fee for this grade level
+        const tuitionFee = schoolFees.find(
+          f => f.fee_type === 'Tuition' && 
+               f.is_active && 
+               (f.year_level === gradeLevel || 
+                (f.year_levels && f.year_levels.includes(gradeLevel)) ||
+                !f.year_level)
+        );
+        
+        if (tuitionFee) {
+          setForm(prev => ({
+            ...prev,
+            payment_for: tuitionFee.fee_name,
+            amount: tuitionFee.amount.toString()
+          }));
+        }
       }
     } else if (form.payment_type && form.payment_type !== "Tuition Full Payment") {
       // Reset payment_for and amount when payment type changes
@@ -461,7 +493,28 @@ const Payments = () => {
         amount: ""
       }));
     }
-  }, [form.payment_type, schoolFees]);
+  }, [form.payment_type, form.enrollment_id, form.student_id, schoolFees, enrollments]);
+
+  // Auto-apply Full Payment Discount for Tuition Full Payment
+  useEffect(() => {
+    if (form.payment_type === "Tuition Full Payment") {
+      const fullPaymentDiscount = discountTemplates.find(
+        d => d.name === "Full Payment Discount" && d.is_active
+      );
+      
+      if (fullPaymentDiscount && !selectedDiscountIds.includes(fullPaymentDiscount.id)) {
+        setSelectedDiscountIds(prev => [...prev, fullPaymentDiscount.id]);
+      }
+    } else {
+      // Clear Full Payment Discount when switching away from Tuition Full Payment
+      const fullPaymentDiscount = discountTemplates.find(
+        d => d.name === "Full Payment Discount"
+      );
+      if (fullPaymentDiscount) {
+        setSelectedDiscountIds(prev => prev.filter(id => id !== fullPaymentDiscount.id));
+      }
+    }
+  }, [form.payment_type, discountTemplates]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -533,6 +586,18 @@ const Payments = () => {
       } catch (err) {
         console.log('Error fetching school fees:', err);
         setSchoolFees([]);
+      }
+
+      // Fetch discount templates
+      try {
+        const discountsRes = await apiGet(API_ENDPOINTS.DISCOUNT_TEMPLATES);
+        if (discountsRes && discountsRes.success) {
+          setDiscountTemplates(discountsRes.data || []);
+          console.log('Discount templates fetched:', discountsRes.data?.length || 0, 'records');
+        }
+      } catch (err) {
+        console.error('Error fetching discount templates:', err);
+        setDiscountTemplates([]);
       }
 
     } catch (error) {
@@ -659,6 +724,21 @@ const Payments = () => {
       remarks: "",
       proof_of_payment_url: ""
     });
+    
+    // Auto-apply Full Payment Discount for Tuition Full Payment
+    if (paymentType === "Tuition Full Payment") {
+      const fullPaymentDiscount = discountTemplates.find(
+        d => d.name === "Full Payment Discount" && d.is_active
+      );
+      if (fullPaymentDiscount) {
+        setSelectedDiscountIds([fullPaymentDiscount.id]);
+      } else {
+        setSelectedDiscountIds([]);
+      }
+    } else {
+      setSelectedDiscountIds([]);
+    }
+    
     setPaymentStudentSearchQuery("");
     setShowPaymentStudentSuggestions(false);
     setGcashToken(null);
@@ -685,7 +765,7 @@ const Payments = () => {
         remarks: form.remarks || null,
         proof_of_payment_url: form.proof_of_payment_url || null,
         receipt_number: generateReceiptNumber(),
-        received_by: user?.id
+        discount_template_ids: selectedDiscountIds.length > 0 ? selectedDiscountIds : null
       };
 
       const res = await apiPost('/api/payments', payload);
@@ -778,7 +858,7 @@ const Payments = () => {
     }
   };
 
-  const handleApprovePayment = async (paymentId: string) => {
+  const handleApprovePayment = async (paymentId: string, paymentMethod: string) => {
     const ok = await confirm({
       title: 'Approve Payment',
       description: 'Approve this payment now?',
@@ -790,12 +870,29 @@ const Payments = () => {
     if (!ok) return;
 
     try {
-      const res = await apiPut(`/api/payments/${paymentId}`, {
+      let payload: any = {
         status: 'Approved'
-      });
+      };
+
+      // If Cash payment, update received_by
+      if (paymentMethod === 'Cash') {
+        payload.received_by = user?.id;
+      }
+
+      // If GCash payment, update verified_by, verified_at, and set status to Verified
+      if (paymentMethod === 'GCash') {
+        payload.status = 'Verified';
+        payload.verified_by = user?.id;
+        payload.verified_at = new Date().toISOString();
+      }
+
+      const res = await apiPut(`/api/payments/${paymentId}`, payload);
 
       if (res && res.success) {
-        showAlert("success", "Payment approved successfully");
+        const message = paymentMethod === 'GCash' 
+          ? "Payment verified successfully" 
+          : "Payment approved successfully";
+        showAlert("success", message);
         fetchData();
       }
     } catch (error: any) {
@@ -1863,9 +1960,16 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">
-                          ₱{getNetAmount(payment).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                        </span>
+                        <div>
+                          <span className="text-sm font-semibold text-gray-900">
+                            ₱{getNetAmount(payment).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </span>
+                          {payment.total_discount && payment.total_discount > 0 && (
+                            <p className="text-xs text-emerald-600 mt-0.5">
+                              Discount: -₱{Number(payment.total_discount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -1904,7 +2008,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleApprovePayment(payment.id)}
+                              onClick={() => handleApprovePayment(payment.id, payment.payment_method)}
                             >
                               <CheckCircle className="h-4 w-4 text-green-600" />
                             </Button>
@@ -1922,7 +2026,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleApprovePayment(payment.id)}
+                              onClick={() => handleApprovePayment(payment.id, payment.payment_method)}
                             >
                               <CheckCircle className="h-4 w-4 text-green-600" />
                             </Button>
@@ -2325,7 +2429,13 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                     </SelectTrigger>
                     <SelectContent>
                       {PAYMENT_METHODS.map((method) => (
-                        <SelectItem key={method} value={method}>{method}</SelectItem>
+                        <SelectItem 
+                          key={method.value} 
+                          value={method.value}
+                          disabled={!method.enabled}
+                        >
+                          {method.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -2392,6 +2502,105 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                   />
                 </div>
               </div>
+
+              {form.payment_type && (
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Apply Discounts</Label>
+                  <div className="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50">
+                    {discountTemplates.filter(d => d.is_active).length > 0 ? (
+                      <>
+                        {discountTemplates.filter(d => d.is_active).map((discount) => {
+                          const isSelected = selectedDiscountIds.includes(discount.id);
+                          const isFullPaymentDiscount = discount.name === "Full Payment Discount";
+                          const isAutoApplied = isFullPaymentDiscount && form.payment_type === "Tuition Full Payment";
+                          
+                          return (
+                            <div
+                              key={discount.id}
+                              className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                                isSelected
+                                  ? 'border-emerald-300 bg-emerald-50'
+                                  : 'border-gray-200 bg-white hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  id={`discount-${discount.id}`}
+                                  checked={isSelected}
+                                  disabled={isAutoApplied}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedDiscountIds(prev => [...prev, discount.id]);
+                                    } else {
+                                      setSelectedDiscountIds(prev => prev.filter(id => id !== discount.id));
+                                    }
+                                  }}
+                                />
+                                <div className="flex-1">
+                                  <Label
+                                    htmlFor={`discount-${discount.id}`}
+                                    className="cursor-pointer font-medium text-gray-900"
+                                  >
+                                    {discount.name}
+                                    {isAutoApplied && (
+                                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                        Auto-applied
+                                      </span>
+                                    )}
+                                  </Label>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {discount.type} • {discount.value_type === "Percentage" 
+                                      ? `${parseFloat(discount.value.toString())}%` 
+                                      : `₱${parseFloat(discount.value.toString()).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`}
+                                  </p>
+                                  {discount.description && (
+                                    <p className="text-xs text-gray-400 mt-1">{discount.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-semibold text-emerald-600">
+                                  -{discount.value_type === "Percentage"
+                                    ? `₱${((parseFloat(form.amount) || 0) * parseFloat(discount.value.toString()) / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+                                    : `₱${parseFloat(discount.value.toString()).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Discount Summary */}
+                        {selectedDiscountIds.length > 0 && form.amount && (
+                          <div className="border-t-2 border-gray-300 pt-3 mt-3">
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Original Amount:</span>
+                                <span className="font-medium">₱{calculateDiscountedAmount().originalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Total Discount:</span>
+                                <span className="font-medium text-emerald-600">
+                                  -₱{calculateDiscountedAmount().totalDiscount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-base font-bold border-t pt-2">
+                                <span className="text-gray-900">Final Amount:</span>
+                                <span className="text-blue-600">
+                                  ₱{calculateDiscountedAmount().finalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-2">
+                        No active discounts available
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {form.payment_method === "GCash" ? (
                 <div className="space-y-3">
@@ -2583,6 +2792,11 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                     <p className="text-2xl font-bold text-green-600">
                       ₱{getNetAmount(selectedPayment).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </p>
+                    {selectedPayment.total_discount && selectedPayment.total_discount > 0 && (
+                      <p className="text-sm text-emerald-600 mt-1">
+                        Discount Applied: -₱{Number(selectedPayment.total_discount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                      </p>
+                    )}
                   </div>
                 </div>
 

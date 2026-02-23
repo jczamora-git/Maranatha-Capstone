@@ -84,12 +84,13 @@ export function EnrollmentStep2({
   };
 
   // Check if all required documents are verified
-  const isStepComplete = requiredDocs.filter(req => req.is_required).every(req => {
-    const doc = getDocumentStatus(req.document_name);
-    const status = doc?.verification_status;
-    const isManuallyChecked = manuallyCheckedDocs.has(req.document_name);
-    return status === 'Verified' || isManuallyChecked;
-  });
+  const isStepComplete = enrollment.enrollment_type === 'Continuing Student' || 
+    requiredDocs.filter(req => req.is_required).every(req => {
+      const doc = getDocumentStatus(req.document_name);
+      const status = doc?.verification_status;
+      const isManuallyChecked = manuallyCheckedDocs.has(req.document_name);
+      return status === 'Verified' || isManuallyChecked;
+    });
 
   // Upload verification flow disabled (no document uploads).
   // const openVerifyDialog = (docId: number) => {
