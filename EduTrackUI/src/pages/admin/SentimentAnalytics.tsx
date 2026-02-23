@@ -46,6 +46,15 @@ const sentimentBadgeClass = (sentiment?: SentimentLabel) => {
   }
 };
 
+const normalizeSentiment = (value?: string | null): SentimentLabel | undefined => {
+  if (!value) return undefined;
+  const normalized = value.toLowerCase();
+  if (normalized === "positive" || normalized === "negative" || normalized === "neutral") {
+    return normalized as SentimentLabel;
+  }
+  return undefined;
+};
+
 const AdminSentimentAnalytics = () => {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
   const [search, setSearch] = useState("");
@@ -93,7 +102,7 @@ const AdminSentimentAnalytics = () => {
           category: item.category ?? "General",
           source: sourceName || "Student",
           date: item.created_at ? new Date(item.created_at).toLocaleDateString() : "",
-          sentiment: item.sentiment ?? undefined,
+          sentiment: normalizeSentiment(item.sentiment),
           confidence: item.confidence !== null && item.confidence !== undefined ? Number(item.confidence) : undefined,
           responseText: item.response_text ?? undefined,
           respondedAt: item.responded_at ?? undefined,
@@ -170,7 +179,7 @@ const AdminSentimentAnalytics = () => {
 
       const updated = feedbackItems.map((item, index) => ({
         ...item,
-        sentiment: data.results[index]?.sentiment ?? item.sentiment,
+        sentiment: normalizeSentiment(data.results[index]?.sentiment) ?? item.sentiment,
         confidence: data.results[index]?.confidence ?? item.confidence,
       }));
 
@@ -181,7 +190,7 @@ const AdminSentimentAnalytics = () => {
           const result = data.results[index];
           if (!result) return Promise.resolve();
           return apiPut(API_ENDPOINTS.FEEDBACK_SENTIMENT_UPDATE(item.id), {
-            sentiment: result.sentiment,
+            sentiment: normalizeSentiment(result.sentiment) ?? result.sentiment,
             confidence: result.confidence,
             probabilities: result.probabilities ?? {},
           }).catch(() => undefined);
