@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Users, FileText, Award, QrCode } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { NotificationBell } from "@/components/NotificationBell";
+
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import { useNotificationContext } from "@/context/NotificationContext";
@@ -393,9 +393,7 @@ const TeacherDashboard = () => {
               {isTeacherAdviser ? `Adviser of ${adviserLevels[0]}` : "Teacher"}
             </Badge>
           </div>
-          <div className="flex items-center gap-4">
-            <NotificationBell />
-          </div>
+
         </div>
       </header>
 

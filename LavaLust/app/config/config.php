@@ -316,4 +316,29 @@ if ($config['ENVIRONMENT'] === 'development') {
 } else {
     $config['banner_url'] = 'https://assets.edutrackph.online/email-banner.png';
 }
+
+/*
+|--------------------------------------------------------------------------
+| Sentiment Analysis API Configuration
+|--------------------------------------------------------------------------
+| Controls which sentiment API to use:
+|   - 'local': Python Flask API (http://localhost:5000)
+|   - 'external': Hugging Face API (requires HF_API_TOKEN)
+|   - 'auto': Try local first, fallback to external
+|
+| Set HF_API_TOKEN environment variable or hardcode below for external API
+*/
+$config['sentiment_api_mode'] = 'external'; // 'local' | 'external' | 'auto'
+$config['sentiment_local_url'] = 'http://localhost:5000';
+$config['sentiment_hf_token'] = getenv('HF_API_TOKEN') ?: ''; // Set HF_API_TOKEN environment variable
+$config['sentiment_hf_url'] = 'https://router.huggingface.co/hf-inference/models/tabularisai/multilingual-sentiment-analysis';
+$config['insights_hf_url'] = 'https://router.huggingface.co/v1/chat/completions';
+$config['insights_hf_model'] = 'Qwen/Qwen2.5-7B-Instruct:together';
+$config['insights_window_days'] = 7; // Today + previous 6 days
+$config['insights_allow_regen'] = false; // Set true to bypass weekly limit (dev/demo)
+$config['chat_hf_url'] = 'https://router.huggingface.co/v1/chat/completions';
+$config['chat_hf_model'] = 'Qwen/Qwen2.5-7B-Instruct:together';
+$config['chat_system_prompt'] = 'You are the Campus Companion assistant. Use the knowledge base provided. If the answer is not in the knowledge base, say you do not have that information yet. When you reference a UI page, format a clickable route token like [link:Payments|/admin/payments] and do not show raw URLs.';
+$config['chat_knowledge_only'] = true; // Set true to disable LLM fallback
+$config['rfid_admin_passkey'] = getenv('RFID_ADMIN_PASSKEY') ?: 'admin123'; // Admin-only RFID lock exit
 ?>

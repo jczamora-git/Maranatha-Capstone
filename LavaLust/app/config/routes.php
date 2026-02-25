@@ -77,6 +77,10 @@ $router->post('/api/auth/set-password-with-token', 'UserController::api_set_pass
 // API endpoint to send welcome email when a user is created by admin
 $router->post('/api/auth/send-welcome-email', 'UserController::api_send_welcome_email');
 
+// API Routes - Configuration (Public endpoints for feature flags)
+$router->get('/api/config/features', 'ConfigController::api_get_features');
+$router->get('/api/config/enrollment-types', 'ConfigController::api_get_enrollment_types');
+
 // API Routes - Email Verification (must be BEFORE /api/users/{id} to avoid route conflict)
 $router->get('/api/users/verify-email', 'UserController::api_verify_email');
 $router->post('/api/users/resend-verification', 'UserController::api_resend_verification');
@@ -115,6 +119,8 @@ $router->get('/api/students', 'StudentController::api_get_students');
 $router->get('/api/students-enrollees', 'StudentController::api_get_students_enrollees');
 $router->get('/api/students/stats', 'StudentController::api_get_stats');
 $router->get('/api/students/last-id', 'StudentController::api_get_last_id');
+$router->get('/api/students/active', 'StudentController::api_get_active_students');
+$router->get('/api/rfid/cards/check', 'StudentController::api_check_rfid');
 $router->get('/api/students/by-user/{user_id}', 'StudentController::api_get_by_user_id')->where_number('user_id');
 $router->get('/api/students/{id}/courses', 'StudentController::api_get_courses_for_student')->where_number('id');
 $router->get('/api/students/{id}/courses/teachers', 'StudentController::api_get_course_teachers')->where_number('id');
@@ -125,6 +131,7 @@ $router->post('/api/students', 'StudentController::api_create_student');
 $router->get('/api/students/export', 'StudentController::api_export_students');
 $router->post('/api/students/import', 'StudentController::api_import_students');
 $router->put('/api/students/{id}', 'StudentController::api_update_student')->where_number('id');
+$router->post('/api/students/{id}/rfid', 'StudentController::api_assign_rfid')->where_number('id');
 $router->delete('/api/students/{id}', 'StudentController::api_delete_student')->where_number('id');
 // API endpoint to send welcome email to a newly created student
 $router->post('/api/students/send-welcome-email', 'StudentController::api_send_welcome_email');
@@ -258,6 +265,15 @@ $router->put('/api/school-fees/{id}', 'SchoolFeesController::api_update_fee')->w
 $router->put('/api/school-fees/{id}/toggle-status', 'SchoolFeesController::api_toggle_status')->where_number('id');
 $router->delete('/api/school-fees/{id}', 'SchoolFeesController::api_delete_fee')->where_number('id');
 
+// API Routes - RFID Attendance (Admin only)
+$router->get('/api/rfid/sessions', 'RFIDController::api_sessions');
+$router->post('/api/rfid/sessions', 'RFIDController::api_create_session');
+$router->post('/api/rfid/sessions/{id}/start', 'RFIDController::api_start_session')->where_number('id');
+$router->post('/api/rfid/sessions/{id}/end', 'RFIDController::api_end_session')->where_number('id');
+$router->get('/api/rfid/scans', 'RFIDController::api_scans');
+$router->post('/api/rfid/scans', 'RFIDController::api_create_scan');
+$router->post('/api/rfid/verify-passkey', 'RFIDController::api_verify_passkey');
+
 // API Routes - Tuition Packages
 $router->get('/api/tuition-packages', 'TuitionPackagesController::api_get_packages');
 $router->get('/api/tuition-packages/active', 'TuitionPackagesController::api_get_active');
@@ -382,6 +398,15 @@ $router->get('/api/announcements/{id}', 'AnnouncementController::api_get_announc
 $router->post('/api/announcements', 'AnnouncementController::api_create_announcement');
 $router->put('/api/announcements/{id}', 'AnnouncementController::api_update_announcement')->where_number('id');
 $router->delete('/api/announcements/{id}', 'AnnouncementController::api_delete_announcement')->where_number('id');
+$router->post('/api/announcements/{id}/mark-as-read', 'AnnouncementController::api_mark_announcement_as_read')->where_number('id');
+
+// API Routes - Notifications & Audit Logs
+$router->get('/api/notifications', 'NotificationController::api_get_notifications');
+$router->get('/api/notifications/unread-count', 'NotificationController::api_get_unread_count');
+$router->post('/api/notifications/{id}/mark-as-read', 'NotificationController::api_mark_as_read')->where_number('id');
+$router->post('/api/notifications/mark-all-as-read', 'NotificationController::api_mark_all_as_read');
+$router->get('/api/notifications/audit-logs', 'NotificationController::api_get_audit_logs');
+$router->get('/api/notifications/stats', 'NotificationController::api_get_stats');
 
 // Feedback (Sentiment)
 $router->get('/api/feedback', 'FeedbackController::api_get_feedback');
@@ -389,6 +414,22 @@ $router->get('/api/feedback/my', 'FeedbackController::api_get_my_feedback');
 $router->post('/api/feedback', 'FeedbackController::api_create_feedback');
 $router->put('/api/feedback/{id}/sentiment', 'FeedbackController::api_update_sentiment')->where_number('id');
 $router->put('/api/feedback/{id}/response', 'FeedbackController::api_update_response')->where_number('id');
+
+// Sentiment Analysis API (Proxy to local/external ML models)
+$router->get('/api/sentiment/health', 'SentimentController::api_health');
+$router->post('/api/sentiment/predict', 'SentimentController::api_predict');
+$router->post('/api/sentiment/predict/batch', 'SentimentController::api_predict_batch');
+$router->post('/api/insights/weekly', 'SentimentController::api_weekly_insights');
+
+// Chatbot Knowledge (Admin)
+$router->get('/api/admin/chatbot-knowledge', 'ChatbotController::api_get_knowledge');
+$router->post('/api/admin/chatbot-knowledge', 'ChatbotController::api_create_knowledge');
+$router->put('/api/admin/chatbot-knowledge/{id}', 'ChatbotController::api_update_knowledge')->where_number('id');
+$router->delete('/api/admin/chatbot-knowledge/{id}', 'ChatbotController::api_delete_knowledge')->where_number('id');
+$router->put('/api/admin/chatbot-knowledge/{id}/toggle', 'ChatbotController::api_toggle_knowledge')->where_number('id');
+
+// Chatbot (Admin test)
+$router->post('/api/chatbot/message', 'ChatbotController::api_chat');
 
 // API Routes - Campuses (Admin)
 $router->get('/api/campuses', 'CampusController::api_get_campuses');
@@ -476,3 +517,4 @@ $router->post('/api/teachers/assign-adviser', 'TeacherController::api_assign_adv
 $router->post('/api/teachers/assign-subject', 'TeacherController::api_assign_subject');
 $router->get('/api/teachers/{id}/subjects', 'TeacherController::api_get_teacher_subjects')->where_number('id');
 $router->delete('/api/teachers/assignment', 'TeacherController::api_remove_assignment');
+$router->get('/api/teacher-subject-assignments', 'TeacherController::api_get_subject_teachers');

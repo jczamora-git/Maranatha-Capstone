@@ -732,7 +732,8 @@ class EnrollmentAdminController extends Controller
                 $this->db->table('password_resets')->insert($tokenData);
 
                 // Send email with set-password link
-                $resetLink = "http://localhost:5174/set-password?token=" . urlencode($token);
+                $portalUrl = rtrim(config_item('portal_url') ?: 'http://localhost:5174', '/');
+                $resetLink = $portalUrl . "/set-password?token=" . urlencode($token);
                 $emailBody = generate_set_password_email($input['learner_first_name'], $resetLink);
                 $emailResult = sendNotif($input['account_email'], 'Set Your Password - Maranatha Enrollment', $emailBody);
 

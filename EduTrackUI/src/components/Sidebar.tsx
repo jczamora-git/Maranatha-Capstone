@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "next-themes";
+import { NotificationBell } from "./NotificationBell";
 import { FEATURES } from "@/config/features";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import {
@@ -230,13 +231,10 @@ export const Sidebar = () => {
     { to: "/student/dashboard", icon: BarChart3, label: "Dashboard" },
     ...(FEATURES.courses && !isProd ? [{ to: "/student/courses", icon: BookOpen, label: "My Courses" }] : []),
     ...(FEATURES.enrollment ? [{ to: "/enrollment/my-enrollments", icon: FileText, label: "My Enrollments" }] : []),
+    ...(FEATURES.grading ? [{ to: "/student/grades", icon: Award, label: "My Grades" }] : []),
     ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: Coins, label: "Payment" }] : []),
     ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
     { to: "/student/feedback", icon: MessageSquare, label: "Feedback" },
-    ...(FEATURES.grading ? [
-      { to: "/student/grades", icon: Award, label: "My Grades" },
-      { to: "/student/progress", icon: Calendar, label: "Progress" }
-    ] : []),
     { to: "/student/settings", icon: Settings, label: "Settings" },
   ];
 
@@ -274,15 +272,18 @@ export const Sidebar = () => {
             <p className="text-xs font-extrabold text-gray-800" style={{ fontFamily: 'Montserrat', lineHeight: '0.9' }}>Academy Foundation</p>
             <p className="text-[10px] font-normal text-gray-600" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Calapan City Inc.</p>
           </div>
-        </div>  
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="hover:bg-muted"
-        >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
+        </div>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="hover:bg-muted"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Overlay Menu */}

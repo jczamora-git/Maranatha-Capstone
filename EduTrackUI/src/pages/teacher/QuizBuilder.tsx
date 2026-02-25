@@ -43,9 +43,10 @@ import {
   X,
   Download
 } from "lucide-react";
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useAuth } from "@/hooks/useAuth";
@@ -246,6 +247,8 @@ const QuizBuilder = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Question | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Question form state
   const [questionType, setQuestionType] = useState<QuestionType>('multiple_choice');
@@ -468,22 +471,24 @@ const QuizBuilder = () => {
     }
   };
 
-  const deleteQuestion = async (index: number) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+  const promptDeleteQuestion = (question: Question) => {
+    setDeleteTarget(question);
+  };
 
-    const question = questions[index];
-    if (!question.id) {
-      setQuestions(questions.filter((_, i) => i !== index));
-      return;
-    }
-
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const question = deleteTarget;
+    setIsDeleting(true);
     try {
+      if (!question.id) {
+        setQuestions(prev => prev.filter(q => q !== question));
+        setAlert({ type: 'success', message: 'Question deleted' });
+        return;
+      }
       const res = await apiDelete(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/questions/${question.id}`);
       if (res && res.success) {
         setAlert({ type: 'success', message: 'Question deleted' });
         await fetchQuestions();
-        
-        // Update activity max_score if returned from backend
         if (res.activity_total_points !== undefined && activity) {
           setActivity({ ...activity, max_score: res.activity_total_points });
         }
@@ -492,6 +497,9 @@ const QuizBuilder = () => {
       }
     } catch (error) {
       setAlert({ type: 'error', message: 'Error deleting question' });
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -752,7 +760,7 @@ const QuizBuilder = () => {
                     Quiz Settings
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl" aria-describedby={undefined}>
                   <DialogHeader>
                     <DialogTitle>Quiz Settings</DialogTitle>
                   </DialogHeader>
@@ -934,7 +942,7 @@ const QuizBuilder = () => {
                             question={question}
                             index={index}
                             onEdit={() => openEditQuestion(index)}
-                            onDelete={() => deleteQuestion(question.id!)}
+                            onDelete={() => promptDeleteQuestion(question)}
                             getQuestionTypeLabel={getQuestionTypeLabel}
                           />
                         ))}
@@ -949,7 +957,7 @@ const QuizBuilder = () => {
 
         {/* Add/Edit Question Dialog */}
         <Dialog open={isAddingQuestion} onOpenChange={setIsAddingQuestion}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>{editingQuestionIndex !== null ? 'Edit Question' : 'Add New Question'}</DialogTitle>
             </DialogHeader>
@@ -1176,6 +1184,28 @@ const QuizBuilder = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Question?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove the question and all its choices. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                {isDeleting ? 'Deleting…' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Alert */}
         {alert && <AlertMessage type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}

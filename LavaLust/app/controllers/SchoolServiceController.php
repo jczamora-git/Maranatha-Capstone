@@ -287,14 +287,15 @@ class SchoolServiceController extends Controller
             }
             
             // Count total enrolled students
-            $totalStudents = $this->db->raw(
+            $totalStudentsStmt = $this->db->raw(
                 "SELECT COUNT(DISTINCT e.student_id) as total 
                  FROM enrollments e 
                  WHERE e.status = 'Approved'"
             );
+            $totalStudentsResult = $totalStudentsStmt ? $totalStudentsStmt->fetchAll(PDO::FETCH_ASSOC) : [];
             
             // Count students who paid for this month
-            $paidStudents = $this->db->raw(
+            $paidStudentsStmt = $this->db->raw(
                 "SELECT COUNT(*) as total 
                  FROM payments 
                  WHERE is_recurring_service = 1 
@@ -303,9 +304,10 @@ class SchoolServiceController extends Controller
                  AND status IN ('Approved', 'Verified')",
                 [$month, $year]
             );
+            $paidStudentsResult = $paidStudentsStmt ? $paidStudentsStmt->fetchAll(PDO::FETCH_ASSOC) : [];
             
             // Calculate total revenue
-            $revenue = $this->db->raw(
+            $revenueStmt = $this->db->raw(
                 "SELECT COALESCE(SUM(amount), 0) as total 
                  FROM payments 
                  WHERE is_recurring_service = 1 
@@ -314,14 +316,19 @@ class SchoolServiceController extends Controller
                  AND status IN ('Approved', 'Verified')",
                 [$month, $year]
             );
+            $revenueResult = $revenueStmt ? $revenueStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            
+            $totalStudents = $totalStudentsResult[0]['total'] ?? 0;
+            $paidStudents = $paidStudentsResult[0]['total'] ?? 0;
+            $totalRevenue = $revenueResult[0]['total'] ?? 0;
             
             echo json_encode([
                 'success' => true,
                 'data' => [
-                    'total_students' => $totalStudents[0]['total'] ?? 0,
-                    'paid_students' => $paidStudents[0]['total'] ?? 0,
-                    'unpaid_students' => ($totalStudents[0]['total'] ?? 0) - ($paidStudents[0]['total'] ?? 0),
-                    'total_revenue' => $revenue[0]['total'] ?? 0,
+                    'total_students' => $totalStudents,
+                    'paid_students' => $paidStudents,
+                    'unpaid_students' => $totalStudents - $paidStudents,
+                    'total_revenue' => $totalRevenue,
                     'month' => $month,
                     'year' => $year
                 ]

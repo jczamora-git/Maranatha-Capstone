@@ -2020,7 +2020,7 @@ class UserController extends Controller
             $this->call->helper('email_templates_helper');
 
             // Generate welcome email using template
-            $portalUrl = 'http://localhost:5174/auth';
+            $portalUrl = rtrim(config_item('portal_url') ?: 'http://localhost:5174', '/') . '/auth';
             $emailBody = generate_welcome_email_with_credentials($firstName, $email, $role, $password, $portalUrl);
 
             // Send email

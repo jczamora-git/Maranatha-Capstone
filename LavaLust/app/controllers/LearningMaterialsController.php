@@ -67,17 +67,18 @@ class LearningMaterialsController extends Controller
 
             // Prepare data
             $data = [
-                'subject_id' => $input['subject_id'],
-                'section_id' => $input['section_id'],
-                'type' => $input['type'],
-                'title' => $input['title'],
+                'subject_id'  => $input['subject_id'],
+                'section_id'  => $input['section_id'] ?? null,
+                'school_year' => $input['school_year'] ?? null,
+                'type'        => $input['type'],
+                'title'       => $input['title'],
                 'description' => $input['description'] ?? null,
-                'file_url' => $input['file_url'] ?? null,
-                'file_name' => $input['file_name'] ?? null,
-                'file_size' => $input['file_size'] ?? null,
-                'link_url' => $input['link_url'] ?? null,
-                'created_by' => $input['created_by'],
-                'created_at' => date('Y-m-d H:i:s')
+                'file_url'    => $input['file_url'] ?? null,
+                'file_name'   => $input['file_name'] ?? null,
+                'file_size'   => $input['file_size'] ?? null,
+                'link_url'    => $input['link_url'] ?? null,
+                'created_by'  => $input['created_by'],
+                'created_at'  => date('Y-m-d H:i:s')
             ];
 
             // Create learning material
@@ -121,9 +122,10 @@ class LearningMaterialsController extends Controller
         header('Content-Type: application/json');
         
         try {
-            $sectionId = $_GET['section_id'] ?? null;
+            $sectionId  = $_GET['section_id']  ?? null;
+            $schoolYear = $_GET['school_year'] ?? null;
 
-            $materials = $this->LearningMaterials_model->getBySubject($subjectId, $sectionId);
+            $materials = $this->LearningMaterials_model->getBySubject($subjectId, $sectionId, $schoolYear);
 
             http_response_code(200);
             echo json_encode([

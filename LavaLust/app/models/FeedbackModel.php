@@ -42,6 +42,25 @@ class FeedbackModel extends Model
             ->get_all();
     }
 
+    public function get_recent($days)
+    {
+        $days = (int) $days;
+        if ($days <= 0) {
+            $days = 7;
+        }
+
+        $window = max(0, $days - 1);
+        $start = date('Y-m-d 00:00:00', strtotime("-{$window} days"));
+
+        return $this->db->table($this->table . ' f')
+            ->left_join('users u', 'f.user_id = u.id')
+            ->left_join('users r', 'f.responded_by = r.id')
+            ->select('f.*, u.first_name, u.last_name, u.email, r.first_name as responder_first_name, r.last_name as responder_last_name, r.email as responder_email')
+            ->where('f.created_at', '>=', $start)
+            ->order_by('f.created_at', 'DESC')
+            ->get_all();
+    }
+
     public function create($data)
     {
         $now = date('Y-m-d H:i:s');

@@ -478,7 +478,7 @@ const CourseGradeDetail = () => {
                   <BookOpen className="h-6 w-6 text-accent" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Instructor</p>
+                  <p className="text-sm text-muted-foreground">Teacher</p>
                   <p className="text-lg font-bold text-accent">{courseInfo.teacher}</p>
                 </div>
               </div>

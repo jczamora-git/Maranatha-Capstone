@@ -6,14 +6,8 @@ class QuizController extends Controller {
     public function __construct() {
         parent::__construct();
         header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(200);
-            exit();
-        }
+        // CORS is handled globally in index.php — do NOT set Access-Control-Allow-Origin here,
+        // because a wildcard '*' is incompatible with credentials: 'include' (session cookies).
         
         // Load required models
         $this->call->model('ActivityModel');

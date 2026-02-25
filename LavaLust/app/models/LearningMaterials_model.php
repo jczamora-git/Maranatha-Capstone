@@ -30,13 +30,17 @@ class LearningMaterials_model extends Model
      * @param int|null $sectionId Optional section ID filter
      * @return array Learning materials
      */
-    public function getBySubject($subjectId, $sectionId = null)
+    public function getBySubject($subjectId, $sectionId = null, $schoolYear = null)
     {
         $query = $this->db->table($this->table)
                           ->where('subject_id', $subjectId);
 
         if ($sectionId !== null) {
             $query = $query->where('section_id', $sectionId);
+        }
+
+        if ($schoolYear !== null) {
+            $query = $query->where('school_year', $schoolYear);
         }
 
         return $query->order_by('created_at', 'DESC')

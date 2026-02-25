@@ -28,10 +28,44 @@ class AnnouncementController extends Controller
             if (!empty($_GET['status'])) $filters['status'] = $_GET['status'];
             if (!empty($_GET['search'])) $filters['search'] = $_GET['search'];
 
-            $list = $this->AnnouncementModel->get_all($filters);
+            $user_id = $this->session->userdata('user_id');
+            $list = $this->AnnouncementModel->get_all_with_read_status($filters, $user_id);
 
             http_response_code(200);
             echo json_encode(['success' => true, 'data' => $list, 'count' => is_array($list) ? count($list) : 0]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: '.$e->getMessage()]);
+        }
+    }
+
+    // POST /api/announcements/{id}/mark-as-read
+    public function api_mark_announcement_as_read($id)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $user_id = $this->session->userdata('user_id');
+            $existing = $this->AnnouncementModel->get_announcement($id);
+            if (!$existing) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Announcement not found']);
+                return;
+            }
+
+            $res = $this->AnnouncementModel->mark_as_read((int)$id, (int)$user_id);
+            if ($res) {
+                echo json_encode(['success' => true, 'message' => 'Marked as read']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to mark as read']);
+            }
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Server error: '.$e->getMessage()]);

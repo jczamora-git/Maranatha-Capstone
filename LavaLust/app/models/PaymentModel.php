@@ -361,11 +361,15 @@ class PaymentModel extends Model
 
         $statuses = ['Pending', 'Verified', 'Approved', 'Rejected'];
         foreach ($statuses as $status) {
-            $countQuery = $this->db->table($this->table);
+            $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE status = ?";
+            $params = [$status];
             if ($academic_period_id) {
-                $countQuery = $countQuery->where('academic_period_id', $academic_period_id);
+                $sql .= " AND academic_period_id = ?";
+                $params[] = $academic_period_id;
             }
-            $count = $countQuery->where('status', $status)->count_all();
+            $stmt = $this->db->raw($sql, $params);
+            $result = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            $count = $result[0]['count'] ?? 0;
             $statusCounts[strtolower($status)] = $count;
         }
 

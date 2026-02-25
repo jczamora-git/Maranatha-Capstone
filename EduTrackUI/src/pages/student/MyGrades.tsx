@@ -5,15 +5,15 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Award, TrendingUp, BookOpen, List, LayoutGrid, Loader2 } from "lucide-react";
+import { BookOpen, Loader2, GraduationCap } from "lucide-react";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 
 const MyGrades = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSY, setActiveSY] = useState<string>("");
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "student") {
@@ -70,6 +70,11 @@ const MyGrades = () => {
           setCourses([]);
           setLoading(false);
           return;
+        }
+
+        // Store active school year for display
+        if (activePeriod.school_year) {
+          setActiveSY(activePeriod.school_year);
         }
 
         // Extract semester from active period (e.g., "1st Semester" -> "1st")
@@ -306,205 +311,184 @@ const MyGrades = () => {
 
   if (!isAuthenticated) return null;
 
+  const QUARTERS = [
+    { label: "Q1", full: "1st Quarter" },
+    { label: "Q2", full: "2nd Quarter" },
+    { label: "Q3", full: "3rd Quarter" },
+    { label: "Q4", full: "4th Quarter" },
+  ] as const;
+
+  // TODO: replace with real API data once grade school grading backend is ready
+  const MOCK_QUARTER_GRADES: Record<number, [number, number, number, number]> = {
+    0: [96, 94, 97, 95],
+    1: [92, 90, 93, 91],
+    2: [88, 91, 89, 90],
+    3: [95, 97, 96, 98],
+    4: [85, 87, 86, 88],
+    5: [93, 91, 94, 92],
+    6: [78, 82, 80, 83],
+    7: [97, 95, 96, 98],
+  };
+
+  const getGradeColor = (g: number) =>
+    g >= 90
+      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-400/30"
+      : g >= 75
+      ? "bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-400/30"
+      : "bg-red-500/15 text-red-600 dark:text-red-400 border border-red-400/30";
+
+  const getAvg = (grades: [number, number, number, number]) =>
+    Math.round(grades.reduce((s, g) => s + g, 0) / 4);
+
   return (
     <DashboardLayout>
-      <div className="p-8 bg-gradient-to-b from-background to-muted/30 min-h-screen">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">My Grades</h1>
-          <p className="text-muted-foreground text-lg">View your academic performance</p>
+      <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-b from-background to-muted/30 min-h-screen">
+        <div className="max-w-2xl mx-auto">
+
+        {/* Page Header */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
+              <GraduationCap className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold leading-tight">My Grades</h1>
+              <p className="text-sm text-muted-foreground">Academic Report Card</p>
+            </div>
+          </div>
         </div>
 
-        {/* Grade Summary Stats */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Courses</p>
-                  <p className="text-3xl font-bold text-success">{courses.length}</p>
-                </div>
+        {/* Report Card */}
+        <Card className="border shadow-sm">
+          {/* Report Card Header */}
+          <CardHeader className="pb-3 border-b bg-muted/30">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <CardTitle className="text-base sm:text-lg">Report Card</CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-0.5">
+                  Final grades per quarter
+                </CardDescription>
               </div>
-            </CardContent>
-          </Card>
+              <Badge variant="outline" className="self-start sm:self-center text-xs px-2 py-1">
+                {activeSY ? `School Year ${activeSY}` : "Loading..."}
+              </Badge>
+            </div>
+          </CardHeader>
 
-          <Card className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Average Grade</p>
-                  <p className="text-3xl font-bold text-primary">
-                    {courses.length > 0 
-                      ? Math.round(courses.reduce((sum, c) => sum + c.overallGrade, 0) / courses.length)
-                      : 0}%
-                  </p>
-                </div>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground text-sm">Loading grades...</span>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Award className="h-6 w-6 text-accent" />
+            ) : courses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <BookOpen className="h-7 w-7 text-muted-foreground/50" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Graded</p>
-                  <p className="text-3xl font-bold text-accent">
-                    {courses.filter(c => c.midtermGrade || c.finaltermGrade).length}/{courses.length}
-                  </p>
-                </div>
+                <p className="font-medium text-muted-foreground">No subjects found</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Grades will appear here once subjects are enrolled</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Courses Section Header with View Toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Course Grades</h2>
-          <Button
-            aria-pressed={viewMode === "grid"}
-            title="Toggle list / grid"
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode((v) => (v === "list" ? "grid" : "list"))}
-            className="text-xs flex items-center gap-1 h-9"
-          >
-            {viewMode === "list" ? (
-              <LayoutGrid className="h-4 w-4" />
             ) : (
-              <List className="h-4 w-4" />
+              <div className="overflow-x-auto">
+                <table className="w-full table-fixed text-sm">
+                  <colgroup>
+                    {/* Subject column takes remaining space */}
+                    <col className="w-[45%]" />
+                    {/* Q1–Q4 each 11% */}
+                    <col className="w-[11%]" />
+                    <col className="w-[11%]" />
+                    <col className="w-[11%]" />
+                    <col className="w-[11%]" />
+                    {/* Final 11% */}
+                    <col className="w-[11%]" />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b bg-muted/20">
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+                        Subject
+                      </th>
+                      {QUARTERS.map((q) => (
+                        <th
+                          key={q.full}
+                          className="text-center py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide"
+                          title={q.full}
+                        >
+                          {q.label}
+                        </th>
+                      ))}
+                      <th className="text-center py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+                        Avg
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {courses.map((course, index) => {
+                      const qGrades = MOCK_QUARTER_GRADES[index] ?? null;
+                      const avg = qGrades ? getAvg(qGrades) : null;
+                      return (
+                      <tr
+                        key={index}
+                        className="hover:bg-muted/10 transition-colors"
+                      >
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-foreground text-sm leading-tight truncate">{course.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{course.code}</p>
+                        </td>
+
+                        {/* Q1–Q4 grades */}
+                        {QUARTERS.map((q, qi) => (
+                          <td key={q.full} className="text-center py-3">
+                            {qGrades ? (
+                              <span className={`inline-flex items-center justify-center w-9 h-7 rounded-md text-xs font-semibold ${getGradeColor(qGrades[qi])}`}>
+                                {qGrades[qi]}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center w-9 h-7 rounded-md text-xs font-medium text-muted-foreground/40 bg-muted/30">
+                                —
+                              </span>
+                            )}
+                          </td>
+                        ))}
+
+                        {/* Average */}
+                        <td className="text-center py-3">
+                          {avg !== null ? (
+                            <span className={`inline-flex items-center justify-center w-9 h-7 rounded-md text-xs font-bold ${getGradeColor(avg)}`}>
+                              {avg}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center w-9 h-7 rounded-md text-xs font-semibold text-muted-foreground/40 bg-muted/40">
+                              —
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* Legend */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 px-4 py-3 border-t bg-muted/10 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500/40 inline-block flex-shrink-0" />
+                    Passing (75+)
+                  </span>
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-red-500/20 border border-red-500/40 inline-block flex-shrink-0" />
+                    Failing (&lt;75)
+                  </span>
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-muted border border-border inline-block flex-shrink-0" />
+                    Not yet graded
+                  </span>
+                </div>
+              </div>
             )}
-          </Button>
+          </CardContent>
+        </Card>
         </div>
-
-        {/* Courses Grid or List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="ml-2 text-muted-foreground">Loading grades...</span>
-          </div>
-        ) : courses.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No courses found.</p>
-          </div>
-        ) : viewMode === "list" ? (
-          <div className="space-y-4">
-            {courses.map((course, index) => (
-              <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{course.code}</CardTitle>
-                      <CardDescription className="text-sm">{course.title}</CardDescription>
-                    </div>
-                    <Badge className="bg-primary/10 text-primary border-primary/20">
-                      Overall: {course.overallGrade}%
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    {/* Midterm Grade */}
-                    <div className="p-4 border border-border rounded-lg hover:bg-primary/5 transition-colors">
-                      <p className="text-sm text-muted-foreground mb-2">Midterm</p>
-                      {course.midtermGrade ? (
-                        <div>
-                          <p className="text-2xl font-bold text-primary">{course.midtermGrade.percentage}%</p>
-                          <p className="text-xs text-muted-foreground mt-1">{course.midtermGrade.score}/{course.midtermGrade.maxScore}</p>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">No grades yet</p>
-                      )}
-                    </div>
-
-                    {/* Finalterm Grade */}
-                    <div className="p-4 border border-border rounded-lg hover:bg-primary/5 transition-colors">
-                      <p className="text-sm text-muted-foreground mb-2">Final Term</p>
-                      {course.finaltermGrade ? (
-                        <div>
-                          <p className="text-2xl font-bold text-success">{course.finaltermGrade.percentage}%</p>
-                          <p className="text-xs text-muted-foreground mt-1">{course.finaltermGrade.score}/{course.finaltermGrade.maxScore}</p>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">No grades yet</p>
-                      )}
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    className="w-full" 
-                    onClick={() => navigate(`/student/course-grade-detail/${course.id}`)}
-                  >
-                    View Detailed Breakdown
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course, index) => (
-              <Card key={index} className="border-0 shadow-sm hover:shadow-lg transition-shadow duration-200 flex flex-col">
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <CardTitle className="text-base">{course.code}</CardTitle>
-                      <CardDescription className="text-xs mt-1">{course.title}</CardDescription>
-                    </div>
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-sm px-2 py-1 flex-shrink-0">
-                      {course.overallGrade}%
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col">
-                  <div className="space-y-3 flex-1">
-                    {/* Midterm */}
-                    <div className="p-3 border border-border rounded-lg hover:bg-primary/5 transition-colors">
-                      <p className="text-xs text-muted-foreground font-semibold mb-2">Midterm</p>
-                      {course.midtermGrade ? (
-                        <div>
-                          <p className="text-lg font-bold text-primary">{course.midtermGrade.percentage}%</p>
-                          <p className="text-xs text-muted-foreground">{course.midtermGrade.score}/{course.midtermGrade.maxScore}</p>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">No grades</p>
-                      )}
-                    </div>
-
-                    {/* Finalterm */}
-                    <div className="p-3 border border-border rounded-lg hover:bg-primary/5 transition-colors">
-                      <p className="text-xs text-muted-foreground font-semibold mb-2">Final Term</p>
-                      {course.finaltermGrade ? (
-                        <div>
-                          <p className="text-lg font-bold text-success">{course.finaltermGrade.percentage}%</p>
-                          <p className="text-xs text-muted-foreground">{course.finaltermGrade.score}/{course.finaltermGrade.maxScore}</p>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">No grades</p>
-                      )}
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="w-full mt-4" 
-                    onClick={() => navigate(`/student/course-grade-detail/${course.id}`)}
-                  >
-                    View Breakdown
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );

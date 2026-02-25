@@ -62,17 +62,40 @@ class TeacherSubjectAssignmentModel extends Model
      */
     public function get_teacher_subjects($teacher_id, $school_year = null)
     {
-        $query = $this->db->table($this->table . ' tsa')
-                          ->join('subjects s', 'tsa.subject_id = s.id')
-                          ->select('tsa.id, tsa.subject_id, tsa.school_year, tsa.created_at,
-                                   s.course_code, s.name, s.level, s.status')
-                          ->where('tsa.teacher_id', $teacher_id);
+        // Since there is exactly one section per year level (via year_level_sections),
+        // we join through year_levels → year_level_sections → sections to resolve the
+        // section_id and section_name directly, avoiding extra round-trips from the frontend.
+        $sql = "
+            SELECT
+                tsa.id,
+                tsa.subject_id,
+                tsa.school_year,
+                tsa.created_at,
+                s.course_code,
+                s.name,
+                s.level,
+                s.status,
+                sec.id   AS section_id,
+                sec.name AS section_name
+            FROM teacher_subject_assignments tsa
+            INNER JOIN subjects s        ON tsa.subject_id = s.id
+            LEFT  JOIN year_levels yl    ON yl.name COLLATE utf8mb4_unicode_ci = s.level COLLATE utf8mb4_unicode_ci
+            LEFT  JOIN year_level_sections yls ON yls.year_level_id = yl.id
+            LEFT  JOIN sections sec      ON sec.id = yls.section_id
+            WHERE tsa.teacher_id = ?
+        ";
+
+        $params = [$teacher_id];
 
         if ($school_year) {
-            $query = $query->where('tsa.school_year', $school_year);
+            $sql .= " AND tsa.school_year = ?";
+            $params[] = $school_year;
         }
 
-        return $query->order_by('s.course_code', 'ASC')->get_all();
+        $sql .= " ORDER BY s.course_code ASC";
+
+        $stmt = $this->db->raw($sql, $params);
+        return $stmt ? $stmt->fetchAll(\PDO::FETCH_ASSOC) : [];
     }
 
     /**

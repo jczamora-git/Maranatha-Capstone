@@ -23,8 +23,21 @@ AddDefaultCharset UTF-8
     Options -Indexes
 
     # --------------------------------------------------
+    # Redirect direct GCash SPA links from root to /ui/
+    RewriteRule ^admin/gcash-session/(.+)$ /ui/admin/gcash-session/$1 [QSA,R=302,L]
+    RewriteRule ^payment-proof/(.+)$ /ui/payment-proof/$1 [QSA,R=302,L]
+
+    # --------------------------------------------------
+    # Handle SPA routes for /ui/ folder - redirect to ui/index.html
+    RewriteCond %{REQUEST_URI} ^/ui
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ui(/.*)?$ /ui/index.html [QSA,L]
+
+    # --------------------------------------------------
     # Route all requests through index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/ui
     RewriteRule ^(.*)$ index.php/$1 [QSA,L]
 </IfModule>

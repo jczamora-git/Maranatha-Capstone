@@ -78,4 +78,73 @@ class AnnouncementModel extends Model
         // soft delete: mark as archived
         return $this->db->table($this->table)->where('id', $id)->update(['status' => 'archived', 'updated_at' => date('Y-m-d H:i:s')]);
     }
+
+    /**
+     * Get all announcements with per-user is_read flag.
+     * @param array $filters
+     * @param int|null $user_id  If provided, adds is_read column
+     * @return array
+     */
+    public function get_all_with_read_status($filters = [], $user_id = null)
+    {
+        $where_clauses = ['a.status != \'archived\''];
+        $params = [];
+
+        if (!empty($filters['audience'])) {
+            $where_clauses[] = 'a.audience = ?';
+            $params[] = $filters['audience'];
+        }
+        if (!empty($filters['status'])) {
+            $where_clauses[] = 'a.status = ?';
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['search'])) {
+            $s = '%' . $filters['search'] . '%';
+            $where_clauses[] = '(a.title LIKE ? OR a.message LIKE ?)';
+            $params[] = $s;
+            $params[] = $s;
+        }
+
+        $where_sql = count($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
+
+        if ($user_id) {
+            $sql = "
+                SELECT a.id, a.title, a.message, a.audience, a.status,
+                       a.published_at, a.starts_at, a.ends_at, a.created_by,
+                       a.created_at, a.updated_at,
+                       CASE WHEN ar.id IS NOT NULL THEN 1 ELSE 0 END AS is_read,
+                       ar.read_at
+                FROM announcements a
+                LEFT JOIN announcement_reads ar ON ar.announcement_id = a.id AND ar.user_id = ?
+                $where_sql
+                ORDER BY a.published_at DESC
+            ";
+            array_unshift($params, $user_id);
+        } else {
+            $sql = "
+                SELECT a.id, a.title, a.message, a.audience, a.status,
+                       a.published_at, a.starts_at, a.ends_at, a.created_by,
+                       a.created_at, a.updated_at,
+                       0 AS is_read, NULL AS read_at
+                FROM announcements a
+                $where_sql
+                ORDER BY a.published_at DESC
+            ";
+        }
+
+        $stmt = $this->db->raw($sql, $params);
+        return $stmt ? $stmt->fetchAll(\PDO::FETCH_ASSOC) : [];
+    }
+
+    /**
+     * Mark an announcement as read for a user (upsert).
+     */
+    public function mark_as_read($announcement_id, $user_id)
+    {
+        $sql = "INSERT INTO announcement_reads (announcement_id, user_id, read_at)
+                VALUES (?, ?, NOW())
+                ON DUPLICATE KEY UPDATE read_at = NOW()";
+        $stmt = $this->db->raw($sql, [$announcement_id, $user_id]);
+        return $stmt !== false;
+    }
 }

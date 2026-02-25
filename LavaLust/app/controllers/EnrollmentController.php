@@ -21,11 +21,6 @@ class EnrollmentController extends Controller
     {
         api_set_json_headers();
         
-        // Handle CORS preflight
-        header('Access-Control-Allow-Origin: http://localhost:5174');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
-        
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(200);
             return;
@@ -142,7 +137,8 @@ class EnrollmentController extends Controller
                 $this->db->table('password_resets')->insert($tokenData);
 
                 // Send email with set-password link
-                $resetLink = "http://localhost:5174/set-password?token=" . urlencode($token);
+                $portalUrl = rtrim(config_item('portal_url') ?: 'http://localhost:5174', '/');
+                $resetLink = $portalUrl . "/set-password?token=" . urlencode($token);
                 $emailBody = generate_set_password_email($input['learner_first_name'], $resetLink);
                 $emailResult = sendNotif($input['account_email'], 'Set Your Password - Maranatha Enrollment', $emailBody);
 
@@ -481,11 +477,6 @@ class EnrollmentController extends Controller
     public function api_get_enrollments()
     {
         api_set_json_headers();
-        
-        // Handle CORS preflight
-        header('Access-Control-Allow-Origin: http://localhost:5174');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
         
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(200);

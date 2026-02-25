@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import { useNotificationContext } from "@/context/NotificationContext";
-import { NotificationBell } from "@/components/NotificationBell";
+
 import { useEffect, useState } from "react";
 
 const StudentDashboard = () => {
@@ -359,7 +359,6 @@ const StudentDashboard = () => {
             <Badge className="bg-accent text-accent-foreground">Student {studentRecord?.student_id ?? studentRecord?.id ?? 'MCAF2026-0001'}</Badge>
           </div>
           <div className="flex items-center gap-4">
-            <NotificationBell />
             <Link to="/student/settings" className="text-muted-foreground hover:text-primary">
               <Settings className="h-5 w-5" />
             </Link>

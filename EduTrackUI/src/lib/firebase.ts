@@ -61,7 +61,7 @@ const registerFCMToken = async (token: string) => {
   }
 };
 
-// Handle incoming messages when app is in foreground
+// Handle incoming messages when app is in foreground (one-shot, kept for legacy use)
 export const onMessageListener = () =>
   new Promise((resolve) => {
     onMessage(messaging, (payload) => {
@@ -69,3 +69,16 @@ export const onMessageListener = () =>
       resolve(payload);
     });
   });
+
+/**
+ * Subscribe to foreground FCM messages persistently.
+ * Returns an unsubscribe function — call it in a useEffect cleanup.
+ *
+ * @param callback - called every time a foreground push arrives
+ */
+export const subscribeFCMMessages = (callback: (payload: any) => void) => {
+  return onMessage(messaging, (payload) => {
+    console.log('[FCM] Foreground message received:', payload);
+    callback(payload);
+  });
+};

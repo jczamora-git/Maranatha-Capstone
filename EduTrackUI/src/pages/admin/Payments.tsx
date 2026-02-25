@@ -2503,7 +2503,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                 </div>
               </div>
 
-              {form.payment_type && (
+              {form.payment_type === "Tuition Full Payment" && (
                 <div className="space-y-3">
                   <Label className="text-base font-semibold">Apply Discounts</Label>
                   <div className="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50">

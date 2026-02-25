@@ -34,6 +34,7 @@ class StudentModel extends Model
                     users.status as user_status,
                     students.id,
                     students.student_id, 
+                    students.rfid_card,
                     students.gender, 
                     students.year_level, 
                     students.section_id, 
@@ -90,7 +91,7 @@ class StudentModel extends Model
         if (!empty($filters['search'])) {
             $search = '%' . $filters['search'] . '%';
             $sql = "SELECT 
-                        students.id, students.user_id, students.student_id, students.gender, students.year_level, students.section_id, students.status, students.created_at, students.updated_at, 
+                        students.id, students.user_id, students.student_id, students.rfid_card, students.gender, students.year_level, students.section_id, students.status, students.created_at, students.updated_at, 
                         users.email, users.first_name, users.last_name, users.phone, users.status as user_status, users.role
                     FROM students
                     JOIN users ON students.user_id = users.id
@@ -130,7 +131,7 @@ class StudentModel extends Model
             // No search - use query builder
             $query = $this->db->table($this->table)
                       ->join('users', 'students.user_id = users.id')
-                      ->select('students.id, students.user_id, students.student_id, students.gender, students.year_level, students.section_id, students.status, students.created_at, students.updated_at, users.email, users.first_name, users.last_name, users.phone, users.status as user_status, users.role');
+                      ->select('students.id, students.user_id, students.student_id, students.rfid_card, students.gender, students.year_level, students.section_id, students.status, students.created_at, students.updated_at, users.email, users.first_name, users.last_name, users.phone, users.status as user_status, users.role');
 
             // Status filter
             if (!empty($filters['status'])) {
@@ -192,6 +193,38 @@ class StudentModel extends Model
         return $this->db->table($this->table)
                         ->where('user_id', $userId)
                         ->get();
+    }
+
+    /**
+     * Get student by RFID card code
+     */
+    public function get_by_rfid_card($rfidCode)
+    {
+        return $this->db->table($this->table)
+                        ->join('users', 'students.user_id = users.id')
+                        ->select('students.id, students.user_id, students.student_id, students.rfid_card, students.year_level, students.section_id, users.first_name, users.last_name, users.email, users.role')
+                        ->where('students.rfid_card', $rfidCode)
+                        ->get();
+    }
+
+    public function update_rfid_card($studentId, $rfidCode)
+    {
+        return $this->db->table($this->table)
+                        ->where('id', $studentId)
+                        ->update([
+                            'rfid_card' => $rfidCode,
+                            'updated_at' => date('Y-m-d H:i:s')
+                        ]);
+    }
+
+    public function clear_rfid_card($studentId)
+    {
+        return $this->db->table($this->table)
+                        ->where('id', $studentId)
+                        ->update([
+                            'rfid_card' => null,
+                            'updated_at' => date('Y-m-d H:i:s')
+                        ]);
     }
 
     /**

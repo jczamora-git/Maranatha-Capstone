@@ -192,70 +192,36 @@ const MyCourses = () => {
           }
         }
 
-        // Fetch teacher assignments to get teacher info for each subject (use student-accessible endpoint if section_id available)
-        let teacherAssignments: any[] = [];
-        if (studentSectionId) {
-          try {
-            const taRes = await apiGet(`${API_ENDPOINTS.TEACHER_ASSIGNMENTS_FOR_STUDENT}?section_id=${encodeURIComponent(studentSectionId)}`);
-            teacherAssignments = taRes.data || taRes.assignments || taRes || [];
-          } catch (err) {
-            console.warn('Failed to fetch teacher assignments for student endpoint, trying fallback', err);
-            // Fallback: fetch all and filter locally
-            try {
-              const taRes = await apiGet(API_ENDPOINTS.TEACHER_ASSIGNMENTS);
-              teacherAssignments = taRes.data || taRes.assignments || taRes || [];
-            } catch (err2) {
-              console.warn('Fallback teacher assignments fetch also failed', err2);
-            }
+        // Fetch teacher info from teacher_subject_assignments (joins teachers+users for names)
+        let teacherMap = new Map<number, { id: number; first_name: string; last_name: string }>();
+        try {
+          // Collect subject IDs to query only the needed teachers
+          const subjectIds = (Array.isArray(subjects) ? subjects : []).map((s: any) => s?.id).filter(Boolean);
+          const url = subjectIds.length
+            ? `${API_ENDPOINTS.TEACHER_SUBJECT_ASSIGNMENTS}?subject_id=${subjectIds.join(',')}`
+            : API_ENDPOINTS.TEACHER_SUBJECT_ASSIGNMENTS;
+          const tsaRes = await apiGet(url);
+          const tMap: Record<string, any> = tsaRes.teachers || {};
+          for (const [subjectId, tInfo] of Object.entries(tMap)) {
+            const t: any = tInfo;
+            teacherMap.set(Number(subjectId), {
+              id: t.teacher_id,
+              first_name: t.first_name || '',
+              last_name: t.last_name || '',
+            });
           }
-        }
-
-        // Build a fast lookup map from subjectId+sectionId => teacher info
-        const teacherMap = new Map<string, any>();
-        if (Array.isArray(teacherAssignments)) {
-          teacherAssignments.forEach((ta: any) => {
-            const subjId = ta?.subject?.id ?? ta?.subject_id ?? ta?.subjectId ?? null;
-            const teacherObj = {
-              id: ta?.teacher_id ?? ta?.teacher?.id ?? null,
-              first_name: ta?.teacher?.first_name ?? ta?.teacher?.firstName ?? null,
-              last_name: ta?.teacher?.last_name ?? ta?.teacher?.lastName ?? null,
-              name: ta?.teacher_name ?? (ta?.teacher?.first_name && ta?.teacher?.last_name ? `${ta.teacher.first_name} ${ta.teacher.last_name}` : null)
-            };
-
-            const sections = ta?.sections ?? [];
-            if (Array.isArray(sections) && sections.length > 0) {
-              sections.forEach((s: any) => {
-                const sid = s?.id ?? s?.section_id ?? s ?? null;
-                if (subjId != null && sid != null) {
-                  teacherMap.set(`${subjId}_${sid}`, teacherObj);
-                }
-              });
-            } else if (subjId != null) {
-              // fallback: map subject alone
-              teacherMap.set(`${subjId}_*`, teacherObj);
-            }
-          });
+        } catch (err) {
+          console.warn('Failed to fetch subject teachers', err);
         }
 
         // Map subjects to course cards with teacher info using the teacherMap
         const mappedCourses = (Array.isArray(subjects) ? subjects : []).map((subject: any) => {
           const subjId = subject?.id ?? subject?.subject_id ?? null;
-          let teacherObj = null;
+          const teacherObj = subjId != null ? teacherMap.get(Number(subjId)) ?? null : null;
 
-          if (subjId != null) {
-            if (studentSectionId) {
-              teacherObj = teacherMap.get(`${subjId}_${studentSectionId}`) || teacherMap.get(`${subjId}_*`);
-            }
-
-            if (!teacherObj) {
-              // as a last resort, find any teacher for the subject
-              for (const [key, val] of teacherMap.entries()) {
-                if (key.startsWith(`${subjId}_`)) { teacherObj = val; break; }
-              }
-            }
-          }
-
-          const teacherName = teacherObj?.name ?? (teacherObj?.first_name && teacherObj?.last_name ? `${teacherObj.first_name} ${teacherObj.last_name}` : 'TBA');
+          const teacherName = teacherObj
+            ? `${teacherObj.first_name} ${teacherObj.last_name}`.trim() || 'TBA'
+            : 'TBA';
           const teacherId = teacherObj?.id ?? null;
 
           return {
@@ -362,115 +328,54 @@ const MyCourses = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-8 bg-gradient-to-b from-background to-muted/30 min-h-screen">
+      <div className="px-4 py-4 sm:px-8 sm:py-8 bg-gradient-to-b from-background to-muted/30 min-h-screen">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md flex-shrink-0">
+              <BookOpen className="h-5 w-5 text-white" />
+            </div>
             <div>
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              My Subjects
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              {studentInfo ? (
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent leading-tight">
+                My Subjects
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                {studentInfo ? (
                   studentInfo.yearLevelNum && studentInfo.section_name
-                    ? `Maranatha Christian Academy | ${studentInfo.yearLevelNum}-${studentInfo.section_name}`
-                    : `${studentInfo.displayYearLabel || (studentInfo.year_level || studentInfo.yearLevel || 'N/A')} - ${studentInfo.section_name || 'Section'}`
+                    ? `${studentInfo.yearLevelNum}-${studentInfo.section_name} · ${courses.length} subject${courses.length !== 1 ? 's' : ''}`
+                    : `${studentInfo.displayYearLabel || ''} · ${courses.length} subject${courses.length !== 1 ? 's' : ''}`
                 ) : (
                   'View all your enrolled courses'
                 )}
-            </p>
-          </div>
-            
-          </div>
-          
-          {/* Quick Stats */}
-          {!loading && courses.length > 0 && (
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-blue-500 flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-blue-700">{courses.length}</p>
-                      <p className="text-xs text-blue-600">Enrolled Courses</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-purple-500 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-purple-700">{studentInfo?.displayYearLabel?.match(/\d+/)?.[0] || 'N/A'}</p>
-                      <p className="text-xs text-purple-600">Year Level</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-emerald-100/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-emerald-500 flex items-center justify-center">
-                      <Award className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-emerald-700">{courses.reduce((sum, c) => sum + (c.credits || 0), 0)}</p>
-                      <p className="text-xs text-emerald-600">Total Credits</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              </p>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Main Card */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b pb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold">
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      All Courses ({courses.length})
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    </span>
-                  ) : (
-                    `All Courses (${sortedCourses.length})`
-                  )}
-                </CardTitle>
-                <CardDescription className="text-base">
-                  Your enrolled courses for this semester
-                </CardDescription>
-              </div>
-            </div>
-
-            {/* Filters and Controls */}
-            <div className="flex items-center gap-3 mt-4 flex-wrap">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Card className="shadow-md border-0">
+          <CardHeader className="bg-gradient-to-r from-muted/40 to-muted/20 border-b py-4 px-4 sm:px-6">
+            {/* Filters and Controls — single scrollable row */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
+              {/* Search */}
+              <div className="relative min-w-[160px] flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search courses by name, code, or instructor..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 py-2.5 text-base border-2 focus:border-accent-500 rounded-xl bg-background shadow-sm"
+                  className="pl-9 py-2 text-sm border rounded-xl bg-background shadow-sm"
                 />
               </div>
 
-              <div className="w-48">
+              {/* Sort */}
+              <div className="flex-shrink-0 w-36">
                 <Select value={sortOption} onValueChange={setSortOption}>
-                  <SelectTrigger className="border-2 rounded-xl px-4 py-2.5 bg-background font-medium shadow-sm">
-                    {sortOption === "code_asc" && "Code A → Z"}
-                    {sortOption === "code_desc" && "Code Z → A"}
-                    {sortOption === "title_asc" && "Title A → Z"}
-                    {sortOption === "title_desc" && "Title Z → A"}
+                  <SelectTrigger className="border rounded-xl px-3 py-2 bg-background text-sm font-medium shadow-sm">
+                    {sortOption === "code_asc" && "Code A–Z"}
+                    {sortOption === "code_desc" && "Code Z–A"}
+                    {sortOption === "title_asc" && "Title A–Z"}
+                    {sortOption === "title_desc" && "Title Z–A"}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="code_asc">Code A → Z</SelectItem>
@@ -481,93 +386,76 @@ const MyCourses = () => {
                 </Select>
               </div>
 
+              {/* View toggle */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setViewMode((v) => (v === "list" ? "grid" : "list"))}
-                className="px-4 py-2.5 rounded-xl font-medium border-2 gap-2 shadow-sm hover:bg-accent-50 hover:border-accent-300 transition-all"
+                className="flex-shrink-0 px-3 py-2 rounded-xl border gap-1.5 text-sm font-medium shadow-sm"
                 title="Toggle view"
               >
-                {viewMode === "grid" ? <Grid3x3 className="h-5 w-5" /> : <List className="h-5 w-5" />}
-                <span>{viewMode === "grid" ? "Grid" : "List"}</span>
+                {viewMode === "grid" ? <Grid3x3 className="h-4 w-4" /> : <List className="h-4 w-4" />}
               </Button>
             </div>
           </CardHeader>
 
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <span className="ml-4 text-lg text-muted-foreground">Loading your courses...</span>
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <span className="ml-3 text-base text-muted-foreground">Loading your courses…</span>
               </div>
             ) : sortedCourses.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <BookOpen className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-semibold text-muted-foreground mb-2">
+                <BookOpen className="h-14 w-14 text-muted-foreground/30 mb-4" />
+                <h3 className="text-lg font-semibold text-muted-foreground mb-1">
                   {searchQuery ? "No Matching Courses" : "No Courses Found"}
                 </h3>
-                <p className="text-muted-foreground max-w-md">
+                <p className="text-sm text-muted-foreground max-w-sm">
                   {searchQuery
-                    ? "No courses match your search. Try adjusting your filters."
+                    ? "No courses match your search."
                     : "No courses are available for your year level and the current semester."}
                 </p>
               </div>
             ) : viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedCourses.map((course) => (
                   <div
                     key={course.id}
-                    className="rounded-2xl border-2 transition-all duration-300 flex flex-col overflow-hidden bg-white border-gray-200 hover:shadow-lg hover:border-accent-200"
+                    className="rounded-2xl border transition-all duration-200 flex flex-col overflow-hidden bg-white hover:shadow-lg hover:border-primary/30"
                   >
-                    {/* Card Header - Course Info */}
-                    <div className="p-5 flex items-start gap-3">
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 bg-gradient-to-br from-primary to-accent">
-                        <BookOpen className="h-7 w-7 text-white" />
+                    {/* Card top */}
+                    <div className="p-4 flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 bg-gradient-to-br from-primary to-accent">
+                        <BookOpen className="h-6 w-6 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-base text-gray-900">{course.code}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{course.title}</p>
-                        {course.semester && (
-                          <Badge variant="secondary" className="text-xs mt-2">
-                            {course.semester}
-                          </Badge>
-                        )}
+                        <p className="font-bold text-base text-gray-900 leading-snug">{course.code}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 leading-snug">{course.title}</p>
                       </div>
                     </div>
 
-                    {/* Instructor & Details Section */}
-                    <div className="px-5 py-4 bg-blue-50 border-t border-gray-200">
+                    {/* Instructor row */}
+                    <div className="px-4 pb-4">
                       <button
                         onClick={() => handleViewTeacher(course.teacherId)}
-                        className="w-full flex items-center gap-2 text-sm hover:text-primary transition-colors mb-3 group"
-                        disabled={!course.teacherId}
+                        className="w-full flex items-center gap-2 text-sm hover:text-primary transition-colors group"
                       >
-                        <div className="h-8 w-8 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center flex-shrink-0 transition-colors">
-                          <User className="h-4 w-4 text-primary" />
+                        <div className="h-7 w-7 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center flex-shrink-0 transition-colors">
+                          <User className="h-3.5 w-3.5 text-primary" />
                         </div>
                         <div className="text-left flex-1 min-w-0">
-                          <p className="text-xs text-muted-foreground">Instructor</p>
-                          <p className="font-medium truncate text-gray-900">{course.teacher}</p>
+                          <p className="text-xs text-muted-foreground leading-none">Teacher</p>
+                          <p className="font-medium truncate text-gray-900 text-sm">{course.teacher}</p>
                         </div>
                       </button>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="text-center p-2 rounded-lg bg-white border border-gray-200">
-                          <p className="text-xs text-muted-foreground">Section</p>
-                          <p className="font-semibold text-sm text-gray-900">{course.section}</p>
-                        </div>
-                        <div className="text-center p-2 rounded-lg bg-white border border-gray-200">
-                          <p className="text-xs text-muted-foreground">Credits</p>
-                          <p className="font-semibold text-sm text-gray-900">{course.credits}</p>
-                        </div>
-                      </div>
                     </div>
 
-                    {/* Card Actions */}
-                    <div className="px-5 py-4 border-t border-gray-200 mt-auto">
+                    {/* View Course button */}
+                    <div className="px-4 pb-4 mt-auto">
                       <Button
                         onClick={() => navigate(`/student/courses/${course.id}`)}
-                        className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-md font-medium"
+                        className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-sm font-medium text-sm"
                       >
                         <BookOpen className="h-4 w-4 mr-2" />
                         View Course
@@ -577,41 +465,30 @@ const MyCourses = () => {
                 ))}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {sortedCourses.map((course) => (
                   <div
                     key={course.id}
-                    className="rounded-2xl border-2 transition-all duration-300 flex items-center justify-between p-4 bg-card border-accent-100 hover:border-accent-300 hover:shadow-md"
+                    className="rounded-2xl border transition-all duration-200 flex items-center gap-3 p-3 bg-white hover:shadow-md hover:border-primary/30"
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 bg-gradient-to-br from-primary to-accent">
-                        <BookOpen className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-lg">{course.title}</p>
-                          <Badge variant="outline" className="text-xs flex-shrink-0">
-                            {course.code}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {course.teacher} • {course.section} • {course.credits} Credits
-                          {course.semester && ` • ${course.semester}`}
-                        </p>
-                      </div>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 bg-gradient-to-br from-primary to-accent">
+                      <BookOpen className="h-5 w-5 text-white" />
                     </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/student/courses/${course.id}`)}
-                        className="gap-1 font-medium hover:bg-accent-50 hover:border-accent-300 transition-all"
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        View Course
-                      </Button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <p className="font-semibold text-sm text-gray-900 truncate">{course.title}</p>
+                        <span className="text-xs text-muted-foreground flex-shrink-0 font-medium">{course.code}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{course.teacher}</p>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/student/courses/${course.id}`)}
+                      className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg"
+                    >
+                      View
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -626,7 +503,7 @@ const MyCourses = () => {
           <DialogHeader>
             <DialogTitle>Teacher Information</DialogTitle>
             <DialogDescription>
-              Contact details and assigned courses
+              Contact details for this teacher
             </DialogDescription>
           </DialogHeader>
           {loadingTeacher ? (
@@ -643,7 +520,7 @@ const MyCourses = () => {
                   <h3 className="font-semibold text-lg">
                     {selectedTeacher.first_name} {selectedTeacher.last_name}
                   </h3>
-                  <p className="text-sm text-muted-foreground">Instructor</p>
+                  <p className="text-sm text-muted-foreground">Teacher</p>
                 </div>
               </div>
 

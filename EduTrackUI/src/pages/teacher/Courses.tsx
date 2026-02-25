@@ -73,33 +73,6 @@ const Courses = () => {
   });
 
   // Helper: attach student counts per section (by year level) - only if not already populated
-  const fetchStudentCountsForCourses = async (coursesToUpdate: Course[]) => {
-    // For each course, for each section that has an id, fetch students count by year level + section_id
-    const updated = await Promise.all(coursesToUpdate.map(async (c) => {
-      if (!c.sections || c.sections.length === 0) return c;
-      const secs = await Promise.all(c.sections.map(async (s) => {
-        // if section already has students count, skip
-        if (typeof s.students === 'number') return s;
-        // If we don't have section id, skip (no reliable way to query)
-        if (!s.id) return s;
-        try {
-          const q = [] as string[];
-          if (c.yearLevel) q.push(`year_level=${encodeURIComponent(c.yearLevel)}`);
-          q.push(`section_id=${encodeURIComponent(String(s.id))}`);
-          const url = `${API_ENDPOINTS.STUDENTS}?${q.join('&')}`;
-          const res = await apiGet(url);
-          const count = (res && (typeof res.count === 'number' ? res.count : (Array.isArray(res.data) ? res.data.length : 0))) || 0;
-          return { ...s, students: count };
-        } catch (e) {
-          return { ...s, students: undefined };
-        }
-      }));
-      return { ...c, sections: secs };
-    }));
-
-    setCourses(updated);
-  };
-
   const fetchTeacherCourses = async () => {
     if (!user) return;
     setLoading(true);
@@ -113,56 +86,37 @@ const Courses = () => {
         return;
       }
 
-      const levels = Array.from(new Set(subjects.map((s: any) => s.level || s.subject_level).filter(Boolean)));
-      const sectionsByLevel = new Map<string, Array<{ id: number | string; name: string; students?: number }>>();
+      // Backend now resolves section_id via year_level_sections JOIN —
+      // collect unique real section IDs to fetch student counts in parallel.
+      const sectionIds = Array.from(new Set(
+        subjects
+          .map((s: any) => s.section_id)
+          .filter((id: any) => id && !String(id).startsWith('default-'))
+      )) as Array<string | number>;
 
-      await Promise.all(levels.map(async (level) => {
+      const studentCountBySection = new Map<string, number>();
+      await Promise.all(sectionIds.map(async (sectionId) => {
         try {
-          const studentsRes = await apiGet(`${API_ENDPOINTS.STUDENTS}?year_level=${encodeURIComponent(level)}`);
-          if (studentsRes && Array.isArray(studentsRes.data)) {
-            const sectionMap = new Map<number | string, { id: number | string; name: string; count: number }>();
-
-            studentsRes.data.forEach((student: any) => {
-              if (student.section_id && student.section_name) {
-                if (sectionMap.has(student.section_id)) {
-                  sectionMap.get(student.section_id)!.count++;
-                } else {
-                  sectionMap.set(student.section_id, {
-                    id: student.section_id,
-                    name: student.section_name,
-                    count: 1
-                  });
-                }
-              }
-            });
-
-            if (sectionMap.size > 0) {
-              sectionsByLevel.set(level, Array.from(sectionMap.values()).map(sec => ({
-                id: sec.id,
-                name: sec.name,
-                students: sec.count
-              })));
-            } else {
-              sectionsByLevel.set(level, [{
-                id: `default-${level}`,
-                name: level,
-                students: studentsRes.data.length
-              }]);
-            }
-          }
-        } catch (err) {
-          console.error('Failed to fetch students for year level:', level, err);
-        }
+          const res = await apiGet(`${API_ENDPOINTS.STUDENTS}?section_id=${encodeURIComponent(String(sectionId))}`);
+          const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+          studentCountBySection.set(String(sectionId), list.length);
+        } catch (_) {}
       }));
 
       const mapped: Course[] = subjects.map((subject: any, idx: number) => {
         const level = subject.level || subject.subject_level || '';
+        const sectionId = subject.section_id ?? null;
+        const sectionName = subject.section_name ?? level;
+        const sections = sectionId
+          ? [{ id: sectionId, name: sectionName, students: studentCountBySection.get(String(sectionId)) }]
+          : [];
+
         return {
           id: subject.subject_id ?? subject.id ?? idx,
           title: subject.name || subject.subject_name || '',
           code: subject.course_code || subject.code || '',
           yearLevel: level,
-          sections: level ? (sectionsByLevel.get(level) || []) : [],
+          sections,
           status: subject.status ?? 'active'
         };
       });

@@ -13,6 +13,10 @@ class PaymentController extends Controller
         $this->call->model('PaymentModel');
         $this->call->model('PaymentDiscountApplicationModel');
         $this->call->model('PaymentPenaltyModel');
+        $this->call->library('AuditLogger');
+        $this->call->library('NotificationService');
+        $this->call->library('session');
+        $this->call->helper('notification_templates');
         $this->call->database();
     }
 
@@ -522,6 +526,74 @@ class PaymentController extends Controller
                 // Get updated payment with discounts applied
                 $payment = $this->PaymentModel->get_payment($paymentId);
                 
+                // Build current user context for notification + audit log
+                $currentUser = [
+                    'user_id' => $this->session->userdata('user_id'),
+                    'role' => $this->session->userdata('role'),
+                    'first_name' => $this->session->userdata('first_name'),
+                    'last_name' => $this->session->userdata('last_name')
+                ];
+
+                // Send notification based on who created the payment
+                // (NotificationService->create() also writes the audit log internally)
+                try {
+                    $student_name = $payment['student_name'] ?? 'Student';
+                    $payment_amount = floatval($payment['amount']);
+                    $payment_type = $payment['payment_type'] ?? 'Payment';
+                    $payment_method = $payment['payment_method'] ?? 'Cash';
+                    $formattedAmount = number_format($payment_amount, 2);
+                    $actor_name = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+                    $actor_role = $currentUser['role'] ?? 'admin';
+
+                    if ($actor_role === 'student') {
+                        // Student submitted their own payment → notify all admins
+                        $recipients = $this->NotificationService->getRecipientsByRole('admin');
+                        $notif_title = 'New Payment Received';
+                        $notif_body = "{$student_name} submitted a {$payment_type} payment of ₱{$formattedAmount}";
+                        $notif_action_url = '/admin/payments';
+                        $notif_description = "{$student_name} submitted a payment of ₱{$formattedAmount}";
+                    } else {
+                        // Admin/teacher created payment for student → notify the student
+                        $recipients = [['user_id' => $payment['student_id'], 'role' => 'student']];
+                        $notif_title = 'Payment Recorded';
+                        $notif_body = "Your {$payment_type} payment of ₱{$formattedAmount} has been recorded";
+                        $notif_action_url = '/enrollment/payment';
+                        $notif_description = "{$actor_name} recorded a {$payment_type} payment of ₱{$formattedAmount} for {$student_name}";
+                    }
+
+                    $notificationData = [
+                        'type' => NotificationService::TYPE_PAYMENT_RECEIVED,
+                        'title' => $notif_title,
+                        'body' => $notif_body,
+                        'icon' => 'dollar-sign',
+                        'action_url' => $notif_action_url,
+                        'push_data' => [
+                            'screen' => $actor_role === 'student' ? 'PaymentDetails' : 'PaymentHistory',
+                            'payment_id' => $paymentId
+                        ],
+                        'metadata' => [
+                            'payment_id' => $paymentId,
+                            'amount' => $payment_amount,
+                            'payment_type' => $payment_type,
+                            'payment_method' => $payment_method
+                        ],
+                        'action' => 'payment.created',
+                        'entity_type' => 'payment',
+                        'entity_id' => $paymentId,
+                        'actor_user_id' => $currentUser['user_id'],
+                        'actor_role' => $actor_role,
+                        'actor_name' => $actor_name,
+                        'description' => $notif_description,
+                        'recipients' => $recipients
+                    ];
+
+                    $this->NotificationService->create($notificationData);
+                } catch (Exception $notifError) {
+                    error_log('Failed to send payment notification: ' . $notifError->getMessage());
+                    error_log('Notification error stack: ' . $notifError->getTraceAsString());
+                    // Don't fail the payment if notification fails
+                }
+                
                 echo json_encode([
                     'success' => true,
                     'message' => 'Payment created successfully',
@@ -570,10 +642,88 @@ class PaymentController extends Controller
                 }
             }
 
+            // Check if status is changing
+            $oldPayment = $this->PaymentModel->get_payment($id);
+            $oldStatus = $oldPayment['status'] ?? '';
+            $newStatus = $data['status'] ?? $oldStatus;
+            
             $success = $this->PaymentModel->update($id, $data);
 
             if ($success) {
                 $payment = $this->PaymentModel->get_payment($id);
+                
+                // Create audit log for payment update
+                try {
+                    $currentUser = [
+                        'user_id' => $this->session->userdata('user_id'),
+                        'role' => $this->session->userdata('role'),
+                        'first_name' => $this->session->userdata('first_name'),
+                        'last_name' => $this->session->userdata('last_name')
+                    ];
+                    $this->AuditLogger->log([
+                        'action' => 'update',
+                        'entity_type' => 'payment',
+                        'entity_id' => $id,
+                        'actor_user_id' => $currentUser['user_id'] ?? null,
+                        'actor_role' => $currentUser['role'] ?? 'admin',
+                        'actor_name' => ($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''),
+                        'description' => "Payment updated: Status changed from {$oldStatus} to {$newStatus}",
+                        'metadata' => [
+                            'old_status' => $oldStatus,
+                            'new_status' => $newStatus,
+                            'payment_id' => $id
+                        ]
+                    ]);
+                } catch (Exception $auditError) {
+                    error_log('Failed to create audit log: ' . $auditError->getMessage());
+                }
+                
+                // Send notification to student if status changed
+                if ($oldStatus !== $newStatus && in_array($newStatus, ['Approved', 'Verified', 'Rejected'])) {
+                    try {
+                        $student_id = $payment['student_id'];
+                        $payment_amount = floatval($payment['amount']);
+                        $payment_type = $payment['payment_type'] ?? 'Payment';
+                        
+                        // Get admin user info
+                        $admin_user_id = $this->session->userdata('user_id');
+                        $admin_first_name = $this->session->userdata('first_name');
+                        $admin_last_name = $this->session->userdata('last_name');
+                        $admin_name = trim("{$admin_first_name} {$admin_last_name}");
+                        
+                        if ($newStatus === 'Approved' || $newStatus === 'Verified') {
+                            // Use template helper for payment approved notification
+                            $notificationData = get_payment_approved_notification(
+                                $payment_type,
+                                $payment_amount,
+                                $id,
+                                $student_id,
+                                $admin_user_id,
+                                $admin_name
+                            );
+                            
+                            $this->NotificationService->create($notificationData);
+                        } elseif ($newStatus === 'Rejected') {
+                            $rejection_reason = $data['remarks'] ?? '';
+                            
+                            // Use template helper for payment rejected notification
+                            $notificationData = get_payment_rejected_notification(
+                                $payment_amount,
+                                $rejection_reason,
+                                $id,
+                                $student_id,
+                                $admin_user_id,
+                                $admin_name,
+                                $payment_type
+                            );
+                            
+                            $this->NotificationService->create($notificationData);
+                        }
+                    } catch (Exception $notifError) {
+                        error_log('Failed to send payment status notification: ' . $notifError->getMessage());
+                        // Don't fail the update if notification fails
+                    }
+                }
                 
                 echo json_encode([
                     'success' => true,
@@ -755,6 +905,60 @@ class PaymentController extends Controller
             }
 
             $refundPayment = $this->PaymentModel->get_payment($refundId);
+            
+            // Create audit log for refund
+            try {
+                $currentUser = [
+                    'user_id' => $this->session->userdata('user_id'),
+                    'role' => $this->session->userdata('role'),
+                    'first_name' => $this->session->userdata('first_name'),
+                    'last_name' => $this->session->userdata('last_name')
+                ];
+                $this->AuditLogger->log([
+                    'action' => 'create',
+                    'entity_type' => 'refund',
+                    'entity_id' => $refundId,
+                    'actor_user_id' => $currentUser['user_id'] ?? null,
+                    'actor_role' => $currentUser['role'] ?? 'admin',
+                    'actor_name' => ($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''),
+                    'description' => "Refund processed: ₱" . number_format($refundAmount, 2) . " for payment #{$id}",
+                    'metadata' => [
+                        'refund_amount' => $refundAmount,
+                        'original_payment_id' => $id,
+                        'refund_reason' => $refundReason
+                    ]
+                ]);
+            } catch (Exception $auditError) {
+                error_log('Failed to create audit log: ' . $auditError->getMessage());
+            }
+            
+            // Send notification to student about refund
+            try {
+                $student_id = $originalPayment['student_id'];
+                
+                // Get admin user info
+                $admin_user_id = $this->session->userdata('user_id');
+                $admin_first_name = $this->session->userdata('first_name');
+                $admin_last_name = $this->session->userdata('last_name');
+                $admin_name = trim("{$admin_first_name} {$admin_last_name}");
+                
+                // Use template helper for refund notification
+                $notificationData = get_refund_processed_notification(
+                    $refundAmount,
+                    $refundReason,
+                    $refundId,
+                    $id,
+                    $student_id,
+                    $admin_user_id,
+                    $admin_name
+                );
+                
+                $this->NotificationService->create($notificationData);
+            } catch (Exception $notifError) {
+                error_log('Failed to send refund notification: ' . $notifError->getMessage());
+                // Don't fail the refund if notification fails
+            }
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'Refund created successfully',

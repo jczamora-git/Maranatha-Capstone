@@ -4,7 +4,17 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 /**
  * Feature Flag Configuration
  * 
- * Controls which features are enabled in the backend API.
+ * Controls which features are enabled in the backend API and frontend UI.
+ * 
+ * ⚙️ TO ENABLE/DISABLE FEATURES:
+ * - Edit this file (LavaLust/app/config/features.php)
+ * - Change true/false for any feature
+ * - Save the file - changes apply immediately (no restart needed)
+ * - Frontend automatically fetches via /api/config/features endpoint
+ * 
+ * 📝 ENROLLMENT TYPES EXAMPLE:
+ * To hide "Returning Student" option from enrollment form:
+ *   'returning_student' => false,
  * 
  * IMPORTANT FOR DEVELOPMENT:
  * - Set ENVIRONMENT in config.php to 'development' or 'production'
@@ -32,6 +42,16 @@ $production_features = [
     'enrollment' => true,
     'payment' => true,
     'adviser_enrollment' => true,
+    
+    // Phase 1: Enrollment Types Configuration
+    // Controls which enrollment types appear in the enrollment form UI
+    // Set to false to hide an enrollment type from the dropdown
+    'enrollment_types' => [
+        'new_student' => true,        // First-time enrollees
+        'returning_student' => false,  // Toggle this to enable/disable "Returning Student" option in UI
+        'transferee' => true,         // Students transferring from other schools
+        'continuing_student' => true, // Already enrolled students (admin/adviser only)
+    ],
     
     // Phase 2: Academic Features (Under Development - DISABLED in production)
     'courses' => true,
@@ -70,6 +90,15 @@ $development_features = [
     'enrollment' => true,
     'payment' => true,
     'adviser_enrollment' => true,
+    
+    // Enrollment types - all enabled in development
+    'enrollment_types' => [
+        'new_student' => true,
+        'returning_student' => true,
+        'transferee' => true,
+        'continuing_student' => true,
+    ],
+    
     'courses' => true,
     'course_management' => true,
     'subjects' => true,

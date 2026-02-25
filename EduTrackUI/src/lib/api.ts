@@ -64,6 +64,7 @@ export const API_ENDPOINTS = {
   TEACHER_ASSIGNMENTS: `${API_BASE_URL}/api/teacher-assignments`,
   TEACHER_ASSIGNMENTS_BY_TEACHER: (teacher_id: string | number) => `${API_BASE_URL}/api/teacher-assignments/by-teacher/${teacher_id}`,
   TEACHER_ASSIGNMENTS_FOR_STUDENT: `${API_BASE_URL}/api/teacher-assignments/for-student`,
+  TEACHER_SUBJECT_ASSIGNMENTS: `${API_BASE_URL}/api/teacher-subject-assignments`,
   TEACHER_BY_ID_PUBLIC: (id: string | number) => `${API_BASE_URL}/api/teachers/${id}/public`,
   TEACHER_MY_SUBJECTS: `${API_BASE_URL}/api/teachers/me/subjects`,
   // Student subjects (enrollments)
@@ -208,6 +209,15 @@ export const API_ENDPOINTS = {
   // Announcements
   ANNOUNCEMENTS: `${API_BASE_URL}/api/announcements`,
   ANNOUNCEMENT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/announcements/${id}`,
+  ANNOUNCEMENT_MARK_AS_READ: (id: string | number) => `${API_BASE_URL}/api/announcements/${id}/mark-as-read`,
+
+  // Notifications (Audit Logs + In-App Notifications)
+  NOTIFICATIONS: `${API_BASE_URL}/api/notifications`,
+  NOTIFICATIONS_UNREAD_COUNT: `${API_BASE_URL}/api/notifications/unread-count`,
+  NOTIFICATION_MARK_AS_READ: (id: string | number) => `${API_BASE_URL}/api/notifications/${id}/mark-as-read`,
+  NOTIFICATIONS_MARK_ALL_READ: `${API_BASE_URL}/api/notifications/mark-all-as-read`,
+  AUDIT_LOGS: `${API_BASE_URL}/api/notifications/audit-logs`,
+  NOTIFICATIONS_STATS: `${API_BASE_URL}/api/notifications/stats`,
 
   // Feedback (Sentiment)
   FEEDBACK: `${API_BASE_URL}/api/feedback`,
@@ -253,7 +263,11 @@ export const API_ENDPOINTS = {
   // Learning Materials (File Upload & Storage)
   LEARNING_MATERIALS: `${API_BASE_URL}/api/learning-materials`,
   LEARNING_MATERIALS_BY_ID: (id: string | number) => `${API_BASE_URL}/api/learning-materials/${id}`,
-  LEARNING_MATERIALS_BY_SUBJECT: (subject_id: string | number, section_id: string | number) => `${API_BASE_URL}/api/learning-materials/subject/${subject_id}?section_id=${section_id}`,
+  LEARNING_MATERIALS_BY_SUBJECT: (subject_id: string | number, section_id: string | number, school_year?: string) => {
+    const params = new URLSearchParams({ section_id: String(section_id) });
+    if (school_year) params.set('school_year', school_year);
+    return `${API_BASE_URL}/api/learning-materials/subject/${subject_id}?${params.toString()}`;
+  },
   UPLOAD_FILE: `${API_BASE_URL}/api/upload/file`,
 
   // Quiz Builder (Teacher)

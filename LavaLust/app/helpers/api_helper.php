@@ -40,6 +40,7 @@ function api_set_json_headers(?array $allowed_origins = null)
             // Development: use default localhost origins
             $origins_list = [
                 'http://localhost:5174',  // React Vite dev server
+                'http://localhost:4173',  // Vite preview server
                 'http://localhost:3000',  // Fallback
                 'http://localhost:5173'   // Alternative Vite port
             ];

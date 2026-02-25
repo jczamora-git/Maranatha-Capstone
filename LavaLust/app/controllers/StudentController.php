@@ -12,6 +12,20 @@ class StudentController extends Controller
         $this->call->model('AcademicPeriodModel');
     }
 
+    private function require_admin()
+    {
+        if (!$this->session->userdata('logged_in') || $this->session->userdata('role') !== 'admin') {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Access denied. Admin only.'
+            ]);
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * Set JSON response headers
      */
@@ -89,6 +103,166 @@ class StudentController extends Controller
                 'success' => true,
                 'data' => $students,
                 'count' => is_array($students) ? count($students) : 0
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get active students only (admin)
+     * GET /api/students/active?search=...
+     */
+    public function api_get_active_students()
+    {
+        api_set_json_headers();
+
+        if (!$this->require_admin()) {
+            return;
+        }
+
+        try {
+            $filters = [
+                'status' => 'active'
+            ];
+
+            if (!empty($_GET['search'])) {
+                $filters['search'] = $_GET['search'];
+            }
+
+            $students = $this->StudentModel->get_all($filters);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $students,
+                'count' => is_array($students) ? count($students) : 0
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Check if an RFID card is already assigned
+     * GET /api/rfid/cards/check?rfid_code=...
+     */
+    public function api_check_rfid()
+    {
+        api_set_json_headers();
+
+        if (!$this->require_admin()) {
+            return;
+        }
+
+        try {
+            $rfidCode = trim($_GET['rfid_code'] ?? '');
+            if ($rfidCode === '') {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'rfid_code is required'
+                ]);
+                return;
+            }
+
+            $student = $this->StudentModel->get_by_rfid_card($rfidCode);
+
+            echo json_encode([
+                'success' => true,
+                'assigned' => !empty($student),
+                'student' => $student ?: null
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Assign or renew RFID card for a student
+     * POST /api/students/{id}/rfid
+     */
+    public function api_assign_rfid($id = null)
+    {
+        api_set_json_headers();
+
+        if (!$this->require_admin()) {
+            return;
+        }
+
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Student ID is required'
+            ]);
+            return;
+        }
+
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+            $rfidCode = trim($data['rfid_code'] ?? '');
+            $replaceExisting = !empty($data['replace_existing']);
+
+            if ($rfidCode === '') {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'rfid_code is required'
+                ]);
+                return;
+            }
+
+            $student = $this->StudentModel->get_student($id);
+            if (!$student) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Student not found'
+                ]);
+                return;
+            }
+
+            $assigned = $this->StudentModel->get_by_rfid_card($rfidCode);
+            if (!empty($assigned) && (int) $assigned['id'] !== (int) $id) {
+                if (!$replaceExisting) {
+                    http_response_code(409);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'RFID card is already assigned to another student',
+                        'student' => $assigned
+                    ]);
+                    return;
+                }
+
+                $this->StudentModel->clear_rfid_card($assigned['id']);
+            }
+
+            $updated = $this->StudentModel->update_rfid_card($id, $rfidCode);
+
+            if (!$updated) {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to assign RFID card'
+                ]);
+                return;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'RFID card assigned'
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -1019,7 +1193,7 @@ class StudentController extends Controller
             $this->call->helper('email_templates_helper');
 
             // Generate welcome email using template
-            $portalUrl = 'http://localhost:5174/auth';
+            $portalUrl = rtrim(config_item('portal_url') ?: 'http://localhost:5174', '/') . '/auth';
             $emailBody = generate_student_welcome_email_with_credentials(
                 $firstName,
                 $email,

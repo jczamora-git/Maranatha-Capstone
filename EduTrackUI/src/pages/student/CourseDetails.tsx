@@ -210,7 +210,7 @@ const CourseDetails = () => {
                     {courseInfo ? `${courseInfo.code} • ${courseInfo.section} • ${courseInfo.credits} Credits` : 'Loading course...'}
                   </CardDescription>
                   <p className="text-sm text-muted-foreground">
-                    Instructor: <span className="font-medium text-foreground">{courseInfo ? courseInfo.instructor : 'TBA'}</span>
+                    Teacher: <span className="font-medium text-foreground">{courseInfo ? courseInfo.instructor : 'TBA'}</span>
                   </p>
                 </div>
                 <Badge variant="secondary" className="text-sm px-3 py-1">{courseInfo ? courseInfo.semester : 'N/A'}</Badge>

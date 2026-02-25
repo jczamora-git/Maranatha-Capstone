@@ -8,6 +8,9 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $allowed_origins = [
     'http://localhost:5174',
     'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:4174',
+    'http://localhost:4175',
     'http://localhost:3000',
     'http://localhost:5170',
     'http://localhost:5171',

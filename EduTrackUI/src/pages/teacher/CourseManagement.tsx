@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Users, ClipboardList, UserPlus, LayoutGrid, List, CheckCircle2, AlertCircle, Clock, Mail, User, BookOpen, FileText, HelpCircle, Award, Zap, Microscope, Upload, FileIcon, X, Trash2, Search, Palette, MessageCircle, Mic, UsersRound, Settings } from "lucide-react";
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete, apiUpload } from "@/lib/api";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -200,6 +200,9 @@ const CourseManagement = () => {
         // Try to resolve course info from teacher subject assignments (preferred)
         let courseFound = false;
         let detectedYearLevel: number | string | null = null;
+        // Track section resolution with a local variable — never read React state inside
+        // async closures (stale closure problem causes [object Object] overwrite).
+        let sectionResolved = false;
         try {
           const res = await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
           const subjects = Array.isArray(res?.subjects) ? res.subjects : [];
@@ -213,6 +216,28 @@ const CourseManagement = () => {
                 if (detectedYearLevel) setCourseYearLevel(detectedYearLevel);
                 const canonical = subject.subject_id ?? subject.id ?? courseId ?? null;
                 setCanonicalCourseId(canonical);
+
+                // The backend now resolves section_id directly via year_level_sections join.
+                // Use it immediately so activity creation never gets a null section_id.
+                if (subject.section_id) {
+                  const resolvedSectionId = String(subject.section_id);
+                  // Always coerce to string — prevents [object Object] if the DB driver
+                  // returns a non-primitive for the column value.
+                  const resolvedSectionName = String(subject.section_name ?? subject.level ?? resolvedSectionId);
+                  setSelectedSectionId(resolvedSectionId);
+                  setSectionName(resolvedSectionName);
+                  setSections([{ id: resolvedSectionId, name: resolvedSectionName }]);
+                  sectionResolved = true;
+                  // Sync URL param so everything stays consistent
+                  try {
+                    const url = new URL(window.location.href);
+                    if (!url.searchParams.get('section_id')) {
+                      url.searchParams.set('section_id', resolvedSectionId);
+                      window.history.replaceState({}, '', url.toString());
+                    }
+                  } catch (_) {}
+                }
+
                 courseFound = true;
                 break;
               }
@@ -239,13 +264,15 @@ const CourseManagement = () => {
           } catch (e) {}
         }
 
-        // Resolve section name from sections endpoint if still missing
-        if (sectionId && !sectionName) {
+        // Resolve section name from sections endpoint only if not already resolved above
+        if (!sectionResolved && sectionId) {
           try {
             const secRes = await apiGet(`${API_ENDPOINTS.SECTIONS}/${sectionId}`);
             const sdata = secRes.data ?? secRes;
-            const secObj = { id: sdata.id ?? sectionId, name: sdata.name ?? sdata.title ?? String(sdata) };
-            setSectionName(secObj.name ?? null);
+            const secName = String(sdata.name ?? sdata.title ?? sectionId);
+            const secObj = { id: sdata.id ?? sectionId, name: secName };
+            setSectionName(secName);
+            sectionResolved = true;
             // ensure sections list contains this
             setSections((prev) => {
               if (prev.find((p) => String(p.id) === String(secObj.id))) return prev;
@@ -261,33 +288,37 @@ const CourseManagement = () => {
                 const stuRes = await apiGet(`${API_ENDPOINTS.STUDENTS}?year_level=${encodeURIComponent(String(detectedYearLevel))}`);
                 const list = stuRes.data ?? stuRes.students ?? stuRes ?? [];
                 if (Array.isArray(list)) {
-                  // Build sections list from year level students
-                  const sectionMap = new Map<string | number, { id: string | number; name: string }>();
-                  list.forEach((st: any) => {
-                    if (st.section_id && st.section_name) {
-                      const key = st.section_id;
-                      if (!sectionMap.has(key)) {
-                        sectionMap.set(key, { id: st.section_id, name: st.section_name });
+                  // Only rebuild sections list from students if section wasn't already resolved
+                  if (!sectionResolved) {
+                    const sectionMap = new Map<string | number, { id: string | number; name: string }>();
+                    list.forEach((st: any) => {
+                      if (st.section_id && st.section_name) {
+                        const key = st.section_id;
+                        if (!sectionMap.has(key)) {
+                          sectionMap.set(key, { id: st.section_id, name: String(st.section_name) });
+                        }
                       }
+                    });
+
+                    const nextSections = sectionMap.size > 0
+                      ? Array.from(sectionMap.values())
+                      : [{ id: `default-${detectedYearLevel}`, name: String(detectedYearLevel) }];
+
+                    setSections(nextSections);
+
+                    if (sectionId && !String(sectionId).startsWith('default-')) {
+                      const secMatch = nextSections.find((s) => String(s.id) === String(sectionId));
+                      if (secMatch) { setSectionName(secMatch.name); sectionResolved = true; }
+                    } else if (nextSections.length > 0) {
+                      setSelectedSectionId(String(nextSections[0].id));
+                      setSectionName(nextSections[0].name ?? null);
+                      sectionResolved = true;
                     }
-                  });
-
-                  const nextSections = sectionMap.size > 0
-                    ? Array.from(sectionMap.values())
-                    : [{ id: `default-${detectedYearLevel}`, name: String(detectedYearLevel) }];
-
-                  setSections(nextSections);
-
-                  if (sectionId && !String(sectionId).startsWith('default-')) {
-                    const secMatch = nextSections.find((s) => String(s.id) === String(sectionId));
-                    if (secMatch) setSectionName(secMatch.name);
-                  } else if (!sectionName && nextSections.length > 0) {
-                    setSelectedSectionId(String(nextSections[0].id));
-                    setSectionName(nextSections[0].name ?? null);
                   }
 
-                  const filtered = sectionId && !String(sectionId).startsWith('default-')
-                    ? list.filter((st: any) => String(st.section_id) === String(sectionId))
+                  const activeSectionId = sectionId ?? null;
+                  const filtered = activeSectionId && !String(activeSectionId).startsWith('default-')
+                    ? list.filter((st: any) => String(st.section_id) === String(activeSectionId))
                     : list;
 
                   setStudents(filtered.map((st: any) => ({
@@ -476,11 +507,14 @@ const CourseManagement = () => {
         const parsedSectionId = selectedSectionId ? parseInt(String(selectedSectionId), 10) : null;
         const validSectionId = parsedSectionId && !isNaN(parsedSectionId) ? parsedSectionId : null;
 
-        // Fetch materials with or without section_id
-        const endpoint = validSectionId 
-          ? API_ENDPOINTS.LEARNING_MATERIALS_BY_SUBJECT(effectiveCourseId, validSectionId)
-          : `${API_ENDPOINTS.LEARNING_MATERIALS}/subject/${effectiveCourseId}`;
-          
+        // Resolve school_year from the active period
+        const schoolYear: string | undefined = selectedPeriod?.school_year || selectedPeriod?.year || undefined;
+
+        // Fetch materials filtered by subject, section, and school year
+        const endpoint = validSectionId
+          ? API_ENDPOINTS.LEARNING_MATERIALS_BY_SUBJECT(effectiveCourseId, validSectionId, schoolYear)
+          : `${API_ENDPOINTS.LEARNING_MATERIALS}/subject/${effectiveCourseId}${schoolYear ? `?school_year=${encodeURIComponent(schoolYear)}` : ''}`;
+
         const materials = await apiGet(endpoint);
         if (materials.success && Array.isArray(materials.data)) {
           setLearningMaterials(materials.data);
@@ -491,7 +525,7 @@ const CourseManagement = () => {
     };
 
     fetchLearningMaterials();
-  }, [courseId, canonicalCourseId, selectedSectionId]);
+  }, [courseId, canonicalCourseId, selectedSectionId, selectedPeriod]);
 
   // Filter activities based on selected categories (empty = show all)
   const filteredActivities = activities.filter((a) => {
@@ -537,31 +571,8 @@ const CourseManagement = () => {
               {courseInfo.section && ` - ${courseInfo.section}`}
             </p>
             <div className="flex items-center gap-3">
-              {sections && sections.length > 0 ? (
-                <div>
-                  <Select value={selectedSectionId ?? undefined} onValueChange={(v) => {
-                    setSelectedSectionId(v);
-                    const s = sections.find((x) => String(x.id) === String(v));
-                    setSectionName(s?.name ?? null);
-                    // update URL param without reload
-                    try {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set('section_id', String(v));
-                      window.history.replaceState({}, '', url.toString());
-                    } catch (e) {}
-                  }}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder={sectionName ?? 'Select section'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sections.map((s) => (
-                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                courseInfo.section && <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{courseInfo.section}</span>
+              {courseInfo.section && (
+                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{courseInfo.section}</span>
               )}
               {selectedPeriod && selectedPeriod.status === 'active' && (
                 <div className="ml-auto flex items-center gap-2 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 px-4 py-2 rounded-full">
@@ -694,7 +705,7 @@ const CourseManagement = () => {
                       <DialogContent className="max-w-2xl border-0 shadow-2xl rounded-2xl overflow-hidden p-0">
                         <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
                           <div>
-                            <h3 className="text-2xl font-bold">Edit Activity</h3>
+                            <DialogTitle className="text-2xl font-bold text-white">Edit Activity</DialogTitle>
                             <p className="text-sm font-medium opacity-95 mt-2">Update the details for this activity.</p>
                             {selectedPeriod && selectedPeriod.status === 'active' && (
                               <div className="mt-3 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/30">
@@ -822,7 +833,7 @@ const CourseManagement = () => {
                       <DialogContent className="max-w-2xl border-0 shadow-2xl rounded-2xl overflow-hidden p-0">
                         <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
                           <div>
-                            <h3 className="text-2xl font-bold">Create New Activity</h3>
+                            <DialogTitle className="text-2xl font-bold text-white">Create New Activity</DialogTitle>
                             <p className="text-sm font-medium opacity-95 mt-2">Create a new activity for this course.</p>
                             {selectedPeriod && selectedPeriod.status === 'active' && (
                               <div className="mt-3 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/30">
@@ -945,10 +956,18 @@ const CourseManagement = () => {
                               }
 
                               try {
-                                // Filter out "default-" section IDs since they're not real database IDs
-                                const validSectionId = selectedSectionId && !String(selectedSectionId).startsWith('default-') 
-                                  ? selectedSectionId 
-                                  : null;
+                                // Resolve section_id: prefer the current selectedSectionId, otherwise
+                                // fall back to the first real section in state (handles the case where
+                                // selectedSectionId is still null or a synthetic "default-" placeholder).
+                                const rawSectionId = selectedSectionId ?? null;
+                                const validSectionId = (rawSectionId && !String(rawSectionId).startsWith('default-'))
+                                  ? rawSectionId
+                                  : (sections.find((s) => s.id && !String(s.id).startsWith('default-'))?.id ?? null);
+
+                                if (!validSectionId) {
+                                  setAlert({ type: 'error', message: 'No section is selected. Please select a section from the dropdown before creating an activity.' });
+                                  return;
+                                }
                                 
                                 const res = await apiPost(API_ENDPOINTS.ACTIVITIES, {
                                   course_id: effectiveCourseId,
@@ -1270,7 +1289,7 @@ const CourseManagement = () => {
                       <DialogContent className="max-w-2xl border-0 shadow-2xl rounded-2xl overflow-hidden p-0">
                         <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
                           <div>
-                            <h3 className="text-2xl font-bold">{editingMaterialId ? 'Edit Learning Material' : 'Add Learning Material'}</h3>
+                            <DialogTitle className="text-2xl font-bold text-white">{editingMaterialId ? 'Edit Learning Material' : 'Add Learning Material'}</DialogTitle>
                             <p className="text-sm font-medium opacity-95 mt-2">Share learning materials with your students.</p>
                           </div>
                         </div>
@@ -1488,10 +1507,11 @@ const CourseManagement = () => {
                                   const validLinks = materialType === 'link' ? materialLinks.filter(link => link.trim()) : [];
                                   const linksData = validLinks.length > 0 ? JSON.stringify(validLinks) : (validLinks[0] || null);
                                   
-                                  // Save learning material to database
+                                  // Save learning material to database (scoped to active school year)
                                   const materialData = {
                                     subject_id: effectiveCourseId,
                                     section_id: validSectionId,
+                                    school_year: selectedPeriod?.school_year || selectedPeriod?.year || null,
                                     type: materialType,
                                     title: materialTitle,
                                     description: materialDescription,

@@ -1287,5 +1287,61 @@ class TeacherController extends Controller
             echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Public endpoint: return teacher info keyed by subject_id.
+     * Used by students to resolve teacher names on their course list.
+     * Queries teacher_subject_assignments → teachers → users.
+     * GET /api/teacher-subject-assignments
+     * Optional query params: subject_id (comma-separated list)
+     */
+    public function api_get_subject_teachers()
+    {
+        api_set_json_headers();
+
+        try {
+            $subjectIds = isset($_GET['subject_id'])
+                ? array_filter(array_map('intval', explode(',', $_GET['subject_id'])))
+                : [];
+
+            $sql = "SELECT tsa.subject_id,
+                           t.id   AS teacher_id,
+                           u.first_name,
+                           u.last_name,
+                           u.email
+                    FROM   teacher_subject_assignments tsa
+                    JOIN   teachers t ON tsa.teacher_id = t.id
+                    JOIN   users u    ON t.user_id = u.id";
+
+            if (!empty($subjectIds)) {
+                $placeholders = implode(',', array_fill(0, count($subjectIds), '?'));
+                $sql .= " WHERE tsa.subject_id IN ($placeholders)";
+                $stmt = $this->db->raw($sql, array_values($subjectIds));
+            } else {
+                $stmt = $this->db->raw($sql);
+            }
+
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Build a map: subject_id → first teacher found
+            $map = [];
+            foreach ($rows as $row) {
+                $sid = (int)$row['subject_id'];
+                if (!isset($map[$sid])) {
+                    $map[$sid] = [
+                        'teacher_id' => (int)$row['teacher_id'],
+                        'first_name' => $row['first_name'],
+                        'last_name'  => $row['last_name'],
+                        'email'      => $row['email'],
+                    ];
+                }
+            }
+
+            echo json_encode(['success' => true, 'teachers' => $map]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
 }
 
