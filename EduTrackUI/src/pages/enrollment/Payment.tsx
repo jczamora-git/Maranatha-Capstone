@@ -182,7 +182,7 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.React
 const Payment = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isPaymentSectionUnlocked } = usePaymentPageLock();
+  const { isPaymentSectionUnlocked, hasSubmittedEnrollment } = usePaymentPageLock();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const isEmailVerified = user?.status !== 'pending';
@@ -235,6 +235,9 @@ const Payment = () => {
   // Mobile view state
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [selectedFeeTypeMobile, setSelectedFeeTypeMobile] = useState<string | null>(null);
+
+  // Student without enrollment modal state
+  const [showNoEnrollmentModal, setShowNoEnrollmentModal] = useState(false);
 
   // Combined loading state - wait for all fetches to complete
   useEffect(() => {
@@ -464,8 +467,14 @@ const Payment = () => {
 
   // Filter school fees based on existing payments
   useEffect(() => {
-    if (!enrollment || allSchoolFees.length === 0) {
-      setAvailableSchoolFees(allSchoolFees);
+    // If no enrollment exists, don't show any fees
+    if (!enrollment) {
+      setAvailableSchoolFees([]);
+      return;
+    }
+    
+    if (allSchoolFees.length === 0) {
+      setAvailableSchoolFees([]);
       return;
     }
     // Determine if there's an existing payment plan for this enrollment
@@ -607,6 +616,18 @@ const Payment = () => {
       setShowPaymentPlanModal(true);
     }
   }, [enrollment, tuitionFee, payments, paymentPlans, loading, loadingPlans, isAutoTourRunning, isInitialLoading, isEmailVerified]);
+
+  // Show no enrollment modal for students without enrollment record
+  useEffect(() => {
+    // Only for students (not enrollees) who have no enrollment
+    if (!enrollment && user?.role === 'student' && !loading && isEmailVerified) {
+      const hasSeenModal = sessionStorage.getItem('no-enrollment-modal-shown');
+      if (!hasSeenModal) {
+        setShowNoEnrollmentModal(true);
+        sessionStorage.setItem('no-enrollment-modal-shown', 'true');
+      }
+    }
+  }, [enrollment, user?.role, loading, isEmailVerified]);
 
   const totalAmount = payments
     .filter((p) => p.status === "Pending" || p.status === "Verified")
@@ -756,8 +777,29 @@ const Payment = () => {
           />
         </>
       )}
+
+      {/* Check if enrollee has submitted enrollment - use hook's value */}
+      {isEmailVerified && isPaymentSectionUnlocked === true && !isInitialLoading && user?.role === 'enrollee' && hasSubmittedEnrollment === false && (
+        <>
+          {console.log('📄 [Payment] Rendering: Enrollee without submitted enrollment')}
+          <AccessLockedCard 
+            title="Enrollment Required"
+            description="You need to submit your enrollment application before you can access the payment system."
+            benefitsTitle="What you need to do:"
+            benefits={[
+              "Complete your enrollment application first",
+              "Wait for enrollment approval from the administration",
+              "Once approved, you can proceed to payment"
+            ]}
+            actionButton={{
+              label: "Go to My Enrollments",
+              onClick: () => navigate('/enrollment/my-enrollments')
+            }}
+          />
+        </>
+      )}
       
-      {isEmailVerified && isInitialLoading && isPaymentSectionUnlocked === true && (
+      {isEmailVerified && isInitialLoading && isPaymentSectionUnlocked === true && (user?.role !== 'enrollee' || hasSubmittedEnrollment === true) && (
         <div className="h-screen w-full flex flex-col items-center justify-center gap-4">
           {console.log('📄 [Payment] Rendering: Payment dashboard loading')}
           <div className="flex flex-col items-center gap-4">
@@ -770,7 +812,7 @@ const Payment = () => {
         </div>
       )}
       
-      {isEmailVerified && !isInitialLoading && isPaymentSectionUnlocked === true && isMobile && (
+      {isEmailVerified && !isInitialLoading && isPaymentSectionUnlocked === true && (user?.role !== 'enrollee' || hasSubmittedEnrollment === true) && isMobile && (
         <>
           {console.log('📄 [Payment] Rendering: Mobile payment view')}
           <PaymentMobileView
@@ -821,7 +863,7 @@ const Payment = () => {
         </>
       )}
 
-      {isEmailVerified && !isInitialLoading && isPaymentSectionUnlocked === true && !isMobile && (
+      {isEmailVerified && !isInitialLoading && isPaymentSectionUnlocked === true && (user?.role !== 'enrollee' || hasSubmittedEnrollment === true) && !isMobile && (
       <div className="p-4 sm:p-8">
         {/* Back Button */}
         <div className="mb-6 sm:mb-8">
@@ -846,7 +888,27 @@ const Payment = () => {
           </div>
         </div>
 
-
+        {/* No Enrollment Warning Banner for Students */}
+        {!enrollment && user?.role === 'student' && (
+          <Alert className="mb-6 border-orange-200 bg-orange-50">
+            <Lock className="h-5 w-5 text-orange-600" />
+            <AlertTitle className="text-orange-900 font-semibold">Viewing Mode - Limited Access</AlertTitle>
+            <AlertDescription className="text-orange-800">
+              <p className="mb-2">
+                You are currently in <strong>viewing mode</strong>. To access school fees and payment options, you need to submit an enrollment application first.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-orange-600 text-orange-600 hover:bg-orange-100 mt-2"
+                onClick={() => navigate('/enrollment/my-enrollments')}
+              >
+                <Receipt className="w-4 h-4 mr-2" />
+                Submit Enrollment Now
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Summary Stats Cards */}
         <div id="summary-stats-section" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
@@ -1395,11 +1457,37 @@ const Payment = () => {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
-                    {user?.role === 'enrollee' && availableSchoolFees.length === 0
-                      ? 'Fees coming soon — fees will be unlocked once you become a student.'
-                      : (allSchoolFees.length === 0 ? 'No school fees available' : 'All fees have been paid')
-                    }
+                  <div className="text-center py-6">
+                    {!enrollment && user?.role === 'student' ? (
+                      <div className="space-y-3">
+                        <div className="flex justify-center">
+                          <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                            <Lock className="w-6 h-6 text-orange-600" />
+                          </div>
+                        </div>
+                        <p className="text-sm font-semibold text-orange-900">No Enrollment Record Found</p>
+                        <p className="text-xs text-muted-foreground px-4">
+                          Submit your enrollment application to unlock school fees and payment options.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 border-orange-600 text-orange-600 hover:bg-orange-50"
+                          onClick={() => navigate('/enrollment/my-enrollments')}
+                        >
+                          <Receipt className="w-4 h-4 mr-2" />
+                          Submit Enrollment
+                        </Button>
+                      </div>
+                    ) : user?.role === 'enrollee' && availableSchoolFees.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Fees coming soon — fees will be unlocked once you become a student.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {allSchoolFees.length === 0 ? 'No school fees available' : 'All fees have been paid'}
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -2070,6 +2158,111 @@ const Payment = () => {
         daysOverdue={pendingPaymentNavigation?.daysOverdue || 0}
         installmentNumber={pendingPaymentNavigation?.installmentNumber || 1}
       />
+
+      {/* No Enrollment Warning Modal for Students */}
+      <Dialog open={showNoEnrollmentModal} onOpenChange={setShowNoEnrollmentModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <AlertCircle className="w-6 h-6 text-orange-600" />
+              Viewing Mode - Submit Enrollment Required
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              You have limited access to the payment system
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Warning Message */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Lock className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-orange-900 mb-2">Limited Access Mode</h4>
+                  <p className="text-sm text-orange-800 mb-3">
+                    You are currently in <strong>viewing mode</strong>. To access the full payment features and pay school fees, you need to submit an enrollment application first.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* What you can do */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                What you can do now:
+              </h4>
+              <ul className="space-y-2 text-sm text-blue-800">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span>View your payment history and transaction records</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span>Check your payment summaries and balances</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span>Download payment invoices and receipts</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* What requires enrollment */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                Locked until enrollment:
+              </h4>
+              <ul className="space-y-2 text-sm text-red-800">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">•</span>
+                  <span>Access to school fees payment options</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">•</span>
+                  <span>Tuition fee payment and installment plans</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">•</span>
+                  <span>Payment of miscellaneous and other fees</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowNoEnrollmentModal(false)}
+                className="flex-1"
+              >
+                Continue Viewing
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowNoEnrollmentModal(false);
+                  navigate('/enrollment/my-enrollments');
+                }}
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+              >
+                <Receipt className="w-4 h-4 mr-2" />
+                Submit Enrollment Now
+              </Button>
+            </div>
+
+            {/* Info Notice */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-gray-700">
+                  Once your enrollment application is submitted and approved, you'll have full access to all payment features including tuition fees, installment plans, and school fees.
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Tour Component */}
       <Joyride

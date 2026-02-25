@@ -125,14 +125,17 @@ const EnrolleeDashboard = () => {
     {
       target: '#quick-actions-card',
       content: 'Quick access to your most important enrollment and payment features.',
+      placement: 'top' as const,
     },
     {
       target: 'button:has(.lucide-credit-card)',
       content: 'Check your payment status and outstanding balances here.',
+      placement: 'top' as const,
     },
     {
       target: '.grid.grid-cols-1.md\\:grid-cols-2',
       content: 'Monitor your enrollment status and account information here.',
+      placement: 'top' as const,
     },
     {
       target: '[class*="Enrollment Workflow"]',
@@ -149,7 +152,7 @@ const EnrolleeDashboard = () => {
           <p>Your enrollment application has been successfully submitted. The next step is to set up your tuition payment plan.</p>
         </div>
       ),
-      placement: 'center',
+      placement: 'center' as const,
       disableBeacon: true,
     },
     {
@@ -160,6 +163,7 @@ const EnrolleeDashboard = () => {
           <p>Great job! Your enrollment application is now under review. While waiting for approval, you can prepare your payment plan.</p>
         </div>
       ),
+      placement: 'bottom' as const,
     },
     {
       target: '#quick-actions-card',
@@ -169,6 +173,7 @@ const EnrolleeDashboard = () => {
           <p>Click the "Payment Status" button below to choose your tuition payment plan. This will help you manage your tuition fees effectively.</p>
         </div>
       ),
+      placement: 'top' as const,
     },
     {
       target: 'button:has(.lucide-credit-card)',
@@ -178,6 +183,7 @@ const EnrolleeDashboard = () => {
           <p>Select from flexible payment options including full payment (with discount) or installment plans. Early payment may qualify for additional discounts!</p>
         </div>
       ),
+      placement: 'top' as const,
     },
     {
       target: '[class*="Enrollment Workflow"]',
@@ -187,6 +193,7 @@ const EnrolleeDashboard = () => {
           <p>You're on step 2 of 5! Once your enrollment is approved, you'll move to the payment phase. Keep an eye on your email for approval notifications.</p>
         </div>
       ),
+      placement: 'top' as const,
     },
   ];
 
@@ -199,7 +206,7 @@ const EnrolleeDashboard = () => {
           <p>Let me show you how to access and manage your enrollment records. This is where you can view all your enrollment applications and their current status.</p>
         </div>
       ),
-      placement: 'center',
+      placement: 'center' as const,
       disableBeacon: true,
     },
     {
@@ -210,6 +217,7 @@ const EnrolleeDashboard = () => {
           <p>This panel provides quick access to your most important enrollment and payment features. The "View Enrollment" button will take you to your enrollment records.</p>
         </div>
       ),
+      placement: 'top' as const,
     },
     {
       target: 'button:has(.lucide-arrow-right)',
@@ -225,6 +233,7 @@ const EnrolleeDashboard = () => {
           </ul>
         </div>
       ),
+      placement: 'top' as const,
     },
     {
       target: 'button:has(.lucide-arrow-right)',
@@ -234,6 +243,7 @@ const EnrolleeDashboard = () => {
           <p>Go ahead and click the "View Enrollment" button now to see your enrollment records. You'll be guided through the features on that page as well!</p>
         </div>
       ),
+      placement: 'top' as const,
     },
   ];
 
@@ -246,7 +256,7 @@ const EnrolleeDashboard = () => {
           <p>Congratulations! Your enrollment status has been verified. You are now ready to proceed with your tuition payment to complete your enrollment.</p>
         </div>
       ),
-      placement: 'center',
+      placement: 'center' as const,
       disableBeacon: true,
     },
     {
@@ -257,6 +267,7 @@ const EnrolleeDashboard = () => {
           <p>You can easily access the payment section from the Quick Actions card below. Click the "Payment Status" button to go to your payment dashboard where you can set up your tuition payment plan.</p>
         </div>
       ),
+      placement: 'top' as const,
     },
     {
       target: 'button:has(.lucide-credit-card)',
@@ -272,6 +283,7 @@ const EnrolleeDashboard = () => {
           </ul>
         </div>
       ),
+      placement: 'top' as const,
     },
     {
       target: 'body',
@@ -281,7 +293,7 @@ const EnrolleeDashboard = () => {
           <p>Click the "Payment Status" button in the Quick Actions section to proceed to the payments page and settle your tuition fee. This will complete your enrollment!</p>
         </div>
       ),
-      placement: 'center',
+      placement: 'center' as const,
     },
   ];
 
@@ -645,26 +657,26 @@ const EnrolleeDashboard = () => {
 
         {/* Email Verification Card - Show if not verified */}
         {!isEmailVerified && (
-          <Card className="mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 shadow-lg border-0">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-amber-900">
-                <AlertCircle className="h-5 w-5" />
+          <Card className="mb-4 sm:mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 shadow-lg border-0">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-amber-900">
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                 Email Verification Required
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               <div className="space-y-4">
-                <p className="text-sm text-amber-900">
-                  Verify your email address <span className="font-semibold">{user?.email}</span> to unlock enrollment and payment features. 
+                <p className="text-xs sm:text-sm text-amber-900 break-words">
+                  Verify your email address <span className="font-semibold break-all">{user?.email}</span> to unlock enrollment and payment features. 
                   Click the button below to send a verification link to your email.
                 </p>
                 <Button
                   onClick={handleResendVerification}
                   disabled={isResending}
                   variant="outline"
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <Mail className="h-4 w-4" />
+                  <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
                   {isResending ? "Sending..." : "Send Verification Email"}
                 </Button>
               </div>
@@ -674,16 +686,16 @@ const EnrolleeDashboard = () => {
 
         {/* Enrollment Period Card */}
         {isEmailVerified && activeEnrollmentPeriod && !enrollmentData && (
-          <Card id="enrollment-period-card" className={`mb-8 border-0 shadow-lg ${
+          <Card id="enrollment-period-card" className={`mb-4 sm:mb-8 border-0 shadow-lg ${
             activeEnrollmentPeriod.status === 'Open' 
               ? 'bg-gradient-to-r from-green-50 to-emerald-50' 
               : activeEnrollmentPeriod.status === 'Upcoming'
               ? 'bg-gradient-to-r from-blue-50 to-sky-50'
               : 'bg-gradient-to-r from-gray-50 to-slate-50'
           }`}>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CalendarClock className="h-5 w-5" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2 flex-wrap">
+                <CalendarClock className="h-4 w-4 sm:h-5 sm:w-5" />
                 Enrollment Period
                 <Badge 
                   variant={
@@ -701,36 +713,36 @@ const EnrolleeDashboard = () => {
                 </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 p-4 sm:p-6">
               <div>
-                <h3 className="font-semibold text-lg">{activeEnrollmentPeriod.enrollment_name}</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-base sm:text-lg break-words">{activeEnrollmentPeriod.enrollment_name}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {activeEnrollmentPeriod.school_year} - {activeEnrollmentPeriod.quarter}
                 </p>
                 {activeEnrollmentPeriod.enrollment_type && (
-                  <Badge variant="outline" className="mt-1">{activeEnrollmentPeriod.enrollment_type}</Badge>
+                  <Badge variant="outline" className="mt-1 text-xs">{activeEnrollmentPeriod.enrollment_type}</Badge>
                 )}
               </div>
               
               {activeEnrollmentPeriod.description && (
-                <p className="text-sm">{activeEnrollmentPeriod.description}</p>
+                <p className="text-xs sm:text-sm break-words">{activeEnrollmentPeriod.description}</p>
               )}
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Start Date</p>
-                  <p className="font-medium">{new Date(activeEnrollmentPeriod.start_date).toLocaleDateString()}</p>
+                  <p className="font-medium text-xs sm:text-sm">{new Date(activeEnrollmentPeriod.start_date).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">End Date</p>
-                  <p className="font-medium">{new Date(activeEnrollmentPeriod.end_date).toLocaleDateString()}</p>
+                  <p className="font-medium text-xs sm:text-sm">{new Date(activeEnrollmentPeriod.end_date).toLocaleDateString()}</p>
                 </div>
               </div>
 
               {activeEnrollmentPeriod.max_slots && (
                 <div className="flex items-center gap-2 pt-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs sm:text-sm">
                     <span className="font-semibold">{activeEnrollmentPeriod.current_enrollees || 0}</span>
                     <span className="text-muted-foreground"> / </span>
                     <span className="font-semibold">{activeEnrollmentPeriod.max_slots}</span>
@@ -758,16 +770,16 @@ const EnrolleeDashboard = () => {
               {activeEnrollmentPeriod.status === 'Open' && (
                 <Button
                   onClick={() => navigate("/enrollee/enrollment")}
-                  className="w-full mt-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white"
+                  className="w-full mt-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Start Enrollment Application
                 </Button>
               )}
 
               {activeEnrollmentPeriod.status === 'Upcoming' && (
                 <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-                  <p className="text-sm text-blue-900 text-center">
+                  <p className="text-xs sm:text-sm text-blue-900 text-center">
                     Enrollment will open on {new Date(activeEnrollmentPeriod.start_date).toLocaleDateString()}
                   </p>
                 </div>
@@ -775,7 +787,7 @@ const EnrolleeDashboard = () => {
 
               {activeEnrollmentPeriod.status === 'Closed' && (
                 <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-                  <p className="text-sm text-gray-900 text-center">
+                  <p className="text-xs sm:text-sm text-gray-900 text-center">
                     This enrollment period has closed
                   </p>
                 </div>
@@ -784,42 +796,33 @@ const EnrolleeDashboard = () => {
           </Card>
         )}
 
-        {/* Welcome Card */}
-        {/* Welcome Card - Only show if email verified */}
-        {isEmailVerified && (
-        <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg border-0">
-          <CardHeader>
-            <CardTitle className="text-2xl text-blue-900">
+        {/* Welcome Card - Only show if email verified AND no enrollment submitted yet */}
+        {isEmailVerified && !enrollmentData && (
+        <Card className="mb-4 sm:mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg border-0">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-2xl text-blue-900">
               Welcome to Maranatha Christian Academy Foundation Enrollee Dashboard!
             </CardTitle>
-            <CardDescription className="text-blue-700">
-              {enrollmentData 
-                ? `Your enrollment application status: ${statusColors[currentStatus].text}`
-                : "Start your enrollment journey by filling out the application form."}
+            <CardDescription className="text-blue-700 text-xs sm:text-sm">
+              Start your enrollment journey by filling out the application form.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <span className="text-sm font-medium">Email verified</span>
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                <span className="text-xs sm:text-sm font-medium">Email verified</span>
               </div>
-              {enrollmentData && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm">Application submitted on {new Date(enrollmentData.created_at).toLocaleDateString()}</span>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
         )}
 
         {/* Status Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
           {/* Enrollment Status */}
           <Card className="shadow-lg border-0">
-            <CardHeader>
+            <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600" />
                 Enrollment Status
@@ -843,7 +846,7 @@ const EnrolleeDashboard = () => {
                       <p className="text-xs text-muted-foreground">Grade Level: {enrollmentData.grade_level}</p>
                     )}
                     {enrollmentData.school_year && (
-                      <p>School Year: {enrollmentData.school_year}</p>
+                      <p className="text-xs text-muted-foreground">School Year: {enrollmentData.school_year}</p>
                     )}
                   </div>
                 )}
@@ -856,19 +859,19 @@ const EnrolleeDashboard = () => {
 
           {/* Account Information */}
           <Card className="shadow-lg border-0">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5 text-green-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <User className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 Account Information
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <p className="font-medium text-sm break-all text-foreground">{user?.email}</p>
-                    <Badge variant={isEmailVerified ? "default" : "secondary"} className="flex-shrink-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Email</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
+                    <p className="font-medium text-xs sm:text-sm break-all text-foreground">{user?.email}</p>
+                    <Badge variant={isEmailVerified ? "default" : "secondary"} className="flex-shrink-0 w-fit text-xs">
                       {isEmailVerified ? "✓ Verified" : "⚠ Unverified"}
                     </Badge>
                   </div>
@@ -883,7 +886,7 @@ const EnrolleeDashboard = () => {
 
           {/* Quick Actions */}
           <Card id="quick-actions-card" className="shadow-lg border-0">
-            <CardHeader>
+            <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
@@ -915,12 +918,12 @@ const EnrolleeDashboard = () => {
 
         {/* Enrollment Workflow Steps */}
         <Card className="shadow-lg border-0">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-purple-600" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
               Enrollment Workflow
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Track your progress through the enrollment process
             </CardDescription>
           </CardHeader>
@@ -952,8 +955,8 @@ const EnrolleeDashboard = () => {
                     </div>
                     <div className="flex-1">
                       <h4 className={`font-semibold text-xs sm:text-base ${step.locked ? "text-gray-500" : "text-foreground"}`}>{step.title}</h4>
-                      <p className={`text-xs sm:text-sm mt-1 ${step.locked ? "text-gray-400" : "text-muted-foreground"}`}>{step.description}</p>
-                      <Badge className="mt-2 text-xs sm:text-sm" variant={step.status === "completed" ? "default" : step.status === "in-progress" ? "secondary" : "outline"}>
+                      <p className={`text-xs sm:text-sm mt-1 break-words ${step.locked ? "text-gray-400" : "text-muted-foreground"}`}>{step.description}</p>
+                      <Badge className="mt-2 text-xs" variant={step.status === "completed" ? "default" : step.status === "in-progress" ? "secondary" : "outline"}>
                         {step.status === "completed" ? "Completed" : step.status === "in-progress" ? "In Progress" : step.status === "rejected" ? "Rejected" : step.status === "waiting" ? "Waiting for Submission" : "Pending"}
                       </Badge>
                     </div>
@@ -965,16 +968,16 @@ const EnrolleeDashboard = () => {
         </Card>
 
         {/* Help Section */}
-        <Card className="mt-8 shadow-lg border-0">
-          <CardHeader>
-            <CardTitle className="text-lg">Need Help?</CardTitle>
+        <Card className="mt-4 sm:mt-8 shadow-lg border-0">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Need Help?</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="p-4 sm:p-6">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-4">
               If you have any questions about your enrollment status or need assistance, 
               please don't hesitate to contact our admissions team.
             </p>
-            <Button variant="outline" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
               Contact Support
             </Button>
           </CardContent>
@@ -993,10 +996,27 @@ const EnrolleeDashboard = () => {
         showProgress
         showSkipButton
         callback={handleUnverifiedTourCallback}
+        disableScrolling={false}
+        spotlightPadding={5}
         styles={{
           options: {
             primaryColor: '#f59e0b',
             zIndex: 1000,
+          },
+          tooltip: {
+            borderRadius: 8,
+            padding: '12px 16px',
+          },
+          tooltipContent: {
+            padding: '8px 0',
+          },
+        }}
+        floaterProps={{
+          disableAnimation: true,
+          styles: {
+            floater: {
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+            },
           },
         }}
         locale={{
@@ -1012,10 +1032,27 @@ const EnrolleeDashboard = () => {
         showProgress
         showSkipButton
         callback={handleVerifiedTourCallback}
+        disableScrolling={false}
+        spotlightPadding={5}
         styles={{
           options: {
             primaryColor: '#2563eb',
             zIndex: 1000,
+          },
+          tooltip: {
+            borderRadius: 8,
+            padding: '12px 16px',
+          },
+          tooltipContent: {
+            padding: '8px 0',
+          },
+        }}
+        floaterProps={{
+          disableAnimation: true,
+          styles: {
+            floater: {
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+            },
           },
         }}
         locale={{
@@ -1031,10 +1068,27 @@ const EnrolleeDashboard = () => {
         showProgress
         showSkipButton
         callback={handleEnrollmentSubmittedTourCallback}
+        disableScrolling={false}
+        spotlightPadding={5}
         styles={{
           options: {
-            primaryColor: '#10b981',
+            primaryColor: '#8b5cf6',
             zIndex: 1000,
+          },
+          tooltip: {
+            borderRadius: 8,
+            padding: '12px 16px',
+          },
+          tooltipContent: {
+            padding: '8px 0',
+          },
+        }}
+        floaterProps={{
+          disableAnimation: true,
+          styles: {
+            floater: {
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+            },
           },
         }}
         locale={{
@@ -1050,10 +1104,27 @@ const EnrolleeDashboard = () => {
         showProgress
         showSkipButton
         callback={handleEnrollmentRecordsTourCallback}
+        disableScrolling={false}
+        spotlightPadding={5}
         styles={{
           options: {
-            primaryColor: '#8b5cf6',
+            primaryColor: '#10b981',
             zIndex: 1000,
+          },
+          tooltip: {
+            borderRadius: 8,
+            padding: '12px 16px',
+          },
+          tooltipContent: {
+            padding: '8px 0',
+          },
+        }}
+        floaterProps={{
+          disableAnimation: true,
+          styles: {
+            floater: {
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+            },
           },
         }}
         locale={{
@@ -1069,10 +1140,27 @@ const EnrolleeDashboard = () => {
         showProgress
         showSkipButton
         callback={handleVerifiedEnrollmentTourCallback}
+        disableScrolling={false}
+        spotlightPadding={5}
         styles={{
           options: {
             primaryColor: '#10b981',
             zIndex: 1000,
+          },
+          tooltip: {
+            borderRadius: 8,
+            padding: '12px 16px',
+          },
+          tooltipContent: {
+            padding: '8px 0',
+          },
+        }}
+        floaterProps={{
+          disableAnimation: true,
+          styles: {
+            floater: {
+              filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
+            },
           },
         }}
         locale={{

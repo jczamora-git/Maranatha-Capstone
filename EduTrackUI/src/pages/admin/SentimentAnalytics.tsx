@@ -16,7 +16,9 @@ import {
 import { API_ENDPOINTS, apiGet, apiPut } from "@/lib/api";
 import { Brain, MessageSquare, RefreshCw, Search, TrendingUp } from "lucide-react";
 
-const API_BASE_URL = import.meta.env.VITE_SENTIMENT_API_URL || "http://localhost:5000";
+// Use PHP backend proxy for sentiment analysis (handles local/external API switching server-side)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const SENTIMENT_API_PATH = "/api/sentiment";
 
 type SentimentLabel = "positive" | "neutral" | "negative";
 
@@ -55,6 +57,11 @@ const normalizeSentiment = (value?: string | null): SentimentLabel | undefined =
   return undefined;
 };
 
+type WeeklyInsight = {
+  title: string;
+  description: string;
+};
+
 const AdminSentimentAnalytics = () => {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
   const [search, setSearch] = useState("");
@@ -70,12 +77,18 @@ const AdminSentimentAnalytics = () => {
   const [testResult, setTestResult] = useState<{ sentiment: SentimentLabel; confidence: number; probabilities: Record<string, number> } | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [weeklyInsights, setWeeklyInsights] = useState<WeeklyInsight[]>([]);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [lastGenerated, setLastGenerated] = useState<string | null>(null);
+  const [insightsCached, setInsightsCached] = useState(false);
+  const [regenAllowed, setRegenAllowed] = useState(false);
 
   useEffect(() => {
     let active = true;
     const checkStatus = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/health`);
+        const res = await fetch(`${API_BASE_URL}${SENTIMENT_API_PATH}/health`);
         if (!active) return;
         setApiStatus(res.ok ? "online" : "offline");
       } catch {
@@ -125,6 +138,7 @@ const AdminSentimentAnalytics = () => {
 
   useEffect(() => {
     loadFeedback();
+    fetchWeeklyInsights();
   }, []);
 
   const summary = useMemo(() => {
@@ -146,6 +160,69 @@ const AdminSentimentAnalytics = () => {
     };
   }, [feedbackItems]);
 
+  const fetchWeeklyInsights = async () => {
+    setInsightsError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/insights/weekly`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ fetch_only: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to fetch weekly insights.");
+      }
+
+      const data = await response.json();
+      if (!data || !Array.isArray(data.insights)) {
+        throw new Error("Unexpected insights response.");
+      }
+
+      setWeeklyInsights(data.insights.slice(0, 3));
+      setLastGenerated(data.last_generated ?? null);
+      setInsightsCached(Boolean(data.cached));
+      setRegenAllowed(Boolean(data.regen_allowed));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load weekly insights.";
+      setInsightsError(message);
+    }
+  };
+
+  const generateWeeklyInsights = async () => {
+    setIsGeneratingInsights(true);
+    setInsightsError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/insights/weekly`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to generate insights.");
+      }
+
+      const data = await response.json();
+      if (!data || !Array.isArray(data.insights)) {
+        throw new Error("Unexpected insights response.");
+      }
+
+      setWeeklyInsights(data.insights.slice(0, 3));
+      setLastGenerated(data.last_generated ?? null);
+      setInsightsCached(Boolean(data.cached));
+      setRegenAllowed(Boolean(data.regen_allowed));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to generate insights.";
+      setInsightsError(message);
+    } finally {
+      setIsGeneratingInsights(false);
+    }
+  };
+
   const filteredFeedback = useMemo(() => {
     return feedbackItems.filter((item) => {
       const matchesSearch = item.text.toLowerCase().includes(search.toLowerCase());
@@ -165,11 +242,18 @@ const AdminSentimentAnalytics = () => {
       return;
     }
 
+    const pendingItems = feedbackItems.filter((item) => !item.sentiment);
+    if (pendingItems.length === 0) {
+      setError("All feedback already analyzed.");
+      setIsAnalyzing(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/predict/batch`, {
+      const response = await fetch(`${API_BASE_URL}${SENTIMENT_API_PATH}/predict/batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: feedbackItems.map((item) => item.text) }),
+        body: JSON.stringify({ texts: pendingItems.map((item) => item.text) }),
       });
 
       if (!response.ok) {
@@ -181,16 +265,28 @@ const AdminSentimentAnalytics = () => {
         throw new Error("Unexpected response from sentiment service.");
       }
 
-      const updated = feedbackItems.map((item, index) => ({
-        ...item,
-        sentiment: normalizeSentiment(data.results[index]?.sentiment) ?? item.sentiment,
-        confidence: data.results[index]?.confidence ?? item.confidence,
-      }));
+      const updated = feedbackItems.map((item) => {
+        const pendingIndex = pendingItems.findIndex((pending) => pending.id === item.id);
+        if (pendingIndex === -1) {
+          return item;
+        }
+
+        const result = data.results[pendingIndex];
+        if (!result) {
+          return item;
+        }
+
+        return {
+          ...item,
+          sentiment: normalizeSentiment(result.sentiment) ?? item.sentiment,
+          confidence: result.confidence ?? item.confidence,
+        };
+      });
 
       setFeedbackItems(updated);
 
       await Promise.all(
-        updated.map((item, index) => {
+        pendingItems.map((item, index) => {
           const result = data.results[index];
           if (!result) return Promise.resolve();
           return apiPut(API_ENDPOINTS.FEEDBACK_SENTIMENT_UPDATE(item.id), {
@@ -270,7 +366,7 @@ const AdminSentimentAnalytics = () => {
     setTestError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/predict`, {
+      const response = await fetch(`${API_BASE_URL}${SENTIMENT_API_PATH}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: testText }),
@@ -504,26 +600,44 @@ const AdminSentimentAnalytics = () => {
 
           <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <TrendingUp className="h-5 w-5" />
-                  Insight Highlights
-                </CardTitle>
-                <CardDescription>Actionable opportunities for admins.</CardDescription>
+              <CardHeader className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <TrendingUp className="h-5 w-5" />
+                    Insight Highlights
+                  </CardTitle>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={generateWeeklyInsights}
+                    disabled={isGeneratingInsights || (insightsCached && !regenAllowed)}
+                  >
+                    {isGeneratingInsights ? "Generating" : "Generate weekly"}
+                  </Button>
+                </div>
+                <CardDescription>
+                  Weekly insights from the last 7 days of feedback.
+                  {lastGenerated ? ` Last generated: ${lastGenerated}.` : ""}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="rounded-xl border border-border p-3">
-                  <p className="font-medium">Payment receipts timing</p>
-                  <p className="text-muted-foreground">Delay reports increased this week. Check receipt batch jobs.</p>
-                </div>
-                <div className="rounded-xl border border-border p-3">
-                  <p className="font-medium">Enrollment clarity</p>
-                  <p className="text-muted-foreground">Positive sentiment remains high for enrollment steps.</p>
-                </div>
-                <div className="rounded-xl border border-border p-3">
-                  <p className="font-medium">Notifications latency</p>
-                  <p className="text-muted-foreground">Grades notifications trending negative. Review push queues.</p>
-                </div>
+                {insightsError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3 text-rose-700">
+                    {insightsError}
+                  </div>
+                )}
+                {weeklyInsights.length === 0 ? (
+                  <div className="rounded-xl border border-border p-3 text-muted-foreground">
+                    Generate weekly insights to summarize the latest feedback.
+                  </div>
+                ) : (
+                  weeklyInsights.map((insight, index) => (
+                    <div key={`${insight.title}-${index}`} className="rounded-xl border border-border p-3">
+                      <p className="font-medium">{insight.title}</p>
+                      <p className="text-muted-foreground">{insight.description}</p>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
 
@@ -538,8 +652,8 @@ const AdminSentimentAnalytics = () => {
                   <span className="font-medium">CNN + BiLSTM</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">API URL</span>
-                  <span className="font-medium truncate max-w-[180px]">{API_BASE_URL}</span>
+                  <span className="text-muted-foreground">API Endpoint</span>
+                  <span className="font-medium truncate max-w-[180px]">{SENTIMENT_API_PATH}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Analyzed items</span>

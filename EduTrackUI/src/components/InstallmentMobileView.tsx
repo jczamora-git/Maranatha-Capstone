@@ -72,7 +72,7 @@ export const InstallmentMobileView = ({
   };
 
   return (
-    <div className="p-3 space-y-3 pb-24">
+      <div className="p-3 space-y-3 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
@@ -436,6 +436,6 @@ export const InstallmentMobileView = ({
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
   );
 };

@@ -128,7 +128,7 @@ export default function StudentInstallmentDetails() {
       if (res.success && res.token) {
         setGcashToken(res.token);
         // Open the GCash session page in a new tab
-        window.open(`/admin/gcash-session/${res.token}`, '_blank');
+        window.open(`${import.meta.env.BASE_URL}admin/gcash-session/${res.token}`, '_blank');
       } else {
         setError(res.message || 'Failed to create GCash session');
       }

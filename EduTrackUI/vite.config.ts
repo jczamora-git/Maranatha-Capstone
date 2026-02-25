@@ -48,10 +48,15 @@ export default defineConfig(({ mode }) => {
   // Load env file so plugins can access VITE_* vars (process.env is populated by loadEnv)
   const env = loadEnv(mode, process.cwd(), '');
   Object.assign(process.env, env);
+  const defaultBase = mode === 'production' ? '/ui/' : '/';
+  const configuredBase = (env.VITE_PUBLIC_BASE || defaultBase).trim();
+  const normalizedBase = configuredBase.startsWith('/') ? configuredBase : `/${configuredBase}`;
+  const base = normalizedBase.endsWith('/') ? normalizedBase : `${normalizedBase}/`;
 
   return {
-  // Set base path for production (when deployed to /ui/)
-  base: mode === 'production' ? '/ui/' : '/',
+  // Public base path (defaults: '/ui/' in production, '/' in development).
+  // Override with VITE_PUBLIC_BASE when needed.
+  base,
   server: {
     host: "::",
     port: 5174,
@@ -97,53 +102,53 @@ export default defineConfig(({ mode }) => {
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',
-        scope: '/',
-        start_url: '/',
+        scope: base,
+        start_url: base,
         icons: [
           {
-            src: '/icon-72x72.png',
+            src: `${base}icon-72x72.png`,
             sizes: '72x72',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icon-96x96.png',
+            src: `${base}icon-96x96.png`,
             sizes: '96x96',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icon-128x128.png',
+            src: `${base}icon-128x128.png`,
             sizes: '128x128',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icon-144x144.png',
+            src: `${base}icon-144x144.png`,
             sizes: '144x144',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icon-152x152.png',
+            src: `${base}icon-152x152.png`,
             sizes: '152x152',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icon-192x192.png',
+            src: `${base}icon-192x192.png`,
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icon-384x384.png',
+            src: `${base}icon-384x384.png`,
             sizes: '384x384',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icon-512x512.png',
+            src: `${base}icon-512x512.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
@@ -153,7 +158,7 @@ export default defineConfig(({ mode }) => {
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,svg,woff,woff2}', '**/icon-*.png', '**/apple-splash-*.png'],
         globIgnores: ['**/logo.png', '**/school-logo.png', '**/school-with-text-logo*.png'],
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB limit
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

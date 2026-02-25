@@ -6,7 +6,8 @@ import "./index.css";
 import { requestPermission } from "./lib/firebase";
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+  const base = import.meta.env.BASE_URL || '/';
+  navigator.serviceWorker.register(`${base}firebase-messaging-sw.js`)
     .then((registration) => {
       console.log('Service Worker registered successfully:', registration);
     })

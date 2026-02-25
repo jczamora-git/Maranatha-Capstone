@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Joyride, { CallBackProps, STATUS, EVENTS } from 'react-joyride';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,6 +139,26 @@ export const PaymentMobileView = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [activeDockTab, setActiveDockTab] = useState<'installments' | 'payments' | 'help'>('payments');
+  const hasInstallments = paymentPlans.length > 0;
+  const hasHelp = Boolean(tourOptions && tourOptions.length > 0);
+  const dockTabs = [
+    ...(hasInstallments ? (['installments'] as const) : []),
+    'payments' as const,
+    ...(hasHelp ? (['help'] as const) : []),
+  ];
+  const activeIndex = Math.max(0, dockTabs.indexOf(activeDockTab));
+  const indicatorWidth = activeDockTab === 'installments' ? '90px' : activeDockTab === 'help' ? '60px' : '70px';
+  const indicatorLeft = `${20 + activeIndex * 84}px`;
+
+  useEffect(() => {
+    if (!hasInstallments && activeDockTab === 'installments') {
+      setActiveDockTab('payments');
+      return;
+    }
+    if (!hasHelp && activeDockTab === 'help') {
+      setActiveDockTab('payments');
+    }
+  }, [activeDockTab, hasHelp, hasInstallments]);
 
   const handleTooltipShow = () => {
     setShowTooltip(true);
@@ -254,7 +274,7 @@ export const PaymentMobileView = ({
       />
       
       {/* Conditionally render based on active dock tab */}
-      {activeDockTab === 'installments' ? (
+      {activeDockTab === 'installments' && hasInstallments ? (
         <InstallmentMobileView
           paymentPlans={paymentPlans}
           installments={installments}
@@ -544,33 +564,35 @@ export const PaymentMobileView = ({
           <div 
             className="absolute bottom-1 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full transition-all duration-500 ease-in-out"
             style={{
-              width: activeDockTab === 'payments' ? '70px' : '90px',
-              left: activeDockTab === 'installments' ? '20px' : activeDockTab === 'payments' ? 'calc(50% - 35px)' : 'calc(100% - 110px)'
+              width: indicatorWidth,
+              left: indicatorLeft,
             }}
           />
           
           {/* Installments Tab */}
-          <button
-            onClick={() => setActiveDockTab('installments')}
-            className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
-          >
-            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
-              activeDockTab === 'installments' 
-                ? '-translate-y-full' 
-                : 'translate-y-0'
-            }`}>
-              <CalendarClock className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
-              activeDockTab === 'installments' 
-                ? 'translate-y-0' 
-                : 'translate-y-full'
-            }`}>
-              <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
-                Installments
-              </span>
-            </div>
-          </button>
+          {hasInstallments && (
+            <button
+              onClick={() => setActiveDockTab('installments')}
+              className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
+            >
+              <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+                activeDockTab === 'installments' 
+                  ? '-translate-y-full' 
+                  : 'translate-y-0'
+              }`}>
+                <CalendarClock className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+                activeDockTab === 'installments' 
+                  ? 'translate-y-0' 
+                  : 'translate-y-full'
+              }`}>
+                <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
+                  Installments
+                </span>
+              </div>
+            </button>
+          )}
 
           {/* Payments Tab */}
           <button
@@ -596,7 +618,7 @@ export const PaymentMobileView = ({
           </button>
 
           {/* Help Tab */}
-          {tourOptions && tourOptions.length > 0 && (
+          {hasHelp && (
             <Popover>
               <PopoverTrigger asChild>
                 <button

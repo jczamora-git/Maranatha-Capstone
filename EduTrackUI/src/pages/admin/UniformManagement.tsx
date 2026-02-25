@@ -27,6 +27,7 @@ import { API_ENDPOINTS, apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfirm } from "@/components/Confirm";
 import { ArrowLeft, Pencil, Plus, Shirt, Trash2, ToggleLeft } from "lucide-react";
+import { FeatureGate } from "@/components/FeatureGate";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -455,8 +456,9 @@ const UniformManagement = () => {
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-8 space-y-6 max-w-[1400px]">
+    <FeatureGate feature="payment" showComingSoon>
+      <DashboardLayout>
+        <div className="p-8 space-y-6 max-w-[1400px]">
         {/* ── Header ── */}
         <div className="flex items-start justify-between">
           <div>
@@ -925,8 +927,9 @@ const UniformManagement = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </DashboardLayout>
+        </div>
+      </DashboardLayout>
+    </FeatureGate>
   );
 };
 

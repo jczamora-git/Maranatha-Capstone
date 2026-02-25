@@ -16,6 +16,8 @@ import { useParams } from 'react-router-dom';
 import { API_BASE_URL } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, Upload, FileImage, Loader2 } from 'lucide-react';
+import { FeatureComingSoon } from '@/components/FeatureGate';
+import { isFeatureEnabled } from '@/config/features';
 
 type SessionInfo = {
   student_name: string;
@@ -47,6 +49,10 @@ export default function PaymentProofUpload() {
   const [preview, setPreview] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (!isFeatureEnabled("payment")) {
+    return <FeatureComingSoon featureName="Payment" />;
+  }
 
   // ── Load session info ──────────────────────────────────────────
   useEffect(() => {

@@ -936,6 +936,7 @@ export default function AdminEnrollmentCreate() {
 
       const response = await fetch(API_ENDPOINTS.ENROLLMENTS + '/submit', {
         method: 'POST',
+        credentials: 'include',
         body: formDataObj
       });
 

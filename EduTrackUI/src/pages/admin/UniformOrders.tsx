@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
 import { Plus, Shirt, ShoppingBag, QrCode, Loader2, CheckCircle, Coins, Package, Clock } from "lucide-react";
+import { FeatureGate } from "@/components/FeatureGate";
 
 type UniformPrice = {
   id: string;
@@ -145,6 +146,7 @@ const UniformOrders = () => {
   };
 
   useEffect(() => {
+
     if (!isAuthenticated || user?.role !== "admin") {
       navigate("/auth");
       return;
@@ -294,7 +296,7 @@ const UniformOrders = () => {
       });
       if (res.success && res.token) {
         setGcashToken(res.token);
-        window.open(`/admin/gcash-session/${res.token}`, '_blank');
+        window.open(`${import.meta.env.BASE_URL}admin/gcash-session/${res.token}`, '_blank');
       } else {
         showAlert("error", res.message || 'Failed to create GCash session');
       }
@@ -435,8 +437,9 @@ const UniformOrders = () => {
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-8 space-y-6">
+    <FeatureGate feature="payment" showComingSoon>
+      <DashboardLayout>
+        <div className="p-8 space-y-6">
         {alert && (
           <AlertMessage
             type={alert.type}
@@ -807,8 +810,9 @@ const UniformOrders = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </DashboardLayout>
+        </div>
+      </DashboardLayout>
+    </FeatureGate>
   );
 };
 

@@ -142,35 +142,35 @@ const EnrollmentStatus = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-3 sm:p-6">
         <div className="max-w-5xl mx-auto">
           {/* Back Button */}
           <Button
             variant="ghost"
             onClick={() => navigate("/enrollment/my-enrollments")}
-            className="mb-8 -ml-2 hover:bg-white/80"
+            className="mb-4 sm:mb-8 -ml-2 hover:bg-white/80 text-sm sm:text-base"
           >
-            <ChevronLeft className="w-4 h-4 mr-2" />
+            <ChevronLeft className="w-4 h-4 mr-1 sm:mr-2" />
             Back to My Enrollments
           </Button>
 
           {/* Status Header Card */}
-          <Card className={`mb-8 border-2 shadow-lg ${statusInfo.bg}`}>
-            <CardContent className="p-8">
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="mt-1 p-3 bg-white rounded-lg shadow-sm">{statusInfo.icon}</div>
-                  <div className="flex-1">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Enrollment Status</h1>
-                    <div className="flex items-center gap-3 mb-3">
-                      <Badge className={`${statusInfo.badgeBg} ${statusInfo.badgeText} text-lg px-4 py-1 rounded-full font-semibold`}>
+          <Card className={`mb-4 sm:mb-8 border-2 shadow-lg ${statusInfo.bg}`}>
+            <CardContent className="p-4 sm:p-8">
+              <div className="flex items-start gap-3 sm:gap-6">
+                <div className="flex items-start gap-3 sm:gap-4 flex-1">
+                  <div className="mt-1 p-2 sm:p-3 bg-white rounded-lg shadow-sm flex-shrink-0">{statusInfo.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">Enrollment Status</h1>
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3">
+                      <Badge className={`${statusInfo.badgeBg} ${statusInfo.badgeText} text-sm sm:text-lg px-3 sm:px-4 py-1 rounded-full font-semibold`}>
                         {enrollment.status}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600 break-words">
                       <strong>Confirmation ID:</strong> {enrollment.confirmation_number}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       <strong>Submitted:</strong> {new Date(enrollment.submitted_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                   </div>
@@ -180,67 +180,67 @@ const EnrollmentStatus = () => {
           </Card>
 
           {/* Applicant Information */}
-          <Card className="mb-8 shadow-md">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle className="text-xl">Applicant Information</CardTitle>
+          <Card className="mb-4 sm:mb-8 shadow-md">
+            <CardHeader className="border-b border-gray-200 p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Applicant Information</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
               <div>
-                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide">Enrollment Type</p>
-                <p className="text-lg font-bold text-gray-900 mt-2">{enrollment.enrollment_type || 'N/A'}</p>
+                <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide">Enrollment Type</p>
+                <p className="text-base sm:text-lg font-bold text-gray-900 mt-1 sm:mt-2">{enrollment.enrollment_type || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide">Grade Level</p>
-                <p className="text-lg font-bold text-gray-900 mt-2">{enrollment.grade_level}</p>
+                <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide">Grade Level</p>
+                <p className="text-base sm:text-lg font-bold text-gray-900 mt-1 sm:mt-2">{enrollment.grade_level}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Status Timeline */}
-          <Card className="mb-8 shadow-md">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle className="text-xl">Status Timeline</CardTitle>
+          <Card className="mb-4 sm:mb-8 shadow-md">
+            <CardHeader className="border-b border-gray-200 p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Status Timeline</CardTitle>
             </CardHeader>
-              <CardContent className="p-6 space-y-4">
+              <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 {enrollment.submitted_date && (
                   <div>
-                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide">Submitted</p>
-                    <p className="text-sm text-gray-700 mt-2">{new Date(enrollment.submitted_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide">Submitted</p>
+                    <p className="text-xs sm:text-sm text-gray-700 mt-1 sm:mt-2">{new Date(enrollment.submitted_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </div>
                 )}
                 {enrollment.first_reviewed_date && (
                   <div>
-                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide">First Reviewed</p>
-                    <p className="text-sm text-gray-700 mt-2">{new Date(enrollment.first_reviewed_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide">First Reviewed</p>
+                    <p className="text-xs sm:text-sm text-gray-700 mt-1 sm:mt-2">{new Date(enrollment.first_reviewed_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </div>
                 )}
                 {enrollment.approved_date && (
                   <div>
-                    <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide">Approved</p>
-                    <p className="text-sm text-gray-700 mt-2">{new Date(enrollment.approved_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide">Approved</p>
+                    <p className="text-xs sm:text-sm text-gray-700 mt-1 sm:mt-2">{new Date(enrollment.approved_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
           {/* Timeline */}
-          <Card className="mb-8 shadow-md">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle className="text-xl">Application Progress</CardTitle>
+          <Card className="mb-4 sm:mb-8 shadow-md">
+            <CardHeader className="border-b border-gray-200 p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Application Progress</CardTitle>
             </CardHeader>
-            <CardContent className="p-8">
-              <div className="space-y-6">
+            <CardContent className="p-4 sm:p-8">
+              <div className="space-y-4 sm:space-y-6">
                 {enrollment.timeline.map((event, index) => (
-                  <div key={index} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="w-4 h-4 bg-blue-600 rounded-full mt-1.5 shadow-sm"></div>
+                  <div key={index} className="flex gap-3 sm:gap-4">
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-600 rounded-full mt-1.5 shadow-sm"></div>
                       {index < enrollment.timeline.length - 1 && (
-                        <div className="w-1 h-16 bg-gradient-to-b from-blue-600 to-blue-200 mt-2"></div>
+                        <div className="w-0.5 sm:w-1 h-12 sm:h-16 bg-gradient-to-b from-blue-600 to-blue-200 mt-2"></div>
                       )}
                     </div>
-                    <div className="pb-4 flex-1">
-                      <p className="font-semibold text-gray-900 text-lg">{event.event}</p>
-                      <p className="text-sm text-gray-500 mt-1">
+                    <div className="pb-2 sm:pb-4 flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm sm:text-lg break-words">{event.event}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1">
                         {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -252,11 +252,11 @@ const EnrollmentStatus = () => {
 
           {/* Documents Status */}
           {enrollment.documents && enrollment.documents.length > 0 && (
-            <Card className="mb-8 shadow-md">
-              <CardHeader className="border-b border-gray-200">
-                <CardTitle className="text-xl">Required Documents</CardTitle>
+            <Card className="mb-4 sm:mb-8 shadow-md">
+              <CardHeader className="border-b border-gray-200 p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Required Documents</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="space-y-3">
                   {(enrollment.documents || []).map((doc, index) => {
                     const docStatusConfig = {
@@ -268,19 +268,19 @@ const EnrollmentStatus = () => {
                     const config = docStatusConfig[doc.status] || docStatusConfig.Pending;
                     
                     return (
-                      <div key={index} className={`p-4 rounded-lg border-2 ${config.bg} ${config.border}`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="mt-1">{config.icon}</div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-gray-900">{doc.type}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge className={`${config.badge} text-xs px-3 py-1 rounded-full font-medium`}>
+                      <div key={index} className={`p-3 sm:p-4 rounded-lg border-2 ${config.bg} ${config.border}`}>
+                        <div className="flex items-center justify-between gap-2 sm:gap-4">
+                          <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+                            <div className="mt-1 flex-shrink-0">{config.icon}</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900 text-sm sm:text-base break-words">{doc.type}</p>
+                              <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                                <Badge className={`${config.badge} text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-medium`}>
                                   {doc.status}
                                 </Badge>
                               </div>
                               {doc.uploaded && (
-                                <p className="text-xs text-gray-600 mt-2">
+                                <p className="text-xs text-gray-600 mt-1 sm:mt-2">
                                   Uploaded: {new Date(doc.uploaded).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                                 </p>
                               )}
@@ -292,8 +292,8 @@ const EnrollmentStatus = () => {
                             </div>
                           </div>
                           {doc.status === "Verified" && (
-                            <div className="ml-4">
-                              <CheckCircle2 className="w-6 h-6 text-green-600" />
+                            <div className="ml-2 sm:ml-4 flex-shrink-0">
+                              <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                             </div>
                           )}
                         </div>
@@ -306,37 +306,37 @@ const EnrollmentStatus = () => {
           )}
 
           {/* Next Steps */}
-          <Card className="mb-8 shadow-md">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle className="text-xl">Next Steps</CardTitle>
+          <Card className="mb-4 sm:mb-8 shadow-md">
+            <CardHeader className="border-b border-gray-200 p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Next Steps</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="bg-teal-50 border-l-4 border-teal-500 p-4 rounded">
-                <p className="text-gray-800 text-base leading-relaxed">{enrollment.next_steps}</p>
+            <CardContent className="p-4 sm:p-6">
+              <div className="bg-teal-50 border-l-4 border-teal-500 p-3 sm:p-4 rounded">
+                <p className="text-gray-800 text-sm sm:text-base leading-relaxed">{enrollment.next_steps}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Rejection Reason (if applicable) */}
           {enrollment.status === "Rejected" && enrollment.rejection_reason && (
-            <Card className="mb-8 border-2 border-red-300 bg-red-50 shadow-md">
-              <CardHeader className="border-b border-red-300">
-                <CardTitle className="text-xl flex items-center gap-2 text-red-900">
-                  <XCircle className="w-5 h-5" />
+            <Card className="mb-4 sm:mb-8 border-2 border-red-300 bg-red-50 shadow-md">
+              <CardHeader className="border-b border-red-300 p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2 text-red-900">
+                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   Rejection Reason
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <p className="text-gray-800 bg-white p-4 rounded-lg border-l-4 border-red-500">{enrollment.rejection_reason}</p>
+              <CardContent className="p-4 sm:p-6">
+                <p className="text-gray-800 bg-white p-3 sm:p-4 rounded-lg border-l-4 border-red-500 text-sm sm:text-base">{enrollment.rejection_reason}</p>
               </CardContent>
             </Card>
           )}
 
           {/* Approved Information (if applicable) */}
           {enrollment.status === "Approved" && enrollment.created_student_id && (
-            <Alert className="mb-8 bg-green-50 border-2 border-green-300 shadow-md">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <AlertDescription className="text-green-800 text-base ml-4">
+            <Alert className="mb-4 sm:mb-8 bg-green-50 border-2 border-green-300 shadow-md">
+              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              <AlertDescription className="text-green-800 text-sm sm:text-base ml-2 sm:ml-4">
                 <strong className="block mb-2">🎉 Congratulations!</strong>
                 Your child's enrollment has been approved. You will receive login credentials via email. Please check your email for next steps and important school information.
               </AlertDescription>
@@ -345,15 +345,15 @@ const EnrollmentStatus = () => {
 
           {/* Contact Support */}
           <Card className="shadow-md">
-            <CardContent className="p-8">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Mail className="w-6 h-6 text-blue-600" />
+            <CardContent className="p-4 sm:p-8">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                  <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900 text-lg">Have Questions?</p>
-                  <p className="text-gray-700 text-sm mt-2 leading-relaxed">
-                    If you need to update your enrollment or have questions, please contact us at <strong>enrollment@maranatha-school.edu</strong> or call <strong>(555) 123-4567</strong>. We're here to help!
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 text-base sm:text-lg">Have Questions?</p>
+                  <p className="text-gray-700 text-xs sm:text-sm mt-2 leading-relaxed break-words">
+                    If you need to update your enrollment or have questions, please contact us at <strong className="break-all">enrollment@maranatha-school.edu</strong> or call <strong>+63 999-123-4567</strong>. We're here to help!
                   </p>
                 </div>
               </div>
@@ -361,10 +361,10 @@ const EnrollmentStatus = () => {
           </Card>
 
           {/* Action Buttons */}
-          <div className="mt-8 flex gap-4 justify-center">
+          <div className="mt-4 sm:mt-8 flex gap-3 sm:gap-4 justify-center">
             <Button
               onClick={() => navigate("/enrollment/my-enrollments")}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-2 rounded-lg shadow-md font-semibold transition-all"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 sm:px-8 py-2 rounded-lg shadow-md font-semibold transition-all text-sm sm:text-base w-full sm:w-auto"
             >
               <Eye className="w-4 h-4 mr-2" />
               Back to All Enrollments

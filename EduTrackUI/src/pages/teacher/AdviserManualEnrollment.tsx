@@ -1037,6 +1037,7 @@ export default function AdviserManualEnrollment() {
 
       const response = await fetch(API_ENDPOINTS.ADVISER_ENROLLMENT_SUBMIT, {
         method: 'POST',
+        credentials: 'include',
         body: formDataObj
       });
 

@@ -27,12 +27,23 @@ import {
 } from "lucide-react";
 import { API_ENDPOINTS, apiGet, apiPut } from "@/lib/api";
 import gcashQR from "@/assets/images/Gcash-qr.jpg";
+import { FeatureGate } from "@/components/FeatureGate";
 
 type OcrStatus = "idle" | "running" | "found" | "not_found";
 type SelectionRect = { x: number; y: number; w: number; h: number };
 
 export default function GcashSessionPage() {
   const { token } = useParams<{ token: string }>();
+  const runtimeBasePath = (() => {
+    const viteBase = String(import.meta.env.BASE_URL || "/");
+    if (viteBase !== "/") return viteBase;
+    const path = window.location.pathname || "/";
+    if (path === "/ui" || path.startsWith("/ui/")) return "/ui/";
+    return "/";
+  })();
+  const paymentProofUrl = token
+    ? new URL(`${runtimeBasePath}payment-proof/${token}`, window.location.origin).toString()
+    : "";
 
   // session / upload
   const [uploadStatus, setUploadStatus] = useState<"waiting" | "uploaded">("waiting");
@@ -384,8 +395,9 @@ export default function GcashSessionPage() {
   })();
 
   return (
-    <DashboardLayout>
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
+    <FeatureGate feature="payment" showComingSoon>
+      <DashboardLayout>
+        <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
 
         {/* ── Page Header ─────────────────────────────────────── */}
         <div className="flex items-center gap-4">
@@ -525,7 +537,7 @@ export default function GcashSessionPage() {
                     <div className="flex justify-center p-3 bg-white rounded-xl border-2 border-dashed border-gray-300">
                       {token ? (
                         <QRCodeSVG
-                          value={`${window.location.origin}/payment-proof/${token}`}
+                          value={paymentProofUrl}
                           size={180}
                           level="M"
                           includeMargin
@@ -806,6 +818,7 @@ export default function GcashSessionPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+      </DashboardLayout>
+    </FeatureGate>
   );
 }

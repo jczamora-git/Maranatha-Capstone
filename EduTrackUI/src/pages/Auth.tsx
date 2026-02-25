@@ -205,18 +205,6 @@ const Auth = () => {
                     Sign Up to create a new account
                   </p>
                 </div>
-                
-                <div 
-                  onClick={() => navigate('/student-login')}
-                  className="p-4 border border-border rounded-lg hover:bg-accent/5 hover:border-accent/50 transition-all cursor-pointer group"
-                >
-                  <p className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
-                    Are you a student?
-                  </p>
-                  <p className="text-xs text-muted-foreground group-hover:text-accent/70 transition-colors">
-                    Activate your account here
-                  </p>
-                </div>
               </div>
             </form>
           </CardContent>

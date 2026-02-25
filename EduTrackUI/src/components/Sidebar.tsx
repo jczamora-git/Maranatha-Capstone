@@ -45,6 +45,24 @@ interface SidebarItemProps {
   isActive?: boolean;
 }
 
+const ChatbotIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 469.2 461.6"
+    className={className}
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M376.6,133.9l-23.7,3.7c-6.2,1-12.5,1.4-18.8,1.4c-8.2,0-16.4-0.8-24.3-2.5c-20.4-4.2-34.5-12.8-42.7-19.3l-32.4-25.4l-32.3,25.4c-8.2,6.5-22.3,15.1-42.7,19.3c-7.9,1.6-16.1,2.5-24.3,2.5c-6.3,0-12.7-0.5-18.8-1.4l-23.7-3.7l-66.4,50.6v104.1c0,4.9,0.3,9.7,0.8,14.6c4.6,41.3,28.9,80.2,68.1,108.5c0.9,0.7,1.9,1.4,2.9,2c48.1,33.6,102,43.9,129.9,47.1l6.7,0.8l6.7-0.8c27.9-3.2,81.8-13.5,129.9-47.1c1-0.7,2-1.4,2.9-2.1c43.8-31.6,69-76.5,69-123.1V184.5L376.6,133.9L376.6,133.9z M413,288.7c0,40.4-21.7,79.2-59.6,106.5c-0.8,0.6-1.7,1.2-2.5,1.8c-42.2,29.5-89.6,38.6-114,41.4l-2.2,0.2l-2.2-0.2c-24.5-2.8-71.8-11.9-114.1-41.4c-0.8-0.6-1.7-1.2-2.5-1.8c-33.3-24-54.2-57-58.7-92.1c-0.6-4.8-0.9-9.6-0.9-14.4V194l46.2-35.2l7.9,1.2c8.1,1.3,16.5,1.9,24.8,1.9c10.9,0,21.7-1.1,32.2-3.3c27-5.6,45.6-16.9,56.4-25.5l10.8-8.5l10.8,8.5c10.9,8.5,29.4,19.9,56.4,25.5c10.5,2.2,21.3,3.3,32.2,3.3c8.3,0,16.7-0.6,24.8-1.9l7.9-1.2L413,194L413,288.7L413,288.7z" />
+    <path d="M443,210.9L443,210.9c14.5,0,26.2,11.7,26.2,26.2V277c0,14.5-11.7,26.2-26.2,26.2h0c-14.5,0-26.2-11.7-26.2-26.2v-39.9C416.8,222.7,428.5,210.9,443,210.9z" />
+    <path d="M26.2,210.9L26.2,210.9c14.5,0,26.2,11.7,26.2,26.2V277c0,14.5-11.7,26.2-26.2,26.2l0,0C11.7,303.3,0,291.5,0,277v-39.9C0,222.7,11.7,210.9,26.2,210.9z" />
+    <circle cx="153" cy="256.3" r="55.8" />
+    <circle cx="234.6" cy="33.8" r="33.8" />
+    <circle cx="316.2" cy="256.3" r="55.8" />
+    <path d="M234.4,374.6c-12.2,0-24.4-3-36.1-9.2c-2.3-1.2-3-4.1-1.7-6.3l0,0c1.2-2.1,3.9-2.8,6-1.7c20.8,10.9,42.8,10.9,64.1,0c2.1-1.1,4.8-0.4,6,1.7l0,0c1.3,2.2,0.5,5.1-1.8,6.2C259,371.6,246.6,374.6,234.4,374.6L234.4,374.6z" />
+    <polygon points="254.7,116.7 216.4,116.7 226.3,55.8 244.8,55.8" />
+  </svg>
+);
+
 const SidebarItem = ({ icon, label, href, isActive }: SidebarItemProps) => {
   const navigate = useNavigate();
   const { isOpen } = useSidebar();
@@ -194,6 +212,7 @@ export const Sidebar = () => {
     ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
     ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
     { to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" },
+    { to: "/admin/chatbot-knowledge", icon: ChatbotIcon, label: "Chatbot Knowledge" },
     ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : []),
   ];
 
@@ -410,13 +429,15 @@ export const Sidebar = () => {
         </div>
 
         <div className="border-t p-4 space-y-2">
-          <button
-            onClick={cycleTheme}
-            className="w-full flex items-center gap-2 p-3 rounded-lg text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
-          >
-            {getThemeIcon()}
-            <span>{getThemeLabel()}</span>
-          </button>
+          {!isProd && (
+            <button
+              onClick={cycleTheme}
+              className="w-full flex items-center gap-2 p-3 rounded-lg text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
+            >
+              {getThemeIcon()}
+              <span>{getThemeLabel()}</span>
+            </button>
+          )}
           <button
             onClick={() => {
               handleLogout();
@@ -572,17 +593,19 @@ export const Sidebar = () => {
         </div>
 
         <div className="border-t p-2 sm:p-4 space-y-1 sm:space-y-2">
-          <button
-            onClick={cycleTheme}
-            className={cn(
-              "w-full flex items-center gap-2 p-2 sm:p-3 rounded-lg text-xs sm:text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all",
-              !isOpen && "justify-center"
-            )}
-            title={isOpen ? undefined : getThemeLabel()}
-          >
-            {getThemeIcon()}
-            {isOpen && <span className="hidden sm:inline">{getThemeLabel()}</span>}
-          </button>
+          {!isProd && (
+            <button
+              onClick={cycleTheme}
+              className={cn(
+                "w-full flex items-center gap-2 p-2 sm:p-3 rounded-lg text-xs sm:text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all",
+                !isOpen && "justify-center"
+              )}
+              title={isOpen ? undefined : getThemeLabel()}
+            >
+              {getThemeIcon()}
+              {isOpen && <span className="hidden sm:inline">{getThemeLabel()}</span>}
+            </button>
+          )}
 
           <button
             onClick={handleLogout}

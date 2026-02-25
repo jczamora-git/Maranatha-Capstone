@@ -563,6 +563,7 @@ const EnrollmentForm = () => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        credentials: 'include', // Important: Send session cookies with request
         body: formDataToSend,
       });
 

@@ -10,11 +10,14 @@ import { FEATURES } from "@/config/features";
 import StudentMessaging from "./pages/student/Messaging";
 import TeacherMessaging from "./pages/teacher/Messaging";
 import { AuthProvider } from "./hooks/useAuth";
+import { useAuth } from "./hooks/useAuth";
 import { ConfirmProvider } from "@/components/Confirm";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { FeaturesProvider } from "@/context/FeaturesContext";
 import { NotificationContainer } from "@/components/NotificationContainer";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import ChatbotWidget from "@/components/ChatbotWidget";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
@@ -59,8 +62,10 @@ import UniformManagement from "./pages/admin/UniformManagement";
 import UniformOrders from "./pages/admin/UniformOrders";
 import SchoolServiceManagement from "./pages/admin/SchoolServiceManagement";
 import RFIDAttendance from "./pages/admin/RFIDAttendance";
+import RFIDManagement from "./pages/admin/RFIDManagement";
 import AdviserManualEnrollment from "./pages/teacher/AdviserManualEnrollment";
 import AdminSentimentAnalytics from "./pages/admin/SentimentAnalytics";
+import AdminChatbotKnowledge from "./pages/admin/AdminChatbotKnowledge";
 
 // Enrollment pages
 import EnrollmentForm from "./pages/enrollment/EnrollmentForm";
@@ -114,8 +119,11 @@ import PaymentProofUpload from "./pages/PaymentProofUpload";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  const { user } = useAuth();
   // Monitor payment section lock/unlock across all pages
   usePaymentPageLock();
+  const isProd = import.meta.env.MODE === "production";
+  const showFloatingChatbot = !isProd || user?.role === "admin";
   
   // Lazy-load Campuses only at runtime inside the component to avoid top-level evaluation issues
   let LazyCampuses: any = null;
@@ -127,6 +135,7 @@ const AppContent = () => {
   return (
     <>
       <NotificationContainer />
+      {showFloatingChatbot && <ChatbotWidget />}
       <Routes>
             <Route path="/" element={<Auth />} />
             <Route path="/auth" element={<Auth />} />
@@ -220,6 +229,7 @@ const AppContent = () => {
             
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/chatbot-knowledge" element={<ProtectedRoute requiredRole="admin"><AdminChatbotKnowledge /></ProtectedRoute>} />
             {FEATURES.enrollment && (
               <>
                 <Route path="/admin/enrollments" element={<ProtectedRoute requiredRole={["admin", "teacher"]}><ManagementPage /></ProtectedRoute>} />
@@ -245,6 +255,9 @@ const AppContent = () => {
             )}
             {FEATURES.attendance && (
               <Route path="/admin/rfid-attendance" element={<ProtectedRoute requiredRole="admin"><RFIDAttendance /></ProtectedRoute>} />
+            )}
+            {FEATURES.attendance && (
+              <Route path="/admin/rfid-management" element={<ProtectedRoute requiredRole="admin"><RFIDManagement /></ProtectedRoute>} />
             )}
             <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UserManagement /></ProtectedRoute>} />
             {FEATURES.teacherManagement && (
@@ -359,20 +372,22 @@ const App = () => (
       enableSystem
       disableTransitionOnChange
     >
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <PWAInstallPrompt />
-        <NotificationProvider>
-          <BrowserRouter basename={routerBase}>
-            <AuthProvider>
-              <ConfirmProvider>
-                <AppContent />
-              </ConfirmProvider>
-            </AuthProvider>
-            </BrowserRouter>
-        </NotificationProvider>
-      </TooltipProvider>
+      <FeaturesProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <PWAInstallPrompt />
+          <NotificationProvider>
+            <BrowserRouter basename={routerBase}>
+              <AuthProvider>
+                <ConfirmProvider>
+                  <AppContent />
+                </ConfirmProvider>
+              </AuthProvider>
+              </BrowserRouter>
+          </NotificationProvider>
+        </TooltipProvider>
+      </FeaturesProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

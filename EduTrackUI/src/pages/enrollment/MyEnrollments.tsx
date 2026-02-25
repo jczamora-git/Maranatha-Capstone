@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AlertCircle, Plus, CheckCircle2, Clock, XCircle, Eye, ArrowRight, ClipboardList, Calendar, Search, LayoutGrid, List, UserPlus, Users, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatures } from "@/context/FeaturesContext";
 import { apiGet, API_ENDPOINTS } from "@/lib/api";
 import AccessLockedCard from "@/components/AccessLockedCard";
 import Joyride, { CallBackProps, STATUS, EVENTS } from "react-joyride";
@@ -59,6 +60,7 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.React
 const MyEnrollments = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isEnrollmentTypeEnabled } = useFeatures();
   const [enrollments, setEnrollments] = useState<EnrollmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -652,7 +654,7 @@ const MyEnrollments = () => {
         ) : (
           <div className="space-y-4 sm:space-y-6">
             {/* Summary Stats */}
-            <div id="summary-stats-section" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div id="summary-stats-section" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <Card className="bg-white border-0 shadow-sm">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
@@ -721,26 +723,28 @@ const MyEnrollments = () => {
 
             {/* Filters and View Mode */}
             <Card id="filters-section" className="bg-white border-0 shadow-sm">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="search" className="block text-sm font-medium mb-2">Search</Label>
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-row gap-2 sm:gap-4">
+                  {/* Search */}
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="search" className="hidden sm:block text-sm font-medium mb-2">Search</Label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="search"
-                        placeholder="Search by ID or grade level..."
+                        placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
+                        className="pl-7 sm:pl-10 h-9 sm:h-10 text-sm"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="status-filter" className="block text-sm font-medium mb-2">Status</Label>
+                  {/* Status Filter */}
+                  <div className="w-28 sm:w-48">
+                    <Label htmlFor="status-filter" className="hidden sm:block text-sm font-medium mb-2">Status</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger id="status-filter">
+                      <SelectTrigger id="status-filter" className="h-9 sm:h-10 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -754,26 +758,27 @@ const MyEnrollments = () => {
                     </Select>
                   </div>
 
-                  <div className="flex items-end gap-2">
-                    <Label className="block text-sm font-medium mb-2 w-full">View Mode</Label>
-                    <div className="flex gap-2 w-full">
+                  {/* View Mode */}
+                  <div className="flex items-end gap-1 sm:gap-2">
+                    <Label className="hidden sm:block text-sm font-medium mb-2 w-full">View Mode</Label>
+                    <div className="flex gap-1 sm:gap-2">
                       <Button
                         variant={viewMode === "list" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setViewMode("list")}
-                        className="flex-1"
+                        className="h-9 sm:h-10 px-2 sm:px-4"
                       >
-                        <List className="h-4 w-4 mr-2" />
-                        List
+                        <List className="h-4 w-4" />
+                        <span className="hidden sm:inline sm:ml-2">List</span>
                       </Button>
                       <Button
                         variant={viewMode === "grid" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setViewMode("grid")}
-                        className="flex-1"
+                        className="h-9 sm:h-10 px-2 sm:px-4"
                       >
-                        <LayoutGrid className="h-4 w-4 mr-2" />
-                        Grid
+                        <LayoutGrid className="h-4 w-4" />
+                        <span className="hidden sm:inline sm:ml-2">Grid</span>
                       </Button>
                     </div>
                   </div>
@@ -936,27 +941,31 @@ const MyEnrollments = () => {
                 className="space-y-3"
               >
                 {/* Show Continuing Student option for all students (including legacy/first-timers) */}
-                <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg border-2 border-green-200 hover:border-green-400 transition-colors cursor-pointer">
-                  <RadioGroupItem value="Continuing Student" id="continuing-student" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="continuing-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
-                      <Users className="w-5 h-5 text-green-600" />
-                      Continuing Student
-                    </Label>
-                    <p className="text-sm text-gray-600 mt-1">Currently enrolled, progressing to next grade level</p>
+                {isEnrollmentTypeEnabled('continuing_student') && (
+                  <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg border-2 border-green-200 hover:border-green-400 transition-colors cursor-pointer">
+                    <RadioGroupItem value="Continuing Student" id="continuing-student" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="continuing-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
+                        <Users className="w-5 h-5 text-green-600" />
+                        Continuing Student
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">Currently enrolled, progressing to next grade level</p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
-                  <RadioGroupItem value="Returning Student" id="returning-student" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="returning-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
-                      <Users className="w-5 h-5 text-blue-600" />
-                      Returning Student
-                    </Label>
-                    <p className="text-sm text-gray-600 mt-1">Previously enrolled, returning after a gap</p>
+                {isEnrollmentTypeEnabled('returning_student') && (
+                  <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
+                    <RadioGroupItem value="Returning Student" id="returning-student" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="returning-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
+                        <Users className="w-5 h-5 text-blue-600" />
+                        Returning Student
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">Previously enrolled, returning after a gap</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </RadioGroup>
             ) : (
               // Enrollee enrollment type options
@@ -965,38 +974,44 @@ const MyEnrollments = () => {
                 onValueChange={(value) => setSelectedEnrollmentType(value as "New Student" | "Continuing Student" | "Returning Student" | "Transferee")}
                 className="space-y-3"
               >
-                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
-                  <RadioGroupItem value="New Student" id="new-student" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="new-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
-                      <UserPlus className="w-5 h-5 text-blue-600" />
-                      New Student
-                    </Label>
-                    <p className="text-sm text-gray-600 mt-1">First time enrolling at Maranatha Christian Academy</p>
+                {isEnrollmentTypeEnabled('new_student') && (
+                  <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
+                    <RadioGroupItem value="New Student" id="new-student" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="new-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 text-blue-600" />
+                        New Student
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">First time enrolling at Maranatha Christian Academy</p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-colors cursor-pointer">
-                  <RadioGroupItem value="Transferee" id="transferee" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="transferee" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
-                      <Users className="w-5 h-5 text-purple-600" />
-                      Transferee
-                    </Label>
-                    <p className="text-sm text-gray-600 mt-1">Transferring from another school</p>
+                {isEnrollmentTypeEnabled('transferee') && (
+                  <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-colors cursor-pointer">
+                    <RadioGroupItem value="Transferee" id="transferee" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="transferee" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-600" />
+                        Transferee
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">Transferring from another school</p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
-                  <RadioGroupItem value="Returning Student" id="returning-student" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="returning-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
-                      <Users className="w-5 h-5 text-blue-600" />
-                      Returning Student
-                    </Label>
-                    <p className="text-sm text-gray-600 mt-1">Previously enrolled, returning after a gap</p>
+                {isEnrollmentTypeEnabled('returning_student') && (
+                  <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
+                    <RadioGroupItem value="Returning Student" id="returning-student" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="returning-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
+                        <Users className="w-5 h-5 text-blue-600" />
+                        Returning Student
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">Previously enrolled, returning after a gap</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </RadioGroup>
             )}
           </div>

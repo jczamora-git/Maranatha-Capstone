@@ -21,6 +21,7 @@ import {
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
 import { SchoolServicePaymentModal } from "@/components/SchoolServicePaymentModal";
+import { FeatureGate } from "@/components/FeatureGate";
 
 type Student = {
   id: string;
@@ -258,8 +259,9 @@ const SchoolServiceManagement = () => {
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-8">
+    <FeatureGate feature="payment" showComingSoon>
+      <DashboardLayout>
+        <div className="p-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -530,8 +532,9 @@ const SchoolServiceManagement = () => {
         />
 
         {alert && <AlertMessage type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
-      </div>
-    </DashboardLayout>
+        </div>
+      </DashboardLayout>
+    </FeatureGate>
   );
 };
 

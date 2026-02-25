@@ -7,6 +7,11 @@ interface AccessLockedCardProps {
   title: string;
   description: string;
   benefits?: string[];
+  benefitsTitle?: string;
+  actionButton?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 const AccessLockedCard = ({
@@ -16,7 +21,9 @@ const AccessLockedCard = ({
     "Secure your account and prevent unauthorized access",
     "Receive important updates and notifications",
     "Complete your enrollment process and pay tuition fees"
-  ]
+  ],
+  benefitsTitle = "Why verify your email?",
+  actionButton
 }: AccessLockedCardProps) => {
   const navigate = useNavigate();
 
@@ -41,7 +48,7 @@ const AccessLockedCard = ({
                   <div className="flex items-start gap-4">
                     <Mail className="w-5 h-5 text-amber-600 flex-shrink-0 mt-1" />
                     <div className="text-left">
-                      <p className="font-semibold text-gray-900 mb-2">Why verify your email?</p>
+                      <p className="font-semibold text-gray-900 mb-2">{benefitsTitle}</p>
                       <ul className="space-y-2">
                         {benefits.map((benefit, index) => (
                           <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
@@ -56,10 +63,10 @@ const AccessLockedCard = ({
               </Card>
 
               <Button
-                onClick={() => navigate("/enrollee/dashboard")}
+                onClick={actionButton ? actionButton.onClick : () => navigate("/enrollee/dashboard")}
                 className="bg-gradient-to-r from-primary to-accent text-white font-semibold"
               >
-                Back to Dashboard
+                {actionButton ? actionButton.label : "Back to Dashboard"}
               </Button>
             </div>
           </CardContent>

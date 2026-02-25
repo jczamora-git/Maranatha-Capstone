@@ -42,11 +42,14 @@ export const API_ENDPOINTS = {
   
   // Student Management
   STUDENTS: `${API_BASE_URL}/api/students`,
+  STUDENTS_ACTIVE: `${API_BASE_URL}/api/students/active`,
   STUDENTS_ENROLLEES: `${API_BASE_URL}/api/students-enrollees`,
   STUDENT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/students/${id}`,
   STUDENT_BY_USER: (user_id: string | number) => `${API_BASE_URL}/api/students/by-user/${user_id}`,
   STUDENTS_IMPORT: `${API_BASE_URL}/api/students/import`,
   STUDENTS_EXPORT: `${API_BASE_URL}/api/students/export`,
+  STUDENT_ASSIGN_RFID: (id: string | number) => `${API_BASE_URL}/api/students/${id}/rfid`,
+  RFID_CARD_CHECK: `${API_BASE_URL}/api/rfid/cards/check`,
   
   // Subjects
   SUBJECTS: `${API_BASE_URL}/api/subjects`,
@@ -111,6 +114,7 @@ export const API_ENDPOINTS = {
   PAYMENT_PLANS: `${API_BASE_URL}/api/payment-plans`,
   PAYMENT_PLAN_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-plans/${id}`,
   PAYMENT_PLAN_INSTALLMENTS: (plan_id: string | number) => `${API_BASE_URL}/api/payment-plans/${plan_id}/installments`,
+  RFID_VERIFY_PASSKEY: `${API_BASE_URL}/api/rfid/verify-passkey`,
   
   // Payment Schedule Templates
   PAYMENT_SCHEDULE_TEMPLATES: `${API_BASE_URL}/api/payment-schedule-templates`,
@@ -240,6 +244,12 @@ export const API_ENDPOINTS = {
   BROADCASTS_BY_SUBJECT: (subject_id: string | number) => `${API_BASE_URL}/api/broadcasts/subject/${subject_id}`,
   BROADCASTS_BY_SECTION: (section_id: string | number) => `${API_BASE_URL}/api/broadcasts/section/${section_id}`,
 
+  // Chatbot Knowledge (Admin)
+  CHATBOT_KNOWLEDGE: `${API_BASE_URL}/api/admin/chatbot-knowledge`,
+  CHATBOT_KNOWLEDGE_BY_ID: (id: string | number) => `${API_BASE_URL}/api/admin/chatbot-knowledge/${id}`,
+  CHATBOT_KNOWLEDGE_TOGGLE: (id: string | number) => `${API_BASE_URL}/api/admin/chatbot-knowledge/${id}/toggle`,
+  CHATBOT_MESSAGE: `${API_BASE_URL}/api/chatbot/message`,
+
   // Learning Materials (File Upload & Storage)
   LEARNING_MATERIALS: `${API_BASE_URL}/api/learning-materials`,
   LEARNING_MATERIALS_BY_ID: (id: string | number) => `${API_BASE_URL}/api/learning-materials/${id}`,
@@ -255,6 +265,10 @@ export const API_ENDPOINTS = {
   QUIZ_START: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/quiz/start`,
   QUIZ_SAVE_ANSWER: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/quiz/save-answer`,
   QUIZ_SUBMIT: (activityId: string | number) => `${API_BASE_URL}/api/activities/${activityId}/quiz/submit`,
+  
+  // Configuration & Feature Flags
+  CONFIG_FEATURES: `${API_BASE_URL}/api/config/features`,
+  CONFIG_ENROLLMENT_TYPES: `${API_BASE_URL}/api/config/enrollment-types`,
 };
 
 // API helper functions

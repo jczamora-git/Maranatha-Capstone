@@ -674,7 +674,7 @@ const Payments = () => {
       });
       if (res.success && res.token) {
         setGcashToken(res.token);
-        window.open(`/admin/gcash-session/${res.token}`, '_blank');
+        window.open(`${import.meta.env.BASE_URL}admin/gcash-session/${res.token}`, '_blank');
       } else {
         showAlert("error", res.message || 'Failed to create GCash session');
       }
