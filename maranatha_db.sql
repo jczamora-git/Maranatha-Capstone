@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 25, 2026 at 08:37 AM
+-- Generation Time: Feb 27, 2026 at 03:15 AM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -81,7 +81,8 @@ CREATE TABLE `activities` (
 INSERT INTO `activities` (`id`, `subject_id`, `academic_period_id`, `section_id`, `title`, `type`, `description`, `max_score`, `due_at`, `allow_late_submission`, `created_at`) VALUES
 (4, 47, 28, 10, 'Basic English', 'quiz', NULL, 5, '2026-02-04 00:00:00', 1, '2026-01-31 11:38:02'),
 (5, 47, 28, 10, 'Draw an apple', 'art', NULL, 20, '2026-02-18 00:00:00', 1, '2026-01-31 23:20:50'),
-(6, 47, 28, 10, 'Long Quiz', 'quiz', NULL, 25, '2026-02-05 00:00:00', 1, '2026-01-31 23:59:31');
+(6, 47, 28, 10, 'Long Quiz', 'quiz', NULL, 25, '2026-02-05 00:00:00', 1, '2026-01-31 23:59:31'),
+(7, 51, 30, 11, 'quiz', 'quiz', NULL, 1, '2026-02-26 00:00:00', 1, '2026-02-25 09:32:07');
 
 -- --------------------------------------------------------
 
@@ -105,7 +106,8 @@ CREATE TABLE `activity_grades` (
 --
 
 INSERT INTO `activity_grades` (`id`, `activity_id`, `student_id`, `grade`, `status`, `feedback`, `created_at`, `updated_at`) VALUES
-(1, 6, 93, 9.00, 'Pending', NULL, '2026-02-01 02:47:24', '2026-02-01 06:01:44');
+(1, 6, 93, 9.00, 'Pending', NULL, '2026-02-01 02:47:24', '2026-02-01 06:01:44'),
+(2, 7, 296, 0.00, 'Failed', NULL, '2026-02-25 10:37:32', '2026-02-25 10:37:32');
 
 -- --------------------------------------------------------
 
@@ -152,7 +154,8 @@ INSERT INTO `activity_questions` (`id`, `activity_id`, `question_text`, `questio
 (36, 6, '<p>I am a yellow fruit. Monkeys love me. What am I? ________________</p>', 'short_answer', 1, 14, NULL, NULL, 'Banana', '2026-02-01 00:03:52'),
 (37, 6, '<p>I am a small insect with six legs. I say \"buzz\". What am I? ________________</p>', 'short_answer', 1, 15, NULL, NULL, 'Bee', '2026-02-01 00:04:03'),
 (38, 6, '<p>Draw a line to match the animal to its sound.</p>', 'matching', 5, 16, NULL, NULL, NULL, '2026-02-01 00:05:31'),
-(39, 6, '<p>What is your favorite animal? Why?</p>', 'essay', 5, 17, NULL, NULL, '<ul><li><em>\"My favorite animal is a dog because it is my friend.\"</em></li><li><em>\"I like cats because they are soft and cute.\"</em></li></ul><p><br></p>', '2026-02-01 00:05:49');
+(39, 6, '<p>What is your favorite animal? Why?</p>', 'essay', 5, 17, NULL, NULL, '<ul><li><em>\"My favorite animal is a dog because it is my friend.\"</em></li><li><em>\"I like cats because they are soft and cute.\"</em></li></ul><p><br></p>', '2026-02-01 00:05:49'),
+(40, 7, '<p>Test</p>', 'multiple_choice', 1, 1, NULL, NULL, NULL, '2026-02-25 09:33:29');
 
 -- --------------------------------------------------------
 
@@ -213,7 +216,9 @@ INSERT INTO `activity_question_choices` (`id`, `question_id`, `choice_text`, `is
 (53, 38, 'Dog::Bark', 0, 2, '2026-02-01 00:05:31'),
 (54, 38, 'Cow::Moo', 0, 3, '2026-02-01 00:05:31'),
 (55, 38, 'Pig::Oink', 0, 4, '2026-02-01 00:05:31'),
-(56, 38, 'Duck::Quack', 0, 5, '2026-02-01 00:05:31');
+(56, 38, 'Duck::Quack', 0, 5, '2026-02-01 00:05:31'),
+(57, 40, '1', 1, 1, '2026-02-25 09:33:29'),
+(58, 40, '2', 0, 2, '2026-02-25 09:33:29');
 
 -- --------------------------------------------------------
 
@@ -267,7 +272,8 @@ INSERT INTO `activity_student_answers` (`id`, `activity_id`, `question_id`, `stu
 (14, 6, 36, 93, NULL, 'mango', 1, 1.00, '2026-02-01 09:47:23'),
 (15, 6, 37, 93, NULL, 'bee', 1, 1.00, '2026-02-01 09:47:23'),
 (16, 6, 38, 93, NULL, '[3,1,4,0,2]', 0, 1.00, '2026-02-01 09:47:23'),
-(17, 6, 39, 93, NULL, 'Dog', 0, 0.00, '2026-02-01 09:47:23');
+(17, 6, 39, 93, NULL, 'Dog', 0, 0.00, '2026-02-01 09:47:23'),
+(18, 7, 40, 296, 58, NULL, 0, 0.00, '2026-02-25 17:37:32');
 
 -- --------------------------------------------------------
 
@@ -349,6 +355,30 @@ INSERT INTO `announcements` (`id`, `title`, `message`, `audience`, `status`, `pu
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `announcement_reads`
+--
+
+CREATE TABLE `announcement_reads` (
+  `id` bigint UNSIGNED NOT NULL,
+  `announcement_id` int UNSIGNED NOT NULL,
+  `user_id` int UNSIGNED NOT NULL,
+  `read_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks per-user read status for announcements';
+
+--
+-- Dumping data for table `announcement_reads`
+--
+
+INSERT INTO `announcement_reads` (`id`, `announcement_id`, `user_id`, `read_at`) VALUES
+(1, 4, 71, '2026-02-25 13:05:14'),
+(2, 5, 3, '2026-02-25 13:43:28'),
+(3, 4, 3, '2026-02-25 13:43:30'),
+(4, 5, 52, '2026-02-25 15:31:51'),
+(5, 4, 52, '2026-02-25 15:31:56');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `attendance`
 --
 
@@ -362,6 +392,35 @@ CREATE TABLE `attendance` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `audit_logs`
+--
+
+CREATE TABLE `audit_logs` (
+  `id` bigint UNSIGNED NOT NULL,
+  `actor_user_id` int UNSIGNED DEFAULT NULL COMMENT 'User who performed the action (NULL for system actions)',
+  `actor_role` enum('admin','teacher','student','enrollee','system') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `actor_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Cached actor name for display',
+  `action` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'enrollment.submitted, payment.created, enrollment.approved, activity.created, feedback.submitted, etc.',
+  `entity_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'enrollment, payment, activity, feedback, etc.',
+  `entity_id` bigint UNSIGNED NOT NULL COMMENT 'ID of the affected record',
+  `description` text COLLATE utf8mb4_unicode_ci COMMENT 'Human-readable description of the action',
+  `metadata` json DEFAULT NULL COMMENT 'Additional data: old_status, new_status, amount, etc.',
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'IPv4 or IPv6 address',
+  `user_agent` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Immutable audit trail of all system actions';
+
+--
+-- Dumping data for table `audit_logs`
+--
+
+INSERT INTO `audit_logs` (`id`, `actor_user_id`, `actor_role`, `actor_name`, `action`, `entity_type`, `entity_id`, `description`, `metadata`, `ip_address`, `user_agent`, `created_at`) VALUES
+(6, 3, 'admin', 'Demo Admin', 'create', 'payment', 129, 'Payment created: Book - ₱4,000.00', '{\"amount\": \"4000.00\", \"status\": \"Approved\", \"student_id\": 71, \"payment_type\": \"Book\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 20:13:53'),
+(7, 3, 'admin', 'Demo Admin', 'payment.created', 'payment', 129, 'Demo Admin recorded a Book payment of ₱4,000.00 for Karl Matthew Manzano', '{\"amount\": 4000, \"payment_id\": 129, \"payment_type\": \"Book\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 20:13:53');
 
 -- --------------------------------------------------------
 
@@ -701,8 +760,7 @@ INSERT INTO `enrollment_discounts` (`id`, `enrollment_id`, `template_id`, `payme
 (5, 20, 4, NULL, 500.00, NULL, '2026-02-07 14:11:06'),
 (19, 35, 3, 68, 85.00, NULL, '2026-02-21 04:20:03'),
 (20, 52, 4, NULL, 500.00, NULL, '2026-02-23 04:06:51'),
-(21, 36, 3, 118, 82.50, NULL, '2026-02-23 04:12:03'),
-(22, 33, 3, 121, 82.50, NULL, '2026-02-24 11:08:19');
+(21, 36, 3, 118, 82.50, NULL, '2026-02-23 04:12:03');
 
 -- --------------------------------------------------------
 
@@ -1354,6 +1412,7 @@ CREATE TABLE `learning_materials` (
   `id` int UNSIGNED NOT NULL,
   `subject_id` int UNSIGNED NOT NULL COMMENT 'Reference to subjects table',
   `section_id` int UNSIGNED DEFAULT NULL COMMENT 'Optional: Reference to sections table',
+  `school_year` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'School year this material belongs to, e.g. 2025-2026',
   `type` enum('text','file','link') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Material type: text (composed), file (uploaded), link (shared URL)',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Material title',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Material description or composed text content (HTML)',
@@ -1370,13 +1429,8 @@ CREATE TABLE `learning_materials` (
 -- Dumping data for table `learning_materials`
 --
 
-INSERT INTO `learning_materials` (`id`, `subject_id`, `section_id`, `type`, `title`, `description`, `file_url`, `file_name`, `file_size`, `link_url`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 47, 10, 'text', 'try', '<p>try</p>', NULL, NULL, NULL, NULL, 52, '2026-01-26 10:28:58', '2026-01-31 11:33:30'),
-(2, 47, 10, 'link', 'ReactJS Quill Rich Text Editor', '<p>A modern, customizable <strong>WYSIWYG </strong>editor that allows instructors to format learning materials with bold, italic, lists, links, images, and more — just like a word processor. Built with <strong>React</strong></p><p> and <strong>Quill.js </strong>, it ensures seamless integration, real-time editing, and clean HTML output. Ideal for writing instructions, notes, announcements, or lesson descriptions with rich formatting — all without needing HTML knowledge.</p>', NULL, NULL, NULL, 'https://www.youtube.com/watch?v=TsqTzSV7WJE', 52, '2026-01-26 10:30:54', '2026-01-31 11:33:48'),
-(3, 47, 10, 'link', 'ReactJS Quill Rich Text Editor', '<p>A modern, customizable WYSIWYG editor that allows instructors to format learning materials with bold, italic, lists, links, images, and more — just like a word processor. Built with React and Quill.js ,it ensures seamless integration, real-time editing, and clean HTML output. Ideal for writing instructions, notes, announcements, or lesson descriptions with rich formatting — all without needing HTML knowledge.</p>', NULL, NULL, NULL, '[\"https://www.youtube.com/watch?v=TsqTzSV7WJE\",\"https://www.youtube.com/watch?v=QVffer2fRfg\",\"https://www.youtube.com/watch?v=BznhaB9No10&list=RDBznhaB9No10&start_radio=1&pp=oAcB\",\"https://www.facebook.com/photo/?fbid=122312199224030494&set=a.122103957980030494\"]', 52, '2026-01-26 11:00:02', '2026-01-31 11:33:51'),
-(4, 47, 10, 'file', 'Jeizi Font', '', 'http://localhost:3000/uploads/learning-materials/47/A-X_20260126190629_6977ad25b7d17.pdf', 'A-X.pdf', 8524990, NULL, 52, '2026-01-26 11:06:29', '2026-01-31 11:33:54'),
-(5, 47, 10, 'file', 'ReactJS Quill Rich Text Editor', '<p>https://www.youtube.com/watch?v=TsqTzSV7WJE</p>', '[\"http://localhost:3000/uploads/learning-materials/47/Y-0_20260126191226_6977ae8ac8848.pdf\",\"http://localhost:3000/uploads/learning-materials/47/A-X_20260126191227_6977ae8b9501b.pdf\"]', '[\"Y-0.pdf\",\"A-X.pdf\"]', 14116055, NULL, 52, '2026-01-26 11:12:27', '2026-01-31 11:33:56'),
-(6, 47, 10, 'text', 'Test', '<p>test</p>', NULL, NULL, NULL, NULL, 52, '2026-01-31 04:35:32', NULL);
+INSERT INTO `learning_materials` (`id`, `subject_id`, `section_id`, `school_year`, `type`, `title`, `description`, `file_url`, `file_name`, `file_size`, `link_url`, `created_by`, `created_at`, `updated_at`) VALUES
+(8, 51, 11, '2026-2027', 'text', 'test', '<p>test</p>', NULL, NULL, NULL, NULL, 52, '2026-02-25 10:49:54', NULL);
 
 -- --------------------------------------------------------
 
@@ -1465,6 +1519,88 @@ INSERT INTO `messages` (`id`, `sender_id`, `receiver_id`, `broadcast_id`, `teach
 (144, 110, 52, NULL, 6, NULL, 'test message', NULL, 1, '2025-11-26 22:04:45', '2025-11-27 05:04:46'),
 (145, 52, 110, NULL, NULL, NULL, 'realtime', NULL, 1, '2025-11-26 22:05:35', '2025-11-27 05:05:36'),
 (146, 110, 52, NULL, 6, NULL, 'test', NULL, 1, '2025-11-28 15:43:24', '2026-01-28 14:31:05');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` int UNSIGNED NOT NULL COMMENT 'Recipient user ID',
+  `role` enum('admin','teacher','student','enrollee') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Recipient role',
+  `type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'enrollment.submitted, payment.received, status.changed, activity.created, feedback.received, feedback.responded, etc.',
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `icon` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Icon identifier for UI (bell, cash, file, etc.)',
+  `action_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Deep link: /payments/123, /enrollments/456, /activities/789',
+  `entity_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'enrollment, payment, activity, feedback',
+  `entity_id` bigint UNSIGNED DEFAULT NULL COMMENT 'ID of related entity',
+  `data` json DEFAULT NULL COMMENT 'Extra data for the notification',
+  `audit_log_id` bigint UNSIGNED DEFAULT NULL COMMENT 'Link to audit log entry',
+  `is_read` tinyint(1) NOT NULL DEFAULT '0',
+  `read_at` datetime DEFAULT NULL,
+  `is_archived` tinyint(1) NOT NULL DEFAULT '0',
+  `archived_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='In-app notifications for users';
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `role`, `type`, `title`, `body`, `icon`, `action_url`, `entity_type`, `entity_id`, `data`, `audit_log_id`, `is_read`, `read_at`, `is_archived`, `archived_at`, `created_at`, `updated_at`) VALUES
+(2, 71, 'student', 'payment.received', 'Payment Recorded', 'Your Book payment of ₱4,000.00 has been recorded', 'dollar-sign', '/enrollment/payment', 'payment', 129, NULL, 7, 1, '2026-02-25 14:06:17', 0, NULL, '2026-02-25 20:13:53', '2026-02-25 21:08:12');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_outbox`
+--
+
+CREATE TABLE `notification_outbox` (
+  `id` bigint UNSIGNED NOT NULL,
+  `notification_id` bigint UNSIGNED NOT NULL,
+  `user_id` int UNSIGNED NOT NULL,
+  `fcm_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fcm_body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fcm_data` json DEFAULT NULL COMMENT 'Data payload for FCM',
+  `fcm_image` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Optional notification image URL',
+  `status` enum('pending','sent','failed','expired') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `attempts` int UNSIGNED NOT NULL DEFAULT '0',
+  `max_attempts` int UNSIGNED NOT NULL DEFAULT '3',
+  `last_error` text COLLATE utf8mb4_unicode_ci,
+  `last_attempt_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `sent_at` datetime DEFAULT NULL,
+  `expires_at` datetime NOT NULL DEFAULT ((now() + interval 24 hour)) COMMENT 'Stop trying after 24 hours'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Queue for FCM push notification delivery with retry logic';
+
+--
+-- Dumping data for table `notification_outbox`
+--
+
+INSERT INTO `notification_outbox` (`id`, `notification_id`, `user_id`, `fcm_title`, `fcm_body`, `fcm_data`, `fcm_image`, `status`, `attempts`, `max_attempts`, `last_error`, `last_attempt_at`, `created_at`, `sent_at`, `expires_at`) VALUES
+(2, 2, 71, 'Payment Recorded', 'Your Book payment of ₱4,000.00 has been recorded', '{\"screen\": \"PaymentHistory\", \"payment_id\": 129}', NULL, 'pending', 0, 3, NULL, NULL, '2026-02-25 20:13:53', NULL, '2026-02-26 20:13:53');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_preferences`
+--
+
+CREATE TABLE `notification_preferences` (
+  `id` bigint UNSIGNED NOT NULL,
+  `user_id` int UNSIGNED NOT NULL,
+  `notification_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'enrollment.submitted, payment.received, etc.',
+  `in_app_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Show in notification center',
+  `push_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Send FCM push notification',
+  `email_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Send email (future)',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='User notification preferences';
 
 -- --------------------------------------------------------
 
@@ -1648,7 +1784,7 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (118, 431, 36, 26, 'RCP-202602-5141', 'Tuition Installment', 'Installment #1 - 2025-2026 - 1st Quarter', 1650.00, 82.50, 'Cash', '2026-02-23', '', 201, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-23 04:12:08', '2026-02-23 04:12:08', NULL, NULL, 0),
 (119, 453, 53, 30, 'RCP-202602-525412', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-24', NULL, 211, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:13:44', '2026-02-24 11:08:54', NULL, NULL, 0),
 (120, 454, 54, 30, 'RCP-202602-033032', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4250.00, 0.00, 'Cash', '2026-02-24', NULL, 221, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:45:44', '2026-02-24 11:08:48', NULL, NULL, 0),
-(121, 432, 33, 30, 'RCP-202602-9797', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 1650.00, 82.50, 'Cash', '2026-02-24', '', 225, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 11:08:31', '2026-02-24 11:08:31', NULL, NULL, 0);
+(129, 71, NULL, 30, 'RCP-202602-0915', 'Book', 'Text Book N1', 4000.00, 0.00, 'Cash', '2026-02-25', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-25 05:13:53', '2026-02-25 05:13:53', NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -2736,23 +2872,23 @@ INSERT INTO `students_backup` (`id`, `user_id`, `student_id`, `year_level`, `sec
 -- (See below for the actual view)
 --
 CREATE TABLE `student_balance_summary` (
-`academic_period_id` int unsigned
-,`academic_year` varchar(20)
-,`balance` decimal(10,2)
-,`next_amount_due` decimal(10,2)
-,`next_due_date` date
-,`overdue_installments` bigint
-,`paid_amount` decimal(10,2)
-,`payment_plan_status` enum('Active','Completed','Overdue','Cancelled')
-,`pending_installments` bigint
-,`quarter` enum('1st Quarter','2nd Quarter','3rd Quarter','4th Quarter')
-,`student_id` int unsigned
-,`student_name` varchar(201)
+`student_id` int unsigned
 ,`student_number` varchar(50)
-,`total_amount` decimal(10,2)
-,`total_installments` bigint
-,`total_late_fees` decimal(32,2)
+,`student_name` varchar(201)
 ,`year_level` varchar(20)
+,`academic_period_id` int unsigned
+,`academic_year` varchar(20)
+,`quarter` enum('1st Quarter','2nd Quarter','3rd Quarter','4th Quarter')
+,`total_amount` decimal(10,2)
+,`paid_amount` decimal(10,2)
+,`balance` decimal(10,2)
+,`payment_plan_status` enum('Active','Completed','Overdue','Cancelled')
+,`total_installments` bigint
+,`pending_installments` bigint
+,`overdue_installments` bigint
+,`next_due_date` date
+,`next_amount_due` decimal(10,2)
+,`total_late_fees` decimal(32,2)
 );
 
 -- --------------------------------------------------------
@@ -3017,7 +3153,11 @@ INSERT INTO `teacher_subject_assignments` (`id`, `teacher_id`, `subject_id`, `sc
 (67, 15, 46, '2026-2027', '2026-02-14 23:10:30', '2026-02-14 23:10:30'),
 (68, 15, 44, '2026-2027', '2026-02-14 23:10:53', '2026-02-14 23:10:53'),
 (69, 15, 48, '2026-2027', '2026-02-14 23:10:54', '2026-02-14 23:10:54'),
-(70, 15, 45, '2026-2027', '2026-02-14 23:10:59', '2026-02-14 23:10:59');
+(70, 15, 45, '2026-2027', '2026-02-14 23:10:59', '2026-02-14 23:10:59'),
+(76, 4, 51, '2026-2027', '2026-02-25 08:14:24', '2026-02-25 08:14:24'),
+(77, 4, 49, '2026-2027', '2026-02-25 08:14:28', '2026-02-25 08:14:28'),
+(78, 4, 54, '2026-2027', '2026-02-25 08:14:32', '2026-02-25 08:14:32'),
+(79, 4, 75, '2026-2027', '2026-02-25 08:14:35', '2026-02-25 08:14:35');
 
 -- --------------------------------------------------------
 
@@ -3243,7 +3383,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `status`, `must_change_password`, `created_at`, `updated_at`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
 (1, 'student@demo.com', '$2y$10$Ll4dzxFoqlaGCC1aL702BOdZ3xtLLijHcLKzW4SF1HPrlEgP9Frz6', 'student', 'Demo', NULL, 'Student', '', 'active', 0, '2025-11-06 11:13:56', '2025-11-10 01:05:04', NULL, NULL, 0, NULL),
 (2, 'teacher@demo.com', '$2y$10$/zuE1Q4AmA1J6MXuovoRoenUL5PoblPSzSxXA3ubUw47wpiTNfoVS', 'teacher', 'Demo', NULL, 'Teacher', '', 'active', 0, '2025-11-06 11:14:42', '2026-01-06 20:49:02', NULL, NULL, 0, NULL),
-(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', 'active', 0, '2025-11-06 11:15:04', '2026-02-24 11:40:42', NULL, NULL, 0, NULL),
+(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', 'active', 0, '2025-11-06 11:15:04', '2026-02-25 10:36:33', NULL, NULL, 0, NULL),
 (16, 'john.doe@example.com', '$2y$10$I19hzyUWwzkG9HMk8wEutekUr7tC9GmtiRFvW4lqePlq4eKBKXQtS', 'teacher', 'John', NULL, 'Doe', '', 'active', 0, '2025-11-06 14:05:34', '2025-11-06 18:29:13', NULL, NULL, 0, NULL),
 (18, 'juan.delacruz@mcc.edu.ph', '$2y$10$762nxMWoGHGu7kRyvzc8K.FGrrYGGJpRdMbm5jentTkF4mfui3iBK', 'student', 'Juan', NULL, 'Dela Cruz', '', 'active', 0, '2025-11-06 18:30:24', '2025-11-06 18:30:24', NULL, NULL, 0, NULL),
 (19, 'maria.santos@mcc.edu.ph', '$2y$10$KGlfA0PiOWB4HR0pds9.1epVHMzpgv3hsk.qLKXZCSh9mgaD20FCW', 'student', 'Maria', NULL, 'Santos', '', 'active', 0, '2025-11-06 18:30:45', '2026-02-14 08:35:58', '$2y$10$eHfLDD/lkTefVxHXDsIUc.aQ5zhzyP.vp/AckoRlj.F42gZ4oEXku', '2026-02-14 01:35:58', 0, NULL),
@@ -3277,7 +3417,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (49, 'jake.silva@mcc.edu.ph', '$2y$10$KkoQ0Kd5xJgW5f653dpUiOcCyZbZYuZwMRKxzW9Mhq05np6P25mvu', 'student', 'Jake Anthony', NULL, 'Silva', '', 'active', 0, '2025-11-10 08:47:32', '2025-11-10 08:47:32', NULL, NULL, 0, NULL),
 (50, 'kaye.castro@mcc.edu.ph', '$2y$10$E5sxDNYuS7PQPqFEdcdqcupccfatEk39MJsK7LNx0ujWmpNwocPWy', 'student', 'Kaye', NULL, 'Castro', '', 'active', 0, '2025-11-10 08:47:40', '2025-11-10 08:47:40', NULL, NULL, 0, NULL),
 (51, 'leandro.morales@mcc.edu.ph', '$2y$10$icTlD1gFj.SReFcPhM./bec13jp9ru0KFZlfEChhE4zpue7Mzz4CW', 'student', 'Leandro', NULL, 'Morales', '', 'active', 0, '2025-11-10 09:21:56', '2025-11-10 09:21:56', NULL, NULL, 0, NULL),
-(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', 'active', 0, '2025-11-10 09:38:20', '2026-02-23 11:30:21', NULL, NULL, 0, NULL),
+(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', 'active', 0, '2025-11-10 09:38:20', '2026-02-25 10:17:44', NULL, NULL, 0, NULL),
 (53, 'nico.perez@mcc.edu.ph', '$2y$10$m.hi3cAvdrAUzCF7TMoaseMCqY.oGHNorWf7U4e1.IXkR7ANud61S', 'student', 'Nico Allan', NULL, 'Perez', '', 'active', 0, '2025-11-10 09:46:50', '2025-11-10 09:46:50', NULL, NULL, 0, NULL),
 (54, 'olivia.delgado@mcc.edu.ph', '$2y$10$0h4mahiMCDm96OWctcRdXeujn7Yr/PRJvgyO7KQtO954d7V39.26m', 'student', 'Olivia Anne', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', NULL, NULL, 0, NULL),
 (55, 'paul.uy@mcc.edu.ph', '$2y$10$8IsNfV4is0Sgs0N6e70Zk.PP.DcSJswNe.GBdLa3aLZhDxvJ.KiZG', 'student', 'Paul Vincent', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', NULL, NULL, 0, NULL),
@@ -3296,7 +3436,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (68, 'hannah.jacinto@mcc.edu.ph', '$2y$10$cLWd8bspuRNBX6tZ2MlUxuollV85PA9ggVHzOje8.IkMQ1eMbadk.', 'student', 'Hannah Joy', NULL, 'Jacinto', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', NULL, NULL, 0, NULL),
 (69, 'ian.katindig@mcc.edu.ph', '$2y$10$q7.N2ibOC.k3XWk2nu8A.udJdEtrwHxH/tmX0zzzbN7OT9CQSmvDC', 'student', 'Ian Miguel', NULL, 'Katindig', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', NULL, NULL, 0, NULL),
 (70, 'julia.lansang@mcc.edu.ph', '$2y$10$1HjeQJ9mliW96XQh2qzCW.nxShA/pp8z1gYbiGNlqGcl3SmQaCVdm', 'student', 'Julia Anne', NULL, 'Lansang', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', NULL, NULL, 0, NULL),
-(71, 'karl.manzano@mcc.edu.ph', '$2y$10$gsHxS215nra7FF.x52aneucouOSMEf4lL8nNUW8G/pj/vDmKKE4Ga', 'student', 'Karl Matthew', NULL, 'Manzano', NULL, 'active', 0, '2025-11-10 12:15:40', '2026-02-24 11:36:46', '$2y$10$gpAkDdLC9Pmcy8UHDx/oiu7l5Ct8TDoWCF4hyLtloQn4rgfWPMJc2', '2026-02-24 08:51:48', 0, NULL),
+(71, 'karl.manzano@mcc.edu.ph', '$2y$10$gsHxS215nra7FF.x52aneucouOSMEf4lL8nNUW8G/pj/vDmKKE4Ga', 'student', 'Karl Matthew', NULL, 'Manzano', NULL, 'active', 0, '2025-11-10 12:15:40', '2026-02-25 05:35:33', '$2y$10$gpAkDdLC9Pmcy8UHDx/oiu7l5Ct8TDoWCF4hyLtloQn4rgfWPMJc2', '2026-02-24 08:51:48', 0, NULL),
 (72, 'lia.navarro@mcc.edu.ph', '$2y$10$e3XWFVuY0aOtQL8Q3C310.9oHnms82K3vUEH7dU8qep3xr8.gL5IW', 'student', 'Lia Victoria', NULL, 'Navarro', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', NULL, NULL, 0, NULL),
 (73, 'martin.ocampo@mcc.edu.ph', '$2y$10$vysmQG.YFuihnflHAQBH6eS4yHwGceVqhMw0bBx2CmLcUIKSeSlhW', 'student', 'Martin Jay', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', NULL, NULL, 0, NULL),
 (74, 'nina.paredes@mcc.edu.ph', '$2y$10$0cEhSKtXyxihWuTWG.vJduFFxh9JcdBRL62jEOecnz.ovMpvFxTVK', 'student', 'Nina Sofia', NULL, 'Paredes', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', NULL, NULL, 0, NULL),
@@ -3335,7 +3475,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (107, 'yara.malonzo@mcc.edu.ph', '$2y$10$oJSjMflWYI2WHCutruB4iO.HflHnYW4oYmh7e4X7BzKJ4uewlaJs.', 'student', 'Yara Nicole', NULL, 'Malonzo', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', NULL, NULL, 0, NULL),
 (108, 'zeke.noble@mcc.edu.ph', '$2y$10$Do.MIHhKjzqTsd8N9rU.Nekp2W2JzIz/QLVCRi3.CJSf70CJSksr6', 'student', 'Zeke Daniel', NULL, 'Noble', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', NULL, NULL, 0, NULL),
 (109, 'abigail.pineda@mcc.edu.ph', '$2y$10$Nl81BwhhufU0cKkd3yOfA.bbRUkcgfXb/NJJ6Bo4x8xAZkzMzOtpq', 'student', 'Abigail Rose', NULL, 'Pineda', NULL, 'active', 0, '2025-11-10 12:15:42', '2026-02-09 04:59:02', NULL, NULL, 0, NULL),
-(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:35', '2026-02-24 08:50:35', '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
+(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:35', '2026-02-25 01:44:09', '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
 (111, 'ricardo.lim@mcc.edu.ph', '$2y$10$oO3esbnhLoSBMVVAEpi/5.oT2SZ4ht0cj1N1Bpg/Nug.hAicPeL/m', 'student', 'Ricardo', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', NULL, NULL, 0, NULL),
 (112, 'diego.alvarez@mcc.edu.ph', '$2y$10$RzvrH2OmfCYy8g5rf9YNuu/0eIfT0qnWWPwxU6A3x38lBR7r.QVE.', 'student', 'Diego', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', NULL, NULL, 0, NULL),
 (113, 'julian.sy@mcc.edu.ph', '$2y$10$//yUsNWHi4oBimdkncqP0uhb0MgunJa4PDtINSAPbFT6S152uVm66', 'student', 'Julian', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', NULL, NULL, 0, NULL),
@@ -3539,7 +3679,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (310, 'camila.villanueva@mcc.edu.ph', '$2y$10$KbRAMosF8IBQC4OpSo.PUeAt2BqADKUYiaQ7AKLeI8XyYtlWyakHi', 'student', 'Camila', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (311, 'ricardo.santiago@mcc.edu.ph', '$2y$10$ZmL/q0HOgcwuh0ESQcOzj.zwBskIMH4dkO6MiFH0D9Z2GNeQvddYq', 'student', 'Ricardo', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (312, 'elena.santos@mcc.edu.ph', '$2y$10$o8b371BaNTBthCZta7MsWeEVzeupUIFNHZebqF4LeC6vXsbkR9QJe', 'student', 'Elena', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
-(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
+(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:49', '2026-02-25 18:36:12', '$2y$10$uhF.rDj9uHQiTcXpQ5s6C.y5.7qbJf5PSPByONBTWdlMORrpscHhW', '2026-02-25 11:36:12', 0, NULL),
 (314, 'brian.santiago@mcc.edu.ph', '$2y$10$/Pi/2lxuuKqBtaOcED5Xn.9c6HpUd7Mr7g6egOY0ePPm8f6M5Eo62', 'student', 'Brian', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (315, 'emma.torres@mcc.edu.ph', '$2y$10$zAFGHsDPmVjfNKIlNVfU5eC7LBrJB1gGjPeP8IKhld30jsjaLbMEm', 'student', 'Emma', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (316, 'chloe.santos@mcc.edu.ph', '$2y$10$7B6iFc11eiMqGrsZH1veiOYk0AV.EfIY9C9zkaG6ElhHR8/k1DEbi', 'student', 'Chloe', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
@@ -3688,7 +3828,8 @@ CREATE TABLE `weekly_insights` (
 
 INSERT INTO `weekly_insights` (`id`, `window_start`, `window_end`, `insights_json`, `total_feedback`, `model`, `created_at`, `updated_at`) VALUES
 (1, '2026-02-17', '2026-02-23', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement real-time failure alerts.\"},{\"title\":\"Notification System\",\"description\":\"Test and fix notification delivery issues. Ensure timely alerts for users.\"},{\"title\":\"Enrollment Complaints\",\"description\":\"Review and update refund policies. Address family emergencies more flexibly.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-23 15:56:30', '2026-02-23 15:56:30'),
-(2, '2026-02-18', '2026-02-24', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement monitoring for failed transactions.\"},{\"title\":\"Notification System\",\"description\":\"Test and optimize notification delivery. Ensure timely alerts for users.\"},{\"title\":\"RFID System\",\"description\":\"Continue promoting RFID system benefits. Gather more user testimonials.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-24 19:41:26', '2026-02-24 19:41:26');
+(2, '2026-02-18', '2026-02-24', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement monitoring for failed transactions.\"},{\"title\":\"Notification System\",\"description\":\"Test and optimize notification delivery. Ensure timely alerts for users.\"},{\"title\":\"RFID System\",\"description\":\"Continue promoting RFID system benefits. Gather more user testimonials.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-24 19:41:26', '2026-02-24 19:41:26'),
+(3, '2026-02-19', '2026-02-25', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement monitoring for failed transactions.\"},{\"title\":\"Notification System\",\"description\":\"Test and optimize notification delivery. Ensure timely alerts for users.\"},{\"title\":\"RFID System\",\"description\":\"Continue promoting RFID system benefits. Gather more user testimonials.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-25 11:22:40', '2026-02-25 11:22:40');
 
 -- --------------------------------------------------------
 
@@ -3838,6 +3979,15 @@ ALTER TABLE `announcements`
   ADD KEY `fk_announcements_created_by` (`created_by`);
 
 --
+-- Indexes for table `announcement_reads`
+--
+ALTER TABLE `announcement_reads`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_announcement` (`announcement_id`,`user_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_announcement_id` (`announcement_id`);
+
+--
 -- Indexes for table `attendance`
 --
 ALTER TABLE `attendance`
@@ -3849,6 +3999,17 @@ ALTER TABLE `attendance`
   ADD KEY `idx_course_date` (`course_id`,`created_at`),
   ADD KEY `idx_attendance_session` (`session_id`),
   ADD KEY `idx_attendance_session_id` (`session_id`);
+
+--
+-- Indexes for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_actor_user` (`actor_user_id`),
+  ADD KEY `idx_action` (`action`),
+  ADD KEY `idx_entity` (`entity_type`,`entity_id`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_actor_action` (`actor_user_id`,`action`,`created_at` DESC);
 
 --
 -- Indexes for table `broadcasts`
@@ -4041,6 +4202,39 @@ ALTER TABLE `messages`
   ADD KEY `idx_messages_sender` (`sender_id`),
   ADD KEY `idx_messages_broadcast` (`broadcast_id`),
   ADD KEY `idx_messages_subject` (`teacher_subject_id`);
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user_unread` (`user_id`,`is_read`,`created_at`),
+  ADD KEY `idx_type` (`type`),
+  ADD KEY `idx_entity` (`entity_type`,`entity_id`),
+  ADD KEY `idx_audit_log` (`audit_log_id`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_user_status_created` (`user_id`,`is_read`,`is_archived`,`created_at` DESC),
+  ADD KEY `idx_action_url` (`action_url`(255)),
+  ADD KEY `idx_user_type` (`user_id`,`type`,`created_at` DESC);
+
+--
+-- Indexes for table `notification_outbox`
+--
+ALTER TABLE `notification_outbox`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_notification` (`notification_id`),
+  ADD KEY `idx_status_attempts` (`status`,`attempts`,`created_at`),
+  ADD KEY `idx_user` (`user_id`),
+  ADD KEY `idx_expires` (`expires_at`),
+  ADD KEY `idx_worker_queue` (`status`,`expires_at`,`attempts`,`created_at`),
+  ADD KEY `idx_user_status` (`user_id`,`status`);
+
+--
+-- Indexes for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_type` (`user_id`,`notification_type`);
 
 --
 -- Indexes for table `parent_contacts`
@@ -4333,25 +4527,25 @@ ALTER TABLE `academic_periods`
 -- AUTO_INCREMENT for table `activities`
 --
 ALTER TABLE `activities`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `activity_grades`
 --
 ALTER TABLE `activity_grades`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `activity_questions`
 --
 ALTER TABLE `activity_questions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `activity_question_choices`
 --
 ALTER TABLE `activity_question_choices`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- AUTO_INCREMENT for table `activity_settings`
@@ -4363,7 +4557,7 @@ ALTER TABLE `activity_settings`
 -- AUTO_INCREMENT for table `activity_student_answers`
 --
 ALTER TABLE `activity_student_answers`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `activity_submissions`
@@ -4384,10 +4578,22 @@ ALTER TABLE `announcements`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `announcement_reads`
+--
+ALTER TABLE `announcement_reads`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=337;
+
+--
+-- AUTO_INCREMENT for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `broadcasts`
@@ -4507,13 +4713,31 @@ ALTER TABLE `late_payment_explanations`
 -- AUTO_INCREMENT for table `learning_materials`
 --
 ALTER TABLE `learning_materials`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
+
+--
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `notification_outbox`
+--
+ALTER TABLE `notification_outbox`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `parent_contacts`
@@ -4531,7 +4755,7 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
 
 --
 -- AUTO_INCREMENT for table `payment_installment_penalties`
@@ -4639,7 +4863,7 @@ ALTER TABLE `teacher_assignments`
 -- AUTO_INCREMENT for table `teacher_subject_assignments`
 --
 ALTER TABLE `teacher_subject_assignments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
 
 --
 -- AUTO_INCREMENT for table `tuition_packages`
@@ -4687,7 +4911,7 @@ ALTER TABLE `user_fcm_tokens`
 -- AUTO_INCREMENT for table `weekly_insights`
 --
 ALTER TABLE `weekly_insights`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `year_levels`
@@ -4761,6 +4985,12 @@ ALTER TABLE `attendance`
   ADD CONSTRAINT `fk_attendance_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_attendance_subject` FOREIGN KEY (`course_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_attendance_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  ADD CONSTRAINT `fk_audit_logs_actor_user` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `enrollments`
@@ -4847,6 +5077,26 @@ ALTER TABLE `learning_materials`
 --
 ALTER TABLE `messages`
   ADD CONSTRAINT `fk_messages_broadcast` FOREIGN KEY (`broadcast_id`) REFERENCES `broadcasts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD CONSTRAINT `fk_notifications_audit_log` FOREIGN KEY (`audit_log_id`) REFERENCES `audit_logs` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `notification_outbox`
+--
+ALTER TABLE `notification_outbox`
+  ADD CONSTRAINT `fk_outbox_notification` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_outbox_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `notification_preferences`
+--
+ALTER TABLE `notification_preferences`
+  ADD CONSTRAINT `fk_preferences_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `parent_contacts`
