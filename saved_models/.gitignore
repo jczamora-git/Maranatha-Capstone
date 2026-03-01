@@ -1,6 +1,0 @@
-# Ignore large model binaries
-*.keras
-*.h5
-
-# Python cache
-__pycache__/
