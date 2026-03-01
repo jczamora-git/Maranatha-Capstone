@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 27, 2026 at 03:15 AM
+-- Generation Time: Mar 01, 2026 at 05:26 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -82,7 +82,8 @@ INSERT INTO `activities` (`id`, `subject_id`, `academic_period_id`, `section_id`
 (4, 47, 28, 10, 'Basic English', 'quiz', NULL, 5, '2026-02-04 00:00:00', 1, '2026-01-31 11:38:02'),
 (5, 47, 28, 10, 'Draw an apple', 'art', NULL, 20, '2026-02-18 00:00:00', 1, '2026-01-31 23:20:50'),
 (6, 47, 28, 10, 'Long Quiz', 'quiz', NULL, 25, '2026-02-05 00:00:00', 1, '2026-01-31 23:59:31'),
-(7, 51, 30, 11, 'quiz', 'quiz', NULL, 1, '2026-02-26 00:00:00', 1, '2026-02-25 09:32:07');
+(7, 51, 30, 11, 'quiz', 'quiz', NULL, 1, '2026-02-26 00:00:00', 1, '2026-02-25 09:32:07'),
+(8, 47, 30, 10, 'QUiz', 'quiz', NULL, 2, '2026-02-28 00:00:00', 1, '2026-02-27 01:36:02');
 
 -- --------------------------------------------------------
 
@@ -155,7 +156,9 @@ INSERT INTO `activity_questions` (`id`, `activity_id`, `question_text`, `questio
 (37, 6, '<p>I am a small insect with six legs. I say \"buzz\". What am I? ________________</p>', 'short_answer', 1, 15, NULL, NULL, 'Bee', '2026-02-01 00:04:03'),
 (38, 6, '<p>Draw a line to match the animal to its sound.</p>', 'matching', 5, 16, NULL, NULL, NULL, '2026-02-01 00:05:31'),
 (39, 6, '<p>What is your favorite animal? Why?</p>', 'essay', 5, 17, NULL, NULL, '<ul><li><em>\"My favorite animal is a dog because it is my friend.\"</em></li><li><em>\"I like cats because they are soft and cute.\"</em></li></ul><p><br></p>', '2026-02-01 00:05:49'),
-(40, 7, '<p>Test</p>', 'multiple_choice', 1, 1, NULL, NULL, NULL, '2026-02-25 09:33:29');
+(40, 7, '<p>Test</p>', 'multiple_choice', 1, 1, NULL, NULL, NULL, '2026-02-25 09:33:29'),
+(43, 8, '<p>Hatdog</p>', 'multiple_choice', 1, 1, NULL, NULL, NULL, '2026-02-27 01:36:20'),
+(44, 8, '<p>Hatdog</p>', 'matching', 1, 2, NULL, NULL, NULL, '2026-02-27 01:36:36');
 
 -- --------------------------------------------------------
 
@@ -218,7 +221,11 @@ INSERT INTO `activity_question_choices` (`id`, `question_id`, `choice_text`, `is
 (55, 38, 'Pig::Oink', 0, 4, '2026-02-01 00:05:31'),
 (56, 38, 'Duck::Quack', 0, 5, '2026-02-01 00:05:31'),
 (57, 40, '1', 1, 1, '2026-02-25 09:33:29'),
-(58, 40, '2', 0, 2, '2026-02-25 09:33:29');
+(58, 40, '2', 0, 2, '2026-02-25 09:33:29'),
+(63, 43, 'red', 1, 1, '2026-02-27 01:36:20'),
+(64, 43, 'blue', 0, 2, '2026-02-27 01:36:20'),
+(65, 44, 'dog::cat', 0, 1, '2026-02-27 01:36:36'),
+(66, 44, 'mouse::chees', 0, 2, '2026-02-27 01:36:36');
 
 -- --------------------------------------------------------
 
@@ -495,9 +502,6 @@ CREATE TABLE `chatbot_conversations` (
 --
 
 INSERT INTO `chatbot_conversations` (`id`, `user_id`, `role`, `message`, `normalized_message`, `reply`, `source`, `created_at`) VALUES
-(1, 3, NULL, 'where can i navigate the uniform orders?', 'where can i navigate the uniform orders?', 'Review and process uniform purchase requests from students. [link:Uniform Orders|/admin/uniform-orders]', 'knowledge', '2026-02-23 18:49:52'),
-(2, 3, NULL, 'where can i find payment plans?', 'where can i find payment plans?', 'This is where admins manage installment tuition plans for students. [link:Payment Plans|/admin/payment-plans]', 'knowledge', '2026-02-23 18:56:16'),
-(3, 3, NULL, 'where can i find school services?', 'where can i find school services?', 'Manage monthly service fees and related student records here. [link:School Services|/admin/school-services]', 'knowledge', '2026-02-23 18:56:55'),
 (6, 3, NULL, 'what is the best time to drink coffee?', 'what is the best time to drink coffee?', 'I can only answer questions about the Campus Companion system. Try asking about admin pages, enrollments, payments, or settings.', 'guard', '2026-02-23 19:08:18'),
 (7, 3, NULL, 'who is Linda Walker?', 'who is linda walker?', 'I can only answer questions about the Campus Companion system. Try asking about admin pages, enrollments, payments, or settings.', 'guard', '2026-02-23 19:08:40'),
 (8, 3, NULL, 'what coffee is advisable for staying up all night?', 'what coffee is advisable for staying up all night?', 'I can only answer questions about the Campus Companion system. Try asking about admin pages, enrollments, payments, or settings.', 'guard', '2026-02-23 19:09:10'),
@@ -506,12 +510,23 @@ INSERT INTO `chatbot_conversations` (`id`, `user_id`, `role`, `message`, `normal
 (11, 71, 'student', 'where can i find admin dashboard?', 'where can i find admin dashboard?', 'The location of the admin dashboard can vary depending on the specific system or platform you\'re using. Typically, you can find it by logging into your account and navigating to the main administrative section. For example, in many platforms, it might be accessible via a link like [link:Admin Dashboard|/admin/dashboard].\n\nIf you provide more details about the specific system or platform you\'re using, I can give you more precise instructions.', 'llm', '2026-02-23 19:18:52'),
 (12, 71, 'student', 'where can i find admin dashboard?', 'where can i find admin dashboard?', 'The admin dashboard is only available to admin accounts. If you believe you need access, please contact an administrator.', 'guard', '2026-02-23 19:21:14'),
 (13, 71, 'student', 'where can i find school services?', 'where can i find school services?', 'To find school services, you can typically start by checking the main website of your institution. The services page or the \"Student Services\" section usually lists all the resources available, such as academic advising, financial aid, counseling, and more. Additionally, you can look for a directory or an interactive map on the campus website that highlights various services and their locations. If you need immediate assistance, visiting the student services desk at the main campus building or contacting the student affairs office is also a good option.', 'llm', '2026-02-23 19:21:32'),
-(14, 71, 'student', 'where can i find school services?', 'where can i find school services?', 'I do not have that information yet. Please contact an administrator or add it to the knowledge base.', 'knowledge', '2026-02-23 19:28:14'),
-(15, 3, 'admin', 'where can i find school services?', 'where can i find school services?', 'Manage monthly service fees and related student records here. [link:School Services|/admin/school-services]', 'knowledge', '2026-02-23 19:29:20'),
-(16, 52, 'teacher', 'where can i find school services?', 'where can i find school services?', 'I do not have that information yet. Please contact an administrator or add it to the knowledge base.', 'knowledge', '2026-02-23 19:30:27'),
-(17, 3, 'admin', 'installment schedules', 'installment schedules', 'Configure installment schedule templates for tuition plans. [link:Installment Schedules|/admin/installment-schedules]', 'knowledge', '2026-02-23 19:32:43'),
-(18, 3, 'admin', 'where can i manage uniform pricing?', 'where can i manage uniform pricing?', 'Manage uniform inventory and pricing. [link:Uniform Management|/admin/uniform-management]', 'knowledge', '2026-02-23 19:33:58'),
-(19, 52, 'teacher', 'where can i access rfid?', 'where can i access rfid?', 'I do not have that information yet. Please contact an administrator or add it to the knowledge base.', 'knowledge', '2026-02-23 19:34:50');
+(21, 3, 'admin', 'ateataedasdasd', 'ateataedasdasd', 'I can only answer questions about the Campus Companion system. Try asking about admin pages, enrollments, payments, or settings.', 'guard', '2026-03-01 16:36:19'),
+(22, 3, 'admin', 'asdasdwqewqqw', 'asdasdwqewqqw', 'I can only answer questions about the Campus Companion system. Try asking about admin pages, enrollments, payments, or settings.', 'guard', '2026-03-01 16:36:22'),
+(27, 3, 'admin', 'how much is the tuition fee for nursery 1?', 'how much is the tuition fee for nursery 1?', 'I don\'t have the specific tuition fee for Nursery 1 in the current academic period. However, you can find this information on the [Tuition Packages] page [link:Tuition Packages|/admin/tuition-packages]. This page lists the tuition packages and pricing bundles for different grade levels, including Nursery 1.\n\nIf you need further assistance, feel free to ask!', 'llm', '2026-03-01 16:56:56'),
+(28, 3, 'admin', 'how much is the tuition fee for nursery 1?', 'how much is the tuition fee for nursery 1?', 'The total required fees for Nursery 1 are ₱22,300.00. This includes the tuition package, miscellaneous fees, contribution, text book, school shuttle service fee, and other miscellaneous charges.', 'llm', '2026-03-01 16:59:33'),
+(29, 3, 'admin', 'how much is the tuition fee for nursery 1?', 'how much is the tuition fee for nursery 1?', 'The tuition fee for Nursery 1 is ₱16,500.00. You can find this information in the [Tuition Packages] page [link:Tuition Packages|/admin/tuition-packages].', 'llm', '2026-03-01 17:01:40'),
+(30, 71, 'student', 'who will be my teachers?', 'who will be my teachers?', 'I don\'t have specific information about your teachers for this school year. You can check your assigned teachers by going to [My Enrollments] → /enrollment/my-enrollments or [My Courses] → /student/courses once your enrollment is confirmed. If you need further assistance, feel free to contact the admin.', 'llm', '2026-03-01 17:02:24'),
+(31, 71, 'student', 'who will be my teachers?', 'who will be my teachers?', 'Your class teacher (adviser) for Makabansa (Nursery 1) is Josefa Villanueva.', 'llm', '2026-03-01 17:05:17'),
+(32, 71, 'student', 'what are my subjects?', 'what are my subjects?', 'Your subjects are:\n- [MATH-N1] Basic Math Concepts\n- [GMRC-N1] Good Manners & Right Conduct\n- [LANG-N1] Language Development\n- [READ-N1] Reading Readiness', 'llm', '2026-03-01 17:08:19'),
+(33, 71, 'student', 'ano na ang status ng enrollment ko?', 'ano na ang status ng enrollment ko?', 'Ang status ng enrollment mo ay \"Pending\".', 'llm', '2026-03-01 17:09:10'),
+(34, 71, 'student', 'mayroon pa ba akong kailangan bayaran?', 'mayroon pa ba akong kailangan bayaran?', 'I can only answer questions about the Campus Companion system. Try asking about admin pages, enrollments, payments, or settings.', 'guard', '2026-03-01 17:09:22'),
+(35, 71, 'student', 'nakalimutan ko ang pin ko sa payment', 'nakalimutan ko ang pin ko sa payment', 'Wala tayong direct access sa mga detalye ng payment ng mga enrollee dito sa school. Kailangan nating mag-contact sa admin para magpaliwanag at makakuha ng tulong sa iyo. Maaari ka ring magtanong sa school admin tungkol sa paraan kung paano makuha mo ang pin ka.', 'llm', '2026-03-01 17:10:20'),
+(36, 71, 'student', 'nakalimutan ko ang pin ko', 'nakalimutan ko ang pin ko', 'I can only answer questions about the Campus Companion system. Try asking about admin pages, enrollments, payments, or settings.', 'guard', '2026-03-01 17:13:41'),
+(37, 71, 'student', 'nakalimutan ko ang pin ko', 'nakalimutan ko ang pin ko', 'Noong nag-set up ka ng payment PIN, maaaring naging problema ang email na gamit mo para sa reset. Kaya naman, maaari kang mag-verify ng payment PIN mo [Verify Payment PIN|/enrollment/verify-pin] para makuha ang link sa email verification. Kung wala kang access sa email na ito, kailangan mong mag-contact sa admin para maghanap ng ibang solusyon.', 'llm', '2026-03-01 17:16:26'),
+(38, 71, 'student', 'nakalimutan ko ang pin ko', 'nakalimutan ko ang pin ko', 'Noong nakalimutan mo ang PIN mo, maaari kang mag-reset nito sa [link:Forgot PIN|/auth/forgot-pin] halimbawa ng page. Sa orihinal na page, maaaring makita mo ang \"Forgot PIN?\" link sa paglalatag ng PIN mo.', 'llm', '2026-03-01 17:21:31'),
+(39, 455, 'admin', 'Fee overview', 'fee overview', 'Here\'s the fee overview for the 2026-2027 academic year:\n\n- Kinder: ₱20,700.00\n- Nursery 1: ₱20,500.00\n- Nursery 2: ₱20,700.00\n- Grade 1: ₱21,200.00\n- Grade 2: ₱21,200.00\n- Grade 3: ₱22,100.00\n- Grade 4: ₱22,800.00\n- Grade 5: ₱22,800.00\n- Grade 6: ₱22,800.00\n\nIf you need more detailed information or have specific questions about these fees, feel free to ask!', 'llm', '2026-03-01 18:24:53'),
+(40, 455, 'admin', 'what are the available tuition packages', 'what are the available tuition packages', 'Manage tuition packages and pricing bundles. [link:Tuition Packages|/admin/tuition-packages]', 'knowledge', '2026-03-01 18:25:20'),
+(41, 455, 'admin', 'who are the new enrollees?', 'who are the new enrollees?', 'To view the new enrollees, you can go to the Enrollments page. Use this link: [link:Enrollments|/admin/enrollments] Here, you can review and manage all enrollment submissions for the current academic period.', 'llm', '2026-03-01 18:26:17');
 
 -- --------------------------------------------------------
 
@@ -1909,7 +1924,8 @@ INSERT INTO `payment_proof_sessions` (`session_id`, `token`, `user_id`, `plan_id
 (33, 'a5bc99e50f7e90fdd3e4be1bdb7e99c54d5e190ebdea44ba', 82, NULL, NULL, NULL, 0, 1500.00, 'School Shuttle - February 2026', 'pending', NULL, NULL, NULL, '2026-02-24 18:17:25', '2026-02-24 19:47:25', NULL),
 (34, 'd6b957c8011e8316d9a659fd9a572f069a7f36e3629a91e6', 82, NULL, NULL, NULL, 0, 1500.00, 'School Shuttle - March 2026', 'pending', NULL, NULL, NULL, '2026-02-24 18:17:49', '2026-02-24 19:47:49', NULL),
 (35, 'a89801008f3235cbd0db83a5fe67485854b5c25511b60cfa', 82, NULL, NULL, NULL, 0, 1500.00, 'School Shuttle - March 2026', 'pending', NULL, NULL, NULL, '2026-02-24 18:22:10', '2026-02-24 19:52:10', NULL),
-(36, 'd250ebf563dbc217835a8e49d897f9d8c9f444d60d1b5101', 82, NULL, NULL, NULL, 0, 1500.00, 'School Shuttle - March 2026', 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_18-24-40_20260224192621_699ded4d78ec8.jpg', 'photo_2026-02-20_18-24-40.jpg', NULL, '2026-02-24 18:25:26', '2026-02-24 19:55:26', '2026-02-24 19:26:21');
+(36, 'd250ebf563dbc217835a8e49d897f9d8c9f444d60d1b5101', 82, NULL, NULL, NULL, 0, 1500.00, 'School Shuttle - March 2026', 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_18-24-40_20260224192621_699ded4d78ec8.jpg', 'photo_2026-02-20_18-24-40.jpg', NULL, '2026-02-24 18:25:26', '2026-02-24 19:55:26', '2026-02-24 19:26:21'),
+(37, '18d7db45f4bcd135f8323302bf4ef6b2f7330c6a3e32874d', 454, NULL, NULL, NULL, 0, 0.00, 'General Payment', 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_18-24-40_20260227090311_69a14fbf558a3.jpg', 'photo_2026-02-20_18-24-40.jpg', NULL, '2026-02-27 08:01:25', '2026-02-27 09:31:25', '2026-02-27 09:03:11');
 
 -- --------------------------------------------------------
 
@@ -2023,7 +2039,8 @@ CREATE TABLE `rfid_scans` (
 
 INSERT INTO `rfid_scans` (`id`, `session_id`, `student_id`, `student_number`, `rfid_code`, `scan_time`, `scan_type`, `status`, `is_late`, `image_path`, `notes`, `created_at`) VALUES
 (15, 2, 359, 'MCAF2025-0330', '0015603698', '2026-02-24 02:36:26', 'entry', 'success', 0, '/public/uploads/rfid/2026/02/24/scan_20260224_023626_a63c665d.jpg', NULL, '2026-02-24 02:36:26'),
-(16, 2, 325, 'MCAF2025-0296', '0015560838', '2026-02-24 02:38:03', 'entry', 'success', 0, '/public/uploads/rfid/2026/02/24/scan_20260224_023803_b17c35cb.jpg', NULL, '2026-02-24 02:38:03');
+(16, 2, 325, 'MCAF2025-0296', '0015560838', '2026-02-24 02:38:03', 'entry', 'success', 0, '/public/uploads/rfid/2026/02/24/scan_20260224_023803_b17c35cb.jpg', NULL, '2026-02-24 02:38:03'),
+(17, NULL, NULL, NULL, '0002334689', '2026-02-27 09:04:40', 'entry', 'unknown', 0, NULL, 'No active session', '2026-02-27 09:04:40');
 
 -- --------------------------------------------------------
 
@@ -2501,7 +2518,7 @@ INSERT INTO `students` (`id`, `user_id`, `student_id`, `rfid_card`, `gender`, `y
 (415, 432, 'MCAF2026-0005', NULL, NULL, 'Nursery 1', NULL, 'active', '2026-02-15 02:12:47', '2026-02-21 23:09:40', '2026-02-15', 33),
 (416, 431, 'MCAF2025-0338', NULL, NULL, 'Nursery 1', NULL, 'active', '2026-02-15 02:16:40', '2026-02-15 02:16:40', '2026-02-15', 36),
 (417, 443, 'MCAF2026-0006', NULL, NULL, 'Nursery 2', NULL, 'active', '2026-02-15 02:28:02', '2026-02-15 09:28:02', NULL, NULL),
-(418, 450, 'MCAF2026-0007', NULL, NULL, 'Grade 1', NULL, 'active', '2026-02-22 05:00:32', '2026-02-22 12:00:32', NULL, NULL);
+(418, 450, 'MCAF2026-0007', '0002334689', NULL, 'Grade 1', NULL, 'active', '2026-02-22 05:00:32', '2026-02-27 01:04:54', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -3383,7 +3400,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `status`, `must_change_password`, `created_at`, `updated_at`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
 (1, 'student@demo.com', '$2y$10$Ll4dzxFoqlaGCC1aL702BOdZ3xtLLijHcLKzW4SF1HPrlEgP9Frz6', 'student', 'Demo', NULL, 'Student', '', 'active', 0, '2025-11-06 11:13:56', '2025-11-10 01:05:04', NULL, NULL, 0, NULL),
 (2, 'teacher@demo.com', '$2y$10$/zuE1Q4AmA1J6MXuovoRoenUL5PoblPSzSxXA3ubUw47wpiTNfoVS', 'teacher', 'Demo', NULL, 'Teacher', '', 'active', 0, '2025-11-06 11:14:42', '2026-01-06 20:49:02', NULL, NULL, 0, NULL),
-(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', 'active', 0, '2025-11-06 11:15:04', '2026-02-25 10:36:33', NULL, NULL, 0, NULL),
+(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', 'active', 0, '2025-11-06 11:15:04', '2026-03-01 10:21:29', NULL, NULL, 0, NULL),
 (16, 'john.doe@example.com', '$2y$10$I19hzyUWwzkG9HMk8wEutekUr7tC9GmtiRFvW4lqePlq4eKBKXQtS', 'teacher', 'John', NULL, 'Doe', '', 'active', 0, '2025-11-06 14:05:34', '2025-11-06 18:29:13', NULL, NULL, 0, NULL),
 (18, 'juan.delacruz@mcc.edu.ph', '$2y$10$762nxMWoGHGu7kRyvzc8K.FGrrYGGJpRdMbm5jentTkF4mfui3iBK', 'student', 'Juan', NULL, 'Dela Cruz', '', 'active', 0, '2025-11-06 18:30:24', '2025-11-06 18:30:24', NULL, NULL, 0, NULL),
 (19, 'maria.santos@mcc.edu.ph', '$2y$10$KGlfA0PiOWB4HR0pds9.1epVHMzpgv3hsk.qLKXZCSh9mgaD20FCW', 'student', 'Maria', NULL, 'Santos', '', 'active', 0, '2025-11-06 18:30:45', '2026-02-14 08:35:58', '$2y$10$eHfLDD/lkTefVxHXDsIUc.aQ5zhzyP.vp/AckoRlj.F42gZ4oEXku', '2026-02-14 01:35:58', 0, NULL),
@@ -3436,7 +3453,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (68, 'hannah.jacinto@mcc.edu.ph', '$2y$10$cLWd8bspuRNBX6tZ2MlUxuollV85PA9ggVHzOje8.IkMQ1eMbadk.', 'student', 'Hannah Joy', NULL, 'Jacinto', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', NULL, NULL, 0, NULL),
 (69, 'ian.katindig@mcc.edu.ph', '$2y$10$q7.N2ibOC.k3XWk2nu8A.udJdEtrwHxH/tmX0zzzbN7OT9CQSmvDC', 'student', 'Ian Miguel', NULL, 'Katindig', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', NULL, NULL, 0, NULL),
 (70, 'julia.lansang@mcc.edu.ph', '$2y$10$1HjeQJ9mliW96XQh2qzCW.nxShA/pp8z1gYbiGNlqGcl3SmQaCVdm', 'student', 'Julia Anne', NULL, 'Lansang', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', NULL, NULL, 0, NULL),
-(71, 'karl.manzano@mcc.edu.ph', '$2y$10$gsHxS215nra7FF.x52aneucouOSMEf4lL8nNUW8G/pj/vDmKKE4Ga', 'student', 'Karl Matthew', NULL, 'Manzano', NULL, 'active', 0, '2025-11-10 12:15:40', '2026-02-25 05:35:33', '$2y$10$gpAkDdLC9Pmcy8UHDx/oiu7l5Ct8TDoWCF4hyLtloQn4rgfWPMJc2', '2026-02-24 08:51:48', 0, NULL),
+(71, 'karl.manzano@mcc.edu.ph', '$2y$10$gsHxS215nra7FF.x52aneucouOSMEf4lL8nNUW8G/pj/vDmKKE4Ga', 'student', 'Karl Matthew', NULL, 'Manzano', NULL, 'active', 0, '2025-11-10 12:15:40', '2026-03-01 09:02:08', '$2y$10$gpAkDdLC9Pmcy8UHDx/oiu7l5Ct8TDoWCF4hyLtloQn4rgfWPMJc2', '2026-02-24 08:51:48', 0, NULL),
 (72, 'lia.navarro@mcc.edu.ph', '$2y$10$e3XWFVuY0aOtQL8Q3C310.9oHnms82K3vUEH7dU8qep3xr8.gL5IW', 'student', 'Lia Victoria', NULL, 'Navarro', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', NULL, NULL, 0, NULL),
 (73, 'martin.ocampo@mcc.edu.ph', '$2y$10$vysmQG.YFuihnflHAQBH6eS4yHwGceVqhMw0bBx2CmLcUIKSeSlhW', 'student', 'Martin Jay', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', NULL, NULL, 0, NULL),
 (74, 'nina.paredes@mcc.edu.ph', '$2y$10$0cEhSKtXyxihWuTWG.vJduFFxh9JcdBRL62jEOecnz.ovMpvFxTVK', 'student', 'Nina Sofia', NULL, 'Paredes', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', NULL, NULL, 0, NULL),
@@ -3760,7 +3777,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (412, 'consuelo.bautista@mcc.edu.ph', '$2y$10$rGn68TM1SDjlTMPY5pBucOdyAzbfOUB37nivNHrIAxxQyJM121ee2', 'teacher', 'Consuelo', NULL, 'Bautista', '', 'active', 0, '2025-11-18 15:18:28', '2025-11-24 01:32:20', NULL, NULL, 0, NULL),
 (413, 'emilio.quirino@mcc.edu.ph', '$2y$10$qcKyodRXIxiKuD0Svpywk.hrJgvtrjxMcRiQ4nmDHA46pneHcDSbi', 'teacher', 'Emilio', NULL, 'Quirino', '', 'active', 0, '2025-11-18 15:18:47', '2025-11-18 15:18:47', NULL, NULL, 0, NULL),
 (414, 'teresita.lim@mcc.edu.ph', '$2y$10$ilEgX5U7eH4NKn1f81BN9eAH2QJOsOM9NFkNpeYHGPECeHQWBRvJO', 'teacher', 'Teresita', NULL, 'Lim', '', 'active', 0, '2025-11-18 15:19:01', '2025-11-18 15:19:01', NULL, NULL, 0, NULL),
-(415, 'josefa.villanueva@mcc.edu.ph', '$2y$10$oX5uFnmSSkb/64rO1MiJYOJ3OZe7BwOv.DGktp4uqCnw2e/mgBZAO', 'teacher', 'Josefa', NULL, 'Villanueva', '', 'active', 0, '2025-11-18 15:19:17', '2026-02-19 01:08:02', NULL, NULL, 0, NULL),
+(415, 'josefa.villanueva@mcc.edu.ph', '$2y$10$oX5uFnmSSkb/64rO1MiJYOJ3OZe7BwOv.DGktp4uqCnw2e/mgBZAO', 'teacher', 'Josefa', NULL, 'Villanueva', '', 'active', 0, '2025-11-18 15:19:17', '2026-02-27 01:34:47', NULL, NULL, 0, NULL),
 (429, 'kairi@gmail.com', '$2y$10$0POMgGARytBr0BnpPkN/6uQ2SWKdYxU/5wN8hoqW.qi7n9XN3P0RC', 'student', 'Kairi', NULL, 'Dela Cruz', '', 'active', 0, '2026-01-19 13:54:35', '2026-02-13 05:12:14', NULL, NULL, 0, NULL),
 (430, 'jeizi.jczamora@gmail.com', '$2y$10$5eYtQ5jXLBmZA6JWm.gmOOT2kppWfUgPAN6cbcObYDtgMP80f4iDm', 'student', 'John Christopher King', 'Visaya', 'Zamora', '', 'active', 0, '2026-01-20 15:07:02', '2026-02-15 03:08:22', NULL, NULL, 0, NULL),
 (431, 'juandelacruz99@gmail.com', '$2y$10$2czTBfblWFLkWS042EjXE.pEBsuSIOK4QNRGTYPO/VFQeAv1z3izi', 'student', 'Juan', NULL, 'Dela Cruz', '', 'active', 0, '2026-02-07 21:48:30', '2026-02-22 11:00:45', '$2y$10$euQ540jXsVyiSVqS156xnez8f9Y3PuW093N/lApcqyfrOV/Al.5Dm', '2026-02-15 02:17:07', 0, NULL),
@@ -3774,7 +3791,8 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (451, 'james1234@gmail.com', '$2y$10$CmzZ3PVqBG6MJZKIWv4B0eP43LAwykJDy30/j895IO73hd2OkZdI.', 'enrollee', 'Joamsd', 'Regate', 'asmom', '', 'active', 0, '2026-02-22 12:02:35', '2026-02-22 05:37:13', '$2y$10$iQ43Lc67KF8JK//i8okZbOOm9JYPd7ljLun6a4B9I5MnlPRYVEGt.', '2026-02-22 05:30:54', 0, NULL),
 (452, 'juanmanzano@gmail.com', '$2y$10$ACZMd/nTeFRNggcYfWEBrO1BFJ5esz9T2Y3qqYlo9DIe5fCLhxKWC', 'enrollee', 'Juan', 'Manzano', 'Torres', '', 'active', 0, '2026-02-24 16:27:04', '2026-02-24 16:29:10', '$2y$10$Fx560as5MjyFX..cDf.tX.iE6lofHD9.B5BdYFBxX0eHQpgASlU6a', '2026-02-24 09:29:10', 0, NULL),
 (453, 'nikmanzano@gmail.com', '$2y$10$yCQFac0OtQXrbJEzYj3FTOmXWK59FpfJ85GyMiZDcSnOuP7DMUXwe', 'enrollee', 'Nik', 'Manzano', 'Santos', '', 'active', 0, '2026-02-24 16:41:22', '2026-02-24 17:12:56', '$2y$10$QEoNk1iBR1XgiXps4CkVVue.AIxFipWBWiebVL3F.Inqd7k.ICrKW', '2026-02-24 10:12:56', 0, NULL),
-(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'enrollee', 'Luna', 'Mendoza', 'Santos', '', 'active', 0, '2026-02-24 17:36:11', '2026-02-24 10:46:22', '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL);
+(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'enrollee', 'Luna', 'Mendoza', 'Santos', '', 'active', 0, '2026-02-24 17:36:11', '2026-02-24 10:46:22', '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
+(455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', 'active', 0, '2026-03-01 17:22:08', '2026-03-01 17:24:25', NULL, NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -3829,7 +3847,8 @@ CREATE TABLE `weekly_insights` (
 INSERT INTO `weekly_insights` (`id`, `window_start`, `window_end`, `insights_json`, `total_feedback`, `model`, `created_at`, `updated_at`) VALUES
 (1, '2026-02-17', '2026-02-23', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement real-time failure alerts.\"},{\"title\":\"Notification System\",\"description\":\"Test and fix notification delivery issues. Ensure timely alerts for users.\"},{\"title\":\"Enrollment Complaints\",\"description\":\"Review and update refund policies. Address family emergencies more flexibly.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-23 15:56:30', '2026-02-23 15:56:30'),
 (2, '2026-02-18', '2026-02-24', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement monitoring for failed transactions.\"},{\"title\":\"Notification System\",\"description\":\"Test and optimize notification delivery. Ensure timely alerts for users.\"},{\"title\":\"RFID System\",\"description\":\"Continue promoting RFID system benefits. Gather more user testimonials.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-24 19:41:26', '2026-02-24 19:41:26'),
-(3, '2026-02-19', '2026-02-25', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement monitoring for failed transactions.\"},{\"title\":\"Notification System\",\"description\":\"Test and optimize notification delivery. Ensure timely alerts for users.\"},{\"title\":\"RFID System\",\"description\":\"Continue promoting RFID system benefits. Gather more user testimonials.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-25 11:22:40', '2026-02-25 11:22:40');
+(3, '2026-02-19', '2026-02-25', '[{\"title\":\"Payment Issues\",\"description\":\"Review payment processing logs for delays. Implement monitoring for failed transactions.\"},{\"title\":\"Notification System\",\"description\":\"Test and optimize notification delivery. Ensure timely alerts for users.\"},{\"title\":\"RFID System\",\"description\":\"Continue promoting RFID system benefits. Gather more user testimonials.\"}]', 7, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-02-25 11:22:40', '2026-02-25 11:22:40'),
+(4, '2026-02-23', '2026-03-01', '[{\"title\":\"Payment issues\",\"description\":\"Review payment processing logs for delays. Implement monitoring.\"},{\"title\":\"UI feedback\",\"description\":\"Update UI based on user complaint. Conduct A\\/B testing.\"},{\"title\":\"Late fee notifications\",\"description\":\"Optimize notification system for timely alerts. Test with a pilot group.\"}]', 2, 'Qwen/Qwen2.5-7B-Instruct:together', '2026-03-01 16:33:24', '2026-03-01 16:33:24');
 
 -- --------------------------------------------------------
 
@@ -4527,7 +4546,7 @@ ALTER TABLE `academic_periods`
 -- AUTO_INCREMENT for table `activities`
 --
 ALTER TABLE `activities`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `activity_grades`
@@ -4539,13 +4558,13 @@ ALTER TABLE `activity_grades`
 -- AUTO_INCREMENT for table `activity_questions`
 --
 ALTER TABLE `activity_questions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `activity_question_choices`
 --
 ALTER TABLE `activity_question_choices`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT for table `activity_settings`
@@ -4611,7 +4630,7 @@ ALTER TABLE `campus`
 -- AUTO_INCREMENT for table `chatbot_conversations`
 --
 ALTER TABLE `chatbot_conversations`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `chatbot_knowledge`
@@ -4773,7 +4792,7 @@ ALTER TABLE `payment_plans`
 -- AUTO_INCREMENT for table `payment_proof_sessions`
 --
 ALTER TABLE `payment_proof_sessions`
-  MODIFY `session_id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `session_id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `payment_schedule_installment_templates`
@@ -4797,7 +4816,7 @@ ALTER TABLE `penalty_waiver_requests`
 -- AUTO_INCREMENT for table `rfid_scans`
 --
 ALTER TABLE `rfid_scans`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `rfid_sessions`
@@ -4845,7 +4864,7 @@ ALTER TABLE `subjects`
 -- AUTO_INCREMENT for table `teachers`
 --
 ALTER TABLE `teachers`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `teacher_adviser_assignments`
@@ -4899,7 +4918,7 @@ ALTER TABLE `uniform_prices`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=455;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=456;
 
 --
 -- AUTO_INCREMENT for table `user_fcm_tokens`
@@ -4911,7 +4930,7 @@ ALTER TABLE `user_fcm_tokens`
 -- AUTO_INCREMENT for table `weekly_insights`
 --
 ALTER TABLE `weekly_insights`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `year_levels`
