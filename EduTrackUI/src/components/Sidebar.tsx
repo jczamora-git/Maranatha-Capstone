@@ -36,7 +36,8 @@ import {
   CalendarClock,
   Radio,
   Shirt,
-  Package
+  Package,
+  TrendingUp
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -213,6 +214,7 @@ export const Sidebar = () => {
     ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
     ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
     { to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" },
+    { to: "/admin/predictive-analytics", icon: TrendingUp, label: "Predictive Analytics" },
     { to: "/admin/chatbot-knowledge", icon: ChatbotIcon, label: "Chatbot Knowledge" },
     ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : []),
   ];

@@ -1670,7 +1670,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
 
   return (
     <DashboardLayout>
-      <div className="p-8">
+      <div className="">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>

@@ -66,6 +66,7 @@ import RFIDManagement from "./pages/admin/RFIDManagement";
 import AdviserManualEnrollment from "./pages/teacher/AdviserManualEnrollment";
 import AdminSentimentAnalytics from "./pages/admin/SentimentAnalytics";
 import AdminChatbotKnowledge from "./pages/admin/AdminChatbotKnowledge";
+import PredictiveAnalytics from "./pages/admin/PredictiveAnalytics";
 
 // Enrollment pages
 import EnrollmentForm from "./pages/enrollment/EnrollmentForm";
@@ -299,6 +300,7 @@ const AppContent = () => {
             )}
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
             <Route path="/admin/sentiment" element={<ProtectedRoute requiredRole="admin"><AdminSentimentAnalytics /></ProtectedRoute>} />
+            <Route path="/admin/predictive-analytics" element={<ProtectedRoute requiredRole="admin"><PredictiveAnalytics /></ProtectedRoute>} />
             
             {/* Enrollment Routes - Open to both enrollees and students */}
             {FEATURES.enrollment && (

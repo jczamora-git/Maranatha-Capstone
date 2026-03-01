@@ -77,6 +77,9 @@ const AdminSentimentAnalytics = () => {
   const [testResult, setTestResult] = useState<{ sentiment: SentimentLabel; confidence: number; probabilities: Record<string, number> } | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [feedbackPage, setFeedbackPage] = useState(1);
+  const FEEDBACK_PAGE_SIZE = 5;
+
   const [weeklyInsights, setWeeklyInsights] = useState<WeeklyInsight[]>([]);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
@@ -224,6 +227,7 @@ const AdminSentimentAnalytics = () => {
   };
 
   const filteredFeedback = useMemo(() => {
+    setFeedbackPage(1);
     return feedbackItems.filter((item) => {
       const matchesSearch = item.text.toLowerCase().includes(search.toLowerCase());
       const matchesSentiment = sentimentFilter === "all" || item.sentiment === sentimentFilter;
@@ -231,6 +235,12 @@ const AdminSentimentAnalytics = () => {
       return matchesSearch && matchesSentiment && matchesCategory;
     });
   }, [feedbackItems, search, sentimentFilter, categoryFilter]);
+
+  const totalFeedbackPages = Math.max(1, Math.ceil(filteredFeedback.length / FEEDBACK_PAGE_SIZE));
+  const pagedFeedback = filteredFeedback.slice(
+    (feedbackPage - 1) * FEEDBACK_PAGE_SIZE,
+    feedbackPage * FEEDBACK_PAGE_SIZE
+  );
 
   const runBatchAnalysis = async () => {
     setIsAnalyzing(true);
@@ -544,7 +554,7 @@ const AdminSentimentAnalytics = () => {
                     No feedback entries found.
                   </div>
                 ) : (
-                  filteredFeedback.map((item) => (
+                  pagedFeedback.map((item) => (
                     <div key={item.id} className="border border-border rounded-xl p-4 space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -595,6 +605,46 @@ const AdminSentimentAnalytics = () => {
                   ))
                 )}
               </div>
+
+              {/* Pagination */}
+              {filteredFeedback.length > FEEDBACK_PAGE_SIZE && (
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Showing {(feedbackPage - 1) * FEEDBACK_PAGE_SIZE + 1}–{Math.min(feedbackPage * FEEDBACK_PAGE_SIZE, filteredFeedback.length)} of {filteredFeedback.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
+                      disabled={feedbackPage === 1}
+                      onClick={() => setFeedbackPage((p) => p - 1)}
+                    >
+                      ‹
+                    </Button>
+                    {Array.from({ length: totalFeedbackPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        size="sm"
+                        variant={page === feedbackPage ? "default" : "outline"}
+                        className="h-8 w-8 p-0 text-xs"
+                        onClick={() => setFeedbackPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
+                      disabled={feedbackPage === totalFeedbackPages}
+                      onClick={() => setFeedbackPage((p) => p + 1)}
+                    >
+                      ›
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
