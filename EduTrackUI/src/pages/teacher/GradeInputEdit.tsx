@@ -31,8 +31,7 @@ const GradeInputEdit = () => {
   // Get parameters from URL
   const selectedCourse = searchParams.get("course");
   const selectedSection = searchParams.get("section");
-  const selectedTerm = searchParams.get("term") || "midterm";
-  const selectedSemester = searchParams.get("semester") || "1st";
+  const selectedQuarter = searchParams.get("quarter") || "";
   const urlPeriodId = searchParams.get("period_id");
 
   const [courseInfo, setCourseInfo] = useState({
@@ -51,7 +50,7 @@ const GradeInputEdit = () => {
   const [academicPeriods, setAcademicPeriods] = useState<any[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
 
-  // Helper to categorize activities by grading component
+  // Helper to categorize activities by DepEd grading component
   const categorizeActivities = (activities: any[]) => {
     const written: any[] = [];
     const performance: any[] = [];
@@ -61,7 +60,7 @@ const GradeInputEdit = () => {
       const type = (act.type || '').toLowerCase();
       if (['quiz', 'assignment', 'other'].includes(type)) {
         written.push(act);
-      } else if (['project', 'laboratory', 'performance'].includes(type)) {
+      } else if (['project', 'laboratory', 'performance', 'art'].includes(type)) {
         performance.push(act);
       } else if (type === 'exam') {
         exam.push(act);
@@ -88,6 +87,17 @@ const GradeInputEdit = () => {
   useEffect(() => {
     let mounted = true;
 
+    const extractList = (res: any, keys: string[] = []): any[] => {
+      if (Array.isArray(res)) return res;
+      if (!res || typeof res !== 'object') return [];
+      for (const key of keys) {
+        const value = (res as any)[key];
+        if (Array.isArray(value)) return value;
+      }
+      return [];
+    };
+    const normalizeLabel = (v: any): string => String(v ?? '').replace(/\s+/g, ' ').trim();
+
     const fetchData = async () => {
       if (!selectedCourse || !selectedSection) {
         setLoading(false);
@@ -97,126 +107,107 @@ const GradeInputEdit = () => {
       try {
         setLoading(true);
 
-        // Fetch academic periods first
-        const periodsRes = await apiGet(API_ENDPOINTS.ACADEMIC_PERIODS);
-        const periodsList = periodsRes.data ?? periodsRes.academic_periods ?? periodsRes ?? [];
-        if (mounted && Array.isArray(periodsList)) {
-          setAcademicPeriods(periodsList);
-        }
-
-        // Determine academic_period_id from URL or semester/term match
-        let determinedPeriodId: string | null = urlPeriodId;
-        
-        if (!determinedPeriodId && Array.isArray(periodsList)) {
-          // Match semester and period_type (term) if period_id not in URL
-          const matchedPeriod = periodsList.find((p: any) => {
-            const periodSemester = (p.semester || '').toLowerCase();
-            const periodType = (p.period_type || '').toLowerCase();
-            const urlSemester = (selectedSemester || '').toLowerCase();
-            const urlTerm = (selectedTerm || '').toLowerCase();
-            
-            return periodSemester === urlSemester && periodType === urlTerm;
-          });
-          
-          if (matchedPeriod) {
-            determinedPeriodId = String(matchedPeriod.id);
+        // Resolve academic period — prefer explicit period_id from URL, fallback to active
+        let resolvedPeriodId: string | null = urlPeriodId || null;
+        try {
+          const pRes = await apiGet(API_ENDPOINTS.ACADEMIC_PERIODS);
+          const pList = extractList(pRes, ['data', 'periods']);
+          if (Array.isArray(pList)) {
+            if (mounted) setAcademicPeriods(pList);
+            if (!resolvedPeriodId) {
+              const active = pList.find((p: any) => p.status === 'active');
+              if (active) resolvedPeriodId = String(active.id);
+            }
           }
-        }
-        
-        if (mounted && determinedPeriodId) {
-          setSelectedPeriodId(determinedPeriodId);
-        }
+        } catch (e) {}
 
-        // Fetch course info
-        const courseRes = await apiGet(`${API_ENDPOINTS.TEACHER_ASSIGNMENTS}/my`);
-        const courseList = courseRes.assigned_courses ?? courseRes.data ?? courseRes.assignments ?? courseRes ?? [];
-        if (mounted && Array.isArray(courseList)) {
-          setCourses(courseList);
-          const foundCourse = courseList.find((c: any) => String((c.subject && c.subject.id) ?? c.subject_id ?? c.subject?.subject_id ?? c.id ?? c.teacher_subject_id) === String(selectedCourse));
-          if (foundCourse) {
-            const section = Array.isArray(foundCourse.sections) 
-              ? foundCourse.sections.find((s: any) => String(s.id ?? s.section_id) === String(selectedSection))
-              : null;
-            
-            setCourseInfo({
-              code: foundCourse.course_code ?? '',
-              title: foundCourse.course_name ?? '',
-              teacher: user?.name ?? '',
-              section: section ? (section.name ?? '') : '',
-            });
+        if (mounted && resolvedPeriodId) setSelectedPeriodId(resolvedPeriodId);
+
+        // Fetch teacher subjects — same endpoint as GradeInput
+        let yearLevel: string | null = null;
+        try {
+          const subjectsRes = await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
+          const subjects = extractList(subjectsRes, ['subjects', 'data']);
+          if (mounted && Array.isArray(subjects)) {
+            setCourses(subjects);
+            const found = subjects.find((s: any) =>
+              String(s.subject_id ?? s.id) === String(selectedCourse)
+            );
+            if (found) {
+              yearLevel = normalizeLabel(found.level || found.subject_level || found.year_level || '');
+              setCourseInfo({
+                code: normalizeLabel(found.course_code || found.code || ''),
+                title: normalizeLabel(found.name || found.subject_name || ''),
+                teacher: normalizeLabel(user?.name ?? ''),
+                section: normalizeLabel(found.section_name ?? yearLevel),
+              });
+            }
           }
-        }
+        } catch (e) {}
 
-        // Fetch activities - filter by academic_period_id
-        let activityQuery = `course_id=${encodeURIComponent(String(selectedCourse))}&section_id=${encodeURIComponent(String(selectedSection))}`;
-        if (determinedPeriodId) {
-          activityQuery += `&academic_period_id=${encodeURIComponent(determinedPeriodId)}`;
-        }
-        const actRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}?${activityQuery}`);
-        const actList = actRes.data ?? actRes.activities ?? actRes ?? [];
-        
-        if (mounted && Array.isArray(actList)) {
-          setActivities(actList);
-        }
+        // Fetch activities filtered by course + section + period
+        let actList: any[] = [];
+        try {
+          let activityQuery = `course_id=${encodeURIComponent(String(selectedCourse))}&section_id=${encodeURIComponent(String(selectedSection))}`;
+          if (resolvedPeriodId) activityQuery += `&academic_period_id=${encodeURIComponent(resolvedPeriodId)}`;
+          const actRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}?${activityQuery}`);
+          actList = extractList(actRes, ['data', 'activities']);
+          if (mounted) setActivities(actList);
+        } catch (e) {}
 
         // Fetch students with grades
-        const course = courseList.find((c: any) => String((c.subject && c.subject.id) ?? c.subject_id ?? c.subject?.subject_id ?? c.id ?? c.teacher_subject_id) === String(selectedCourse));
-        const yearLevel = course?.year_level ?? null;
+        try {
+          let query = `section_id=${encodeURIComponent(String(selectedSection))}`;
+          if (yearLevel) query += `&year_level=${encodeURIComponent(yearLevel)}`;
+          query += `&include_grades=true`;
 
-        let query = `section_id=${encodeURIComponent(String(selectedSection))}`;
-        if (yearLevel) {
-          query += `&year_level=${encodeURIComponent(String(yearLevel))}`;
-        }
-        query += `&include_grades=true`;
+          const studRes = await apiGet(`${API_ENDPOINTS.STUDENTS}?${query}`);
+          const studList = extractList(studRes, ['data', 'students']);
+          if (mounted && Array.isArray(studList)) {
+            setStudents(studList);
 
-        const studRes = await apiGet(`${API_ENDPOINTS.STUDENTS}?${query}`);
-        const studList = studRes.data ?? studRes.students ?? studRes ?? [];
-        if (mounted && Array.isArray(studList)) {
-          setStudents(studList);
+            const categorized = categorizeActivities(actList);
+            const gridRows = studList.map((st: any) => {
+              const stGrades = st.grades ?? st.activity_grades ?? [];
+              const row: any = {
+                id: st.student_id ?? st.id ?? String(st.id),
+                student_db_id: st.id ?? null,
+                name: st.name ?? `${st.first_name ?? ''} ${st.last_name ?? ''}`,
+              };
 
-          // Transform students into grid row format
-          const categorized = categorizeActivities(actList);
-          const gridRows = studList.map((st: any) => {
-            const row: any = {
-              id: st.student_id ?? st.id ?? String(st.id),
-              student_db_id: st.id ?? st.student_db_id ?? null,
-              name: st.name ?? `${st.first_name ?? ''} ${st.last_name ?? ''}`,
-            };
-
-            // Add written work grades
-            categorized.written.forEach((act: any, idx: number) => {
-              const grade = st.grades?.find((g: any) => String(g.activity_id) === String(act.id));
-              row[`w${idx + 1}`] = grade ? parseFloat(grade.grade ?? 0) : 0;
-              // also store whether a grade record exists for this activity
-              if (!row._grade_exists) row._grade_exists = {};
-              row._grade_exists[String(act.id)] = !!grade;
-            });
-
-            // Add performance task grades
-            categorized.performance.forEach((act: any, idx: number) => {
-              const grade = st.grades?.find((g: any) => String(g.activity_id) === String(act.id));
-              row[`p${idx + 1}`] = grade ? parseFloat(grade.grade ?? 0) : 0;
-              if (!row._grade_exists) row._grade_exists = {};
-              row._grade_exists[String(act.id)] = !!grade;
-            });
-
-            // Add exam grade
-            if (categorized.exam.length > 0) {
-              const examTotal = categorized.exam.reduce((sum: number, act: any) => {
-                const grade = st.grades?.find((g: any) => String(g.activity_id) === String(act.id));
+              categorized.written.forEach((act: any, idx: number) => {
+                const grade = stGrades.find((g: any) => String(g.activity_id) === String(act.id));
+                row[`w${idx + 1}`] = grade ? parseFloat(grade.grade ?? 0) : 0;
                 if (!row._grade_exists) row._grade_exists = {};
                 row._grade_exists[String(act.id)] = !!grade;
-                return sum + (grade ? parseFloat(grade.grade ?? 0) : 0);
-              }, 0);
-              row.exam = examTotal;
-            } else {
-              row.exam = 0;
-            }
+              });
 
-            return row;
-          });
+              categorized.performance.forEach((act: any, idx: number) => {
+                const grade = stGrades.find((g: any) => String(g.activity_id) === String(act.id));
+                row[`p${idx + 1}`] = grade ? parseFloat(grade.grade ?? 0) : 0;
+                if (!row._grade_exists) row._grade_exists = {};
+                row._grade_exists[String(act.id)] = !!grade;
+              });
 
-          setGrades(gridRows);
+              if (categorized.exam.length > 0) {
+                const examTotal = categorized.exam.reduce((sum: number, act: any) => {
+                  const grade = stGrades.find((g: any) => String(g.activity_id) === String(act.id));
+                  if (!row._grade_exists) row._grade_exists = {};
+                  row._grade_exists[String(act.id)] = !!grade;
+                  return sum + (grade ? parseFloat(grade.grade ?? 0) : 0);
+                }, 0);
+                row.exam = examTotal;
+              } else {
+                row.exam = 0;
+              }
+
+              return row;
+            });
+
+            setGrades(gridRows);
+          }
+        } catch (e) {
+          console.error('Failed to fetch students:', e);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -227,7 +218,7 @@ const GradeInputEdit = () => {
 
     fetchData();
     return () => { mounted = false; };
-  }, [selectedCourse, selectedSection, selectedTerm, selectedSemester, urlPeriodId, user]);
+  }, [selectedCourse, selectedSection, urlPeriodId, user]);
 
   const confirm = useConfirm();
 
@@ -843,7 +834,7 @@ const GradeInputEdit = () => {
               {courseInfo.code ? `${courseInfo.code} - ${courseInfo.title}` : 'Edit Class Record'}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {courseInfo.code ? `Teacher: ${courseInfo.teacher} | Section: ${courseInfo.section}` : (selectedTerm === "midterm" ? "Midterm" : "Final Term")}
+              {courseInfo.code ? `Teacher: ${courseInfo.teacher} | Section: ${courseInfo.section}` : selectedQuarter}
             </p>
           </div>
         </div>
@@ -862,7 +853,7 @@ const GradeInputEdit = () => {
               <p className="text-sm text-muted-foreground">Teacher: {courseInfo.teacher} | Section: {courseInfo.section}</p>
             </div>
             <Badge variant="outline" className="text-xs">
-              {selectedSemester} Semester - {selectedTerm === "midterm" ? "Midterm" : "Final Term"}
+              {selectedQuarter || 'Quarter'}
             </Badge>
           </div>
         </CardContent>

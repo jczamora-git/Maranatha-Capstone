@@ -22,6 +22,7 @@ import {
 import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
 import { AlertMessage } from "@/components/AlertMessage";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Question {
   id: number;
@@ -53,6 +54,8 @@ interface QuizSettings {
   shuffle_choices?: boolean;
   show_correct_answers?: boolean;
   pass_threshold?: number;
+  section_directions?: Record<string, string>;
+  section_word_boxes?: Record<string, string>;
 }
 
 interface StudentAnswer {
@@ -75,6 +78,7 @@ const QuizTaker = () => {
   const [matchingData, setMatchingData] = useState<{ [questionId: number]: { leftItems: any[]; rightItems: any[] } }>({});
   const [selectedLeftItems, setSelectedLeftItems] = useState<{ [questionId: number]: number | null }>({});
   const [dragState, setDragState] = useState<{ questionId: number; leftIndex: number; mouseX: number; mouseY: number } | null>(null);
+  const [blockedLinkHover, setBlockedLinkHover] = useState<{ questionId: number; rightIndex: number; existingLeftIndex: number } | null>(null);
   const [linePositions, setLinePositions] = useState<{ [key: string]: { x1: number; y1: number; x2: number; y2: number } }>({});
   const [errorAnimation, setErrorAnimation] = useState<{ questionId: number } | null>(null);
   
@@ -87,9 +91,63 @@ const QuizTaker = () => {
   
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [unansweredList, setUnansweredList] = useState<number[]>([]);
+
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  // Always-current snapshot of answers so setInterval/setTimeout closures never go stale
+  const answersRef = useRef(answers);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+
+  // ── Build matchingData from a session's matching_order + questions list ──
+  const buildMatchingData = (
+    qList: Question[],
+    matchingOrder: Record<string, number[]>
+  ) => {
+    const map: typeof matchingData = {};
+    qList.forEach((q) => {
+      if (q.question_type === 'matching' && q.choices) {
+        const rightOrig = q.choices.map((c, i) => {
+          const [, right] = c.choice_text.split('::');
+          return { index: i, text: right?.trim() ?? '', originalIndex: i };
+        });
+        const leftItems = q.choices.map((c, i) => {
+          const [left] = c.choice_text.split('::');
+          return { index: i, text: left?.trim() ?? '', originalIndex: i };
+        });
+        const order: number[] = matchingOrder[q.id]
+          ?? [...Array(q.choices.length).keys()].sort(() => Math.random() - 0.5);
+        const rightItems = order.map((origIdx) => rightOrig[origIdx]);
+        map[q.id] = { leftItems, rightItems };
+      }
+    });
+    return map;
+  };
+
+  // ── Convert raw DB answers → frontend answers map ──
+  const buildAnswersFromDB = (rawAnswers: any[], qList: Question[]) => {
+    const typeMap: Record<number, string> = {};
+    qList.forEach(q => { typeMap[q.id] = q.question_type; });
+
+    const result: typeof answers = {};
+    rawAnswers.forEach((row: any) => {
+      const qType = typeMap[row.question_id];
+      const ans: any = { question_id: row.question_id };
+      if (qType === 'multiple_choice') {
+        ans.choice_id = row.choice_id ? Number(row.choice_id) : undefined;
+      } else if (qType === 'multiple_select') {
+        try { ans.selected_choices = row.answer_text ? JSON.parse(row.answer_text) : []; } catch { ans.selected_choices = []; }
+      } else if (qType === 'matching') {
+        try { ans.matching_pairs = row.answer_text ? JSON.parse(row.answer_text) : {}; } catch { ans.matching_pairs = {}; }
+      } else {
+        ans.answer_text = row.answer_text ?? '';
+      }
+      result[row.question_id] = ans;
+    });
+    return result;
+  };
 
   // Update line positions for matching questions
   useEffect(() => {
@@ -143,6 +201,7 @@ const QuizTaker = () => {
     return () => {
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
     };
   }, [activityId]);
 
@@ -150,62 +209,64 @@ const QuizTaker = () => {
     try {
       setLoading(true);
 
-      // Fetch activity details
-      const activityRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}`);
-      if (activityRes.success && activityRes.data) {
-        setActivity(activityRes.data);
-      }
+      // Fetch activity + settings (needed for the Start Quiz preview screen regardless)
+      const [activityRes, settingsRes] = await Promise.all([
+        apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}`),
+        apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/settings`),
+      ]);
+      if (activityRes.success && activityRes.data) setActivity(activityRes.data);
+      const fetchedSettings: QuizSettings = (settingsRes.success && settingsRes.data) ? settingsRes.data : {};
+      setSettings(fetchedSettings);
 
-      // Fetch questions
-      const questionsRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/questions`);
-      if (questionsRes.success && questionsRes.data) {
-        let questionsList = questionsRes.data;
-        
-        // Shuffle questions if setting enabled
-        const settingsRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/settings`);
-        if (settingsRes.success && settingsRes.data) {
-          setSettings(settingsRes.data);
-          
-          if (settingsRes.data.shuffle_questions) {
-            questionsList = [...questionsList].sort(() => Math.random() - 0.5);
-          }
+      // ── Check for an active DB session (survives refresh) ─────────────────
+      const sessionRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/quiz/session`);
+      const session = sessionRes.success ? sessionRes.data : null;
 
-          // Shuffle choices if setting enabled
-          if (settingsRes.data.shuffle_choices) {
-            questionsList = questionsList.map((q: Question) => {
-              if (q.choices && q.choices.length > 0) {
-                return {
-                  ...q,
-                  choices: [...q.choices].sort(() => Math.random() - 0.5)
-                };
-              }
-              return q;
-            });
-          }
+      if (session) {
+        // ── RESUME: load questions and restore session state ──────────────
+        const questionsRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/questions`);
+        if (!questionsRes.success) throw new Error('Failed to load questions');
+
+        // Reorder questions according to the session's stored shuffle
+        const allQuestions: Question[] = questionsRes.data ?? [];
+        const qOrder: number[] = session.question_order ?? allQuestions.map((q: Question) => q.id);
+        const qMap: Record<number, Question> = {};
+        allQuestions.forEach((q: Question) => { qMap[q.id] = q; });
+        const orderedQuestions = qOrder.map((id: number) => qMap[id]).filter(Boolean) as Question[];
+
+        setQuestions(orderedQuestions);
+        setMatchingData(buildMatchingData(orderedQuestions, session.matching_order ?? {}));
+        setAnswers(buildAnswersFromDB(session.saved_answers ?? [], allQuestions));
+        answersRef.current = buildAnswersFromDB(session.saved_answers ?? [], allQuestions);
+
+        if (session.expired) {
+          // Time ran out while offline — auto-submit without confirmation
+          setQuizStarted(true);
+          setLoading(false);
+          await handleSubmitQuiz();
+          return;
         }
 
-        // Prepare matching questions data with shuffled right column
-        const matchingDataMap: { [questionId: number]: { leftItems: any[]; rightItems: any[] } } = {};
-        questionsList.forEach((q: Question) => {
-          if (q.question_type === 'matching' && q.choices) {
-            const leftItems: any[] = [];
-            const rightItems: any[] = [];
-            
-            q.choices.forEach((choice, index) => {
-              const [left, right] = choice.choice_text.split('::');
-              leftItems.push({ index, text: left.trim(), originalIndex: index });
-              rightItems.push({ index, text: right.trim(), originalIndex: index });
+        if (session.seconds_remaining !== null) {
+          setTimeRemaining(session.seconds_remaining);
+          timerRef.current = setInterval(() => {
+            setTimeRemaining((prev) => {
+              if (prev === null || prev <= 1) { handleSubmitQuiz(); return 0; }
+              return prev - 1;
             });
-            
-            // Shuffle right items
-            const shuffledRight = [...rightItems].sort(() => Math.random() - 0.5);
-            
-            matchingDataMap[q.id] = { leftItems, rightItems: shuffledRight };
-          }
-        });
-        setMatchingData(matchingDataMap);
+          }, 1000);
+        }
 
-        setQuestions(questionsList);
+        autoSaveTimerRef.current = setInterval(() => { autoSaveAnswers(); }, 30000);
+        setQuizStarted(true);
+        setLoading(false);
+        return;
+      }
+
+      // ── FRESH: no session yet — just load questions for the preview count ─
+      const questionsRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/questions`);
+      if (questionsRes.success && questionsRes.data) {
+        setQuestions(questionsRes.data);
       }
 
     } catch (error) {
@@ -218,30 +279,43 @@ const QuizTaker = () => {
 
   const startQuiz = async () => {
     try {
-      // Call start API to log quiz attempt
+      // api_start_quiz creates the session row (with shuffled order stored)
       await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/quiz/start`);
-      
+
+      // Now fetch the persisted session to get question_order & matching_order
+      const sessionRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/quiz/session`);
+      const session = sessionRes.success ? sessionRes.data : null;
+
+      // Load all questions then reorder per session
+      const questionsRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/questions`);
+      const allQuestions: Question[] = questionsRes.success ? (questionsRes.data ?? []) : [];
+
+      const qOrder: number[] = session?.question_order ?? allQuestions.map((q: Question) => q.id);
+      const qMap: Record<number, Question> = {};
+      allQuestions.forEach((q: Question) => { qMap[q.id] = q; });
+      const orderedQuestions = qOrder.map((id: number) => qMap[id]).filter(Boolean) as Question[];
+
+      setQuestions(orderedQuestions);
+      setMatchingData(buildMatchingData(orderedQuestions, session?.matching_order ?? {}));
+      setAnswers({});
+
       setQuizStarted(true);
 
-      // Start timer if time limit is set
-      if (settings.time_limit) {
-        setTimeRemaining(settings.time_limit * 60); // Convert minutes to seconds
-        
+      // Start countdown timer if the session has an expiry
+      if (session?.seconds_remaining !== null && session?.seconds_remaining > 0) {
+        setTimeRemaining(session.seconds_remaining);
         timerRef.current = setInterval(() => {
           setTimeRemaining((prev) => {
-            if (prev === null || prev <= 1) {
-              handleSubmitQuiz();
-              return 0;
-            }
+            if (prev === null || prev <= 1) { handleSubmitQuiz(); return 0; }
             return prev - 1;
           });
         }, 1000);
+      } else if (session?.seconds_remaining === 0) {
+        await handleSubmitQuiz();
+        return;
       }
 
-      // Start auto-save timer (every 30 seconds)
-      autoSaveTimerRef.current = setInterval(() => {
-        autoSaveAnswers();
-      }, 30000);
+      autoSaveTimerRef.current = setInterval(() => { autoSaveAnswers(); }, 30000);
 
     } catch (error) {
       console.error('Error starting quiz:', error);
@@ -250,18 +324,19 @@ const QuizTaker = () => {
   };
 
   const autoSaveAnswers = async () => {
-    if (Object.keys(answers).length === 0) return;
+    const currentAnswers = answersRef.current;
+    if (Object.keys(currentAnswers).length === 0) return;
 
     try {
       setAutoSaveStatus('saving');
       
-      // Save each answer
-      for (const [questionId, answer] of Object.entries(answers)) {
+      for (const [questionId, answer] of Object.entries(currentAnswers)) {
         await apiPost(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/quiz/save-answer`, {
           question_id: Number(questionId),
           choice_id: answer.choice_id,
           answer_text: answer.answer_text,
-          selected_choices: answer.selected_choices
+          selected_choices: answer.selected_choices,
+          matching_pairs: answer.matching_pairs
         });
       }
 
@@ -273,28 +348,47 @@ const QuizTaker = () => {
   };
 
   const handleAnswerChange = (questionId: number, answer: Partial<StudentAnswer>) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: {
-        question_id: questionId,
-        ...prev[questionId],
-        ...answer
-      }
-    }));
+    setAnswers(prev => {
+      const updated = {
+        ...prev,
+        [questionId]: { question_id: questionId, ...prev[questionId], ...answer }
+      };
+      answersRef.current = updated;
+      return updated;
+    });
     setAutoSaveStatus('unsaved');
+
+    // Debounced backend save — fires 5 s after last keystroke/tap
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    saveDebounceRef.current = setTimeout(() => { autoSaveAnswers(); }, 5000);
+  };
+
+  const openSubmitModal = () => {
+    const unanswered = questions
+      .map((q, idx) => ({ idx, q }))
+      .filter(({ q }) => {
+        const a = answers[q.id];
+        if (!a) return true;
+        if (q.question_type === 'multiple_choice') return !a.choice_id;
+        if (q.question_type === 'multiple_select') return !a.selected_choices?.length;
+        if (q.question_type === 'matching') return Object.keys(a.matching_pairs || {}).length < (matchingData[q.id]?.leftItems.length ?? 1);
+        return !a.answer_text?.trim();
+      })
+      .map(({ idx }) => idx + 1);
+    setUnansweredList(unanswered);
+    setSubmitModalOpen(true);
   };
 
   const handleSubmitQuiz = async () => {
-    if (!window.confirm('Are you sure you want to submit? You cannot change your answers after submission.')) {
-      return;
-    }
-
     try {
       setSubmitting(true);
 
-      // Clear timers
+      // Clear all timers
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+
+      // (Session is marked submitted by the backend via api_submit_quiz)
 
       // Submit quiz
       const res = await apiPost(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/quiz/submit`, {
@@ -466,6 +560,7 @@ const QuizTaker = () => {
             mouseX: e.clientX - gridRect.left,
             mouseY: e.clientY - gridRect.top
           });
+          setBlockedLinkHover(null);
         };
         
         const handleDragMove = (e: React.MouseEvent) => {
@@ -492,6 +587,7 @@ const QuizTaker = () => {
                 // Show error animation instead of linking
                 setErrorAnimation({ questionId: question.id });
                 setTimeout(() => setErrorAnimation(null), 600);
+                setBlockedLinkHover(null);
                 setDragState(null);
                 return;
               }
@@ -509,6 +605,7 @@ const QuizTaker = () => {
               handleAnswerChange(question.id, { matching_pairs: newPairs });
             }
             
+            setBlockedLinkHover(null);
             setDragState(null);
           }
         };
@@ -560,7 +657,7 @@ const QuizTaker = () => {
             }`}
             onMouseMove={handleDragMove}
             onMouseUp={() => handleDragEnd()}
-            onMouseLeave={() => setDragState(null)}
+            onMouseLeave={() => { setDragState(null); setBlockedLinkHover(null); }}
             style={{ userSelect: 'none' }}
           >
             <p className="text-sm text-gray-600 mb-4">Click and drag from a circle on the left to a circle on the right to create matches. Click on a matched circle on the right to unlink and re-match.</p>
@@ -571,6 +668,8 @@ const QuizTaker = () => {
                 {matchData.leftItems.map((item, idx) => {
                   const isMatched = pairs[idx] !== undefined;
                   const color = isMatched ? getColorForPair(idx) : null;
+                  const isConflictLinkedLeft = blockedLinkHover?.questionId === question.id && blockedLinkHover.existingLeftIndex === idx;
+                  const isDraggingConflictSource = blockedLinkHover?.questionId === question.id && dragState?.leftIndex === idx;
                   
                   return (
                     <div
@@ -579,13 +678,15 @@ const QuizTaker = () => {
                         relative w-full px-4 py-3 rounded-xl text-left font-medium transition-all
                         border-2 flex items-center justify-between
                         ${
-                          isMatched
+                          isConflictLinkedLeft || isDraggingConflictSource
+                            ? 'bg-red-100 border-red-500'
+                            : isMatched
                             ? `${color?.bg} ${color?.border}`
                             : 'bg-white border-gray-200'
                         }
                       `}
                     >
-                      <span className={isMatched ? color?.text : ''}>{item.text}</span>
+                      <span className={isConflictLinkedLeft || isDraggingConflictSource ? 'text-red-700' : (isMatched ? color?.text : '')}>{item.text}</span>
                       <div
                         id={`match-left-${question.id}-${idx}`}
                         onMouseDown={(e) => {
@@ -595,11 +696,11 @@ const QuizTaker = () => {
                         className={`
                           w-6 h-6 rounded-full border-3 cursor-grab active:cursor-grabbing
                           flex items-center justify-center transition-all flex-shrink-0 ml-2
-                          ${isMatched ? `${color?.border} bg-white` : 'border-gray-400 bg-white hover:border-blue-500'}
+                          ${isConflictLinkedLeft || isDraggingConflictSource ? 'border-red-500 bg-white' : (isMatched ? `${color?.border} bg-white` : 'border-gray-400 bg-white hover:border-blue-500')}
                         `}
                         style={{ borderWidth: '3px' }}
                       >
-                        <div className={`w-3 h-3 rounded-full ${isMatched ? color?.border.replace('border-', 'bg-') : ''}`} />
+                        <div className={`w-3 h-3 rounded-full ${isConflictLinkedLeft || isDraggingConflictSource ? 'bg-red-500' : (isMatched ? color?.border.replace('border-', 'bg-') : '')}`} />
                       </div>
                     </div>
                   );
@@ -615,6 +716,7 @@ const QuizTaker = () => {
                   const leftIndex = Object.keys(pairs).find(k => pairs[parseInt(k)] === idx);
                   const isMatched = leftIndex !== undefined;
                   const color = isMatched ? getColorForPair(parseInt(leftIndex)) : null;
+                  const isConflictRight = blockedLinkHover?.questionId === question.id && blockedLinkHover.rightIndex === idx;
                   
                   return (
                     <div
@@ -623,7 +725,9 @@ const QuizTaker = () => {
                         relative w-full px-4 py-3 rounded-xl text-left font-medium transition-all
                         border-2 flex items-center justify-between
                         ${
-                          isMatched
+                          isConflictRight
+                            ? 'bg-red-100 border-red-500'
+                            : isMatched
                             ? `${color?.bg} ${color?.border}`
                             : dragState && dragState.questionId === question.id
                             ? 'bg-blue-50 border-blue-300'
@@ -642,17 +746,35 @@ const QuizTaker = () => {
                             handleUnlinkPair(idx, e);
                           }
                         }}
+                        onMouseEnter={() => {
+                          if (!dragState || dragState.questionId !== question.id) return;
+                          if (!isMatched || leftIndex === undefined) {
+                            setBlockedLinkHover(null);
+                            return;
+                          }
+                          const existingLeftNum = parseInt(leftIndex);
+                          if (existingLeftNum !== dragState.leftIndex) {
+                            setBlockedLinkHover({ questionId: question.id, rightIndex: idx, existingLeftIndex: existingLeftNum });
+                          } else {
+                            setBlockedLinkHover(null);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          if (blockedLinkHover?.questionId === question.id && blockedLinkHover.rightIndex === idx) {
+                            setBlockedLinkHover(null);
+                          }
+                        }}
                         className={`
                           w-6 h-6 rounded-full border-3 transition-all
                           flex items-center justify-center flex-shrink-0 mr-2
-                          ${isMatched ? `${color?.border} bg-white cursor-pointer hover:scale-110 hover:ring-2 hover:ring-offset-1 ${color?.border.replace('border-', 'hover:ring-')}` : 'border-gray-400 bg-white'}
-                          ${dragState && dragState.questionId === question.id ? 'ring-2 ring-blue-400 ring-offset-1' : ''}
+                          ${isConflictRight ? 'border-red-500 bg-white ring-2 ring-red-400 ring-offset-1' : (isMatched ? `${color?.border} bg-white cursor-pointer hover:scale-110 hover:ring-2 hover:ring-offset-1 ${color?.border.replace('border-', 'hover:ring-')}` : 'border-gray-400 bg-white')}
+                          ${dragState && dragState.questionId === question.id && !isConflictRight ? 'ring-2 ring-blue-400 ring-offset-1' : ''}
                         `}
                         style={{ borderWidth: '3px' }}
                       >
-                        <div className={`w-3 h-3 rounded-full ${isMatched ? color?.border.replace('border-', 'bg-') : ''}`} />
+                        <div className={`w-3 h-3 rounded-full ${isConflictRight ? 'bg-red-500' : (isMatched ? color?.border.replace('border-', 'bg-') : '')}`} />
                       </div>
-                      <span className={isMatched ? color?.text : ''}>{item.text}</span>
+                      <span className={isConflictRight ? 'text-red-700' : (isMatched ? color?.text : '')}>{item.text}</span>
                     </div>
                   );
                 })}
@@ -669,6 +791,9 @@ const QuizTaker = () => {
                   
                   const color = getColorForPair(leftIdx);
                   if (!color) return null;
+                  const isConflictLine = blockedLinkHover?.questionId === question.id
+                    && blockedLinkHover.existingLeftIndex === leftIdx
+                    && blockedLinkHover.rightIndex === rightIdx;
                   
                   return (
                     <line
@@ -677,7 +802,7 @@ const QuizTaker = () => {
                       y1={pos.y1}
                       x2={pos.x2}
                       y2={pos.y2}
-                      stroke={color.line}
+                      stroke={isConflictLine ? '#ef4444' : color.line}
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
@@ -703,7 +828,7 @@ const QuizTaker = () => {
                         y1={y1}
                         x2={dragState.mouseX}
                         y2={dragState.mouseY}
-                        stroke="#3b82f6"
+                        stroke={blockedLinkHover?.questionId === question.id ? '#ef4444' : '#3b82f6'}
                         strokeWidth="4"
                         strokeLinecap="round"
                         strokeDasharray="8,4"
@@ -729,10 +854,6 @@ const QuizTaker = () => {
       case 'fill_blank':
         return (
           <div className="space-y-3">
-            <div
-              className="p-4 bg-gray-50 border border-gray-200 rounded-lg"
-              dangerouslySetInnerHTML={{ __html: question.question_text }}
-            />
             <Textarea
               value={answer?.answer_text || ''}
               onChange={(e) => handleAnswerChange(question.id, { answer_text: e.target.value })}
@@ -758,6 +879,30 @@ const QuizTaker = () => {
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const answeredCount = Object.keys(answers).length;
 
+  // Section/grouping helpers — derived from the loaded questions order
+  const toRoman = (n: number): string => {
+    const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+    const syms = ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+    let result = ''; let num = n;
+    for (let i = 0; i < vals.length; i++) while (num >= vals[i]) { result += syms[i]; num -= vals[i]; }
+    return result;
+  };
+  const TYPE_LABELS: Record<string, string> = {
+    multiple_choice: 'Multiple Choice', multiple_select: 'Multiple Select',
+    true_false: 'True / False', short_answer: 'Short Answer',
+    fill_blank: 'Fill in the Blank', matching: 'Matching', essay: 'Essay',
+  };
+  // Unique types in the order they first appear in the (possibly shuffled) question list
+  const sectionTypes = questions.reduce((acc: string[], q) => {
+    if (!acc.includes(q.question_type)) acc.push(q.question_type);
+    return acc;
+  }, []);
+  const currentSectionIdx = currentQuestion ? sectionTypes.indexOf(currentQuestion.question_type) : -1;
+  const currentDirection = currentQuestion ? (settings.section_directions?.[currentQuestion.question_type] ?? '') : '';
+  const currentWordBox = currentQuestion?.question_type === 'fill_blank'
+    ? (settings.section_word_boxes?.['fill_blank'] ?? '')
+    : '';
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -775,32 +920,48 @@ const QuizTaker = () => {
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-6">
-          <Card className="max-w-2xl w-full border-0 shadow-2xl">
-            <CardContent className="p-12 text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="h-10 w-10 text-green-600" />
+          <Card className="max-w-2xl w-full border-0 shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-6 text-white text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="h-9 w-9 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Quiz Submitted!</h2>
-              <p className="text-gray-600 mb-8">
-                Your answers have been recorded. Your teacher will review and grade your submission.
+              <h2 className="text-3xl font-bold">Quiz Submitted!</h2>
+              <p className="text-green-100 mt-2">
+                Your answers are safely recorded.
               </p>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-gray-600">Questions Answered:</span>
-                  <span className="font-bold text-gray-900">{answeredCount} / {questions.length}</span>
+            </div>
+
+            <CardContent className="p-8">
+              <p className="text-gray-600 text-center mb-6">
+                Your teacher will review your responses and publish your score.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Questions Answered</div>
+                  <div className="mt-1 text-2xl font-bold text-blue-800">{answeredCount} / {questions.length}</div>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-gray-600">Total Points:</span>
-                  <span className="font-bold text-gray-900">{activity?.max_score}</span>
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Possible Quiz Points</div>
+                  <div className="mt-1 text-2xl font-bold text-purple-800">{activity?.max_score}</div>
                 </div>
               </div>
-              <Button
-                onClick={() => navigate(`/student/courses/${courseId}`)}
-                className="mt-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Course
-              </Button>
+
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800 text-center">
+                  This is the quiz&apos;s maximum possible points, not your final score yet.
+                </p>
+              </div>
+
+              <div className="flex justify-center mt-7">
+                <Button
+                  onClick={() => navigate(`/student/courses/${courseId}`)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Course
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -918,6 +1079,27 @@ const QuizTaker = () => {
         <div className="max-w-4xl mx-auto px-6 py-8">
           <Card className="border-0 shadow-lg">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+              {/* Section banner */}
+              {currentSectionIdx >= 0 && (
+                <div className="mb-3 pb-3 border-b border-blue-200">
+                  <p className="text-sm font-bold text-blue-700">
+                    {toRoman(currentSectionIdx + 1)}. {TYPE_LABELS[currentQuestion?.question_type] ?? currentQuestion?.question_type}
+                  </p>
+                  {currentDirection && (
+                    <p className="text-sm text-gray-600 mt-0.5 italic">{currentDirection}</p>
+                  )}
+                  {currentWordBox && (
+                    <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                      <span className="text-xs font-semibold text-amber-700">Word Box:</span>
+                      {currentWordBox.split(',').map(w => w.trim()).filter(Boolean).map((word, wi) => (
+                        <span key={wi} className="inline-block text-xs px-2 py-0.5 rounded border border-amber-300 bg-white text-amber-800 font-medium">
+                          {word}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -957,7 +1139,7 @@ const QuizTaker = () => {
 
                 {isLastQuestion ? (
                   <Button
-                    onClick={handleSubmitQuiz}
+                    onClick={openSubmitModal}
                     disabled={submitting}
                     className="bg-gradient-to-r from-green-600 to-emerald-600 text-white"
                   >
@@ -1023,6 +1205,56 @@ const QuizTaker = () => {
             <AlertMessage type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
           </div>
         )}
+
+        {/* Submit Confirmation Modal */}
+        <AlertDialog open={submitModalOpen} onOpenChange={setSubmitModalOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Submit Quiz?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  {unansweredList.length === 0 ? (
+                    <p>All <span className="font-semibold text-green-700">{questions.length} questions</span> are answered. Once submitted you cannot change your answers.</p>
+                  ) : (
+                    <>
+                      <p>
+                        You have <span className="font-semibold text-red-600">{unansweredList.length} unanswered question{unansweredList.length !== 1 ? 's' : ''}</span> out of {questions.length}.
+                        You can still go back and answer them.
+                      </p>
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-xs font-semibold text-red-700 mb-1.5">Unanswered questions:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {unansweredList.map(num => (
+                            <button
+                              key={num}
+                              onClick={() => {
+                                setSubmitModalOpen(false);
+                                setCurrentQuestionIndex(num - 1);
+                              }}
+                              className="w-7 h-7 rounded bg-red-100 border border-red-300 text-red-700 text-xs font-bold hover:bg-red-200 transition-colors"
+                            >
+                              {num}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-red-500 mt-1.5">Click a number to jump to that question.</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Go Back</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => { setSubmitModalOpen(false); handleSubmitQuiz(); }}
+                className={unansweredList.length > 0 ? 'bg-red-600 hover:bg-red-700 focus:ring-red-600' : 'bg-green-600 hover:bg-green-700 focus:ring-green-600'}
+              >
+                {unansweredList.length > 0 ? 'Submit Anyway' : 'Submit Quiz'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

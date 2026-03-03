@@ -82,6 +82,8 @@ interface QuizSettings {
   pass_threshold?: number; // percentage
   available_from?: string;
   available_until?: string;
+  section_directions?: Record<string, string>;
+  section_word_boxes?: Record<string, string>;
 }
 
 // Sortable Question Item Component
@@ -339,8 +341,9 @@ const QuizBuilder = () => {
     setEditingQuestionIndex(null);
   };
 
-  const openAddQuestion = () => {
+  const openAddQuestion = (preset: QuestionType = 'multiple_choice') => {
     resetQuestionForm();
+    setQuestionType(preset);
     setIsAddingQuestion(true);
   };
 
@@ -559,6 +562,26 @@ const QuizBuilder = () => {
     return labels[type] || type;
   };
 
+  const toRoman = (n: number): string => {
+    const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+    const syms = ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+    let result = '';
+    let num = n;
+    for (let i = 0; i < vals.length; i++) {
+      while (num >= vals[i]) { result += syms[i]; num -= vals[i]; }
+    }
+    return result;
+  };
+
+  const TYPE_ORDER: QuestionType[] = [
+    'multiple_choice', 'multiple_select', 'true_false',
+    'short_answer', 'fill_blank', 'matching', 'essay',
+  ];
+
+  const questionGroups = TYPE_ORDER
+    .map(type => ({ type, questions: questions.filter(q => q.question_type === type) }))
+    .filter(g => g.questions.length > 0);
+
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
 
   const stripHtmlTags = (html: string): string => {
@@ -578,88 +601,103 @@ const QuizBuilder = () => {
     exportText += `Number of Questions: ${questions.length}\n`;
     exportText += `${'='.repeat(60)}\n\n`;
 
-    questions.forEach((question, index) => {
-      // Question number and text
-      exportText += `${index + 1}. ${stripHtmlTags(question.question_text)}\n`;
-      exportText += `   (${question.points} point${question.points !== 1 ? 's' : ''}) - ${getQuestionTypeLabel(question.question_type)}\n\n`;
+    const exportGroups = TYPE_ORDER
+      .map(type => ({ type, questions: questions.filter(q => q.question_type === type) }))
+      .filter(g => g.questions.length > 0);
 
-      // Add choices for multiple choice/select
-      if (question.question_type === 'multiple_choice' || question.question_type === 'multiple_select') {
-        question.choices?.forEach((choice, choiceIndex) => {
-          exportText += `   ${String.fromCharCode(65 + choiceIndex)}. ${choice.text}\n`;
-        });
-        exportText += '\n';
+    let globalNum = 1;
+
+    exportGroups.forEach((group, groupIndex) => {
+      const direction = quizSettings.section_directions?.[group.type];
+      const wordBox = group.type === 'fill_blank' ? quizSettings.section_word_boxes?.[group.type] : undefined;
+      exportText += `${toRoman(groupIndex + 1)}. ${getQuestionTypeLabel(group.type).toUpperCase()}\n`;
+      if (direction) exportText += `   ${direction}\n`;
+      if (wordBox) {
+        const words = wordBox.split(',').map(w => w.trim()).filter(Boolean);
+        const boxLine = words.map(w => `[ ${w} ]`).join('  ');
+        exportText += `\n   Word Box:  ${boxLine}\n`;
       }
+      exportText += `\n`;
 
-      // Add matching pairs
-      if (question.question_type === 'matching' && question.choices) {
-        question.choices.forEach((choice, pairIndex) => {
-          const [left, right] = choice.text.split('::');
-          exportText += `   ${pairIndex + 1}. ${left} → ${right}\n`;
-        });
-        exportText += '\n';
-      }
+      group.questions.forEach((question) => {
+        const index = globalNum - 1;
+        exportText += `${globalNum}. ${stripHtmlTags(question.question_text)}\n`;
+        exportText += `   (${question.points} point${question.points !== 1 ? 's' : ''})\n\n`;
 
-      // Add true/false
-      if (question.question_type === 'true_false') {
-        exportText += `   ○ True\n   ○ False\n\n`;
-      }
+        if (question.question_type === 'multiple_choice' || question.question_type === 'multiple_select') {
+          question.choices?.forEach((choice, ci) => {
+            exportText += `   ${String.fromCharCode(65 + ci)}. ${choice.text}\n`;
+          });
+          exportText += '\n';
+        }
+        if (question.question_type === 'matching' && question.choices) {
+          question.choices.forEach((choice, pi) => {
+            const [left] = choice.text.split('::');
+            exportText += `   ${pi + 1}. ${left}\n`;
+          });
+          exportText += '\n';
+        }
+        if (question.question_type === 'true_false') {
+          exportText += `   ○ True     ○ False\n\n`;
+        }
+        if (question.question_type === 'short_answer') {
+          exportText += `   Answer: _________________________________\n\n`;
+        }
+        if (question.question_type === 'essay') {
+          exportText += `   Answer:\n   _____________________________________________\n`;
+          exportText += `   _____________________________________________\n`;
+          exportText += `   _____________________________________________\n\n`;
+        }
+        if (question.question_type === 'fill_blank') {
+          exportText += `   (Fill in the blank)\n\n`;
+        }
 
-      // Add space for short answer/essay
-      if (question.question_type === 'short_answer') {
-        exportText += `   Answer: _________________________________\n\n`;
-      }
+        exportText += `${'-'.repeat(60)}\n\n`;
+        globalNum++;
+      });
 
-      if (question.question_type === 'essay') {
-        exportText += `   Answer:\n   _____________________________________________\n`;
-        exportText += `   _____________________________________________\n`;
-        exportText += `   _____________________________________________\n\n`;
-      }
-
-      // Add fill in the blank
-      if (question.question_type === 'fill_blank') {
-        exportText += `   (Fill in the blank)\n\n`;
-      }
-
-      exportText += `${'-'.repeat(60)}\n\n`;
+      exportText += '\n';
     });
 
     exportText += `\n${'='.repeat(60)}\n`;
     exportText += `ANSWER KEY\n`;
     exportText += `${'='.repeat(60)}\n\n`;
 
-    questions.forEach((question, index) => {
-      exportText += `${index + 1}. `;
+    let answerNum = 1;
+    exportGroups.forEach((group) => {
+      group.questions.forEach((question) => {
+        exportText += `${answerNum}. `;
 
-      // Get correct answer based on question type
-      if (question.question_type === 'multiple_choice' && question.choices) {
-        const correctChoices = question.choices
-          .map((choice, idx) => choice.is_correct ? String.fromCharCode(65 + idx) : null)
-          .filter(c => c !== null);
-        exportText += correctChoices.join(', ') || 'No correct answer set';
-      } else if (question.question_type === 'multiple_select' && question.choices) {
-        const correctChoices = question.choices
-          .map((choice, idx) => choice.is_correct ? String.fromCharCode(65 + idx) : null)
-          .filter(c => c !== null);
-        exportText += correctChoices.join(', ') || 'No correct answers set';
-      } else if (question.question_type === 'true_false') {
-        exportText += question.correct_answer || 'No correct answer set';
-      } else if (question.question_type === 'short_answer') {
-        exportText += question.correct_answer || (question.sample_answer ? stripHtmlTags(question.sample_answer) : 'No answer provided');
-      } else if (question.question_type === 'fill_blank') {
-        exportText += question.sample_answer || 'No answers provided';
-      } else if (question.question_type === 'essay') {
-        exportText += question.sample_answer ? stripHtmlTags(question.sample_answer) : 'Sample answer not provided';
-      } else if (question.question_type === 'matching' && question.choices) {
+        if (question.question_type === 'multiple_choice' && question.choices) {
+          const correct = question.choices
+            .map((c, i) => c.is_correct ? String.fromCharCode(65 + i) : null)
+            .filter(Boolean);
+          exportText += correct.join(', ') || 'No correct answer set';
+        } else if (question.question_type === 'multiple_select' && question.choices) {
+          const correct = question.choices
+            .map((c, i) => c.is_correct ? String.fromCharCode(65 + i) : null)
+            .filter(Boolean);
+          exportText += correct.join(', ') || 'No correct answers set';
+        } else if (question.question_type === 'true_false') {
+          exportText += question.correct_answer || 'No correct answer set';
+        } else if (question.question_type === 'short_answer') {
+          exportText += question.correct_answer || (question.sample_answer ? stripHtmlTags(question.sample_answer) : 'No answer provided');
+        } else if (question.question_type === 'fill_blank') {
+          exportText += question.sample_answer || 'No answers provided';
+        } else if (question.question_type === 'essay') {
+          exportText += question.sample_answer ? stripHtmlTags(question.sample_answer) : 'Sample answer not provided';
+        } else if (question.question_type === 'matching' && question.choices) {
+          exportText += '\n';
+          question.choices.forEach((choice, pi) => {
+            const [left, right] = choice.text.split('::');
+            exportText += `      ${pi + 1}. ${left} → ${right}\n`;
+          });
+          exportText = exportText.trimEnd();
+        }
+
         exportText += '\n';
-        question.choices.forEach((choice, pairIndex) => {
-          const [left, right] = choice.text.split('::');
-          exportText += `      ${pairIndex + 1}. ${left} → ${right}\n`;
-        });
-        exportText = exportText.trimEnd();
-      }
-
-      exportText += '\n';
+        answerNum++;
+      });
     });
 
     exportText += `\nEnd of Quiz\n`;
@@ -907,7 +945,7 @@ const QuizBuilder = () => {
                     <CardTitle>Questions</CardTitle>
                     <CardDescription>Add and manage quiz questions</CardDescription>
                   </div>
-                  <Button onClick={openAddQuestion} className="bg-gradient-to-r from-blue-600 to-cyan-500">
+                  <Button onClick={() => openAddQuestion()} className="bg-gradient-to-r from-blue-600 to-cyan-500">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Question
                   </Button>
@@ -920,35 +958,138 @@ const QuizBuilder = () => {
                     <FileText className="h-16 w-16 text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">No questions yet</h3>
                     <p className="text-gray-500 mb-4">Start building your quiz by adding questions</p>
-                    <Button onClick={openAddQuestion} variant="outline">
+                    <Button onClick={() => openAddQuestion()} variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Your First Question
                     </Button>
                   </div>
                 ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={questions.map(q => q.id || 0)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-4">
-                        {questions.map((question, index) => (
-                          <SortableQuestionItem
-                            key={question.id || index}
-                            question={question}
-                            index={index}
-                            onEdit={() => openEditQuestion(index)}
-                            onDelete={() => promptDeleteQuestion(question)}
-                            getQuestionTypeLabel={getQuestionTypeLabel}
+                  <div className="space-y-6">
+                    {questionGroups.map((group, groupIndex) => (
+                      <div key={group.type}>
+                        {/* Section header */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm font-bold text-gray-800">
+                            {toRoman(groupIndex + 1)}.
+                          </span>
+                          <span className="text-sm font-semibold text-gray-700">
+                            {getQuestionTypeLabel(group.type)}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {group.questions.length} item{group.questions.length !== 1 ? 's' : ''}
+                          </Badge>
+                          <span className="text-xs text-gray-400">
+                            {group.questions.reduce((s, q) => s + q.points, 0)} pts
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="ml-auto h-6 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => openAddQuestion(group.type)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+
+                        {/* Directions input */}
+                        <div className="mb-3">
+                          <input
+                            type="text"
+                            className="w-full text-sm border border-dashed border-gray-300 rounded px-3 py-1.5 text-gray-600 placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 bg-gray-50"
+                            placeholder={`Directions for ${getQuestionTypeLabel(group.type)} (e.g. "Choose the best answer.")…`}
+                            value={quizSettings.section_directions?.[group.type] ?? ''}
+                            onChange={(e) => {
+                              const newDirs = { ...(quizSettings.section_directions ?? {}), [group.type]: e.target.value };
+                              setQuizSettings(prev => ({ ...prev, section_directions: newDirs }));
+                            }}
+                            onBlur={async (e) => {
+                              const newDirs = { ...(quizSettings.section_directions ?? {}), [group.type]: e.target.value };
+                              try {
+                                await apiPost(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/settings`, {
+                                  ...quizSettings,
+                                  section_directions: newDirs,
+                                });
+                              } catch (_) {}
+                            }}
                           />
-                        ))}
+                        </div>
+
+                        {/* Word Box — only for fill_blank */}
+                        {group.type === 'fill_blank' && (
+                          <div className="mb-3">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Word Box</span>
+                              <span className="text-xs text-gray-400">(comma-separated words students can pick from)</span>
+                            </div>
+                            <input
+                              type="text"
+                              title="Word Box"
+                              className="w-full text-sm border border-dashed border-amber-300 rounded px-3 py-1.5 text-gray-600 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-amber-50"
+                              placeholder={`e.g. is, am, the, a, my`}
+                              value={quizSettings.section_word_boxes?.[group.type] ?? ''}
+                              onChange={(e) => {
+                                const newBoxes = { ...(quizSettings.section_word_boxes ?? {}), [group.type]: e.target.value };
+                                setQuizSettings(prev => ({ ...prev, section_word_boxes: newBoxes }));
+                              }}
+                              onBlur={async (e) => {
+                                const newBoxes = { ...(quizSettings.section_word_boxes ?? {}), [group.type]: e.target.value };
+                                try {
+                                  await apiPost(`${API_ENDPOINTS.ACTIVITIES}/${activityId}/settings`, {
+                                    ...quizSettings,
+                                    section_word_boxes: newBoxes,
+                                  });
+                                } catch (_) {}
+                              }}
+                            />
+                            {/* Preview chips */}
+                            {(quizSettings.section_word_boxes?.[group.type] ?? '').trim() && (
+                              <div className="mt-2 flex flex-wrap gap-1.5 p-2 border border-amber-200 rounded bg-amber-50">
+                                <span className="text-xs font-semibold text-amber-700 mr-1 self-center">Word Box:</span>
+                                {(quizSettings.section_word_boxes?.[group.type] ?? '')
+                                  .split(',')
+                                  .map(w => w.trim())
+                                  .filter(Boolean)
+                                  .map((word, wi) => (
+                                    <span key={wi} className="inline-block text-xs px-2 py-0.5 rounded border border-amber-300 bg-white text-amber-800 font-medium">
+                                      {word}
+                                    </span>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Questions in this group */}
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext
+                            items={group.questions.map(q => q.id || 0)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-3">
+                              {group.questions.map((question) => {
+                                const globalIndex = questions.findIndex(q => q.id === question.id);
+                                return (
+                                  <SortableQuestionItem
+                                    key={question.id ?? question.order_num}
+                                    question={question}
+                                    index={globalIndex}
+                                    onEdit={() => openEditQuestion(globalIndex)}
+                                    onDelete={() => promptDeleteQuestion(question)}
+                                    getQuestionTypeLabel={getQuestionTypeLabel}
+                                  />
+                                );
+                              })}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
                       </div>
-                    </SortableContext>
-                  </DndContext>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -957,7 +1098,7 @@ const QuizBuilder = () => {
 
         {/* Add/Edit Question Dialog */}
         <Dialog open={isAddingQuestion} onOpenChange={setIsAddingQuestion}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+          {isAddingQuestion && <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>{editingQuestionIndex !== null ? 'Edit Question' : 'Add New Question'}</DialogTitle>
             </DialogHeader>
@@ -1182,7 +1323,7 @@ const QuizBuilder = () => {
                 </Button>
               </div>
             </div>
-          </DialogContent>
+          </DialogContent>}
         </Dialog>
 
         {/* Delete Confirmation Dialog */}

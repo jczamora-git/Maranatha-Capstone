@@ -42,7 +42,7 @@ export const AlertMessage = ({
 
   return (
     <div
-      className={`fixed top-4 right-4 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg ${bgColor} ${textColor} z-50 animate-in fade-in slide-in-from-top-2 duration-300`}
+      className={`fixed top-4 right-4 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg ${bgColor} ${textColor} z-[9999] animate-in fade-in slide-in-from-top-2 duration-300`}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
       <span className="text-sm font-medium">{message}</span>

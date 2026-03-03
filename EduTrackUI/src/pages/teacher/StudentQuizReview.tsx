@@ -73,12 +73,29 @@ const StudentQuizReview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [student, setStudent] = useState<Student | null>(null);
   const [answers, setAnswers] = useState<StudentAnswer[]>([]);
+  const [matchingOrderMap, setMatchingOrderMap] = useState<Record<string, number[]>>({});
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   const [manualGrades, setManualGrades] = useState<{ [key: string]: { points: number; feedback: string } }>({});
   const [savingGrades, setSavingGrades] = useState<Set<string>>(new Set());
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  const applyAnswersPayload = (payload: any) => {
+    if (Array.isArray(payload)) {
+      setAnswers(payload);
+      setMatchingOrderMap({});
+      return;
+    }
+
+    const normalizedAnswers = Array.isArray(payload?.answers) ? payload.answers : [];
+    const normalizedMatchingOrder = payload?.matching_order && typeof payload.matching_order === 'object'
+      ? payload.matching_order
+      : {};
+
+    setAnswers(normalizedAnswers);
+    setMatchingOrderMap(normalizedMatchingOrder);
+  };
 
   useEffect(() => {
     loadData();
@@ -109,7 +126,7 @@ const StudentQuizReview = () => {
       // Fetch student answers
       const answersRes = await apiGet(`/api/activities/${activityId}/student-answers?student_id=${studentId}`);
       if (answersRes.success && answersRes.data) {
-        setAnswers(answersRes.data);
+        applyAnswersPayload(answersRes.data);
       }
 
     } catch (error) {
@@ -164,7 +181,7 @@ const StudentQuizReview = () => {
         // Reload the answers to get updated totals
         const answersRes = await apiGet(`/api/activities/${activityId}/student-answers?student_id=${studentId}`);
         if (answersRes.success && answersRes.data) {
-          setAnswers(answersRes.data);
+          applyAnswersPayload(answersRes.data);
         }
         
         // Clear the manual grade input after saving
@@ -207,7 +224,7 @@ const StudentQuizReview = () => {
       );
     }
 
-    const isAutoGraded = ['multiple_choice', 'true_false', 'multiple_select', 'matching'].includes(question.question_type);
+    const isAutoGraded = ['multiple_choice', 'true_false', 'multiple_select', 'matching', 'fill_blank'].includes(question.question_type);
     const needsManualGrading = ['essay', 'short_answer'].includes(question.question_type);
 
     return (
@@ -358,11 +375,23 @@ const StudentQuizReview = () => {
                   rightItems.push({ index, text: right.trim(), originalIndex: index });
                 });
 
+                // matching_order stores: displayRightIndex -> originalRightIndex
+                const orderForQuestion: number[] = matchingOrderMap[String(question.id)] || [];
+                const rightItemsDisplayed = (orderForQuestion.length === rightItems.length)
+                  ? orderForQuestion.map((originalIdx, displayIdx) => ({
+                      ...rightItems[originalIdx],
+                      displayIndex: displayIdx,
+                    }))
+                  : rightItems.map((item, idx) => ({ ...item, displayIndex: idx }));
+
                 return leftItems.map((leftItem, idx) => {
-                  const studentRightIdx = matchingPairs[idx];
+                  const studentRightDisplayIdx = matchingPairs[idx];
                   const correctRightIdx = leftItem.originalIndex;
-                  const isCorrect = studentRightIdx === correctRightIdx;
-                  const studentAnswer = rightItems.find(r => r.index === studentRightIdx);
+                  const studentRightOriginalIdx = orderForQuestion.length === rightItems.length
+                    ? orderForQuestion[studentRightDisplayIdx]
+                    : studentRightDisplayIdx;
+                  const isCorrect = studentRightOriginalIdx === correctRightIdx;
+                  const studentAnswer = rightItemsDisplayed.find(r => r.displayIndex === studentRightDisplayIdx);
                   const correctAnswer = rightItems.find(r => r.index === correctRightIdx);
 
                   return (
@@ -523,7 +552,8 @@ const StudentQuizReview = () => {
     );
   };
 
-  const totalPoints = answers.reduce((sum, ans) => sum + (Number(ans.points_earned) || 0), 0);
+  const safeAnswers = Array.isArray(answers) ? answers : [];
+  const totalPoints = safeAnswers.reduce((sum, ans) => sum + (Number(ans.points_earned) || 0), 0);
   const maxScore = Number(activity?.max_score || 0);
   const percentage = maxScore > 0 ? Math.round((totalPoints / maxScore) * 100) : 0;
 

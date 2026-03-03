@@ -53,6 +53,17 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /*
 | -------------------------------------------------------------------
+| Application Timezone (Global)
+| -------------------------------------------------------------------
+| app_timezone: Used by PHP date/time functions globally.
+| db_timezone_offset: Used for DB session timezone (MySQL/compatible).
+| Keep db_timezone_offset as fixed offset to avoid DB timezone table dependency.
+*/
+$config['app_timezone']            = 'Asia/Manila';
+$config['db_timezone_offset']      = '+08:00';
+
+/*
+| -------------------------------------------------------------------
 | LavaLust Version
 | -------------------------------------------------------------------
 */

@@ -90,6 +90,13 @@ class AnnouncementModel extends Model
         $where_clauses = ['a.status != \'archived\''];
         $params = [];
 
+        $includeExpired = !empty($filters['include_expired']);
+        if (!$includeExpired) {
+            $where_clauses[] = '(a.published_at IS NULL OR a.published_at <= NOW())';
+            $where_clauses[] = '(a.starts_at IS NULL OR a.starts_at <= NOW())';
+            $where_clauses[] = '(a.ends_at IS NULL OR a.ends_at >= NOW())';
+        }
+
         if (!empty($filters['audience'])) {
             $where_clauses[] = 'a.audience = ?';
             $params[] = $filters['audience'];

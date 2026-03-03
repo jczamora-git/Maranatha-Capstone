@@ -27,6 +27,9 @@ class AnnouncementController extends Controller
             if (!empty($_GET['audience'])) $filters['audience'] = $_GET['audience'];
             if (!empty($_GET['status'])) $filters['status'] = $_GET['status'];
             if (!empty($_GET['search'])) $filters['search'] = $_GET['search'];
+            if (isset($_GET['include_expired'])) {
+                $filters['include_expired'] = in_array(strtolower((string)$_GET['include_expired']), ['1', 'true', 'yes'], true);
+            }
 
             $user_id = $this->session->userdata('user_id');
             $list = $this->AnnouncementModel->get_all_with_read_status($filters, $user_id);

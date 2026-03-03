@@ -240,7 +240,16 @@ class Database {
 
         try {
             $this->db = new PDO($dsn, $username, $password, $options);
-             $this->driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $this->driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+            // Apply global DB session timezone when configured.
+            $dbTimezoneOffset = config_item('db_timezone_offset') ?: '+08:00';
+            if (preg_match('/^[+-](0\d|1[0-4]):[0-5]\d$/', $dbTimezoneOffset)) {
+                if ($this->driver === 'mysql') {
+                    $stmt = $this->db->prepare('SET time_zone = ?');
+                    $stmt->execute([$dbTimezoneOffset]);
+                }
+            }
         } catch (Exception $e) {
             throw new PDOException($e->getMessage());
         }

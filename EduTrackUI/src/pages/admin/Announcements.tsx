@@ -84,7 +84,7 @@ const Announcements = () => {
     const fetchAnnouncements = async () => {
       setLoading(true);
       try {
-        const res = await apiGet(API_ENDPOINTS.ANNOUNCEMENTS);
+        const res = await apiGet(`${API_ENDPOINTS.ANNOUNCEMENTS}?include_expired=1`);
         // Expecting res.data or res.announcements or array directly
         const list = res.data ?? res.announcements ?? res ?? [];
         if (Array.isArray(list) && mounted) {

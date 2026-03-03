@@ -46,6 +46,12 @@ require_once SYSTEM_DIR . 'kernel/Routine.php';
 define('BASE_URL', config_item('base_url'));
 
 /**
+ * Global PHP timezone for all controllers/models/libraries
+ */
+$appTimezone = config_item('app_timezone') ?: 'Asia/Manila';
+date_default_timezone_set($appTimezone);
+
+/**
  * Composer (Autoload)
  */
 if ($composer_autoload = config_item('composer_autoload'))

@@ -335,6 +335,8 @@ class QuizController extends Controller {
                 'pass_threshold' => $input['pass_threshold'] ?? null,
                 'available_from' => $input['available_from'] ?? null,
                 'available_until' => $input['available_until'] ?? null,
+                'section_directions' => isset($input['section_directions']) ? json_encode($input['section_directions']) : null,
+                'section_word_boxes' => isset($input['section_word_boxes']) ? json_encode($input['section_word_boxes']) : null,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
@@ -357,6 +359,14 @@ class QuizController extends Controller {
 
             // Fetch updated settings
             $settings = $this->Quiz_model->get_settings_by_activity($activityId);
+            if ($settings) {
+                if (isset($settings['section_directions']) && is_string($settings['section_directions'])) {
+                    $settings['section_directions'] = json_decode($settings['section_directions'], true);
+                }
+                if (isset($settings['section_word_boxes']) && is_string($settings['section_word_boxes'])) {
+                    $settings['section_word_boxes'] = json_decode($settings['section_word_boxes'], true);
+                }
+            }
 
             http_response_code(200);
             echo json_encode([
@@ -386,6 +396,14 @@ class QuizController extends Controller {
             }
 
             $settings = $this->Quiz_model->get_settings_by_activity($activityId);
+            if ($settings) {
+                if (isset($settings['section_directions']) && is_string($settings['section_directions'])) {
+                    $settings['section_directions'] = json_decode($settings['section_directions'], true);
+                }
+                if (isset($settings['section_word_boxes']) && is_string($settings['section_word_boxes'])) {
+                    $settings['section_word_boxes'] = json_decode($settings['section_word_boxes'], true);
+                }
+            }
 
             http_response_code(200);
             echo json_encode([
@@ -452,8 +470,8 @@ class QuizController extends Controller {
                 unset($question['correct_answer']);
                 unset($question['sample_answer']);
                 
-                // Get choices if multiple choice/select (without is_correct flag)
-                if (in_array($question['question_type'], ['multiple_choice', 'multiple_select'])) {
+                // Get choices if multiple choice/select/matching (without is_correct flag)
+                if (in_array($question['question_type'], ['multiple_choice', 'multiple_select', 'matching'])) {
                     $choices = $this->Quiz_model->get_question_choices($question['id']);
                     foreach ($choices as &$choice) {
                         unset($choice['is_correct']); // Don't send correct answer to student
@@ -465,6 +483,40 @@ class QuizController extends Controller {
             // Shuffle questions if enabled
             if ($settings && $settings['shuffle_questions']) {
                 shuffle($questions);
+            }
+
+            // ── Upsert quiz session ─────────────────────────────────────────
+            $activeSession = $this->Quiz_model->get_active_session($activityId, $studentId);
+            if (!$activeSession) {
+                $timeLimitSecs = ($settings && $settings['time_limit'])
+                    ? intval($settings['time_limit']) * 60
+                    : null;
+                $expiresAt = $timeLimitSecs
+                    ? date('Y-m-d H:i:s', time() + $timeLimitSecs)
+                    : null;
+
+                // Store shuffled question IDs order
+                $questionOrder = array_column($questions, 'id');
+
+                // Store shuffled matching right-column indices per question
+                $matchingOrder = [];
+                foreach ($questions as $q) {
+                    if ($q['question_type'] === 'matching' && !empty($q['choices'])) {
+                        $indices = range(0, count($q['choices']) - 1);
+                        shuffle($indices);
+                        $matchingOrder[$q['id']] = $indices;
+                    }
+                }
+
+                $this->Quiz_model->create_session([
+                    'activity_id'    => $activityId,
+                    'student_id'     => $studentId,
+                    'started_at'     => date('Y-m-d H:i:s'),
+                    'expires_at'     => $expiresAt,
+                    'question_order' => json_encode($questionOrder),
+                    'matching_order' => json_encode($matchingOrder),
+                    'submitted_at'   => null,
+                ]);
             }
 
             http_response_code(200);
@@ -480,6 +532,84 @@ class QuizController extends Controller {
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Error starting quiz: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * GET /api/activities/{activityId}/quiz/session
+     * Return the current in-progress session for the logged-in student,
+     * including all saved answers so the frontend can resume after a refresh.
+     */
+    public function api_get_session($activityId) {
+        try {
+            $userId = $this->session->userdata('user_id');
+            if (!$userId) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $student = $this->db->table('students')->where('user_id', $userId)->get();
+            if (!$student) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Student not found']);
+                return;
+            }
+            $studentId = $student['id'];
+
+            $session = $this->Quiz_model->get_active_session($activityId, $studentId);
+
+            if (!$session) {
+                http_response_code(200);
+                echo json_encode(['success' => true, 'data' => null]);
+                return;
+            }
+
+            // Decode JSON fields
+            $session['question_order'] = json_decode($session['question_order'], true);
+            $session['matching_order'] = json_decode($session['matching_order'] ?? '{}', true);
+
+            // Backfill expires_at for legacy in-progress sessions where it wasn't set yet
+            if (empty($session['expires_at'])) {
+                $settings = $this->Quiz_model->get_settings_by_activity($activityId);
+                if ($settings && !empty($settings['time_limit']) && !empty($session['started_at'])) {
+                    $limitSecs = intval($settings['time_limit']) * 60;
+                    $computedExpiresAt = date('Y-m-d H:i:s', strtotime($session['started_at']) + $limitSecs);
+                    $session['expires_at'] = $computedExpiresAt;
+
+                    // Persist so succeeding requests are consistent
+                    if (!empty($session['id'])) {
+                        $this->db->table('quiz_sessions')
+                            ->where('id', $session['id'])
+                            ->update(['expires_at' => $computedExpiresAt]);
+                    }
+                }
+            }
+
+            // Check if time has already expired
+            $expired = false;
+            if ($session['expires_at']) {
+                $expired = strtotime($session['expires_at']) <= time();
+            }
+
+            // Attach saved answers
+            $rawAnswers = $this->Quiz_model->get_student_answers_for_session($activityId, $studentId);
+            $session['saved_answers'] = $rawAnswers;
+            $session['expired'] = $expired;
+
+            // Compute seconds_remaining
+            if ($session['expires_at'] && !$expired) {
+                $session['seconds_remaining'] = max(0, strtotime($session['expires_at']) - time());
+            } else {
+                $session['seconds_remaining'] = null;
+            }
+
+            http_response_code(200);
+            echo json_encode(['success' => true, 'data' => $session]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Error fetching session: ' . $e->getMessage()]);
         }
     }
 
@@ -507,19 +637,28 @@ class QuizController extends Controller {
             }
             $studentId = $student['id'];
 
+            $answerText = $input['answer_text'] ?? null;
+
+            // Encode multiple_select choices as JSON
+            if (!empty($input['selected_choices']) && is_array($input['selected_choices'])) {
+                $answerText = json_encode($input['selected_choices']);
+            }
+
+            // Encode matching pairs as JSON
+            if (isset($input['matching_pairs']) && is_array($input['matching_pairs'])) {
+                $answerText = json_encode($input['matching_pairs']);
+            }
+
             $answerData = [
                 'activity_id' => $activityId,
                 'question_id' => $input['question_id'],
-                'student_id' => $studentId,
-                'answer_text' => $input['answer_text'] ?? null,
-                'choice_id' => $input['choice_id'] ?? null,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'student_id'  => $studentId,
+                'answer_text' => $answerText,
+                'choice_id'   => $input['choice_id'] ?? null,
+                'updated_at'  => date('Y-m-d H:i:s')
             ];
 
-            // Check if answer exists
             $existing = $this->Quiz_model->get_student_answer($activityId, $input['question_id'], $studentId);
-            
             if ($existing) {
                 $this->Quiz_model->update_student_answer($existing['id'], $answerData);
             } else {
@@ -602,6 +741,16 @@ class QuizController extends Controller {
                 }
             }
 
+            // Load latest session for grading mapping (matching question right-column shuffle)
+            $latestSession = $this->Quiz_model->get_latest_session($activityId, $studentId);
+            $matchingOrder = [];
+            if ($latestSession && !empty($latestSession['matching_order'])) {
+                $decodedMatchingOrder = json_decode($latestSession['matching_order'], true);
+                if (is_array($decodedMatchingOrder)) {
+                    $matchingOrder = $decodedMatchingOrder;
+                }
+            }
+
             // Get all questions with correct answers
             $questions = $this->Quiz_model->get_questions_by_activity($activityId);
             
@@ -655,14 +804,26 @@ class QuizController extends Controller {
                     if ($studentPairs && is_array($studentPairs)) {
                         $correctCount = 0;
                         $totalPairs = count($choices);
+                        $questionMatchingOrder = isset($matchingOrder[$question['id']]) && is_array($matchingOrder[$question['id']])
+                            ? $matchingOrder[$question['id']]
+                            : [];
                         
-                        foreach ($studentPairs as $leftIdx => $rightIdx) {
-                            // Check if this pairing is correct (both should have same originalIndex)
-                            if (isset($choices[$leftIdx]) && isset($choices[$rightIdx])) {
-                                // For matching, the correct answer is when indices match their original positions
-                                if ($leftIdx == $rightIdx) {
-                                    $correctCount++;
-                                }
+                        foreach ($studentPairs as $leftIdxRaw => $rightDisplayIdxRaw) {
+                            $leftIdx = intval($leftIdxRaw);
+                            $rightDisplayIdx = intval($rightDisplayIdxRaw);
+
+                            if (!isset($choices[$leftIdx])) {
+                                continue;
+                            }
+
+                            // Map displayed right index back to the original index used in DB choices.
+                            $rightOriginalIdx = isset($questionMatchingOrder[$rightDisplayIdx])
+                                ? intval($questionMatchingOrder[$rightDisplayIdx])
+                                : $rightDisplayIdx;
+
+                            // Correct if left original index matches right original index.
+                            if ($leftIdx === $rightOriginalIdx) {
+                                $correctCount++;
                             }
                         }
                         
@@ -672,6 +833,43 @@ class QuizController extends Controller {
                         }
                         $autoGradedPoints += $pointsEarned;
                     }
+                } elseif ($question['question_type'] === 'fill_blank') {
+                    // Auto-grade fill in the blank using sample_answer as accepted answers
+                    // sample_answer supports comma-separated values (e.g. "am" or "hat, bat")
+                    $studentRaw = strtolower(trim((string)($answer['answer_text'] ?? '')));
+                    $acceptedRaw = strtolower(trim((string)($question['sample_answer'] ?? '')));
+
+                    $studentParts = array_values(array_filter(array_map('trim', explode(',', $studentRaw)), function ($value) {
+                        return $value !== '';
+                    }));
+                    $acceptedParts = array_values(array_filter(array_map('trim', explode(',', $acceptedRaw)), function ($value) {
+                        return $value !== '';
+                    }));
+
+                    if (!empty($studentParts) && !empty($acceptedParts)) {
+                        if (count($studentParts) === 1) {
+                            // Single answer: allow match against any accepted value
+                            $isCorrect = in_array($studentParts[0], $acceptedParts, true);
+                        } else if (count($studentParts) === count($acceptedParts)) {
+                            // Multiple answers: require exact sequence per blank
+                            $isCorrect = true;
+                            for ($i = 0; $i < count($studentParts); $i++) {
+                                if ($studentParts[$i] !== $acceptedParts[$i]) {
+                                    $isCorrect = false;
+                                    break;
+                                }
+                            }
+                        } else {
+                            $isCorrect = false;
+                        }
+                    } else {
+                        $isCorrect = false;
+                    }
+
+                    if ($isCorrect) {
+                        $pointsEarned = $question['points'];
+                    }
+                    $autoGradedPoints += $pointsEarned;
                 } elseif (in_array($question['question_type'], ['short_answer', 'essay'])) {
                     $manualGradingRequired = true;
                 }
@@ -722,6 +920,9 @@ class QuizController extends Controller {
                 ]);
             }
 
+            // Mark quiz session as submitted
+            $this->Quiz_model->submit_session($activityId, $studentId);
+
             http_response_code(200);
             echo json_encode([
                 'success' => true,
@@ -758,10 +959,23 @@ class QuizController extends Controller {
             // Get student answers
             $answers = $this->Quiz_model->get_student_answers_by_activity($activityId, $studentId);
 
+            // Get latest session (submitted or active) to retrieve matching right-column order
+            $latestSession = $this->Quiz_model->get_latest_session($activityId, $studentId);
+            $matchingOrder = [];
+            if ($latestSession && !empty($latestSession['matching_order'])) {
+                $decoded = json_decode($latestSession['matching_order'], true);
+                if (is_array($decoded)) {
+                    $matchingOrder = $decoded;
+                }
+            }
+
             http_response_code(200);
             echo json_encode([
                 'success' => true,
-                'data' => $answers
+                'data' => [
+                    'answers' => $answers,
+                    'matching_order' => $matchingOrder
+                ]
             ]);
 
         } catch (Exception $e) {

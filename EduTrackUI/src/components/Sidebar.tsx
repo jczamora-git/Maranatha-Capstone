@@ -211,7 +211,7 @@ export const Sidebar = () => {
     ...(FEATURES.payment ? [{ to: "/admin/uniform-orders", icon: Shirt, label: "Uniform Orders" }] : []),
     ...(FEATURES.payment ? [{ to: "/admin/school-services", icon: Package, label: "School Services" }] : []),
     ...(FEATURES.attendance ? [{ to: "/admin/rfid-attendance", icon: Radio, label: "RFID Scanner" }] : []),
-    ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
+    // ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
     ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
     { to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" },
     { to: "/admin/predictive-analytics", icon: TrendingUp, label: "Predictive Analytics" },
@@ -270,9 +270,9 @@ export const Sidebar = () => {
         <div className="flex items-center gap-2">
           <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="Maranatha Christian Academy Foundation" className="h-8 w-8" />
           <div className="leading-tight">
-            <p className="text-xs font-extrabold text-gray-800" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Maranatha Christian</p>
-            <p className="text-xs font-extrabold text-gray-800" style={{ fontFamily: 'Montserrat', lineHeight: '0.9' }}>Academy Foundation</p>
-            <p className="text-[10px] font-normal text-gray-600" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Calapan City Inc.</p>
+            <p className="text-xs font-extrabold text-gray-800 font-montserrat leading-[1.1]">Maranatha Christian</p>
+            <p className="text-xs font-extrabold text-gray-800 font-montserrat leading-[0.9]">Academy Foundation</p>
+            <p className="text-[10px] font-normal text-gray-600 font-montserrat leading-[1.1]">Calapan City Inc.</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -466,9 +466,9 @@ export const Sidebar = () => {
             <div className="flex items-center gap-2 w-full">
               <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="Maranatha Christian Academy Foundation" className="h-6 w-6 flex-shrink-0" />
               <div className="leading-tight flex-1 min-w-0">
-                <p className="text-xs font-extrabold text-gray-800 truncate" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Maranatha Christian</p>
-                <p className="text-xs font-extrabold text-gray-800 truncate" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Academy Foundation</p>
-                <p className="text-[10px] font-normal text-gray-600 truncate" style={{ fontFamily: 'Montserrat', lineHeight: '1.1' }}>Calapan City INC.</p>
+                <p className="text-xs font-extrabold text-gray-800 truncate font-montserrat leading-[1.1]">Maranatha Christian</p>
+                <p className="text-xs font-extrabold text-gray-800 truncate font-montserrat leading-[1.1]">Academy Foundation</p>
+                <p className="text-[10px] font-normal text-gray-600 truncate font-montserrat leading-[1.1]">Calapan City INC.</p>
               </div>
             </div>
           )}

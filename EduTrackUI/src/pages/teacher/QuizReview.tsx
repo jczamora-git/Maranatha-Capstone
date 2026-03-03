@@ -132,8 +132,10 @@ const QuizReview = () => {
             `/api/activities/${activityId}/student-answers?student_id=${student.id}`
           );
 
-          if (studentAnswersRes.success && studentAnswersRes.data && studentAnswersRes.data.length > 0) {
-            const answers = studentAnswersRes.data;
+          const payload = studentAnswersRes.data;
+          const answers = Array.isArray(payload) ? payload : (payload?.answers || []);
+
+          if (studentAnswersRes.success && answers.length > 0) {
             const totalPointsEarned = answers.reduce((sum: number, ans: any) => {
               const points = parseFloat(ans.points_earned) || 0;
               return sum + points;

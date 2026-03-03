@@ -16,8 +16,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Montserrat', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
-        montserrat: ['Montserrat', 'sans-serif'],
+        sans: ['Montserrat', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        montserrat: ['Montserrat', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         'last-of-us': ['The Last Of Us', 'sans-serif'],
       },
       colors: {

@@ -149,6 +149,59 @@ class Quiz_model extends Model {
             ->get_all();
     }
 
+    // ─── Quiz Sessions ────────────────────────────────────────────────────────
+
+    /**
+     * Get the current in-progress session for a student (submitted_at IS NULL)
+     */
+    public function get_active_session($activityId, $studentId) {
+        return $this->db->table('quiz_sessions')
+            ->where('activity_id', $activityId)
+            ->where('student_id', $studentId)
+            ->where_null('submitted_at')
+            ->order_by('started_at', 'DESC')
+            ->get();
+    }
+
+    /**
+     * Get latest session for a student (active or submitted)
+     */
+    public function get_latest_session($activityId, $studentId) {
+        return $this->db->table('quiz_sessions')
+            ->where('activity_id', $activityId)
+            ->where('student_id', $studentId)
+            ->order_by('started_at', 'DESC')
+            ->get();
+    }
+
+    /**
+     * Create a new quiz session
+     */
+    public function create_session($data) {
+        return $this->db->table('quiz_sessions')->insert($data);
+    }
+
+    /**
+     * Mark a session as submitted
+     */
+    public function submit_session($activityId, $studentId) {
+        return $this->db->table('quiz_sessions')
+            ->where('activity_id', $activityId)
+            ->where('student_id', $studentId)
+            ->where_null('submitted_at')
+            ->update(['submitted_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /**
+     * Get all saved answers for a student on an activity
+     */
+    public function get_student_answers_for_session($activityId, $studentId) {
+        return $this->db->table('activity_student_answers')
+            ->where('activity_id', $activityId)
+            ->where('student_id', $studentId)
+            ->get_all();
+    }
+
     /**
      * Get quiz submission details
      */

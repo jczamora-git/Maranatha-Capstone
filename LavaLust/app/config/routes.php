@@ -223,6 +223,7 @@ $router->post('/api/activities/{id}/settings', 'QuizController::api_save_setting
 $router->get('/api/activities/{id}/settings', 'QuizController::api_get_settings')->where_number('id');
 
 // API Routes - Quiz Taker (Student)
+$router->get('/api/activities/{id}/quiz/session', 'QuizController::api_get_session')->where_number('id');
 $router->get('/api/activities/{id}/quiz/start', 'QuizController::api_start_quiz')->where_number('id');
 $router->post('/api/activities/{id}/quiz/save-answer', 'QuizController::api_save_answer')->where_number('id');
 $router->post('/api/activities/{id}/quiz/submit', 'QuizController::api_submit_quiz')->where_number('id');
