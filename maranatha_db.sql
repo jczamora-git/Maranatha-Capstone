@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Mar 01, 2026 at 05:26 PM
+-- Generation Time: Mar 04, 2026 at 02:13 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -82,8 +82,10 @@ INSERT INTO `activities` (`id`, `subject_id`, `academic_period_id`, `section_id`
 (4, 47, 28, 10, 'Basic English', 'quiz', NULL, 5, '2026-02-04 00:00:00', 1, '2026-01-31 11:38:02'),
 (5, 47, 28, 10, 'Draw an apple', 'art', NULL, 20, '2026-02-18 00:00:00', 1, '2026-01-31 23:20:50'),
 (6, 47, 28, 10, 'Long Quiz', 'quiz', NULL, 25, '2026-02-05 00:00:00', 1, '2026-01-31 23:59:31'),
-(7, 51, 30, 11, 'quiz', 'quiz', NULL, 1, '2026-02-26 00:00:00', 1, '2026-02-25 09:32:07'),
-(8, 47, 30, 10, 'QUiz', 'quiz', NULL, 2, '2026-02-28 00:00:00', 1, '2026-02-27 01:36:02');
+(7, 51, 30, 11, 'quiz', 'quiz', NULL, 25, '2026-02-26 00:00:00', 1, '2026-02-25 09:32:07'),
+(8, 47, 30, 10, 'QUiz', 'quiz', NULL, 2, '2026-02-28 00:00:00', 1, '2026-02-27 01:36:02'),
+(9, 51, 30, 11, 'My Favorite Animal', 'worksheet', '<p>test</p>', 15, '2026-03-06 00:00:00', 1, '2026-03-04 09:53:36'),
+(10, 51, 30, 11, 'Draw an Apple', 'art', '<ol><li>Get&nbsp;a&nbsp;clean&nbsp;sheet&nbsp;of&nbsp;bond&nbsp;paper&nbsp;and&nbsp;your&nbsp;coloring&nbsp;materials.</li><li>Draw&nbsp;a&nbsp;picture&nbsp;of&nbsp;an&nbsp;apple&nbsp;and&nbsp;color&nbsp;it&nbsp;nicely.</li><li>Ask&nbsp;for&nbsp;help&nbsp;to&nbsp;take&nbsp;a&nbsp;clear&nbsp;photo&nbsp;of&nbsp;your&nbsp;drawing.</li><li>Upload&nbsp;the&nbsp;photo&nbsp;below&nbsp;to&nbsp;submit&nbsp;your&nbsp;work.</li></ol><p></p>', 25, '2026-03-07 00:00:00', 1, '2026-03-04 09:56:19');
 
 -- --------------------------------------------------------
 
@@ -107,8 +109,8 @@ CREATE TABLE `activity_grades` (
 --
 
 INSERT INTO `activity_grades` (`id`, `activity_id`, `student_id`, `grade`, `status`, `feedback`, `created_at`, `updated_at`) VALUES
-(1, 6, 93, 9.00, 'Pending', NULL, '2026-02-01 02:47:24', '2026-02-01 06:01:44'),
-(2, 7, 296, 0.00, 'Failed', NULL, '2026-02-25 10:37:32', '2026-02-25 10:37:32');
+(3, 7, 296, 25.00, 'Pending', NULL, '2026-03-02 20:37:33', '2026-03-03 14:39:27'),
+(7, 7, 282, 24.00, 'Pending', NULL, '2026-03-04 09:23:28', '2026-03-04 09:25:37');
 
 -- --------------------------------------------------------
 
@@ -156,9 +158,29 @@ INSERT INTO `activity_questions` (`id`, `activity_id`, `question_text`, `questio
 (37, 6, '<p>I am a small insect with six legs. I say \"buzz\". What am I? ________________</p>', 'short_answer', 1, 15, NULL, NULL, 'Bee', '2026-02-01 00:04:03'),
 (38, 6, '<p>Draw a line to match the animal to its sound.</p>', 'matching', 5, 16, NULL, NULL, NULL, '2026-02-01 00:05:31'),
 (39, 6, '<p>What is your favorite animal? Why?</p>', 'essay', 5, 17, NULL, NULL, '<ul><li><em>\"My favorite animal is a dog because it is my friend.\"</em></li><li><em>\"I like cats because they are soft and cute.\"</em></li></ul><p><br></p>', '2026-02-01 00:05:49'),
-(40, 7, '<p>Test</p>', 'multiple_choice', 1, 1, NULL, NULL, NULL, '2026-02-25 09:33:29'),
 (43, 8, '<p>Hatdog</p>', 'multiple_choice', 1, 1, NULL, NULL, NULL, '2026-02-27 01:36:20'),
-(44, 8, '<p>Hatdog</p>', 'matching', 1, 2, NULL, NULL, NULL, '2026-02-27 01:36:36');
+(44, 8, '<p>Hatdog</p>', 'matching', 1, 2, NULL, NULL, NULL, '2026-02-27 01:36:36'),
+(45, 7, '<p>What&nbsp;is&nbsp;the&nbsp;first&nbsp;letter&nbsp;of&nbsp;the&nbsp;alphabet?</p>', 'multiple_choice', 1, 1, NULL, NULL, NULL, '2026-03-02 19:15:53'),
+(46, 7, '<p>Which&nbsp;word&nbsp;is&nbsp;a&nbsp;color?</p>', 'multiple_choice', 1, 2, NULL, NULL, NULL, '2026-03-02 19:16:32'),
+(47, 7, '<p>What&nbsp;do&nbsp;we&nbsp;call&nbsp;a&nbsp;baby&nbsp;cat?</p>', 'multiple_choice', 1, 3, NULL, NULL, NULL, '2026-03-02 19:16:56'),
+(48, 7, '<p>Which&nbsp;word&nbsp;starts&nbsp;with&nbsp;the&nbsp;sound&nbsp;/b/?<span class=\"ql-cursor\">﻿</span></p>', 'multiple_choice', 1, 4, NULL, NULL, NULL, '2026-03-02 19:18:25'),
+(49, 7, '<p>How&nbsp;many&nbsp;letters&nbsp;are&nbsp;in&nbsp;the&nbsp;word&nbsp;&quot;sun&quot;?</p>', 'multiple_choice', 1, 5, NULL, NULL, NULL, '2026-03-02 19:18:48'),
+(50, 7, '<p>The&nbsp;word&nbsp;&quot;mom&quot;&nbsp;starts&nbsp;with&nbsp;the&nbsp;letter&nbsp;M.<span class=\"ql-cursor\">﻿</span></p>', 'true_false', 1, 6, NULL, 'True', NULL, '2026-03-02 19:19:08'),
+(51, 7, '<p>A&nbsp;fish&nbsp;can&nbsp;fly&nbsp;in&nbsp;the&nbsp;sky.</p>', 'true_false', 1, 7, NULL, 'False', NULL, '2026-03-02 19:19:44'),
+(52, 7, '<p>We&nbsp;use&nbsp;a&nbsp;period&nbsp;(.)&nbsp;at&nbsp;the&nbsp;end&nbsp;of&nbsp;a&nbsp;sentence.</p>', 'true_false', 1, 8, NULL, 'True', NULL, '2026-03-02 19:23:21'),
+(53, 7, '<p>The&nbsp;word&nbsp;&quot;happy&quot;&nbsp;has&nbsp;6&nbsp;letters.</p>', 'true_false', 1, 9, NULL, 'False', NULL, '2026-03-02 19:23:31'),
+(54, 7, '<p>Capital&nbsp;letters&nbsp;are&nbsp;used&nbsp;at&nbsp;the&nbsp;beginning&nbsp;of&nbsp;a&nbsp;sentence.</p>', 'true_false', 1, 10, NULL, 'True', NULL, '2026-03-02 19:23:40'),
+(55, 7, '<p></p>', 'matching', 5, 11, NULL, NULL, NULL, '2026-03-02 19:30:48'),
+(56, 7, '<p>I&nbsp;____&nbsp;happy&nbsp;today.</p><p></p>', 'fill_blank', 1, 12, NULL, NULL, 'am', '2026-03-02 19:32:07'),
+(57, 7, '<p>She&nbsp;____&nbsp;my&nbsp;friend.</p><p></p>', 'fill_blank', 1, 13, NULL, NULL, 'is', '2026-03-02 19:32:40'),
+(58, 7, '<p>This&nbsp;is&nbsp;____&nbsp;pencil.</p><p></p>', 'fill_blank', 1, 14, NULL, NULL, 'my', '2026-03-02 19:32:53'),
+(59, 7, '<p>____&nbsp;cat&nbsp;is&nbsp;sleeping.</p>', 'fill_blank', 1, 15, NULL, NULL, 'The', '2026-03-02 19:33:20'),
+(60, 7, '<p>I&nbsp;see&nbsp;____&nbsp;bird&nbsp;in&nbsp;the&nbsp;tree.</p>', 'fill_blank', 1, 16, NULL, NULL, 'a', '2026-03-02 19:33:34'),
+(61, 7, '<p>Name&nbsp;one&nbsp;animal&nbsp;that&nbsp;lives&nbsp;on&nbsp;a&nbsp;farm.</p>', 'short_answer', 1, 17, NULL, NULL, NULL, '2026-03-02 19:34:52'),
+(62, 7, '<p>What&nbsp;color&nbsp;is&nbsp;the&nbsp;sky?</p>', 'short_answer', 1, 18, NULL, NULL, 'blue', '2026-03-02 19:35:11'),
+(63, 7, '<p>Write&nbsp;one&nbsp;word&nbsp;that&nbsp;rhymes&nbsp;with&nbsp;&quot;cat&quot;.</p>', 'short_answer', 1, 19, NULL, NULL, 'hat, bat', '2026-03-02 19:35:26'),
+(64, 7, '<p>What&nbsp;do&nbsp;you&nbsp;say&nbsp;when&nbsp;someone&nbsp;gives&nbsp;you&nbsp;a&nbsp;gift?</p>', 'short_answer', 1, 20, NULL, NULL, 'thank you', '2026-03-02 19:35:47'),
+(65, 7, '<p>Name&nbsp;a&nbsp;fruit&nbsp;that&nbsp;is&nbsp;yellow.</p>', 'short_answer', 1, 21, NULL, NULL, 'lemon, banana', '2026-03-02 19:36:04');
 
 -- --------------------------------------------------------
 
@@ -220,12 +242,30 @@ INSERT INTO `activity_question_choices` (`id`, `question_id`, `choice_text`, `is
 (54, 38, 'Cow::Moo', 0, 3, '2026-02-01 00:05:31'),
 (55, 38, 'Pig::Oink', 0, 4, '2026-02-01 00:05:31'),
 (56, 38, 'Duck::Quack', 0, 5, '2026-02-01 00:05:31'),
-(57, 40, '1', 1, 1, '2026-02-25 09:33:29'),
-(58, 40, '2', 0, 2, '2026-02-25 09:33:29'),
 (63, 43, 'red', 1, 1, '2026-02-27 01:36:20'),
 (64, 43, 'blue', 0, 2, '2026-02-27 01:36:20'),
 (65, 44, 'dog::cat', 0, 1, '2026-02-27 01:36:36'),
-(66, 44, 'mouse::chees', 0, 2, '2026-02-27 01:36:36');
+(66, 44, 'mouse::chees', 0, 2, '2026-02-27 01:36:36'),
+(67, 45, 'B', 0, 1, '2026-03-02 19:15:53'),
+(68, 45, 'A', 1, 2, '2026-03-02 19:15:53'),
+(69, 45, 'C', 0, 3, '2026-03-02 19:15:53'),
+(70, 46, 'Dog', 0, 1, '2026-03-02 19:16:32'),
+(71, 46, 'Run', 0, 2, '2026-03-02 19:16:32'),
+(72, 46, 'Blue', 1, 3, '2026-03-02 19:16:32'),
+(73, 47, 'Puppy', 0, 1, '2026-03-02 19:16:56'),
+(74, 47, 'Kitten', 1, 2, '2026-03-02 19:16:56'),
+(75, 47, 'Calf', 0, 3, '2026-03-02 19:16:56'),
+(76, 48, 'Apple', 0, 1, '2026-03-02 19:18:25'),
+(77, 48, 'Ball', 1, 2, '2026-03-02 19:18:25'),
+(78, 48, 'Cat', 0, 3, '2026-03-02 19:18:25'),
+(79, 49, '2', 0, 1, '2026-03-02 19:18:48'),
+(80, 49, '3', 1, 2, '2026-03-02 19:18:48'),
+(81, 49, '4', 0, 3, '2026-03-02 19:18:48'),
+(82, 55, 'Apple::A red fruit that grows on trees', 0, 1, '2026-03-02 19:30:48'),
+(83, 55, 'Dog::A pet that says \"woof\"', 0, 2, '2026-03-02 19:30:48'),
+(84, 55, 'Sun::Shines in the sky during daytime', 0, 3, '2026-03-02 19:30:48'),
+(85, 55, 'Book::We read stories from this', 0, 4, '2026-03-02 19:30:48'),
+(86, 55, 'Hat::We wear this on our head', 0, 5, '2026-03-02 19:30:48');
 
 -- --------------------------------------------------------
 
@@ -236,9 +276,28 @@ INSERT INTO `activity_question_choices` (`id`, `question_id`, `choice_text`, `is
 CREATE TABLE `activity_settings` (
   `id` bigint UNSIGNED NOT NULL,
   `activity_id` bigint UNSIGNED NOT NULL COMMENT 'References activities.id',
-  `setting_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Setting name (e.g., time_limit, shuffle_questions)',
-  `setting_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Setting value (JSON or plain text)'
+  `setting_key` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `setting_value` text COLLATE utf8mb4_unicode_ci,
+  `time_limit` int DEFAULT NULL,
+  `max_attempts` int NOT NULL DEFAULT '1',
+  `shuffle_questions` tinyint(1) NOT NULL DEFAULT '0',
+  `shuffle_choices` tinyint(1) NOT NULL DEFAULT '0',
+  `show_correct_answers` tinyint(1) NOT NULL DEFAULT '1',
+  `pass_threshold` decimal(5,2) DEFAULT NULL,
+  `available_from` datetime DEFAULT NULL,
+  `available_until` datetime DEFAULT NULL,
+  `section_directions` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON: per-type directions',
+  `section_word_boxes` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON: per-type word boxes',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Activity-specific settings and configurations';
+
+--
+-- Dumping data for table `activity_settings`
+--
+
+INSERT INTO `activity_settings` (`id`, `activity_id`, `setting_key`, `setting_value`, `time_limit`, `max_attempts`, `shuffle_questions`, `shuffle_choices`, `show_correct_answers`, `pass_threshold`, `available_from`, `available_until`, `section_directions`, `section_word_boxes`, `created_at`, `updated_at`) VALUES
+(1, 7, NULL, NULL, 120, 2, 0, 1, 1, 75.00, '2026-03-03 03:57:00', '2026-03-06 03:57:00', '{\"matching\":\"Draw a line or select to match each word with its correct description.\",\"fill_blank\":\"Complete the sentence with the correct word from the box. \",\"short_answer\":\"Read each question carefully. Write your answer in the box below the question.\",\"true_false\":\"Read each sentence. Decide if it is TRUE (correct) or FALSE (wrong). Mark your answer.\",\"multiple_choice\":\"Read each question carefully. Click the letter (A, B, or C) of the BEST answer.\"}', '{\"fill_blank\":\"is, am, the, a, my\"}', '2026-03-03 03:56:27', '2026-03-03 04:00:47');
 
 -- --------------------------------------------------------
 
@@ -255,32 +314,58 @@ CREATE TABLE `activity_student_answers` (
   `answer_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Text answer for essay/short answer questions',
   `is_correct` tinyint(1) DEFAULT NULL COMMENT 'Auto-graded for MC, manual for essay',
   `points_earned` decimal(5,2) DEFAULT '0.00' COMMENT 'Points earned for this answer',
-  `answered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `answered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Student answers to quiz/exam questions';
 
 --
 -- Dumping data for table `activity_student_answers`
 --
 
-INSERT INTO `activity_student_answers` (`id`, `activity_id`, `question_id`, `student_id`, `choice_id`, `answer_text`, `is_correct`, `points_earned`, `answered_at`) VALUES
-(1, 6, 23, 93, 37, NULL, 0, 0.00, '2026-02-01 09:47:23'),
-(2, 6, 24, 93, 41, NULL, 1, 1.00, '2026-02-01 09:47:23'),
-(3, 6, 25, 93, 45, NULL, 0, 0.00, '2026-02-01 09:47:23'),
-(4, 6, 26, 93, 47, NULL, 1, 1.00, '2026-02-01 09:47:23'),
-(5, 6, 27, 93, 50, NULL, 1, 1.00, '2026-02-01 09:47:23'),
-(6, 6, 28, 93, NULL, 'True', 1, 1.00, '2026-02-01 09:47:23'),
-(7, 6, 29, 93, NULL, 'True', 0, 0.00, '2026-02-01 09:47:23'),
-(8, 6, 30, 93, NULL, 'False', 1, 1.00, '2026-02-01 09:47:23'),
-(9, 6, 31, 93, NULL, 'False', 0, 0.00, '2026-02-01 09:47:23'),
-(10, 6, 32, 93, NULL, 'True', 0, 0.00, '2026-02-01 09:47:23'),
-(11, 6, 33, 93, NULL, 'Apple', 1, 1.00, '2026-02-01 09:47:23'),
-(12, 6, 34, 93, NULL, 'Banana', 0, 0.00, '2026-02-01 09:47:23'),
-(13, 6, 35, 93, NULL, 'cow', 0, 0.00, '2026-02-01 09:47:23'),
-(14, 6, 36, 93, NULL, 'mango', 1, 1.00, '2026-02-01 09:47:23'),
-(15, 6, 37, 93, NULL, 'bee', 1, 1.00, '2026-02-01 09:47:23'),
-(16, 6, 38, 93, NULL, '[3,1,4,0,2]', 0, 1.00, '2026-02-01 09:47:23'),
-(17, 6, 39, 93, NULL, 'Dog', 0, 0.00, '2026-02-01 09:47:23'),
-(18, 7, 40, 296, 58, NULL, 0, 0.00, '2026-02-25 17:37:32');
+INSERT INTO `activity_student_answers` (`id`, `activity_id`, `question_id`, `student_id`, `choice_id`, `answer_text`, `is_correct`, `points_earned`, `answered_at`, `updated_at`) VALUES
+(19, 7, 55, 296, NULL, '[3,0,2,1,4]', 1, 5.00, '2026-03-02 20:34:52', '2026-03-03 04:37:33'),
+(20, 7, 56, 296, NULL, 'am', 1, 1.00, '2026-03-02 20:35:22', '2026-03-03 04:54:22'),
+(21, 7, 57, 296, NULL, 'is', 1, 1.00, '2026-03-02 20:35:22', '2026-03-03 04:54:24'),
+(22, 7, 58, 296, NULL, 'my', 1, 1.00, '2026-03-02 20:35:31', '2026-03-03 04:54:26'),
+(23, 7, 45, 296, 68, NULL, 1, 1.00, '2026-03-02 20:35:40', '2026-03-03 04:37:33'),
+(24, 7, 46, 296, 72, NULL, 1, 1.00, '2026-03-02 20:35:58', '2026-03-03 04:37:33'),
+(25, 7, 47, 296, 74, NULL, 1, 1.00, '2026-03-02 20:35:59', '2026-03-03 04:37:33'),
+(26, 7, 48, 296, 77, NULL, 1, 1.00, '2026-03-02 20:36:47', '2026-03-03 04:37:33'),
+(27, 7, 49, 296, 80, NULL, 1, 1.00, '2026-03-02 20:36:47', '2026-03-03 04:37:33'),
+(28, 7, 50, 296, NULL, 'True', 1, 1.00, '2026-03-02 20:36:47', '2026-03-03 04:37:33'),
+(29, 7, 51, 296, NULL, 'False', 1, 1.00, '2026-03-02 20:36:47', '2026-03-03 04:37:33'),
+(30, 7, 52, 296, NULL, 'True', 1, 1.00, '2026-03-02 20:36:47', '2026-03-03 04:37:33'),
+(31, 7, 53, 296, NULL, 'False', 1, 1.00, '2026-03-02 20:36:47', '2026-03-03 04:37:33'),
+(32, 7, 54, 296, NULL, 'True', 1, 1.00, '2026-03-02 20:37:17', '2026-03-03 04:37:33'),
+(33, 7, 59, 296, NULL, 'The', 1, 1.00, '2026-03-02 20:37:17', '2026-03-03 04:54:33'),
+(34, 7, 60, 296, NULL, 'a', 1, 1.00, '2026-03-02 20:37:17', '2026-03-03 04:54:35'),
+(35, 7, 61, 296, NULL, 'cow', 1, 1.00, '2026-03-02 20:37:17', '2026-03-03 04:54:44'),
+(36, 7, 62, 296, NULL, 'blue', 1, 1.00, '2026-03-02 20:37:17', '2026-03-03 04:55:31'),
+(37, 7, 63, 296, NULL, 'hat', 1, 1.00, '2026-03-02 20:37:18', '2026-03-03 04:57:59'),
+(38, 7, 64, 296, NULL, 'thank you', 1, 1.00, '2026-03-02 20:37:18', '2026-03-03 04:58:03'),
+(39, 7, 65, 296, NULL, 'banana', 1, 1.00, '2026-03-02 20:37:18', '2026-03-03 04:58:34'),
+(40, 7, 55, 288, NULL, '[1,2,0,4,3]', NULL, 0.00, '2026-03-02 20:42:56', '2026-03-03 04:59:19'),
+(41, 7, 45, 282, 68, NULL, 1, 1.00, '2026-03-04 09:21:41', '2026-03-04 17:23:28'),
+(42, 7, 46, 282, 72, NULL, 1, 1.00, '2026-03-04 09:21:59', '2026-03-04 17:23:28'),
+(43, 7, 47, 282, 74, NULL, 1, 1.00, '2026-03-04 09:21:59', '2026-03-04 17:23:28'),
+(44, 7, 48, 282, 77, NULL, 1, 1.00, '2026-03-04 09:21:59', '2026-03-04 17:23:28'),
+(45, 7, 49, 282, 80, NULL, 1, 1.00, '2026-03-04 09:21:59', '2026-03-04 17:23:28'),
+(46, 7, 50, 282, NULL, 'True', 1, 1.00, '2026-03-04 09:22:00', '2026-03-04 17:23:28'),
+(47, 7, 51, 282, NULL, 'False', 1, 1.00, '2026-03-04 09:22:15', '2026-03-04 17:23:28'),
+(48, 7, 52, 282, NULL, 'True', 1, 1.00, '2026-03-04 09:22:15', '2026-03-04 17:23:28'),
+(49, 7, 53, 282, NULL, 'True', 0, 0.00, '2026-03-04 09:22:15', '2026-03-04 17:23:28'),
+(50, 7, 54, 282, NULL, 'True', 1, 1.00, '2026-03-04 09:22:21', '2026-03-04 17:23:28'),
+(51, 7, 55, 282, NULL, '[2,0,3,1,4]', 1, 5.00, '2026-03-04 09:22:27', '2026-03-04 17:23:28'),
+(52, 7, 56, 282, NULL, 'am', 1, 1.00, '2026-03-04 09:23:01', '2026-03-04 17:23:28'),
+(53, 7, 57, 282, NULL, 'is', 1, 1.00, '2026-03-04 09:23:01', '2026-03-04 17:23:28'),
+(54, 7, 58, 282, NULL, 'my', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:23:28'),
+(55, 7, 59, 282, NULL, 'The', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:23:28'),
+(56, 7, 60, 282, NULL, 'a', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:23:28'),
+(57, 7, 61, 282, NULL, 'cow', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:24:13'),
+(58, 7, 62, 282, NULL, 'blue', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:24:18'),
+(59, 7, 63, 282, NULL, 'bat', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:24:33'),
+(60, 7, 64, 282, NULL, 'thank you', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:24:41'),
+(61, 7, 65, 282, NULL, 'banana', 1, 1.00, '2026-03-04 09:23:28', '2026-03-04 17:25:37');
 
 -- --------------------------------------------------------
 
@@ -305,7 +390,10 @@ CREATE TABLE `activity_submissions` (
 --
 
 INSERT INTO `activity_submissions` (`id`, `activity_id`, `student_id`, `submission_type`, `submission_text`, `submission_url`, `submitted_at`, `is_late`, `attempt_number`) VALUES
-(2, 5, 93, 'file', 'test image\r\n', NULL, '2026-02-01 17:40:26', 0, 1);
+(2, 5, 93, 'file', 'test image\r\n', NULL, '2026-02-01 17:40:26', 0, 1),
+(3, 10, 282, 'file', 'Teacher this is my apple', NULL, '2026-03-04 10:03:58', 0, 1),
+(4, 9, 282, 'file', 'test', NULL, '2026-03-04 10:57:36', 0, 1),
+(5, 10, 269, 'file', 'Test this image', NULL, '2026-03-04 11:33:38', 0, 1);
 
 -- --------------------------------------------------------
 
@@ -328,7 +416,10 @@ CREATE TABLE `activity_submission_files` (
 --
 
 INSERT INTO `activity_submission_files` (`id`, `submission_id`, `file_name`, `file_path`, `file_type`, `file_size`, `uploaded_at`) VALUES
-(1, 2, 'download (15).jpg', 'public/uploads/submissions/697ff27a4f4dc_1769992826.jpg', NULL, 59936, '2026-02-02 00:40:26');
+(1, 2, 'download (15).jpg', 'public/uploads/submissions/697ff27a4f4dc_1769992826.jpg', NULL, 59936, '2026-02-02 00:40:26'),
+(2, 3, 'kids-drawing-cartoon-vector-illustration-cute-apple-icon-isolated-white_760559-3147.avif', 'public/uploads/submissions/69a8038e6357a_1772618638.avif', NULL, 4770, '2026-03-04 10:03:58'),
+(3, 4, 'kids-drawing-cartoon-vector-illustration-cute-apple-icon-isolated-white_760559-3147.avif', 'public/uploads/submissions/69a8102094d9d_1772621856.avif', NULL, 4770, '2026-03-04 10:57:36'),
+(4, 5, 'kids-drawing-cartoon-vector-illustration-cute-apple-icon-isolated-white_760559-3147.avif', 'public/uploads/submissions/69a81892463d9_1772624018.avif', NULL, 4770, '2026-03-04 11:33:38');
 
 -- --------------------------------------------------------
 
@@ -356,8 +447,8 @@ CREATE TABLE `announcements` (
 --
 
 INSERT INTO `announcements` (`id`, `title`, `message`, `audience`, `status`, `published_at`, `starts_at`, `ends_at`, `created_by`, `metadata`, `created_at`, `updated_at`) VALUES
-(4, 'Semester Break Notice', 'The semester break starts December 1. Campus closed.', 'all', 'active', '2025-11-23 19:55:03', '2025-12-01 03:54:00', '2026-01-01 03:54:00', 3, NULL, '2025-11-23 12:55:03', '2025-11-23 19:56:44'),
-(5, 'Grade Submission Deadline', 'All teachers must submit grades by Jan 18.', 'teachers', 'active', '2025-11-23 19:56:02', '2025-12-24 03:55:00', '2026-01-18 03:55:00', 3, NULL, '2025-11-23 12:56:02', '2025-11-23 19:58:07');
+(6, 'Enrollment is now Open', 'Admission for SY. 2026-2027 is now open. Enroll now!', 'all', 'active', '2026-03-02 14:02:07', '2026-03-01 22:01:00', '2026-04-02 22:01:00', 455, NULL, '2026-03-02 07:02:07', '2026-03-02 07:03:39'),
+(7, 'Test ', 'Test Announcement ', 'all', 'active', '2026-03-02 14:02:36', '2026-02-02 22:02:00', '2026-02-28 22:02:00', 455, NULL, '2026-03-02 07:02:36', '2026-03-02 07:02:36');
 
 -- --------------------------------------------------------
 
@@ -381,7 +472,8 @@ INSERT INTO `announcement_reads` (`id`, `announcement_id`, `user_id`, `read_at`)
 (2, 5, 3, '2026-02-25 13:43:28'),
 (3, 4, 3, '2026-02-25 13:43:30'),
 (4, 5, 52, '2026-02-25 15:31:51'),
-(5, 4, 52, '2026-02-25 15:31:56');
+(5, 4, 52, '2026-02-25 15:31:56'),
+(6, 6, 52, '2026-03-02 15:35:13');
 
 -- --------------------------------------------------------
 
@@ -427,7 +519,8 @@ CREATE TABLE `audit_logs` (
 
 INSERT INTO `audit_logs` (`id`, `actor_user_id`, `actor_role`, `actor_name`, `action`, `entity_type`, `entity_id`, `description`, `metadata`, `ip_address`, `user_agent`, `created_at`) VALUES
 (6, 3, 'admin', 'Demo Admin', 'create', 'payment', 129, 'Payment created: Book - ₱4,000.00', '{\"amount\": \"4000.00\", \"status\": \"Approved\", \"student_id\": 71, \"payment_type\": \"Book\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 20:13:53'),
-(7, 3, 'admin', 'Demo Admin', 'payment.created', 'payment', 129, 'Demo Admin recorded a Book payment of ₱4,000.00 for Karl Matthew Manzano', '{\"amount\": 4000, \"payment_id\": 129, \"payment_type\": \"Book\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 20:13:53');
+(7, 3, 'admin', 'Demo Admin', 'payment.created', 'payment', 129, 'Demo Admin recorded a Book payment of ₱4,000.00 for Karl Matthew Manzano', '{\"amount\": 4000, \"payment_id\": 129, \"payment_type\": \"Book\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-25 20:13:53'),
+(8, 455, 'admin', 'Jeizi Zamora', 'payment.created', 'payment', 130, 'Jeizi Zamora recorded a Contribution payment of ₱100.00 for Luna Santos', '{\"amount\": 100, \"payment_id\": 130, \"payment_type\": \"Contribution\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-02 22:11:04');
 
 -- --------------------------------------------------------
 
@@ -709,7 +802,7 @@ INSERT INTO `enrollments` (`id`, `academic_period_id`, `enrollment_period_id`, `
 (51, 30, 1, 376, 359, 'Continuing Student', 'Kinder', 'Approved', NULL, NULL, '2026-02-23 10:09:14', NULL, '2026-02-23 03:24:36', NULL, 3, 3, '2026-02-23 03:10:58', '2026-02-23 03:09:14', '2026-02-23 10:24:36'),
 (52, 30, 1, 71, NULL, 'Continuing Student', 'Nursery 2', 'Pending', NULL, NULL, '2026-02-23 10:30:05', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-23 03:30:05', '2026-02-23 03:30:05'),
 (53, 30, 1, 453, NULL, 'New Student', 'Grade 2', 'Pending', NULL, NULL, '2026-02-24 17:09:04', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-24 10:09:04', '2026-02-24 10:09:04'),
-(54, 30, 1, 454, NULL, 'Transferee', 'Grade 2', 'Pending', NULL, NULL, '2026-02-24 17:45:12', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-24 10:45:12', '2026-02-24 10:45:12');
+(54, 30, 1, 454, 419, 'Transferee', 'Grade 2', 'Approved', NULL, NULL, '2026-02-24 17:45:12', NULL, '2026-03-02 14:13:05', NULL, 455, 455, '2026-03-02 14:12:56', '2026-02-24 10:45:12', '2026-03-02 14:13:05');
 
 -- --------------------------------------------------------
 
@@ -819,7 +912,10 @@ INSERT INTO `enrollment_documents` (`id`, `enrollment_id`, `file_name`, `file_pa
 (8, 19, 'Physical Copy', '', 'N/A', NULL, 'ECCD Checklist', 'Physical', '2026-02-07 10:11:20', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-07 10:11:20', NULL, '2026-02-07 17:11:20', '2026-02-07 17:11:20', 0, NULL, 1, NULL, NULL),
 (9, 20, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-02-07 12:49:12', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-07 12:49:12', NULL, '2026-02-07 19:49:12', '2026-02-07 19:49:12', 0, NULL, 1, NULL, NULL),
 (10, 20, 'Physical Copy', '', 'N/A', NULL, 'ECCD Checklist', 'Physical', '2026-02-07 12:49:13', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-07 12:49:13', NULL, '2026-02-07 19:49:13', '2026-02-07 19:49:13', 0, NULL, 1, NULL, NULL),
-(19, 33, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-02-12 03:56:10', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-12 03:56:10', NULL, '2026-02-12 10:56:10', '2026-02-12 10:56:10', 0, NULL, 1, NULL, NULL);
+(19, 33, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-02-12 03:56:10', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-12 03:56:10', NULL, '2026-02-12 10:56:10', '2026-02-12 10:56:10', 0, NULL, 1, NULL, NULL),
+(20, 54, 'Physical Copy', '', 'N/A', NULL, 'Parent\'s Agreement Form', 'Physical', '2026-03-02 14:12:48', 455, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-02 14:12:48', NULL, '2026-03-02 14:12:48', '2026-03-02 14:12:48', 0, NULL, 1, NULL, NULL),
+(21, 54, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-03-02 14:12:51', 455, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-02 14:12:51', NULL, '2026-03-02 14:12:51', '2026-03-02 14:12:51', 0, NULL, 1, NULL, NULL),
+(22, 54, 'Physical Copy', '', 'N/A', NULL, 'Form 137', 'Physical', '2026-03-02 14:12:54', 455, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-02 14:12:54', NULL, '2026-03-02 14:12:54', '2026-03-02 14:12:54', 0, NULL, 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1299,6 +1395,113 @@ INSERT INTO `final_grades` (`id`, `student_id`, `subject_id`, `section_id`, `aca
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `grading_input_items`
+--
+
+CREATE TABLE `grading_input_items` (
+  `id` bigint UNSIGNED NOT NULL,
+  `subject_id` bigint UNSIGNED NOT NULL,
+  `section_id` bigint UNSIGNED NOT NULL,
+  `academic_period_id` bigint UNSIGNED NOT NULL,
+  `quarter` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `component` enum('written','performance','quarterly') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `max_score` decimal(8,2) NOT NULL DEFAULT '0.00',
+  `source_type` enum('activity','manual','merged') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'manual',
+  `source_activity_id` bigint UNSIGNED DEFAULT NULL,
+  `merge_strategy` enum('sum','average') COLLATE utf8mb4_unicode_ci DEFAULT 'sum',
+  `display_order` int NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` int UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `grading_input_items`
+--
+
+INSERT INTO `grading_input_items` (`id`, `subject_id`, `section_id`, `academic_period_id`, `quarter`, `title`, `component`, `max_score`, `source_type`, `source_activity_id`, `merge_strategy`, `display_order`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 51, 11, 30, '1st Quarter', 'quiz', 'written', 25.00, 'activity', 7, 'sum', 1, 1, 52, '2026-03-03 13:05:15', '2026-03-04 10:53:11'),
+(2, 51, 11, 30, '1st Quarter', 'Oral Recitation', 'written', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 13:08:32', '2026-03-04 08:57:45'),
+(3, 51, 11, 30, '1st Quarter', 'Test', 'written', 15.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 13:26:38', '2026-03-03 13:26:38'),
+(6, 51, 11, 30, '1st Quarter', 'Oral Recitation', 'written', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 14:35:37', '2026-03-04 08:57:45'),
+(7, 51, 11, 30, '1st Quarter', 'Oral Recitation', 'written', 20.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 14:35:43', '2026-03-04 09:15:55'),
+(8, 51, 11, 30, '1st Quarter', 'oral', 'performance', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 14:35:50', '2026-03-04 09:09:49'),
+(9, 51, 11, 30, '1st Quarter', 'oral', 'performance', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 14:35:57', '2026-03-03 14:35:57'),
+(10, 51, 11, 30, '1st Quarter', 'Exam', 'quarterly', 50.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 14:36:07', '2026-03-04 09:03:41'),
+(15, 51, 11, 30, '1st Quarter', 'Oral', 'written', 30.00, 'merged', NULL, 'sum', 2, 0, 52, '2026-03-04 07:09:58', '2026-03-04 07:17:28'),
+(16, 51, 11, 30, '1st Quarter', 'Oral', 'written', 30.00, 'merged', NULL, 'sum', 2, 0, 52, '2026-03-04 07:17:43', '2026-03-04 08:57:45'),
+(17, 51, 11, 30, '1st Quarter', 'My Favorite Animal', 'written', 15.00, 'activity', 9, 'sum', 2, 1, 52, '2026-03-04 10:53:11', '2026-03-04 10:53:11'),
+(18, 51, 11, 30, '1st Quarter', 'Draw an Apple', 'performance', 25.00, 'activity', 10, 'sum', 3, 1, 52, '2026-03-04 10:53:11', '2026-03-04 10:53:11');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `grading_input_item_sources`
+--
+
+CREATE TABLE `grading_input_item_sources` (
+  `id` bigint UNSIGNED NOT NULL,
+  `grading_input_item_id` bigint UNSIGNED NOT NULL,
+  `source_type` enum('activity','manual') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `source_activity_id` bigint UNSIGNED DEFAULT NULL,
+  `source_item_id` bigint UNSIGNED DEFAULT NULL,
+  `weight` decimal(8,4) NOT NULL DEFAULT '1.0000',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `grading_input_item_sources`
+--
+
+INSERT INTO `grading_input_item_sources` (`id`, `grading_input_item_id`, `source_type`, `source_activity_id`, `source_item_id`, `weight`, `created_at`) VALUES
+(1, 16, 'manual', NULL, 2, 1.0000, '2026-03-04 07:17:43'),
+(2, 16, 'manual', NULL, 6, 1.0000, '2026-03-04 07:17:43'),
+(3, 16, 'manual', NULL, 7, 1.0000, '2026-03-04 07:17:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `grading_input_scores`
+--
+
+CREATE TABLE `grading_input_scores` (
+  `id` bigint UNSIGNED NOT NULL,
+  `grading_input_item_id` bigint UNSIGNED NOT NULL,
+  `student_id` int UNSIGNED NOT NULL,
+  `score` decimal(8,2) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `grading_input_scores`
+--
+
+INSERT INTO `grading_input_scores` (`id`, `grading_input_item_id`, `student_id`, `score`, `created_at`, `updated_at`) VALUES
+(1, 2, 296, 10.00, '2026-03-03 13:08:45', '2026-03-03 14:35:21'),
+(2, 3, 288, 0.00, '2026-03-03 14:35:21', '2026-03-03 14:35:21'),
+(3, 8, 288, 8.00, '2026-03-03 14:39:20', '2026-03-04 09:47:22'),
+(4, 9, 296, 8.00, '2026-03-03 14:39:22', '2026-03-04 09:47:11'),
+(5, 8, 296, 8.00, '2026-03-03 15:08:23', '2026-03-04 09:47:06'),
+(6, 3, 296, 0.00, '2026-03-03 15:14:41', '2026-03-03 15:15:01'),
+(7, 7, 296, 18.00, '2026-03-04 06:51:19', '2026-03-04 09:48:18'),
+(8, 6, 296, 8.00, '2026-03-04 06:51:23', '2026-03-04 09:48:00'),
+(9, 7, 282, 20.00, '2026-03-04 09:31:12', '2026-03-04 09:31:12'),
+(10, 3, 282, 15.00, '2026-03-04 09:31:17', '2026-03-04 09:31:17'),
+(11, 2, 282, 7.00, '2026-03-04 09:31:24', '2026-03-04 09:31:24'),
+(12, 6, 282, 10.00, '2026-03-04 09:31:30', '2026-03-04 09:31:30'),
+(13, 9, 288, 8.00, '2026-03-04 09:47:20', '2026-03-04 09:47:20'),
+(14, 7, 288, 8.00, '2026-03-04 09:47:24', '2026-03-04 09:47:24'),
+(15, 8, 282, 8.00, '2026-03-04 09:47:25', '2026-03-04 09:47:25'),
+(16, 9, 282, 8.00, '2026-03-04 09:47:27', '2026-03-04 09:47:27'),
+(17, 8, 279, 8.00, '2026-03-04 09:47:32', '2026-03-04 09:47:32'),
+(18, 9, 279, 8.00, '2026-03-04 09:47:34', '2026-03-04 09:47:34');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `installments`
 --
 
@@ -1445,7 +1648,10 @@ CREATE TABLE `learning_materials` (
 --
 
 INSERT INTO `learning_materials` (`id`, `subject_id`, `section_id`, `school_year`, `type`, `title`, `description`, `file_url`, `file_name`, `file_size`, `link_url`, `created_by`, `created_at`, `updated_at`) VALUES
-(8, 51, 11, '2026-2027', 'text', 'test', '<p>test</p>', NULL, NULL, NULL, NULL, 52, '2026-02-25 10:49:54', NULL);
+(8, 51, 11, '2026-2027', 'text', 'test', '<p>test</p>', NULL, NULL, NULL, NULL, 52, '2026-02-25 10:49:54', NULL),
+(9, 51, 11, '2026-2027', 'file', 'Installation and Configuration of Windows Server 2016', '<p>Test&nbsp;Description</p>', '[\"http://localhost:3000/uploads/learning-materials/51/Installation_and_Configuration_of_Windows_Server_2016-2_20260302233007_69a5acff110c5.pdf\"]', '[\"Installation and Configuration of Windows Server 2016-2.pdf\"]', 26917519, NULL, 52, '2026-03-02 15:30:07', NULL),
+(10, 51, 11, '2026-2027', 'file', 'games', '', '[\"http://localhost:3000/uploads/learning-materials/51/games_20260304180006_69a802a6168d2.docx\"]', '[\"games.docx\"]', 19349, NULL, 52, '2026-03-04 10:00:06', NULL),
+(11, 51, 11, '2026-2027', 'link', 'Origami Making', '', NULL, NULL, NULL, '[\"https://www.youtube.com/watch?v=mfI3MIbbkgM\"]', 52, '2026-03-04 10:01:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -1567,7 +1773,8 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`id`, `user_id`, `role`, `type`, `title`, `body`, `icon`, `action_url`, `entity_type`, `entity_id`, `data`, `audit_log_id`, `is_read`, `read_at`, `is_archived`, `archived_at`, `created_at`, `updated_at`) VALUES
-(2, 71, 'student', 'payment.received', 'Payment Recorded', 'Your Book payment of ₱4,000.00 has been recorded', 'dollar-sign', '/enrollment/payment', 'payment', 129, NULL, 7, 1, '2026-02-25 14:06:17', 0, NULL, '2026-02-25 20:13:53', '2026-02-25 21:08:12');
+(2, 71, 'student', 'payment.received', 'Payment Recorded', 'Your Book payment of ₱4,000.00 has been recorded', 'dollar-sign', '/enrollment/payment', 'payment', 129, NULL, 7, 1, '2026-02-25 14:06:17', 0, NULL, '2026-02-25 20:13:53', '2026-02-25 21:08:12'),
+(3, 454, 'student', 'payment.received', 'Payment Recorded', 'Your Contribution payment of ₱100.00 has been recorded', 'dollar-sign', '/enrollment/payment', 'payment', 130, NULL, 8, 0, NULL, 0, NULL, '2026-03-02 22:11:04', '2026-03-02 22:11:04');
 
 -- --------------------------------------------------------
 
@@ -1598,7 +1805,8 @@ CREATE TABLE `notification_outbox` (
 --
 
 INSERT INTO `notification_outbox` (`id`, `notification_id`, `user_id`, `fcm_title`, `fcm_body`, `fcm_data`, `fcm_image`, `status`, `attempts`, `max_attempts`, `last_error`, `last_attempt_at`, `created_at`, `sent_at`, `expires_at`) VALUES
-(2, 2, 71, 'Payment Recorded', 'Your Book payment of ₱4,000.00 has been recorded', '{\"screen\": \"PaymentHistory\", \"payment_id\": 129}', NULL, 'pending', 0, 3, NULL, NULL, '2026-02-25 20:13:53', NULL, '2026-02-26 20:13:53');
+(2, 2, 71, 'Payment Recorded', 'Your Book payment of ₱4,000.00 has been recorded', '{\"screen\": \"PaymentHistory\", \"payment_id\": 129}', NULL, 'pending', 0, 3, NULL, NULL, '2026-02-25 20:13:53', NULL, '2026-02-26 20:13:53'),
+(3, 3, 454, 'Payment Recorded', 'Your Contribution payment of ₱100.00 has been recorded', '{\"screen\": \"PaymentHistory\", \"payment_id\": 130}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-02 22:11:04', NULL, '2026-03-03 22:11:04');
 
 -- --------------------------------------------------------
 
@@ -1799,7 +2007,8 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (118, 431, 36, 26, 'RCP-202602-5141', 'Tuition Installment', 'Installment #1 - 2025-2026 - 1st Quarter', 1650.00, 82.50, 'Cash', '2026-02-23', '', 201, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-23 04:12:08', '2026-02-23 04:12:08', NULL, NULL, 0),
 (119, 453, 53, 30, 'RCP-202602-525412', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-24', NULL, 211, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:13:44', '2026-02-24 11:08:54', NULL, NULL, 0),
 (120, 454, 54, 30, 'RCP-202602-033032', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4250.00, 0.00, 'Cash', '2026-02-24', NULL, 221, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:45:44', '2026-02-24 11:08:48', NULL, NULL, 0),
-(129, 71, NULL, 30, 'RCP-202602-0915', 'Book', 'Text Book N1', 4000.00, 0.00, 'Cash', '2026-02-25', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-25 05:13:53', '2026-02-25 05:13:53', NULL, NULL, 0);
+(129, 71, NULL, 30, 'RCP-202602-0915', 'Book', 'Text Book N1', 4000.00, 0.00, 'Cash', '2026-02-25', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-25 05:13:53', '2026-02-25 05:13:53', NULL, NULL, 0),
+(130, 454, NULL, 30, 'RCP-202603-4396', 'Contribution', 'test', 100.00, 0.00, 'Cash', '2026-03-02', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-02 14:11:04', '2026-03-02 14:11:04', NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -2011,6 +2220,34 @@ CREATE TABLE `penalty_waiver_requests` (
   `reviewed_at` datetime DEFAULT NULL,
   `reviewed_by` int UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quiz_sessions`
+--
+
+CREATE TABLE `quiz_sessions` (
+  `id` bigint UNSIGNED NOT NULL,
+  `activity_id` bigint UNSIGNED NOT NULL,
+  `student_id` int UNSIGNED NOT NULL,
+  `started_at` datetime NOT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `question_order` text COLLATE utf8mb4_unicode_ci,
+  `matching_order` text COLLATE utf8mb4_unicode_ci,
+  `submitted_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `quiz_sessions`
+--
+
+INSERT INTO `quiz_sessions` (`id`, `activity_id`, `student_id`, `started_at`, `expires_at`, `question_order`, `matching_order`, `submitted_at`, `created_at`, `updated_at`) VALUES
+(4, 7, 296, '2026-03-03 04:30:56', '2026-03-03 06:30:56', '[45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65]', '{\"55\":[1,3,2,0,4]}', '2026-03-03 04:37:33', '2026-03-03 04:30:56', '2026-03-03 04:37:33'),
+(5, 7, 288, '2026-03-03 04:42:36', '2026-03-03 06:42:36', '[45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65]', '{\"55\":[2,0,1,4,3]}', NULL, '2026-03-03 04:42:36', '2026-03-03 04:42:36'),
+(6, 7, 282, '2026-03-04 17:21:30', '2026-03-04 19:21:30', '[45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65]', '{\"55\":[1,3,0,2,4]}', '2026-03-04 17:23:28', '2026-03-04 17:21:30', '2026-03-04 17:23:28');
 
 -- --------------------------------------------------------
 
@@ -2518,7 +2755,8 @@ INSERT INTO `students` (`id`, `user_id`, `student_id`, `rfid_card`, `gender`, `y
 (415, 432, 'MCAF2026-0005', NULL, NULL, 'Nursery 1', NULL, 'active', '2026-02-15 02:12:47', '2026-02-21 23:09:40', '2026-02-15', 33),
 (416, 431, 'MCAF2025-0338', NULL, NULL, 'Nursery 1', NULL, 'active', '2026-02-15 02:16:40', '2026-02-15 02:16:40', '2026-02-15', 36),
 (417, 443, 'MCAF2026-0006', NULL, NULL, 'Nursery 2', NULL, 'active', '2026-02-15 02:28:02', '2026-02-15 09:28:02', NULL, NULL),
-(418, 450, 'MCAF2026-0007', '0002334689', NULL, 'Grade 1', NULL, 'active', '2026-02-22 05:00:32', '2026-02-27 01:04:54', NULL, NULL);
+(418, 450, 'MCAF2026-0007', '0002334689', NULL, 'Grade 1', NULL, 'active', '2026-02-22 05:00:32', '2026-02-27 01:04:54', NULL, NULL),
+(419, 454, 'MCAF2026-0008', NULL, NULL, 'Grade 2', NULL, 'active', '2026-03-02 14:13:05', '2026-03-02 14:13:05', '2026-03-02', 54);
 
 -- --------------------------------------------------------
 
@@ -2889,23 +3127,23 @@ INSERT INTO `students_backup` (`id`, `user_id`, `student_id`, `year_level`, `sec
 -- (See below for the actual view)
 --
 CREATE TABLE `student_balance_summary` (
-`student_id` int unsigned
-,`student_number` varchar(50)
-,`student_name` varchar(201)
-,`year_level` varchar(20)
-,`academic_period_id` int unsigned
+`academic_period_id` int unsigned
 ,`academic_year` varchar(20)
-,`quarter` enum('1st Quarter','2nd Quarter','3rd Quarter','4th Quarter')
-,`total_amount` decimal(10,2)
-,`paid_amount` decimal(10,2)
 ,`balance` decimal(10,2)
-,`payment_plan_status` enum('Active','Completed','Overdue','Cancelled')
-,`total_installments` bigint
-,`pending_installments` bigint
-,`overdue_installments` bigint
-,`next_due_date` date
 ,`next_amount_due` decimal(10,2)
+,`next_due_date` date
+,`overdue_installments` bigint
+,`paid_amount` decimal(10,2)
+,`payment_plan_status` enum('Active','Completed','Overdue','Cancelled')
+,`pending_installments` bigint
+,`quarter` enum('1st Quarter','2nd Quarter','3rd Quarter','4th Quarter')
+,`student_id` int unsigned
+,`student_name` varchar(201)
+,`student_number` varchar(50)
+,`total_amount` decimal(10,2)
+,`total_installments` bigint
 ,`total_late_fees` decimal(32,2)
+,`year_level` varchar(20)
 );
 
 -- --------------------------------------------------------
@@ -3174,7 +3412,9 @@ INSERT INTO `teacher_subject_assignments` (`id`, `teacher_id`, `subject_id`, `sc
 (76, 4, 51, '2026-2027', '2026-02-25 08:14:24', '2026-02-25 08:14:24'),
 (77, 4, 49, '2026-2027', '2026-02-25 08:14:28', '2026-02-25 08:14:28'),
 (78, 4, 54, '2026-2027', '2026-02-25 08:14:32', '2026-02-25 08:14:32'),
-(79, 4, 75, '2026-2027', '2026-02-25 08:14:35', '2026-02-25 08:14:35');
+(79, 4, 75, '2026-2027', '2026-02-25 08:14:35', '2026-02-25 08:14:35'),
+(80, 4, 64, '2026-2027', '2026-03-02 18:54:35', '2026-03-02 18:54:35'),
+(81, 4, 76, '2026-2027', '2026-03-02 18:55:01', '2026-03-02 18:55:01');
 
 -- --------------------------------------------------------
 
@@ -3400,7 +3640,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `status`, `must_change_password`, `created_at`, `updated_at`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
 (1, 'student@demo.com', '$2y$10$Ll4dzxFoqlaGCC1aL702BOdZ3xtLLijHcLKzW4SF1HPrlEgP9Frz6', 'student', 'Demo', NULL, 'Student', '', 'active', 0, '2025-11-06 11:13:56', '2025-11-10 01:05:04', NULL, NULL, 0, NULL),
 (2, 'teacher@demo.com', '$2y$10$/zuE1Q4AmA1J6MXuovoRoenUL5PoblPSzSxXA3ubUw47wpiTNfoVS', 'teacher', 'Demo', NULL, 'Teacher', '', 'active', 0, '2025-11-06 11:14:42', '2026-01-06 20:49:02', NULL, NULL, 0, NULL),
-(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', 'active', 0, '2025-11-06 11:15:04', '2026-03-01 10:21:29', NULL, NULL, 0, NULL),
+(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', 'active', 0, '2025-11-06 11:15:04', '2026-03-04 14:08:13', NULL, NULL, 0, NULL),
 (16, 'john.doe@example.com', '$2y$10$I19hzyUWwzkG9HMk8wEutekUr7tC9GmtiRFvW4lqePlq4eKBKXQtS', 'teacher', 'John', NULL, 'Doe', '', 'active', 0, '2025-11-06 14:05:34', '2025-11-06 18:29:13', NULL, NULL, 0, NULL),
 (18, 'juan.delacruz@mcc.edu.ph', '$2y$10$762nxMWoGHGu7kRyvzc8K.FGrrYGGJpRdMbm5jentTkF4mfui3iBK', 'student', 'Juan', NULL, 'Dela Cruz', '', 'active', 0, '2025-11-06 18:30:24', '2025-11-06 18:30:24', NULL, NULL, 0, NULL),
 (19, 'maria.santos@mcc.edu.ph', '$2y$10$KGlfA0PiOWB4HR0pds9.1epVHMzpgv3hsk.qLKXZCSh9mgaD20FCW', 'student', 'Maria', NULL, 'Santos', '', 'active', 0, '2025-11-06 18:30:45', '2026-02-14 08:35:58', '$2y$10$eHfLDD/lkTefVxHXDsIUc.aQ5zhzyP.vp/AckoRlj.F42gZ4oEXku', '2026-02-14 01:35:58', 0, NULL),
@@ -3434,7 +3674,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (49, 'jake.silva@mcc.edu.ph', '$2y$10$KkoQ0Kd5xJgW5f653dpUiOcCyZbZYuZwMRKxzW9Mhq05np6P25mvu', 'student', 'Jake Anthony', NULL, 'Silva', '', 'active', 0, '2025-11-10 08:47:32', '2025-11-10 08:47:32', NULL, NULL, 0, NULL),
 (50, 'kaye.castro@mcc.edu.ph', '$2y$10$E5sxDNYuS7PQPqFEdcdqcupccfatEk39MJsK7LNx0ujWmpNwocPWy', 'student', 'Kaye', NULL, 'Castro', '', 'active', 0, '2025-11-10 08:47:40', '2025-11-10 08:47:40', NULL, NULL, 0, NULL),
 (51, 'leandro.morales@mcc.edu.ph', '$2y$10$icTlD1gFj.SReFcPhM./bec13jp9ru0KFZlfEChhE4zpue7Mzz4CW', 'student', 'Leandro', NULL, 'Morales', '', 'active', 0, '2025-11-10 09:21:56', '2025-11-10 09:21:56', NULL, NULL, 0, NULL),
-(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', 'active', 0, '2025-11-10 09:38:20', '2026-02-25 10:17:44', NULL, NULL, 0, NULL),
+(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', 'active', 0, '2025-11-10 09:38:20', '2026-03-04 09:02:50', NULL, NULL, 0, NULL),
 (53, 'nico.perez@mcc.edu.ph', '$2y$10$m.hi3cAvdrAUzCF7TMoaseMCqY.oGHNorWf7U4e1.IXkR7ANud61S', 'student', 'Nico Allan', NULL, 'Perez', '', 'active', 0, '2025-11-10 09:46:50', '2025-11-10 09:46:50', NULL, NULL, 0, NULL),
 (54, 'olivia.delgado@mcc.edu.ph', '$2y$10$0h4mahiMCDm96OWctcRdXeujn7Yr/PRJvgyO7KQtO954d7V39.26m', 'student', 'Olivia Anne', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', NULL, NULL, 0, NULL),
 (55, 'paul.uy@mcc.edu.ph', '$2y$10$8IsNfV4is0Sgs0N6e70Zk.PP.DcSJswNe.GBdLa3aLZhDxvJ.KiZG', 'student', 'Paul Vincent', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', NULL, NULL, 0, NULL),
@@ -3669,7 +3909,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (283, 'maria.bravo@mcc.edu.ph', '$2y$10$8MgjrftnnszBDgLfl9AeFeIXdVifAjbmOQ0m.OQQy6AUpxyS053oq', 'student', 'Maria', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', NULL, NULL, 0, NULL),
 (284, 'victor.alvarez@mcc.edu.ph', '$2y$10$5b2sMFpAc/5BuDTjQARupuGBEtqTX6A3NXd5BXN0fo8VSn2xs8FpG', 'student', 'Victor', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', NULL, NULL, 0, NULL),
 (285, 'luis.lim@mcc.edu.ph', '$2y$10$OSUl40mJM5DB5UtakEkeIuTFPb2FilnJYAdivYwRloJPqJr2G9JcW', 'student', 'Luis', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', NULL, NULL, 0, NULL),
-(286, 'valentina.cruz@mcc.edu.ph', '$2y$10$m8U2U9bOzTtZbxKgI9AFa.ee8PO.PIOT4DjbLtUKv/8XxKHicnLlO', 'student', 'Valentina', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', NULL, NULL, 0, NULL),
+(286, 'valentina.cruz@mcc.edu.ph', '$2y$10$m8U2U9bOzTtZbxKgI9AFa.ee8PO.PIOT4DjbLtUKv/8XxKHicnLlO', 'student', 'Valentina', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:47', '2026-03-04 13:53:00', '$2y$10$2fuDWX/lfVGI1sw43PtG8O2oNNCHU38c.IsjTaBQtiC8d7/8ZSh16', '2026-03-04 13:26:27', 0, NULL),
 (287, 'nathan.beltran@mcc.edu.ph', '$2y$10$KWTkyoixrEhQ2Evs/B/DgOfYC01MGcjNi6uVdCpevRrzXkfjgKRJm', 'student', 'Nathan', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', NULL, NULL, 0, NULL),
 (288, 'nina.fernandez@mcc.edu.ph', '$2y$10$.uC6OipkkMkMBk2/4WT.jOaWt3xV0mru3g3/kvWk97H0ODbkFGb1m', 'student', 'Nina', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', NULL, NULL, 0, NULL),
 (289, 'ian.salazar@mcc.edu.ph', '$2y$10$z0gtaLcG2/cp7/K0Sv3sM.iDdLbxvJvYDRfDsGlGRG06HH239Qju6', 'student', 'Ian', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
@@ -3682,13 +3922,13 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (296, 'mia.aquino@mcc.edu.ph', '$2y$10$gM9dWBXSV0lWoKJN7GL4CeRbhotsG/cS9LMmjiTLKPR3ItqA5dnba', 'student', 'Mia', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
 (297, 'marcus.gomez@mcc.edu.ph', '$2y$10$4eWjl3RNGbojtKSmpyaBke9j0SkdsobXWvOw.AmCys9CgYa.MVME2', 'student', 'Marcus', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
 (298, 'andres.diaz@mcc.edu.ph', '$2y$10$veiNWID2DjAfy6K5uexeHucRUdYYVbGh9c5BroxzEg7LA1rYivkJu', 'student', 'Andres', NULL, 'Diaz', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
-(299, 'ellie.alvarez@mcc.edu.ph', '$2y$10$PqvmuT0zBLAAxOA8p7SxTumnHu9WiVx2O1xz0cVe0.WLvgt9pNAkW', 'student', 'Ellie', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
+(299, 'ellie.alvarez@mcc.edu.ph', '$2y$10$PqvmuT0zBLAAxOA8p7SxTumnHu9WiVx2O1xz0cVe0.WLvgt9pNAkW', 'student', 'Ellie', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:48', '2026-03-04 10:02:40', NULL, NULL, 0, NULL),
 (300, 'isabella.ignacio@mcc.edu.ph', '$2y$10$zganDea5m0YCpYRAvoTDm.GT2TNpi.E7zXWo8kxFxDe34CUjKDe.2', 'student', 'Isabella', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
 (301, 'lily.huang@mcc.edu.ph', '$2y$10$JO.acPWALoINfn5g44Z51.cpgHTyYTJMIO9W0.XuFiqwZ4p8DZg1C', 'student', 'Lily', NULL, 'Huang', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
 (302, 'leo.salazar@mcc.edu.ph', '$2y$10$6NeCkVp2PM6rIp1cgkr6Cux8PG9kCjGor5T/ZlO/0yKBqxJ/rIWsy', 'student', 'Leo', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', NULL, NULL, 0, NULL),
 (303, 'camila.santos@mcc.edu.ph', '$2y$10$n/zm9GOJAfvDTZs5NIZX8ezU/1V5e.lcqcUOPoofDLBqyVuWOG3Yi', 'student', 'Camila', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (304, 'isabella.cruz@mcc.edu.ph', '$2y$10$VKn7fG/7xmSayDkRC63vYuoZFXNX47D3YNxK4V9WH8k93M2aIY0Qe', 'student', 'Isabella', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
-(305, 'nina.beltran@mcc.edu.ph', '$2y$10$ALhxBKcV72/Q3uqOnv.jB.0iwtTf9WiCs9AvcNMwSS7Frb5w.T9Pi', 'student', 'Nina', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
+(305, 'nina.beltran@mcc.edu.ph', '$2y$10$ALhxBKcV72/Q3uqOnv.jB.0iwtTf9WiCs9AvcNMwSS7Frb5w.T9Pi', 'student', 'Nina', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:42:26', NULL, NULL, 0, NULL),
 (306, 'sebastian.reyes@mcc.edu.ph', '$2y$10$f7ap3Ldh/0UOTdkM89EkRucNRjVYZ8pUML0xTemwQF41BH/.T82Em', 'student', 'Sebastian', NULL, 'Reyes', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (307, 'ana.santos@mcc.edu.ph', '$2y$10$SpapZhthzPExKx9.X91pUO.iz0FYW3FSw6PzKj3sV6T4FEYM9Z8/a', 'student', 'Ana', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (308, 'lucia.garcia@mcc.edu.ph', '$2y$10$XWFoWZ3CYMEhnx89XqgGMuW5f9gMTjwYULcr2Bl.M5UG9Sdo1Tl/O', 'student', 'Lucia', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
@@ -3696,7 +3936,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (310, 'camila.villanueva@mcc.edu.ph', '$2y$10$KbRAMosF8IBQC4OpSo.PUeAt2BqADKUYiaQ7AKLeI8XyYtlWyakHi', 'student', 'Camila', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (311, 'ricardo.santiago@mcc.edu.ph', '$2y$10$ZmL/q0HOgcwuh0ESQcOzj.zwBskIMH4dkO6MiFH0D9Z2GNeQvddYq', 'student', 'Ricardo', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (312, 'elena.santos@mcc.edu.ph', '$2y$10$o8b371BaNTBthCZta7MsWeEVzeupUIFNHZebqF4LeC6vXsbkR9QJe', 'student', 'Elena', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
-(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:49', '2026-02-25 18:36:12', '$2y$10$uhF.rDj9uHQiTcXpQ5s6C.y5.7qbJf5PSPByONBTWdlMORrpscHhW', '2026-02-25 11:36:12', 0, NULL),
+(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:32:45', '$2y$10$uhF.rDj9uHQiTcXpQ5s6C.y5.7qbJf5PSPByONBTWdlMORrpscHhW', '2026-02-25 11:36:12', 0, NULL),
 (314, 'brian.santiago@mcc.edu.ph', '$2y$10$/Pi/2lxuuKqBtaOcED5Xn.9c6HpUd7Mr7g6egOY0ePPm8f6M5Eo62', 'student', 'Brian', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (315, 'emma.torres@mcc.edu.ph', '$2y$10$zAFGHsDPmVjfNKIlNVfU5eC7LBrJB1gGjPeP8IKhld30jsjaLbMEm', 'student', 'Emma', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
 (316, 'chloe.santos@mcc.edu.ph', '$2y$10$7B6iFc11eiMqGrsZH1veiOYk0AV.EfIY9C9zkaG6ElhHR8/k1DEbi', 'student', 'Chloe', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', NULL, NULL, 0, NULL),
@@ -3777,7 +4017,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (412, 'consuelo.bautista@mcc.edu.ph', '$2y$10$rGn68TM1SDjlTMPY5pBucOdyAzbfOUB37nivNHrIAxxQyJM121ee2', 'teacher', 'Consuelo', NULL, 'Bautista', '', 'active', 0, '2025-11-18 15:18:28', '2025-11-24 01:32:20', NULL, NULL, 0, NULL),
 (413, 'emilio.quirino@mcc.edu.ph', '$2y$10$qcKyodRXIxiKuD0Svpywk.hrJgvtrjxMcRiQ4nmDHA46pneHcDSbi', 'teacher', 'Emilio', NULL, 'Quirino', '', 'active', 0, '2025-11-18 15:18:47', '2025-11-18 15:18:47', NULL, NULL, 0, NULL),
 (414, 'teresita.lim@mcc.edu.ph', '$2y$10$ilEgX5U7eH4NKn1f81BN9eAH2QJOsOM9NFkNpeYHGPECeHQWBRvJO', 'teacher', 'Teresita', NULL, 'Lim', '', 'active', 0, '2025-11-18 15:19:01', '2025-11-18 15:19:01', NULL, NULL, 0, NULL),
-(415, 'josefa.villanueva@mcc.edu.ph', '$2y$10$oX5uFnmSSkb/64rO1MiJYOJ3OZe7BwOv.DGktp4uqCnw2e/mgBZAO', 'teacher', 'Josefa', NULL, 'Villanueva', '', 'active', 0, '2025-11-18 15:19:17', '2026-02-27 01:34:47', NULL, NULL, 0, NULL),
+(415, 'josefa.villanueva@mcc.edu.ph', '$2y$10$oX5uFnmSSkb/64rO1MiJYOJ3OZe7BwOv.DGktp4uqCnw2e/mgBZAO', 'teacher', 'Josefa', NULL, 'Villanueva', '', 'active', 0, '2025-11-18 15:19:17', '2026-03-02 18:40:23', NULL, NULL, 0, NULL),
 (429, 'kairi@gmail.com', '$2y$10$0POMgGARytBr0BnpPkN/6uQ2SWKdYxU/5wN8hoqW.qi7n9XN3P0RC', 'student', 'Kairi', NULL, 'Dela Cruz', '', 'active', 0, '2026-01-19 13:54:35', '2026-02-13 05:12:14', NULL, NULL, 0, NULL),
 (430, 'jeizi.jczamora@gmail.com', '$2y$10$5eYtQ5jXLBmZA6JWm.gmOOT2kppWfUgPAN6cbcObYDtgMP80f4iDm', 'student', 'John Christopher King', 'Visaya', 'Zamora', '', 'active', 0, '2026-01-20 15:07:02', '2026-02-15 03:08:22', NULL, NULL, 0, NULL),
 (431, 'juandelacruz99@gmail.com', '$2y$10$2czTBfblWFLkWS042EjXE.pEBsuSIOK4QNRGTYPO/VFQeAv1z3izi', 'student', 'Juan', NULL, 'Dela Cruz', '', 'active', 0, '2026-02-07 21:48:30', '2026-02-22 11:00:45', '$2y$10$euQ540jXsVyiSVqS156xnez8f9Y3PuW093N/lApcqyfrOV/Al.5Dm', '2026-02-15 02:17:07', 0, NULL),
@@ -3791,8 +4031,9 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (451, 'james1234@gmail.com', '$2y$10$CmzZ3PVqBG6MJZKIWv4B0eP43LAwykJDy30/j895IO73hd2OkZdI.', 'enrollee', 'Joamsd', 'Regate', 'asmom', '', 'active', 0, '2026-02-22 12:02:35', '2026-02-22 05:37:13', '$2y$10$iQ43Lc67KF8JK//i8okZbOOm9JYPd7ljLun6a4B9I5MnlPRYVEGt.', '2026-02-22 05:30:54', 0, NULL),
 (452, 'juanmanzano@gmail.com', '$2y$10$ACZMd/nTeFRNggcYfWEBrO1BFJ5esz9T2Y3qqYlo9DIe5fCLhxKWC', 'enrollee', 'Juan', 'Manzano', 'Torres', '', 'active', 0, '2026-02-24 16:27:04', '2026-02-24 16:29:10', '$2y$10$Fx560as5MjyFX..cDf.tX.iE6lofHD9.B5BdYFBxX0eHQpgASlU6a', '2026-02-24 09:29:10', 0, NULL),
 (453, 'nikmanzano@gmail.com', '$2y$10$yCQFac0OtQXrbJEzYj3FTOmXWK59FpfJ85GyMiZDcSnOuP7DMUXwe', 'enrollee', 'Nik', 'Manzano', 'Santos', '', 'active', 0, '2026-02-24 16:41:22', '2026-02-24 17:12:56', '$2y$10$QEoNk1iBR1XgiXps4CkVVue.AIxFipWBWiebVL3F.Inqd7k.ICrKW', '2026-02-24 10:12:56', 0, NULL),
-(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'enrollee', 'Luna', 'Mendoza', 'Santos', '', 'active', 0, '2026-02-24 17:36:11', '2026-02-24 10:46:22', '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
-(455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', 'active', 0, '2026-03-01 17:22:08', '2026-03-01 17:24:25', NULL, NULL, 0, NULL);
+(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'student', 'Luna', 'Mendoza', 'Santos', '', 'active', 0, '2026-02-24 17:36:11', '2026-03-02 14:13:05', '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
+(455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', 'active', 0, '2026-03-01 17:22:08', '2026-03-02 19:58:36', NULL, NULL, 0, NULL),
+(456, 'kiel1@gmail.com', '$2y$10$VHcOuEsOihaQlWQhNOpgqu47m8DtSdv16Ok3eJTA5EYxB3HvhmIfa', 'enrollee', 'Kiel', 'Santos', 'Sarmiento', '', 'active', 0, '2026-03-04 13:51:23', '2026-03-04 13:51:57', NULL, NULL, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -4184,6 +4425,32 @@ ALTER TABLE `final_grades`
   ADD KEY `idx_subject_section_period` (`subject_id`,`section_id`,`academic_period_id`);
 
 --
+-- Indexes for table `grading_input_items`
+--
+ALTER TABLE `grading_input_items`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_gii_activity_scope` (`source_activity_id`,`section_id`,`academic_period_id`),
+  ADD KEY `idx_gii_scope` (`subject_id`,`section_id`,`academic_period_id`,`quarter`,`is_active`),
+  ADD KEY `idx_gii_source_activity` (`source_activity_id`);
+
+--
+-- Indexes for table `grading_input_item_sources`
+--
+ALTER TABLE `grading_input_item_sources`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_giis_item` (`grading_input_item_id`),
+  ADD KEY `idx_giis_source_activity` (`source_activity_id`),
+  ADD KEY `idx_giis_source_item` (`source_item_id`);
+
+--
+-- Indexes for table `grading_input_scores`
+--
+ALTER TABLE `grading_input_scores`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_gis_item_student` (`grading_input_item_id`,`student_id`),
+  ADD KEY `idx_gis_student` (`student_id`);
+
+--
 -- Indexes for table `installments`
 --
 ALTER TABLE `installments`
@@ -4347,6 +4614,13 @@ ALTER TABLE `penalty_waiver_requests`
   ADD KEY `student_id` (`student_id`),
   ADD KEY `installment_id` (`installment_id`),
   ADD KEY `reviewed_by` (`reviewed_by`);
+
+--
+-- Indexes for table `quiz_sessions`
+--
+ALTER TABLE `quiz_sessions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_quiz_sessions_activity_student` (`activity_id`,`student_id`);
 
 --
 -- Indexes for table `rfid_scans`
@@ -4546,61 +4820,61 @@ ALTER TABLE `academic_periods`
 -- AUTO_INCREMENT for table `activities`
 --
 ALTER TABLE `activities`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `activity_grades`
 --
 ALTER TABLE `activity_grades`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `activity_questions`
 --
 ALTER TABLE `activity_questions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT for table `activity_question_choices`
 --
 ALTER TABLE `activity_question_choices`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
 
 --
 -- AUTO_INCREMENT for table `activity_settings`
 --
 ALTER TABLE `activity_settings`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `activity_student_answers`
 --
 ALTER TABLE `activity_student_answers`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `activity_submissions`
 --
 ALTER TABLE `activity_submissions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `activity_submission_files`
 --
 ALTER TABLE `activity_submission_files`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `announcements`
 --
 ALTER TABLE `announcements`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `announcement_reads`
 --
 ALTER TABLE `announcement_reads`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `attendance`
@@ -4612,7 +4886,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `broadcasts`
@@ -4654,13 +4928,13 @@ ALTER TABLE `document_requirements`
 -- AUTO_INCREMENT for table `enrollments`
 --
 ALTER TABLE `enrollments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- AUTO_INCREMENT for table `enrollment_addresses`
 --
 ALTER TABLE `enrollment_addresses`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `enrollment_discounts`
@@ -4672,7 +4946,7 @@ ALTER TABLE `enrollment_discounts`
 -- AUTO_INCREMENT for table `enrollment_documents`
 --
 ALTER TABLE `enrollment_documents`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `enrollment_fee_items`
@@ -4684,19 +4958,19 @@ ALTER TABLE `enrollment_fee_items`
 -- AUTO_INCREMENT for table `enrollment_flags`
 --
 ALTER TABLE `enrollment_flags`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `enrollment_learners`
 --
 ALTER TABLE `enrollment_learners`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `enrollment_parent_contacts`
 --
 ALTER TABLE `enrollment_parent_contacts`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- AUTO_INCREMENT for table `enrollment_periods`
@@ -4717,6 +4991,24 @@ ALTER TABLE `final_grades`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=253;
 
 --
+-- AUTO_INCREMENT for table `grading_input_items`
+--
+ALTER TABLE `grading_input_items`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
+-- AUTO_INCREMENT for table `grading_input_item_sources`
+--
+ALTER TABLE `grading_input_item_sources`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `grading_input_scores`
+--
+ALTER TABLE `grading_input_scores`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
 -- AUTO_INCREMENT for table `installments`
 --
 ALTER TABLE `installments`
@@ -4732,7 +5024,7 @@ ALTER TABLE `late_payment_explanations`
 -- AUTO_INCREMENT for table `learning_materials`
 --
 ALTER TABLE `learning_materials`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `messages`
@@ -4744,13 +5036,13 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `notification_outbox`
 --
 ALTER TABLE `notification_outbox`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `notification_preferences`
@@ -4774,7 +5066,7 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=131;
 
 --
 -- AUTO_INCREMENT for table `payment_installment_penalties`
@@ -4813,6 +5105,12 @@ ALTER TABLE `penalty_waiver_requests`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `quiz_sessions`
+--
+ALTER TABLE `quiz_sessions`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `rfid_scans`
 --
 ALTER TABLE `rfid_scans`
@@ -4840,7 +5138,7 @@ ALTER TABLE `sections`
 -- AUTO_INCREMENT for table `students`
 --
 ALTER TABLE `students`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=419;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=420;
 
 --
 -- AUTO_INCREMENT for table `student_enrollment_history`
@@ -4882,7 +5180,7 @@ ALTER TABLE `teacher_assignments`
 -- AUTO_INCREMENT for table `teacher_subject_assignments`
 --
 ALTER TABLE `teacher_subject_assignments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
 
 --
 -- AUTO_INCREMENT for table `tuition_packages`
@@ -4918,7 +5216,7 @@ ALTER TABLE `uniform_prices`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=456;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=457;
 
 --
 -- AUTO_INCREMENT for table `user_fcm_tokens`
