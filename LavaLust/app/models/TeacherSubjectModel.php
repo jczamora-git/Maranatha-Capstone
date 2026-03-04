@@ -7,7 +7,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  */
 class TeacherSubjectModel extends Model
 {
-    protected $table = 'teacher_subjects';
+    protected $table = 'teacher_subject_assignments';
 
     /**
      * Create or return existing teacher_subject assignment
@@ -175,8 +175,8 @@ class TeacherSubjectModel extends Model
     {
         // Get assignments
         $assignments = $this->db->table($this->table)
-                              ->select('teacher_subjects.id as teacher_subject_id, teacher_subjects.subject_id')
-                              ->where('teacher_subjects.teacher_id', $teacher_id)
+                              ->select('teacher_subject_assignments.id as teacher_subject_id, teacher_subject_assignments.subject_id')
+                              ->where('teacher_subject_assignments.teacher_id', $teacher_id)
                               ->get_all();
 
         $result = [];
@@ -210,7 +210,7 @@ class TeacherSubjectModel extends Model
      */
     public function get_all_assignments($subject_codes = null)
     {
-        $query = $this->db->table('teacher_subjects ts')
+        $query = $this->db->table('teacher_subject_assignments ts')
                    ->select('ts.id as teacher_subject_id, ts.subject_id, ts.teacher_id, s.id as subject_id, s.course_code, s.course_name, s.credits, s.year_level, t.id as teacher_id, t.user_id as teacher_user_id, u.id as user_id, u.first_name, u.last_name')
                        ->join('subjects s', 'ts.subject_id = s.id')
                        ->join('teachers t', 'ts.teacher_id = t.id')
@@ -227,7 +227,7 @@ class TeacherSubjectModel extends Model
             $placeholders = implode(',', array_fill(0, count($normalized), '?'));
             // Compare against normalized course_code (remove spaces and uppercase) in SQL
                 $sql = "SELECT ts.id as teacher_subject_id, ts.subject_id, ts.teacher_id, s.id as subject_id, s.course_code, s.course_name, s.credits, s.year_level, t.id as teacher_id, t.user_id as teacher_user_id, u.id as user_id, u.first_name, u.last_name
-                    FROM teacher_subjects ts
+                    FROM teacher_subject_assignments ts
                     JOIN subjects s ON ts.subject_id = s.id
                     JOIN teachers t ON ts.teacher_id = t.id
                     JOIN users u ON t.user_id = u.id

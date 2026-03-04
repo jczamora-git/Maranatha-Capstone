@@ -20,7 +20,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="hidden md:flex fixed top-4 right-4 z-50">
         <NotificationBell />
       </div>
-      <main className="flex-1 p-8 overflow-y-auto pt-16">
+      <main className="flex-1 px-2 py-4 sm:px-4 sm:py-6 md:px-6 lg:px-8 overflow-y-auto pt-16">
         {children}
       </main>
     </div>

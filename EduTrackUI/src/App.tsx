@@ -111,6 +111,7 @@ import MyProgress from "./pages/student/MyProgress";
 import CourseGradeDetail from "./pages/student/CourseGradeDetail";
 import StudentSettings from "./pages/student/StudentSettings";
 import StudentFeedbackSentiment from "./pages/student/FeedbackSentiment";
+import StudentForum from "./pages/student/Forum";
 // StudentAttendanceQR removed - Attendance QR not used
 // Dev / Example components
 import { PaymentFormExample } from "./components/PaymentFormExample";
@@ -176,6 +177,7 @@ const AppContent = () => {
             {FEATURES.messages && (
               <Route path="/student/messages" element={<ProtectedRoute requiredRole="student"><StudentMessaging /></ProtectedRoute>} />
             )}
+            <Route path="/student/forum" element={<ProtectedRoute requiredRole="student"><StudentForum /></ProtectedRoute>} />
             <Route path="/student/feedback" element={<ProtectedRoute requiredRole="student"><StudentFeedbackSentiment /></ProtectedRoute>} />
             
             {/* Enrollee Routes */}

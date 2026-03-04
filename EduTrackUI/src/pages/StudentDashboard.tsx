@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Bell, Award, TrendingUp, ClipboardList, Calendar, QrCode, Settings, MessageSquare, ChevronRight, FileText, CreditCard } from "lucide-react";
+import { BookOpen, Bell, Award, ClipboardList, Calendar, Settings, ChevronRight, FileText, CreditCard, Eye, Target } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
@@ -11,12 +10,218 @@ import { useNotificationContext } from "@/context/NotificationContext";
 
 import { useEffect, useState } from "react";
 
+type EnrollmentStatus = 'Pending' | 'Under Review' | 'Incomplete' | 'Verified' | 'Approved' | 'Rejected' | 'Unknown';
+
+const normalizeEnrollmentStatus = (status: unknown): EnrollmentStatus => {
+  const value = String(status ?? '').trim().toLowerCase();
+
+  switch (value) {
+    case 'pending':
+      return 'Pending';
+    case 'under review':
+      return 'Under Review';
+    case 'incomplete':
+      return 'Incomplete';
+    case 'verified':
+      return 'Verified';
+    case 'approved':
+      return 'Approved';
+    case 'rejected':
+      return 'Rejected';
+    default:
+      return 'Unknown';
+  }
+};
+
+const getEnrollmentStatusUi = (status: EnrollmentStatus) => {
+  if (status === 'Approved') {
+    return {
+      card: 'border-blue-300 bg-gradient-to-r from-blue-50 to-cyan-50',
+      iconBg: 'bg-blue-100',
+      iconText: 'text-blue-600',
+      title: 'text-blue-900',
+      description: 'text-blue-700',
+      body: 'text-blue-800',
+      mobile: 'Approved for this school year.',
+      desktopShort: 'Your enrollment has been approved for the upcoming academic year.',
+      desktopBody: 'Your enrollment has been approved. You are all set for the upcoming academic year. You can now view your class schedule.',
+      summaryBorder: 'border-indigo-100/70',
+      summaryBar: 'from-indigo-500 to-blue-500',
+      summaryIconBg: 'bg-blue-100',
+      summaryIconText: 'text-blue-600',
+      summaryValueText: 'text-blue-700',
+    };
+  }
+
+  if (status === 'Verified') {
+    return {
+      card: 'border-emerald-300 bg-gradient-to-r from-emerald-50 to-green-50',
+      iconBg: 'bg-emerald-100',
+      iconText: 'text-emerald-600',
+      title: 'text-emerald-900',
+      description: 'text-emerald-700',
+      body: 'text-emerald-800',
+      mobile: 'Verified and ready for final approval.',
+      desktopShort: 'Your enrollment documents have been verified and are ready for final approval.',
+      desktopBody: 'Your enrollment is verified. Please wait for final confirmation from the registrar.',
+      summaryBorder: 'border-emerald-100/70',
+      summaryBar: 'from-emerald-500 to-green-500',
+      summaryIconBg: 'bg-emerald-100',
+      summaryIconText: 'text-emerald-600',
+      summaryValueText: 'text-emerald-700',
+    };
+  }
+
+  if (status === 'Pending') {
+    return {
+      card: 'border-violet-300 bg-gradient-to-r from-violet-50 to-indigo-50',
+      iconBg: 'bg-violet-100',
+      iconText: 'text-violet-600',
+      title: 'text-violet-900',
+      description: 'text-violet-700',
+      body: 'text-violet-800',
+      mobile: 'Your request is queued for processing.',
+      desktopShort: 'Your enrollment request has been submitted and is waiting in the queue for initial processing.',
+      desktopBody: 'Your submission is in line for processing. Please check your enrollment page for updates and any additional requirements.',
+      summaryBorder: 'border-violet-100/70',
+      summaryBar: 'from-violet-500 to-indigo-500',
+      summaryIconBg: 'bg-violet-100',
+      summaryIconText: 'text-violet-600',
+      summaryValueText: 'text-violet-700',
+    };
+  }
+
+  if (status === 'Under Review') {
+    return {
+      card: 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50',
+      iconBg: 'bg-yellow-100',
+      iconText: 'text-yellow-600',
+      title: 'text-yellow-900',
+      description: 'text-yellow-700',
+      body: 'text-yellow-800',
+      mobile: 'Your enrollment is under review.',
+      desktopShort: 'Your enrollment is currently being reviewed. Please wait for approval.',
+      desktopBody: 'Your enrollment documents are being reviewed. This may take a few days. Please check back soon.',
+      summaryBorder: 'border-amber-100/70',
+      summaryBar: 'from-yellow-500 to-amber-500',
+      summaryIconBg: 'bg-yellow-100',
+      summaryIconText: 'text-yellow-600',
+      summaryValueText: 'text-yellow-700',
+    };
+  }
+
+  if (status === 'Incomplete') {
+    return {
+      card: 'border-orange-300 bg-gradient-to-r from-orange-50 to-red-50',
+      iconBg: 'bg-orange-100',
+      iconText: 'text-orange-600',
+      title: 'text-orange-900',
+      description: 'text-orange-700',
+      body: 'text-orange-800',
+      mobile: 'Please complete your enrollment requirements.',
+      desktopShort: 'Please complete your enrollment application to proceed.',
+      desktopBody: 'Complete your enrollment by providing all required documents and information.',
+      summaryBorder: 'border-orange-100/70',
+      summaryBar: 'from-orange-500 to-red-500',
+      summaryIconBg: 'bg-orange-100',
+      summaryIconText: 'text-orange-600',
+      summaryValueText: 'text-orange-700',
+    };
+  }
+
+  if (status === 'Rejected') {
+    return {
+      card: 'border-rose-300 bg-gradient-to-r from-rose-50 to-red-50',
+      iconBg: 'bg-rose-100',
+      iconText: 'text-rose-600',
+      title: 'text-rose-900',
+      description: 'text-rose-700',
+      body: 'text-rose-800',
+      mobile: 'Your enrollment was rejected. Please review and re-apply.',
+      desktopShort: 'Your enrollment request was rejected after review.',
+      desktopBody: 'Please review feedback, update your requirements, and submit a new enrollment request.',
+      summaryBorder: 'border-rose-100/70',
+      summaryBar: 'from-rose-500 to-red-500',
+      summaryIconBg: 'bg-rose-100',
+      summaryIconText: 'text-rose-600',
+      summaryValueText: 'text-rose-700',
+    };
+  }
+
+  return {
+    card: 'border-gray-300 bg-gradient-to-r from-gray-50 to-slate-50',
+    iconBg: 'bg-gray-200',
+    iconText: 'text-gray-600',
+    title: 'text-gray-800',
+    description: 'text-gray-600',
+    body: 'text-gray-700',
+    mobile: 'Enrollment recorded.',
+    desktopShort: 'Your enrollment has been recorded.',
+    desktopBody: 'Your enrollment has been recorded in our system.',
+    summaryBorder: 'border-indigo-100/70',
+    summaryBar: 'from-indigo-500 to-blue-500',
+    summaryIconBg: 'bg-blue-100',
+    summaryIconText: 'text-blue-600',
+    summaryValueText: 'text-gray-700',
+  };
+};
+
+const getEnrollmentAction = (status: EnrollmentStatus) => {
+  if (status === 'Incomplete') {
+    return {
+      label: 'Complete Enrollment',
+      className: 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700',
+      icon: FileText,
+    };
+  }
+
+  if (status === 'Pending') {
+    return {
+      label: 'Track Enrollment Status',
+      className: 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700',
+      icon: ClipboardList,
+    };
+  }
+
+  if (status === 'Under Review') {
+    return {
+      label: 'Track Enrollment Status',
+      className: 'bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700',
+      icon: ClipboardList,
+    };
+  }
+
+  if (status === 'Verified') {
+    return {
+      label: 'View Verification Details',
+      className: 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700',
+      icon: ClipboardList,
+    };
+  }
+
+  if (status === 'Approved') {
+    return {
+      label: 'View Enrollment Details',
+      className: 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700',
+      icon: ClipboardList,
+    };
+  }
+
+  if (status === 'Rejected') {
+    return {
+      label: 'Review & Re-Apply',
+      className: 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700',
+      icon: FileText,
+    };
+  }
+
+  return null;
+};
+
 const StudentDashboard = () => {
   const { user } = useAuth();
   const { notifications, addNotification } = useNotificationContext();
   const [courses, setCourses] = useState<any[]>([]);
-  const [recentGrades, setRecentGrades] = useState<any[]>([]);
-  const [courseStats, setCourseStats] = useState<{ averageGrade: number; overallProgress: number }>({ averageGrade: 0, overallProgress: 0 });
   const [hasOpenEnrollmentPeriod, setHasOpenEnrollmentPeriod] = useState<boolean | null>(null);
   const [activePeriodInfo, setActivePeriodInfo] = useState<any>(null);
   const [studentEnrollment, setStudentEnrollment] = useState<any>(null);
@@ -132,8 +337,7 @@ const StudentDashboard = () => {
         // If there's an open enrollment period, we prioritize showing status for THAT specific period
         if (activePeriodInfo?.id) {
           currentActiveEnrollment = enrollmentsArray.find((e: any) => 
-            String(e.enrollment_period_id) === String(activePeriodInfo.id) &&
-            e.status !== "Rejected"
+            String(e.enrollment_period_id) === String(activePeriodInfo.id)
           );
           console.log('Enrollment found for the open re-enrollment period:', currentActiveEnrollment);
           
@@ -141,9 +345,9 @@ const StudentDashboard = () => {
           // applied for the open period, so the dashboard will show the "Enrollment is Open" card.
         } else {
           // If no enrollment period is currently open (regular school days), 
-          // show the record for the student's current active enrollment.
+          // show the latest enrollment record with any status.
           currentActiveEnrollment = enrollmentsArray.find((e: any) => 
-            e.status !== "Rejected" && e.status !== "Pending"
+            Boolean(e?.status)
           );
           console.log('No open enrollment period. Showing last active record:', currentActiveEnrollment);
         }
@@ -158,7 +362,7 @@ const StudentDashboard = () => {
     checkStudentEnrollment();
   }, [activePeriodInfo]);
 
-  // Load dashboard data: student -> subjects -> activities/grades
+  // Load dashboard data: student -> subjects
   useEffect(() => {
     let mounted = true;
 
@@ -243,85 +447,10 @@ const StudentDashboard = () => {
           name: s.course_name ?? s.title ?? s.name ?? '',
           code: s.course_code ?? s.code ?? '',
           teacher: s.teacher_name ?? (s.teacher && s.teacher.name) ?? '',
-          grade: s.average_grade ?? s.avg_grade ?? null,
-          progress: s.progress ?? 0,
           status: 'active',
         }));
 
         if (mounted) setCourses(mappedCourses);
-
-        // Fetch activities + grades for student (recent)
-        const activitiesRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES_STUDENT_ALL}?student_id=${studentId}`);
-        const activities = (activitiesRes && (activitiesRes.data ?? activitiesRes.activities)) || activitiesRes || [];
-
-        const recent = (Array.isArray(activities) ? activities : [])
-          .slice(0, 10)
-          .map((a: any) => ({
-            activity: a.title ?? a.name ?? a.activity ?? a.activity_title,
-            course: a.subject_name ?? (a.subject && a.subject.name) ?? a.course_name ?? '',
-            grade: a.grade ?? a.student_grade ?? a.score ?? 0,
-            date: a.date ?? a.created_at ?? a.submitted_at ?? a.timestamp,
-          }));
-
-        if (mounted) setRecentGrades(recent);
-
-        // Aggregate activities per course to compute per-course grade and progress
-        const courseAgg: Record<string, {
-          course_id?: number;
-          course_name?: string;
-          totalActivities: number;
-          completedCount: number;
-          totalScoreObtained: number;
-          totalMaxScore: number;
-        }> = {};
-
-        (Array.isArray(activities) ? activities : []).forEach((a: any) => {
-          const cid = a.course_id ?? a.subject_id ?? a.courseId ?? a.id ?? null;
-          const cname = a.course_name ?? a.subject_name ?? a.course ?? '';
-          const key = String(cid || cname || 'unknown');
-          if (!courseAgg[key]) courseAgg[key] = { course_id: cid, course_name: cname, totalActivities: 0, completedCount: 0, totalScoreObtained: 0, totalMaxScore: 0 };
-          courseAgg[key].totalActivities += 1;
-          const hasGrade = a.student_grade !== null && a.student_grade !== undefined;
-          if (hasGrade) {
-            courseAgg[key].completedCount += 1;
-            // If activity provides max_score and student_grade, accumulate percent-equivalent
-            const got = Number(a.student_grade) || 0;
-            const max = Number(a.max_score) || 0;
-            if (max > 0) {
-              courseAgg[key].totalScoreObtained += got;
-              courseAgg[key].totalMaxScore += max;
-            } else {
-              // fallback: treat grade as percent already
-              courseAgg[key].totalScoreObtained += got;
-              courseAgg[key].totalMaxScore += 100;
-            }
-          }
-        });
-
-        // Enrich mappedCourses with computed grade and progress from activities
-        const mappedWithStats = mappedCourses.map((mc: any) => {
-          const keyById = String(mc.id ?? mc.code ?? mc.name);
-          const agg = courseAgg[keyById] || courseAgg[String(mc.name)] || null;
-          let gradeVal: number | null = null;
-          let progressVal = 0;
-          if (agg) {
-            if (agg.totalMaxScore > 0) {
-              gradeVal = Math.round((agg.totalScoreObtained / agg.totalMaxScore) * 100 * 10) / 10;
-            }
-            progressVal = agg.totalActivities > 0 ? Math.round((agg.completedCount / agg.totalActivities) * 100) : 0;
-          }
-          return { ...mc, grade: gradeVal, progress: progressVal };
-        });
-
-        if (mounted) setCourses(mappedWithStats);
-
-        // Compute simple overall stats using enriched courses (ignore null grades)
-        if (mounted) {
-          const graded = mappedWithStats.filter((c: any) => c.grade !== null && c.grade !== undefined);
-          const avg = (graded.length > 0) ? graded.reduce((s: number, c: any) => s + Number(c.grade || 0), 0) / graded.length : 0;
-          const prog = (mappedWithStats.length > 0) ? Math.round(mappedWithStats.reduce((s: number, c: any) => s + (Number(c.progress) || 0), 0) / mappedWithStats.length) : 0;
-          setCourseStats({ averageGrade: Math.round((avg + Number.EPSILON) * 10) / 10, overallProgress: prog });
-        }
       } catch (e) {
         // ignore errors silently for now
       }
@@ -340,7 +469,6 @@ const StudentDashboard = () => {
   ];
   const quickActions = [
     { name: "My Courses", href: "/student/courses", icon: BookOpen },
-    { name: "My Grades", href: "/student/grades", icon: Award },
     { name: "My Activities", href: "/student/activities", icon: ClipboardList },
     { name: "My Enrollments", href: "/enrollment/my-enrollments", icon: FileText },
     { name: "Payments", href: "/enrollment/payment", icon: CreditCard },
@@ -349,10 +477,13 @@ const StudentDashboard = () => {
   const quickActionsToShow = isProd
     ? quickActions.filter((action) => action.name === "My Enrollments" || action.name === "Payments")
     : quickActions;
+  const normalizedEnrollmentStatus = normalizeEnrollmentStatus(studentEnrollment?.status);
+  const enrollmentStatusUi = getEnrollmentStatusUi(normalizedEnrollmentStatus);
+  const enrollmentAction = getEnrollmentAction(normalizedEnrollmentStatus);
 
   return (
     <DashboardLayout>
-      <header className="border-b border-border bg-card">
+      <header className="hidden sm:block border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/" className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Maranatha Christian Academy</Link>
@@ -365,74 +496,70 @@ const StudentDashboard = () => {
           </div>
         </div>
       </header>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-2 sm:px-4 py-6 sm:py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name}!</h1>
-          <p className="text-muted-foreground">Track your courses and academic progress</p>
+        <div className="mb-8 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-cyan-50 p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Stay updated with your courses, enrollment, and school announcements.</p>
+            </div>
+            <Badge className="w-fit bg-gradient-to-r from-blue-600 to-cyan-500 text-white border-transparent px-3 py-1">
+              Student Portal
+            </Badge>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        {!isProd && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-primary" />
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+          <Card className="relative overflow-hidden border-blue-100/70 hover:shadow-lg transition-all hover:-translate-y-0.5">
+            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                  <p className="min-w-0 text-[11px] sm:text-sm font-medium text-muted-foreground leading-tight">Active Courses</p>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Courses</p>
-                  <p className="text-2xl font-bold">{courses.length}</p>
-                </div>
+                <p className="text-xl sm:text-3xl font-bold leading-none tracking-tight">{courses.length}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Subjects enrolled</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                  <Award className="h-6 w-6 text-success" />
+          <Card className="relative overflow-hidden border-emerald-100/70 hover:shadow-lg transition-all hover:-translate-y-0.5">
+            <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-green-500" />
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                  <p className="min-w-0 text-[11px] sm:text-sm font-medium text-muted-foreground leading-tight">Notifications</p>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                    <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Average Grade</p>
-                  <p className="text-2xl font-bold">{courseStats.averageGrade}%</p>
-                </div>
+                <p className="text-xl sm:text-3xl font-bold leading-none tracking-tight">{notifications.length}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Unread updates</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-accent" />
+          <Card className={`relative overflow-hidden ${studentEnrollment ? enrollmentStatusUi.summaryBorder : hasOpenEnrollmentPeriod ? 'border-emerald-100/70' : 'border-indigo-100/70'} hover:shadow-lg transition-all hover:-translate-y-0.5`}>
+            <div className={`h-1 w-full bg-gradient-to-r ${studentEnrollment ? enrollmentStatusUi.summaryBar : hasOpenEnrollmentPeriod ? 'from-emerald-500 to-green-500' : 'from-indigo-500 to-blue-500'}`} />
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                  <p className="min-w-0 text-[11px] sm:text-sm font-medium text-muted-foreground leading-tight">Enrollment</p>
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${studentEnrollment ? enrollmentStatusUi.summaryIconBg : hasOpenEnrollmentPeriod ? 'bg-emerald-100' : 'bg-blue-100'}`}>
+                    <Calendar className={`h-4 w-4 sm:h-5 sm:w-5 ${studentEnrollment ? enrollmentStatusUi.summaryIconText : hasOpenEnrollmentPeriod ? 'text-emerald-600' : 'text-blue-600'}`} />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Overall Progress</p>
-                  <p className="text-2xl font-bold">{courseStats.overallProgress}%</p>
-                </div>
+                <p className={`text-base sm:text-2xl font-bold leading-tight tracking-tight ${studentEnrollment ? enrollmentStatusUi.summaryValueText : hasOpenEnrollmentPeriod ? 'text-emerald-700' : 'text-gray-700'}`}>{studentEnrollment?.status || (hasOpenEnrollmentPeriod ? 'Open' : 'None')}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Current period</p>
               </div>
             </CardContent>
           </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <ClipboardList className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Activities</p>
-                  <p className="text-2xl font-bold">{recentGrades.length}</p>
-                  <p className="text-xs text-muted-foreground">recent</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          </div>
-        )}
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
@@ -441,99 +568,34 @@ const StudentDashboard = () => {
             {hasOpenEnrollmentPeriod !== null && (hasOpenEnrollmentPeriod || studentEnrollment) && (
               <>
                 {studentEnrollment ? (
-                  <Card className={`border-2 ${
-                    studentEnrollment.status === 'Approved'
-                      ? 'border-blue-300 bg-gradient-to-r from-blue-50 to-cyan-50'
-                      : studentEnrollment.status === 'Under Review'
-                      ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50'
-                      : studentEnrollment.status === 'Incomplete'
-                      ? 'border-orange-300 bg-gradient-to-r from-orange-50 to-red-50'
-                      : 'border-gray-300 bg-gradient-to-r from-gray-50 to-slate-50'
-                  }`}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start gap-4">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          studentEnrollment.status === 'Approved'
-                            ? 'bg-blue-100'
-                            : studentEnrollment.status === 'Under Review'
-                            ? 'bg-yellow-100'
-                            : studentEnrollment.status === 'Incomplete'
-                            ? 'bg-orange-100'
-                            : 'bg-gray-200'
-                        }`}>
-                          <Calendar className={`h-6 w-6 ${
-                            studentEnrollment.status === 'Approved'
-                              ? 'text-blue-600'
-                              : studentEnrollment.status === 'Under Review'
-                              ? 'text-yellow-600'
-                              : studentEnrollment.status === 'Incomplete'
-                              ? 'text-orange-600'
-                              : 'text-gray-600'
-                          }`} />
+                  <Card className={`border-2 ${enrollmentStatusUi.card}`}>
+                    <CardHeader className="pb-2 sm:pb-3">
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${enrollmentStatusUi.iconBg}`}>
+                          <Calendar className={`h-6 w-6 ${enrollmentStatusUi.iconText}`} />
                         </div>
-                        <div className="flex-1">
-                          <CardTitle className={
-                            studentEnrollment.status === 'Approved'
-                              ? 'text-blue-900'
-                              : studentEnrollment.status === 'Under Review'
-                              ? 'text-yellow-900'
-                              : studentEnrollment.status === 'Incomplete'
-                              ? 'text-orange-900'
-                              : 'text-gray-800'
-                          }>
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className={`${enrollmentStatusUi.title} text-2xl sm:text-3xl leading-tight`}>
                             Enrollment Status: {studentEnrollment.status}
                           </CardTitle>
-                          <CardDescription className={
-                            studentEnrollment.status === 'Approved'
-                              ? 'text-blue-700'
-                              : studentEnrollment.status === 'Under Review'
-                              ? 'text-yellow-700'
-                              : studentEnrollment.status === 'Incomplete'
-                              ? 'text-orange-700'
-                              : 'text-gray-600'
-                          }>
-                            {studentEnrollment.status === 'Approved'
-                              ? 'Your enrollment has been approved for the upcoming academic year.'
-                              : studentEnrollment.status === 'Under Review'
-                              ? 'Your enrollment is currently being reviewed. Please wait for approval.'
-                              : studentEnrollment.status === 'Incomplete'
-                              ? 'Please complete your enrollment application to proceed.'
-                              : 'Your enrollment has been recorded.'}
+                          <CardDescription className={`hidden sm:block ${enrollmentStatusUi.description}`}>
+                            {enrollmentStatusUi.desktopShort}
                           </CardDescription>
+                          <p className={`sm:hidden mt-1 text-sm font-medium ${enrollmentStatusUi.body}`}>
+                            {enrollmentStatusUi.mobile}
+                          </p>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-2">
-                      <p className={`text-sm ${
-                        studentEnrollment.status === 'Approved'
-                          ? 'text-blue-800'
-                          : studentEnrollment.status === 'Under Review'
-                          ? 'text-yellow-800'
-                          : studentEnrollment.status === 'Incomplete'
-                          ? 'text-orange-800'
-                          : 'text-gray-700'
-                      }`}>
-                        {studentEnrollment.status === 'Approved'
-                          ? 'Your enrollment has been approved. You are all set for the upcoming academic year. You can now view your class schedule.'
-                          : studentEnrollment.status === 'Under Review'
-                          ? 'Your enrollment documents are being reviewed. This may take a few days. Please check back soon.'
-                          : studentEnrollment.status === 'Incomplete'
-                          ? 'Complete your enrollment by providing all required documents and information.'
-                          : 'Your enrollment has been recorded in our system.'}
+                    <CardContent className="space-y-3 sm:space-y-4 pt-1 sm:pt-2">
+                      <p className={`hidden sm:block text-sm ${enrollmentStatusUi.body}`}>
+                        {enrollmentStatusUi.desktopBody}
                       </p>
-                      {studentEnrollment.status === 'Incomplete' && (
+                      {enrollmentAction && (
                         <Link to="/enrollment/my-enrollments">
-                          <Button className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold">
-                            <FileText className="h-4 w-4 mr-2" />
-                            Complete Enrollment
-                          </Button>
-                        </Link>
-                      )}
-                      {studentEnrollment.status === 'Approved' && (
-                        <Link to="/enrollment/my-enrollments">
-                          <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold">
-                            <ClipboardList className="h-4 w-4 mr-2" />
-                            View Enrollment Details
+                          <Button className={`w-full h-10 sm:h-11 text-white font-semibold ${enrollmentAction.className}`}>
+                            <enrollmentAction.icon className="h-4 w-4 mr-2" />
+                            {enrollmentAction.label}
                           </Button>
                         </Link>
                       )}
@@ -541,34 +603,39 @@ const StudentDashboard = () => {
                   </Card>
                 ) : (
                   <Card className={`border-2 ${hasOpenEnrollmentPeriod ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50' : 'border-gray-300 bg-gradient-to-r from-gray-50 to-slate-50'}`}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start gap-4">
+                    <CardHeader className="pb-2 sm:pb-3">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${hasOpenEnrollmentPeriod ? 'bg-green-100' : 'bg-gray-200'}`}>
                           <Calendar className={`h-6 w-6 ${hasOpenEnrollmentPeriod ? 'text-green-600' : 'text-gray-600'}`} />
                         </div>
-                        <div className="flex-1">
-                          <CardTitle className={hasOpenEnrollmentPeriod ? 'text-green-900' : 'text-gray-800'}>
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className={`${hasOpenEnrollmentPeriod ? 'text-green-900' : 'text-gray-800'} text-2xl sm:text-3xl leading-tight`}>
                             {hasOpenEnrollmentPeriod 
                               ? `Enrollment for SY. ${activePeriodInfo?.school_year || '2026-2027'} is now Open!` 
                               : 'Enrollment Closed'}
                           </CardTitle>
-                          <CardDescription className={hasOpenEnrollmentPeriod ? 'text-green-700' : 'text-gray-600'}>
+                          <CardDescription className={`hidden sm:block ${hasOpenEnrollmentPeriod ? 'text-green-700' : 'text-gray-600'}`}>
                             {hasOpenEnrollmentPeriod 
                               ? `You can now proceed with your re-enrollment for the SY. ${activePeriodInfo?.school_year || '2026-2027'} academic year.`
                               : 'The enrollment period is currently closed. Check back later.'}
                           </CardDescription>
+                          <p className={`sm:hidden mt-1 text-sm font-medium ${hasOpenEnrollmentPeriod ? 'text-green-800' : 'text-gray-700'}`}>
+                            {hasOpenEnrollmentPeriod
+                              ? 'Re-enrollment is open. Submit now to reserve your slot.'
+                              : 'Enrollment is currently closed.'}
+                          </p>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-2">
-                      <p className={`text-sm ${hasOpenEnrollmentPeriod ? 'text-green-800' : 'text-gray-700'}`}>
+                    <CardContent className="space-y-3 sm:space-y-4 pt-1 sm:pt-2">
+                      <p className={`hidden sm:block text-sm ${hasOpenEnrollmentPeriod ? 'text-green-800' : 'text-gray-700'}`}>
                         {hasOpenEnrollmentPeriod
                           ? `The enrollment period for SY. ${activePeriodInfo?.school_year || '2026-2027'} is currently active. Click the button below to start your re-enrollment process and secure your spot for the next school year.`
                           : 'Please wait for the enrollment period to open. You will be notified when enrollment becomes available.'}
                       </p>
                       {hasOpenEnrollmentPeriod && (
                         <Link to="/enrollment/my-enrollments">
-                          <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold">
+                          <Button className="w-full h-10 sm:h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold">
                             <Calendar className="h-4 w-4 mr-2" />
                             Start Re-Enrollment Now
                           </Button>
@@ -581,7 +648,7 @@ const StudentDashboard = () => {
             )}
 
             {/* Quick Access Cards */}
-            <Card>
+            <Card className="hidden sm:block">
               <CardHeader>
                 <CardTitle>Quick Access</CardTitle>
                 <CardDescription>Navigate to your pages</CardDescription>
@@ -611,6 +678,48 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
+            {/* MCA Vision, Mission & Philosophy */}
+            <Card className="border-blue-100">
+              <CardHeader>
+                <CardTitle className="text-blue-900">MCA Vision, Mission & Philosophy</CardTitle>
+                <CardDescription>Core direction and commitment of Maranatha Christian Academy</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-xl border border-cyan-100 bg-cyan-50/50 p-4">
+                  <div className="mb-2 inline-flex items-center gap-2 text-cyan-800 font-semibold">
+                    <Eye className="h-4 w-4" />
+                    MCA Vision
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    A school system that upholds Christian tradition of excellence in service to God and humanity,
+                    through liberating educations towards a God-fearing society.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+                  <div className="mb-2 inline-flex items-center gap-2 text-blue-800 font-semibold">
+                    <Target className="h-4 w-4" />
+                    MCA Mission
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Providing students with greater access to quality education that instills Christian values,
+                    ideals and competencies essential to successfully meet the demands and challenges of the 21st century.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+                  <div className="mb-2 inline-flex items-center gap-2 text-emerald-800 font-semibold">
+                    <BookOpen className="h-4 w-4" />
+                    MCA Philosophy
+                  </div>
+                  <p className="text-sm font-semibold text-emerald-900">Proverbs 22:6</p>
+                  <p className="text-sm text-gray-700 leading-relaxed mt-1">
+                    "Train up a child in the way he should go, and when he is old, he will not depart from it."
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* My Courses */}
             {!isProd && (
               <Card>
@@ -618,7 +727,7 @@ const StudentDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>My Courses</CardTitle>
-                    <CardDescription>Your enrolled courses and progress</CardDescription>
+                    <CardDescription>Your enrolled courses</CardDescription>
                   </div>
                   <Link to="/student/courses">
                     <Button variant="outline" size="sm">View All</Button>
@@ -635,21 +744,14 @@ const StudentDashboard = () => {
                   courses.slice(0, 4).map((course) => (
                     <Link key={course.id} to={`/student/courses/${course.id}`}>
                       <div className="p-4 border border-border rounded-lg hover:bg-muted/50 hover:border-primary/30 transition-all cursor-pointer">
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start justify-between gap-3">
                           <div>
                             <h3 className="font-semibold">{course.name}</h3>
-                            <p className="text-sm text-muted-foreground">{course.teacher || 'TBA'}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{course.teacher || 'TBA'}</p>
                           </div>
-                          <Badge variant="secondary" className="bg-success/10 text-success">
-                            {course.grade !== null ? `${course.grade}%` : 'N/A'}
+                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-100">
+                            {course.code || 'No Code'}
                           </Badge>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-medium">{course.progress}%</span>
-                          </div>
-                          <Progress value={course.progress} className="h-2" />
                         </div>
                       </div>
                     </Link>
@@ -658,52 +760,12 @@ const StudentDashboard = () => {
               </CardContent>
               </Card>
             )}
-
-            {/* Recent Grades */}
-            {!isProd && (
-              <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Recent Grades</CardTitle>
-                    <CardDescription>Your latest assessment results</CardDescription>
-                  </div>
-                  <Link to="/student/grades">
-                    <Button variant="outline" size="sm">View All</Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recentGrades.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Award className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No grades yet</p>
-                    </div>
-                  ) : (
-                    recentGrades.slice(0, 5).map((grade, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div>
-                          <p className="font-medium">{grade.activity}</p>
-                          <p className="text-sm text-muted-foreground">{grade.course}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-success">{grade.grade}%</p>
-                          <p className="text-xs text-muted-foreground">{grade.date}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <Card>
+            <Card className="hidden sm:block">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
@@ -724,52 +786,6 @@ const StudentDashboard = () => {
                 })}
               </CardContent>
             </Card>
-
-            {/* Academic Progress Summary */}
-            {!isProd && (
-              <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Progress Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Course Completion</span>
-                    <span className="font-semibold">{courseStats.overallProgress}%</span>
-                  </div>
-                  <Progress value={courseStats.overallProgress} className="h-2" />
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Average Grade</span>
-                    <span className="font-semibold">{courseStats.averageGrade}%</span>
-                  </div>
-                  <Progress value={courseStats.averageGrade} className="h-2" />
-                </div>
-
-                <div className="pt-2 border-t border-border">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Enrolled Courses</span>
-                    <span className="font-semibold">{courses.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-muted-foreground">Recent Activities</span>
-                    <span className="font-semibold">{recentGrades.length}</span>
-                  </div>
-                </div>
-
-                <Link to="/student/progress" className="block">
-                  <Button variant="outline" size="sm" className="w-full">
-                    View Full Progress
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-            )}
           </div>
         </div>
       </div>

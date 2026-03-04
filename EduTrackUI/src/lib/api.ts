@@ -177,11 +177,18 @@ export const API_ENDPOINTS = {
   ACTIVITY_GRADES_BY_PARAMS: `${API_BASE_URL}/api/activity-grades`,
   ACTIVITIES_STUDENT_GRADES: `${API_BASE_URL}/api/activities/student-grades`,
   ACTIVITIES_STUDENT_ALL: `${API_BASE_URL}/api/activities/student-all`,
+  STUDENT_SIDEBAR_GRADES: `${API_BASE_URL}/api/activities/student-sidebar-grades`,
   ACTIVITIES_TEACHER_WITH_GRADES: `${API_BASE_URL}/api/teacher/activities/with-grades`,
   ACTIVITIES_COURSE_WITH_STATS: `${API_BASE_URL}/api/activities/course/with-stats`,
   EXPORT_CLASS_RECORD: `${API_BASE_URL}/api/activities/export-class-record`,
   EXPORT_CLASS_RECORD_EXCEL: `${API_BASE_URL}/api/activities/export-class-record-excel`,
   IMPORT_CLASS_RECORD: `${API_BASE_URL}/api/activities/import-class-record`,
+
+  // Hybrid grading inputs (LMS + manual + merged)
+  GRADING_INPUTS_SYNC_LMS: `${API_BASE_URL}/api/grading-inputs/sync-lms`,
+  GRADING_INPUTS: `${API_BASE_URL}/api/grading-inputs`,
+  GRADING_INPUT_BY_ID: (id: string | number) => `${API_BASE_URL}/api/grading-inputs/${id}`,
+  GRADING_INPUT_SCORE: (id: string | number) => `${API_BASE_URL}/api/grading-inputs/${id}/score`,
   
   // Academic periods
   ACADEMIC_PERIODS: `${API_BASE_URL}/api/academic-periods`,

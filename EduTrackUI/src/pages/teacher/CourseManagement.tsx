@@ -154,6 +154,8 @@ const CourseManagement = () => {
   const [isStudentsPanelOpen, setIsStudentsPanelOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const [studentSidebarGrades, setStudentSidebarGrades] = useState<any | null>(null);
+  const [loadingStudentGrades, setLoadingStudentGrades] = useState(false);
 
   // Fetch academic periods on mount and select current active period
   useEffect(() => {
@@ -417,8 +419,10 @@ const CourseManagement = () => {
               id: a.id,
               title: a.title,
               type: a.type,
+              description: a.description,
               max_score: a.max_score,
               due_at: a.due_at,
+              allow_late_submission: a.allow_late_submission,
               academic_period_id: a.academic_period_id,
               grading_stats: {
                 total,
@@ -477,8 +481,10 @@ const CourseManagement = () => {
                   id: a.id,
                   title: a.title,
                   type: a.type,
+                  description: a.description,
                   max_score: a.max_score,
                   due_at: a.due_at,
+                  allow_late_submission: a.allow_late_submission,
                   academic_period_id: a.academic_period_id,
                   grading_stats: { total, graded: gradedCount, pending, percentage_graded: percentage }
                 };
@@ -526,6 +532,41 @@ const CourseManagement = () => {
 
     fetchLearningMaterials();
   }, [courseId, canonicalCourseId, selectedSectionId, selectedPeriod]);
+
+  // Fetch student sidebar grades (bulk) when a student is selected
+  useEffect(() => {
+    if (!selectedStudent) {
+      setStudentSidebarGrades(null);
+      return;
+    }
+    const effectiveCourseId = canonicalCourseId ?? courseId;
+    if (!effectiveCourseId) return;
+
+    const fetchSidebarGrades = async () => {
+      setLoadingStudentGrades(true);
+      try {
+        const q = new URLSearchParams();
+        q.set('student_id', String(selectedStudent.id));
+        q.set('course_id', String(effectiveCourseId));
+        if (selectedSectionId && !String(selectedSectionId).startsWith('default-')) {
+          q.set('section_id', String(selectedSectionId));
+        }
+        if (selectedAcademicPeriod) {
+          q.set('academic_period_id', String(selectedAcademicPeriod));
+        }
+        const res = await apiGet(`${API_ENDPOINTS.STUDENT_SIDEBAR_GRADES}?${q.toString()}`);
+        if (res.success) {
+          setStudentSidebarGrades(res);
+        }
+      } catch (e) {
+        console.error('Failed to fetch student sidebar grades:', e);
+      } finally {
+        setLoadingStudentGrades(false);
+      }
+    };
+
+    fetchSidebarGrades();
+  }, [selectedStudent, canonicalCourseId, courseId, selectedSectionId, selectedAcademicPeriod]);
 
   // Filter activities based on selected categories (empty = show all)
   const filteredActivities = activities.filter((a) => {
@@ -804,7 +845,7 @@ const CourseManagement = () => {
                                   description: editDescription || null,
                                   allow_late_submission: editAllowLateSubmission ? 1 : 0
                                 };
-                                const res = await apiPost(`${API_ENDPOINTS.ACTIVITIES}/${editActivityId}`, payload);
+                                const res = await apiPut(`${API_ENDPOINTS.ACTIVITIES}/${editActivityId}`, payload);
                                 if (res && res.success && res.data) {
                                   const updated = res.data;
                                   if (!updated.grading_stats) updated.grading_stats = activities.find((x) => x.id === editActivityId)?.grading_stats ?? { total: 0, graded: 0, pending: 0, percentage_graded: 0 };
@@ -1011,7 +1052,7 @@ const CourseManagement = () => {
               </CardHeader>
                 <CardContent className="flex-1 overflow-hidden p-0 min-h-0">
                 {/* scrollable container for activities */}
-                <div className="space-y-0 max-h-[calc(100vh-320px)] overflow-y-auto pr-2 min-h-0 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
+                <div className="space-y-0 h-full overflow-y-auto pr-3 pb-6 scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-blue-50 hover:scrollbar-thumb-blue-500">
                   {activities.length === 0 ? (
                     <div className="p-8 text-center">
                       <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -1068,7 +1109,7 @@ const CourseManagement = () => {
                           />
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2 text-sm">
                           {stats.pending === 0 && stats.total > 0 ? (
                             <>
@@ -1082,53 +1123,58 @@ const CourseManagement = () => {
                             </>
                           )}
                         </div>
-                        {(activity.type === 'worksheet' || activity.type === 'project' || activity.type === 'art' || activity.type === 'other') && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/outputs${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
-                            className="bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600"
-                          >
-                            <FileIcon className="h-3.5 w-3.5 mr-1" />
-                            View Outputs
-                          </Button>
-                        )}
-                        {(activity.type === 'quiz' || activity.type === 'exam') && (
-                          <>
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          {(activity.type === 'worksheet' || activity.type === 'project' || activity.type === 'art' || activity.type === 'other') && (
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/review${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
-                              className="bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600"
+                              onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/outputs${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
+                              className="bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600 font-medium"
                             >
-                              <FileIcon className="h-3.5 w-3.5 mr-1" />
-                              Review Answers
+                              <FileIcon className="h-3.5 w-3.5 mr-1.5" />
+                              View Outputs
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/quiz-builder`)}
-                              className="border-purple-200 text-purple-700 hover:bg-purple-50"
-                            >
-                              <Settings className="h-3.5 w-3.5 mr-1" />
-                              Configure
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditActivityId(activity.id);
-                            setEditTitle(activity.title ?? '');
-                            setEditType(activity.type ?? '');
-                            setEditMaxScore(String(activity.max_score ?? ''));
-                            setEditDueDate(activity.due_at ? String(activity.due_at).split(' ')[0] : '');
-                            setIsEditOpen(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
+                          )}
+                          {(activity.type === 'quiz' || activity.type === 'exam') && (
+                            <>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/review${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
+                                className="bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600 font-medium"
+                              >
+                                <FileIcon className="h-3.5 w-3.5 mr-1.5" />
+                                Review
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/quiz-builder`)}
+                                className="border-2 border-purple-200 text-purple-700 hover:bg-purple-50 font-medium"
+                              >
+                                <Settings className="h-3.5 w-3.5 mr-1.5" />
+                                Configure
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditActivityId(activity.id);
+                              setEditTitle(activity.title ?? '');
+                              setEditType(activity.type ?? '');
+                              setEditDescription(activity.description ?? '');
+                              setEditMaxScore(String(activity.max_score ?? ''));
+                              setEditDueDate(activity.due_at ? String(activity.due_at).split(' ')[0] : '');
+                              setEditAllowLateSubmission(activity.allow_late_submission === 1 || activity.allow_late_submission === true);
+                              setIsEditOpen(true);
+                            }}
+                            className="border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-medium"
+                          >
+                            Edit
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     );
@@ -1181,7 +1227,7 @@ const CourseManagement = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="mt-4 flex items-center justify-between gap-1">
+                          <div className="mt-4 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1 text-xs">
                               {stats.pending === 0 && stats.total > 0 ? (
                                 <>
@@ -1195,47 +1241,59 @@ const CourseManagement = () => {
                                 </>
                               )}
                             </div>
-                            {(activity.type === 'worksheet' || activity.type === 'project' || activity.type === 'art' || activity.type === 'other') && (
-                              <Button 
-                                size="sm" 
-                                variant="default" 
-                                onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/outputs${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
-                                className="bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600"
-                                title="View Outputs"
-                              >
-                                <FileIcon className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            {(activity.type === 'quiz' || activity.type === 'exam') && (
-                              <>
+                            <div className="flex items-center gap-1">
+                              {(activity.type === 'worksheet' || activity.type === 'project' || activity.type === 'art' || activity.type === 'other') && (
                                 <Button 
                                   size="sm" 
                                   variant="default" 
-                                  onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/review${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
-                                  className="bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600"
-                                  title="Review Answers"
+                                  onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/outputs${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
+                                  className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                                  title="View Outputs"
                                 >
                                   <FileIcon className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/quiz-builder`)}
-                                  className="border-purple-200 text-purple-700 hover:bg-purple-50"
-                                  title="Configure Quiz"
-                                >
-                                  <Settings className="h-3.5 w-3.5" />
-                                </Button>
-                              </>
-                            )}
-                            <Button size="sm" variant="outline" onClick={() => {
-                                setEditActivityId(activity.id);
-                                setEditTitle(activity.title ?? '');
-                                setEditType(activity.type ?? '');
-                                setEditMaxScore(String(activity.max_score ?? ''));
-                                setEditDueDate(activity.due_at ? String(activity.due_at).split(' ')[0] : '');
-                                setIsEditOpen(true);
-                              }}>Edit</Button>
+                              )}
+                              {(activity.type === 'quiz' || activity.type === 'exam') && (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    variant="default" 
+                                    onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/review${selectedSectionId ? `?section_id=${selectedSectionId}` : ''}`)}
+                                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                                    title="Review Answers"
+                                  >
+                                    <FileIcon className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => navigate(`/teacher/courses/${canonicalCourseId ?? courseId}/activities/${activity.id}/quiz-builder`)}
+                                    className="border-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                                    title="Configure Quiz"
+                                  >
+                                    <Settings className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => {
+                                  setEditActivityId(activity.id);
+                                  setEditTitle(activity.title ?? '');
+                                  setEditType(activity.type ?? '');
+                                  setEditDescription(activity.description ?? '');
+                                  setEditMaxScore(String(activity.max_score ?? ''));
+                                  setEditDueDate(activity.due_at ? String(activity.due_at).split(' ')[0] : '');
+                                  setEditAllowLateSubmission(activity.allow_late_submission === 1 || activity.allow_late_submission === true);
+                                  setIsEditOpen(true);
+                                }}
+                                className="border-2 border-gray-300 text-gray-700 hover:bg-gray-100"
+                                title="Edit Activity"
+                              >
+                                Edit
+                              </Button>
+                            </div>
                           </div>
                         </div>
                         );
@@ -1588,7 +1646,7 @@ const CourseManagement = () => {
                 </div>
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0 min-h-0">
-                <div className="max-h-[calc(100vh-320px)] overflow-y-auto pr-2 min-h-0 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
+                <div className="h-full overflow-y-auto pr-3 pb-6 scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-blue-50 hover:scrollbar-thumb-blue-500">
                   {learningMaterials.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                       <FileIcon className="h-12 w-12 text-gray-300 mb-3" />
@@ -2038,49 +2096,130 @@ const CourseManagement = () => {
 
                   {/* Student Summary */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* Course Performance */}
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-4">Course Performance</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Card className="border-2">
-                          <CardContent className="p-4">
-                            <p className="text-sm text-gray-600 mb-1">Activities Completed</p>
-                            <p className="text-3xl font-bold text-blue-600">0/{activities.length}</p>
-                          </CardContent>
-                        </Card>
-                        <Card className="border-2">
-                          <CardContent className="p-4">
-                            <p className="text-sm text-gray-600 mb-1">Average Grade</p>
-                            <p className="text-3xl font-bold text-green-600">—</p>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
 
-                    {/* Recent Activities */}
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Activity Grades</h3>
-                      {activities.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                          <p className="text-sm">No activities yet</p>
+                    {loadingStudentGrades ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                        <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-sm">Loading grades…</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Course Performance */}
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 mb-4">Course Performance</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Card className="border-2">
+                              <CardContent className="p-4">
+                                <p className="text-sm text-gray-600 mb-1">Activities Completed</p>
+                                <p className="text-3xl font-bold text-blue-600">
+                                  {studentSidebarGrades
+                                    ? `${studentSidebarGrades.summary.graded_total}/${studentSidebarGrades.summary.total_items}`
+                                    : `0/${activities.length}`}
+                                </p>
+                              </CardContent>
+                            </Card>
+                            <Card className="border-2">
+                              <CardContent className="p-4">
+                                <p className="text-sm text-gray-600 mb-1">Average Grade</p>
+                                <p className={`text-3xl font-bold ${studentSidebarGrades?.summary.average_percent != null ? (studentSidebarGrades.summary.average_percent >= 75 ? 'text-green-600' : 'text-orange-500') : 'text-gray-400'}`}>
+                                  {studentSidebarGrades?.summary.average_percent != null
+                                    ? `${studentSidebarGrades.summary.average_percent}%`
+                                    : '—'}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {activities.slice(0, 5).map((activity) => (
-                            <div key={activity.id} className="p-4 border-2 rounded-lg hover:border-blue-300 transition-colors">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-semibold text-sm">{activity.title}</p>
-                                  <p className="text-xs text-gray-500 mt-1">{activity.type}</p>
-                                </div>
-                                <Badge variant="outline" className="text-xs">Not Graded</Badge>
-                              </div>
+
+                        {/* Activity Grades (LMS) */}
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 mb-3">Activity Grades</h3>
+                          {(!studentSidebarGrades || studentSidebarGrades.activity_grades.length === 0) ? (
+                            <div className="text-center py-6 text-gray-400">
+                              <ClipboardList className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                              <p className="text-sm">No activities yet</p>
                             </div>
-                          ))}
+                          ) : (
+                            <div className="space-y-2">
+                              {studentSidebarGrades.activity_grades.map((ag: any) => {
+                                const { label, bgColor, color, Icon } = getActivityTypeDisplay(ag.type);
+                                const graded = ag.student_grade !== null;
+                                const pct = graded && ag.max_score > 0
+                                  ? Math.round((ag.student_grade / ag.max_score) * 100)
+                                  : null;
+                                return (
+                                  <div key={ag.id} className={`p-3 border-2 rounded-lg ${bgColor}`}>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <Icon className={`h-4 w-4 flex-shrink-0 ${color}`} />
+                                        <div className="min-w-0">
+                                          <p className="font-medium text-sm truncate">{ag.title}</p>
+                                          <p className="text-xs text-gray-500 mt-0.5">{label} · HPS {ag.max_score}</p>
+                                        </div>
+                                      </div>
+                                      {graded ? (
+                                        <div className="text-right flex-shrink-0">
+                                          <p className="font-bold text-sm">{ag.student_grade}/{ag.max_score}</p>
+                                          <p className={`text-xs font-medium ${pct != null && pct >= 75 ? 'text-green-600' : 'text-orange-500'}`}>
+                                            {pct != null ? `${pct}%` : ''}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs flex-shrink-0">Not Graded</Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+
+                        {/* Manual Input Grades */}
+                        {studentSidebarGrades && studentSidebarGrades.manual_grades.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">Manual Input Grades</h3>
+                            <div className="space-y-2">
+                              {studentSidebarGrades.manual_grades.map((mg: any) => {
+                                const graded = mg.student_grade !== null;
+                                const pct = graded && mg.max_score > 0
+                                  ? Math.round((mg.student_grade / mg.max_score) * 100)
+                                  : null;
+                                const componentLabel =
+                                  mg.component === 'written' ? 'Written Works' :
+                                  mg.component === 'performance' ? 'Performance Tasks' :
+                                  mg.component === 'quarterly' ? 'Quarterly Assessment' : mg.component;
+                                return (
+                                  <div key={mg.id} className="p-3 border-2 border-slate-200 rounded-lg bg-slate-50">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-sm truncate">{mg.title}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                          {componentLabel} · HPS {mg.max_score}
+                                          {mg.source_type === 'merged' && (
+                                            <span className="ml-1 text-purple-600 font-medium">· Merged</span>
+                                          )}
+                                        </p>
+                                      </div>
+                                      {graded ? (
+                                        <div className="text-right flex-shrink-0">
+                                          <p className="font-bold text-sm">{mg.student_grade}/{mg.max_score}</p>
+                                          <p className={`text-xs font-medium ${pct != null && pct >= 75 ? 'text-green-600' : 'text-orange-500'}`}>
+                                            {pct != null ? `${pct}%` : ''}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs flex-shrink-0">Not Graded</Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
 
                     {/* Student Info */}
                     <div>

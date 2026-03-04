@@ -283,12 +283,12 @@ class AcademicPeriodModel extends Model
             'current_period' => [
                 'id' => $active['id'],
                 'school_year' => $active['school_year'],
-                'semester' => $active['semester'],
-                'period_type' => $active['period_type'],
+                'quarter' => $active['quarter'] ?? null,
+                'period_type' => $active['period_type'] ?? null,
                 'start_date' => $active['start_date'],
                 'end_date' => $active['end_date']
             ],
-            'message' => "Current period: {$active['school_year']} {$active['semester']} - {$active['period_type']}"
+            'message' => "Current period: {$active['school_year']} " . ($active['quarter'] ?? $active['period_type'] ?? '')
         ];
     }
 

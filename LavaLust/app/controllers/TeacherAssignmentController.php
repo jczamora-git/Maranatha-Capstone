@@ -198,7 +198,7 @@ class TeacherAssignmentController extends Controller
                     echo json_encode(['success' => false, 'message' => 'Subject not found']);
                     return;
                 }
-                $ts = $this->db->table('teacher_subjects')
+                $ts = $this->db->table('teacher_subject_assignments')
                                ->select('id')
                                ->where('teacher_id', $teacher_id)
                                ->where('subject_id', $subject['id'])

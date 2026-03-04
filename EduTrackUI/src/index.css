@@ -257,6 +257,16 @@ input[type="number"] {
   .animate-shake {
     animation: shake 0.5s ease-in-out;
   }
+
+  /* Hide scrollbar for horizontal scrolling containers */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Custom prose styles for rich text content (replaces @tailwindcss/typography) */

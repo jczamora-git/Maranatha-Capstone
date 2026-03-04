@@ -186,7 +186,7 @@ $router->get('/api/teachers/sections-by-year-level', 'TeacherController::api_get
 // $router->post('/api/teacher-assignments/remove-section', 'TeacherAssignmentController::api_remove_section');
 // $router->post('/api/teacher-assignments/remove-assignment', 'TeacherAssignmentController::api_remove_assignment');
 // API Routes - Teacher Assignments (Student accessible)
-// $router->get('/api/teacher-assignments/for-student', 'TeacherAssignmentController::api_get_for_student');
+$router->get('/api/teacher-assignments/for-student', 'TeacherAssignmentController::api_get_for_student');
 
 // API Routes - Student Subjects (Enrollments)
 $router->get('/api/student-subjects', 'StudentSubjectController::api_get');
@@ -199,6 +199,7 @@ $router->get('/api/teacher/activities/with-grades', 'ActivityController::api_get
 $router->get('/api/activities/course/with-stats', 'ActivityController::api_get_course_activities_with_stats');
 $router->get('/api/activities/student-grades', 'ActivityController::api_get_student_activities_with_grades');
 $router->get('/api/activities/student-all', 'ActivityController::api_get_all_student_activities_with_grades');
+$router->get('/api/activities/student-sidebar-grades', 'ActivityController::api_get_student_sidebar_grades');
 $router->get('/api/activities/export-class-record', 'ActivityController::api_export_class_record');
 $router->get('/api/activities/export-class-record-excel', 'ActivityController::api_export_class_record_excel');
 $router->post('/api/activities/import-class-record', 'ActivityController::api_import_class_record');
@@ -207,12 +208,21 @@ $router->post('/api/activities', 'ActivityController::api_create_activity');
 $router->put('/api/activities/{id}', 'ActivityController::api_update_activity')->where_number('id');
 $router->delete('/api/activities/{id}', 'ActivityController::api_delete_activity')->where_number('id');
 $router->get('/api/activities/{id}/submissions', 'ActivityController::api_get_submissions')->where_number('id');
+$router->get('/api/activities/{id}/my-submission', 'ActivityController::api_get_my_submission')->where_number('id');
 $router->post('/api/activities/{id}/submit', 'ActivityController::api_submit_activity')->where_number('id');
 $router->post('/api/activities/{id}/grade', 'ActivityController::api_save_grade')->where_number('id');
 $router->get('/api/activities/{id}/grades', 'ActivityController::api_get_activity_grades')->where_number('id');
 $router->post('/api/activities/{id}/grades', 'ActivityController::api_set_grade')->where_number('id');
 // Generic activity grades query (filter by activity_id and/or student_id)
 $router->get('/api/activity-grades', 'ActivityController::api_get_activity_grades_by_params');
+
+// Hybrid grading inputs (LMS + manual + merged)
+$router->post('/api/grading-inputs/sync-lms', 'ActivityController::api_sync_grading_inputs_from_lms');
+$router->get('/api/grading-inputs', 'ActivityController::api_get_grading_inputs');
+$router->post('/api/grading-inputs', 'ActivityController::api_create_grading_input');
+$router->put('/api/grading-inputs/{id}', 'ActivityController::api_update_grading_input')->where_number('id');
+$router->delete('/api/grading-inputs/{id}', 'ActivityController::api_delete_grading_input')->where_number('id');
+$router->post('/api/grading-inputs/{id}/score', 'ActivityController::api_set_grading_input_score')->where_number('id');
 
 // API Routes - Quiz Builder (Teacher)
 $router->get('/api/activities/{id}/questions', 'QuizController::api_get_questions')->where_number('id');

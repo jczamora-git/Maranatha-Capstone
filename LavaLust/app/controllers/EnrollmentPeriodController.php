@@ -244,32 +244,25 @@ class EnrollmentPeriodController extends Controller
                 'description' => $input['description'] ?? null
             ];
             
-            $query = "
-                INSERT INTO enrollment_periods 
-                (academic_period_id, enrollment_name, enrollment_type, start_date, end_date, 
-                 status, max_slots, current_enrollees, allowed_grade_levels, description)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ";
-            
-            $stmt = $this->db->raw($query, [
-                $data['academic_period_id'],
-                $data['enrollment_name'],
-                $data['enrollment_type'],
-                $data['start_date'],
-                $data['end_date'],
-                $data['status'],
-                $data['max_slots'],
-                $data['current_enrollees'],
-                $data['allowed_grade_levels'],
-                $data['description']
+            $insertedId = (int)$this->db->table('enrollment_periods')->insert([
+                'academic_period_id' => $data['academic_period_id'],
+                'enrollment_name' => $data['enrollment_name'],
+                'enrollment_type' => $data['enrollment_type'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+                'status' => $data['status'],
+                'max_slots' => $data['max_slots'],
+                'current_enrollees' => $data['current_enrollees'],
+                'allowed_grade_levels' => $data['allowed_grade_levels'],
+                'description' => $data['description']
             ]);
             
-            if ($stmt) {
+            if ($insertedId) {
                 http_response_code(201);
                 echo json_encode([
                     'success' => true,
                     'message' => 'Enrollment period created successfully',
-                    'id' => $this->db->lastInsertId()
+                    'id' => $insertedId
                 ]);
             } else {
                 http_response_code(500);

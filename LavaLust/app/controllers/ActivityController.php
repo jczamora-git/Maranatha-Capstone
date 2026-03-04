@@ -9,6 +9,8 @@ class ActivityController extends Controller
     public function __construct()
     {
         parent::__construct();
+        $this->call->model('ActivityModel');
+        $this->call->model('AcademicPeriodModel');
     }
 
     /**
@@ -180,9 +182,11 @@ class ActivityController extends Controller
                 'subject_id' => $data['course_id'], // Map course_id from request to subject_id in database
                 'title' => $data['title'],
                 'type' => $data['type'],
+                'description' => $data['description'] ?? null,
                 'academic_period_id' => $academicPeriodId,
                 'max_score' => $data['max_score'] ?? 100,
                 'due_at' => $data['due_at'] ?? null,
+                'allow_late_submission' => isset($data['allow_late_submission']) ? (int)$data['allow_late_submission'] : 1,
                 'section_id' => $data['section_id'] ?? null,
             ];
 
@@ -256,9 +260,11 @@ class ActivityController extends Controller
             // Only allow certain fields to be updated
             if (!empty($data['title'])) $updateData['title'] = $data['title'];
             if (!empty($data['type'])) $updateData['type'] = $data['type'];
+            if (isset($data['description'])) $updateData['description'] = $data['description'];
             if (isset($data['academic_period_id'])) $updateData['academic_period_id'] = $data['academic_period_id'];
             if (isset($data['max_score'])) $updateData['max_score'] = $data['max_score'];
             if (isset($data['due_at'])) $updateData['due_at'] = $data['due_at'];
+            if (isset($data['allow_late_submission'])) $updateData['allow_late_submission'] = (int)$data['allow_late_submission'];
 
             $result = $this->ActivityModel->update($id, $updateData);
 
@@ -1871,6 +1877,906 @@ class ActivityController extends Controller
         }
     }
 
+    private function map_component_from_activity_type($type)
+    {
+        $t = strtolower(trim((string)$type));
+        if (in_array($t, ['quiz', 'worksheet', 'assignment', 'other'])) return 'written';
+        if (in_array($t, ['project', 'laboratory', 'performance', 'art', 'storytime', 'recitation', 'participation'])) return 'performance';
+        if ($t === 'exam') return 'quarterly';
+        return 'written'; // safe fallback
+    }
+
+    private function is_teacher_or_admin()
+    {
+        $role = $this->session->userdata('role');
+        return $role === 'teacher' || $role === 'admin';
+    }
+
+    /**
+     * Sync LMS activities into hybrid grading_input_items as source_type=activity
+     * POST /api/grading-inputs/sync-lms
+     */
+    public function api_sync_grading_inputs_from_lms()
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        if (!$this->is_teacher_or_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            return;
+        }
+
+        try {
+            $data = json_decode(file_get_contents('php://input'), true) ?: [];
+            $courseId = (int)($data['course_id'] ?? 0);
+            $sectionId = (int)($data['section_id'] ?? 0);
+            $periodId = (int)($data['academic_period_id'] ?? 0);
+            $quarter = isset($data['quarter']) ? trim((string)$data['quarter']) : null;
+
+            if ($courseId <= 0 || $sectionId <= 0 || $periodId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'course_id, section_id, academic_period_id are required']);
+                return;
+            }
+
+            $activitiesStmt = $this->db->raw(
+                "SELECT id, title, type, max_score
+                 FROM activities
+                 WHERE subject_id = ? AND section_id = ? AND academic_period_id = ?
+                 ORDER BY created_at ASC, id ASC",
+                [$courseId, $sectionId, $periodId]
+            );
+            $activities = $activitiesStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            $inserted = 0;
+            $updated = 0;
+            $order = 1;
+            $now = date('Y-m-d H:i:s');
+            $userId = (int)($this->session->userdata('user_id') ?? 0);
+
+            foreach ($activities as $activity) {
+                $activityId = (int)$activity['id'];
+                $existingStmt = $this->db->raw(
+                    "SELECT id, component
+                     FROM grading_input_items
+                     WHERE source_type = 'activity'
+                       AND source_activity_id = ?
+                       AND subject_id = ?
+                       AND section_id = ?
+                       AND academic_period_id = ?
+                     LIMIT 1",
+                    [$activityId, $courseId, $sectionId, $periodId]
+                );
+                $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($existing) {
+                    // Keep teacher-assigned component override; sync title/max/order only
+                    $this->db->raw(
+                        "UPDATE grading_input_items
+                         SET title = ?, max_score = ?, display_order = ?, updated_at = ?
+                         WHERE id = ?",
+                        [
+                            (string)$activity['title'],
+                            (float)($activity['max_score'] ?? 0),
+                            $order,
+                            $now,
+                            (int)$existing['id']
+                        ]
+                    );
+                    $updated++;
+                } else {
+                    $this->db->raw(
+                        "INSERT INTO grading_input_items
+                            (subject_id, section_id, academic_period_id, quarter, title, component, max_score, source_type, source_activity_id, merge_strategy, display_order, is_active, created_by, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, 'activity', ?, 'sum', ?, 1, ?, ?, ?)",
+                        [
+                            $courseId,
+                            $sectionId,
+                            $periodId,
+                            $quarter,
+                            (string)$activity['title'],
+                            $this->map_component_from_activity_type($activity['type'] ?? ''),
+                            (float)($activity['max_score'] ?? 0),
+                            $activityId,
+                            $order,
+                            $userId > 0 ? $userId : null,
+                            $now,
+                            $now,
+                        ]
+                    );
+                    $inserted++;
+                }
+
+                $order++;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'LMS grading inputs synced',
+                'inserted' => $inserted,
+                'updated' => $updated,
+                'count' => count($activities)
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get hybrid grading input items and non-activity scores
+     * GET /api/grading-inputs?course_id=&section_id=&academic_period_id=&quarter=
+     */
+    public function api_get_grading_inputs()
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $courseId = (int)($_GET['course_id'] ?? 0);
+            $sectionId = (int)($_GET['section_id'] ?? 0);
+            $periodId = (int)($_GET['academic_period_id'] ?? 0);
+            $quarter = isset($_GET['quarter']) ? trim((string)$_GET['quarter']) : null;
+
+            if ($courseId <= 0 || $sectionId <= 0 || $periodId <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'course_id, section_id, academic_period_id are required']);
+                return;
+            }
+
+            $params = [$courseId, $sectionId, $periodId];
+            $quarterSql = '';
+            if ($quarter !== null && $quarter !== '') {
+                $quarterSql = ' AND (quarter = ? OR quarter IS NULL OR quarter = \'\')';
+                $params[] = $quarter;
+            }
+
+            $itemsStmt = $this->db->raw(
+                "SELECT id, subject_id, section_id, academic_period_id, quarter, title, component, max_score, source_type, source_activity_id, merge_strategy, display_order, is_active
+                 FROM grading_input_items
+                 WHERE subject_id = ? AND section_id = ? AND academic_period_id = ? AND is_active = 1" . $quarterSql . "
+                 ORDER BY component ASC, display_order ASC, id ASC",
+                $params
+            );
+            $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            $itemIds = array_map(function ($row) { return (int)$row['id']; }, $items);
+
+            $scores = [];
+            $manualScoreMap = [];
+            if (!empty($itemIds)) {
+                $placeholders = implode(',', array_fill(0, count($itemIds), '?'));
+                $scoreStmt = $this->db->raw(
+                    "SELECT grading_input_item_id, student_id, score
+                     FROM grading_input_scores
+                     WHERE grading_input_item_id IN ($placeholders)",
+                    $itemIds
+                );
+                $scoreRows = $scoreStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                foreach ($scoreRows as $row) {
+                    $iid = (int)$row['grading_input_item_id'];
+                    $sid = (int)$row['student_id'];
+                    $score = is_null($row['score']) ? null : (float)$row['score'];
+                    $scores[] = ['item_id' => $iid, 'student_id' => $sid, 'score' => $score, 'source' => 'manual'];
+                    if (!isset($manualScoreMap[$iid])) $manualScoreMap[$iid] = [];
+                    $manualScoreMap[$iid][$sid] = $score;
+                }
+            }
+
+            // Also load scores for inactive source items referenced by active merged items
+            // so that merged score computation can sum them correctly
+            $mergedItemsForSrc = array_values(array_filter($items, function ($item) {
+                return ($item['source_type'] ?? '') === 'merged';
+            }));
+            $hiddenSourceItems = [];
+            if (!empty($mergedItemsForSrc)) {
+                $mergedIdsForSrc = array_map(fn($r) => (int)$r['id'], $mergedItemsForSrc);
+                $mSrcPlaceholders = implode(',', array_fill(0, count($mergedIdsForSrc), '?'));
+                $preSrcStmt = $this->db->raw(
+                    "SELECT source_item_id FROM grading_input_item_sources
+                     WHERE grading_input_item_id IN ($mSrcPlaceholders) AND source_item_id IS NOT NULL",
+                    $mergedIdsForSrc
+                );
+                $preSrcRows = $preSrcStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                $inactiveSourceItemIds = array_values(array_unique(
+                    array_filter(
+                        array_map(fn($r) => (int)$r['source_item_id'], $preSrcRows),
+                        fn($id) => $id > 0 && !in_array($id, $itemIds)
+                    )
+                ));
+                if (!empty($inactiveSourceItemIds)) {
+                    // Fetch the inactive source item metadata so frontend can map id → field
+                    $iSrcPlaceholders = implode(',', array_fill(0, count($inactiveSourceItemIds), '?'));
+                    $iSrcItemsStmt = $this->db->raw(
+                        "SELECT id, subject_id, section_id, academic_period_id, quarter, title, component, max_score, source_type, source_activity_id, merge_strategy, display_order, is_active
+                         FROM grading_input_items WHERE id IN ($iSrcPlaceholders)",
+                        $inactiveSourceItemIds
+                    );
+                    $fetchedHiddenItems = $iSrcItemsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                    foreach ($fetchedHiddenItems as &$hi) {
+                        $hi['is_hidden'] = true; // signal to frontend: don't render as column
+                    }
+                    unset($hi);
+                    $hiddenSourceItems = $fetchedHiddenItems;
+
+                    // Fetch their scores so merged computation works
+                    $iSrcScorePlaceholders = implode(',', array_fill(0, count($inactiveSourceItemIds), '?'));
+                    $iSrcScoreStmt = $this->db->raw(
+                        "SELECT grading_input_item_id, student_id, score
+                         FROM grading_input_scores WHERE grading_input_item_id IN ($iSrcScorePlaceholders)",
+                        $inactiveSourceItemIds
+                    );
+                    $iSrcScoreRows = $iSrcScoreStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                    foreach ($iSrcScoreRows as $row) {
+                        $iid = (int)$row['grading_input_item_id'];
+                        $sid = (int)$row['student_id'];
+                        $score = is_null($row['score']) ? null : (float)$row['score'];
+                        if (!isset($manualScoreMap[$iid])) $manualScoreMap[$iid] = [];
+                        $manualScoreMap[$iid][$sid] = $score;
+                        // Also add to scores payload for frontend row hydration
+                        $scores[] = ['item_id' => $iid, 'student_id' => $sid, 'score' => $score, 'source' => 'hidden_source'];
+                    }
+                }
+            }
+
+            // Load merged item sources + compute merged scores per student
+            $mergedItems = array_values(array_filter($items, function ($item) {
+                return ($item['source_type'] ?? '') === 'merged';
+            }));
+
+            if (!empty($mergedItems)) {
+                $mergedIds = array_map(function ($row) { return (int)$row['id']; }, $mergedItems);
+                $mPlaceholders = implode(',', array_fill(0, count($mergedIds), '?'));
+
+                $srcStmt = $this->db->raw(
+                    "SELECT grading_input_item_id, source_type, source_activity_id, source_item_id, weight
+                     FROM grading_input_item_sources
+                     WHERE grading_input_item_id IN ($mPlaceholders)
+                     ORDER BY id ASC",
+                    $mergedIds
+                );
+                $srcRows = $srcStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                $sourceByItem = [];
+                foreach ($srcRows as $src) {
+                    $iid = (int)$src['grading_input_item_id'];
+                    if (!isset($sourceByItem[$iid])) $sourceByItem[$iid] = [];
+                    $sourceByItem[$iid][] = $src;
+                }
+
+                // Expose merge_sources on main items payload (for edit UI)
+                foreach ($items as &$baseItem) {
+                    if (($baseItem['source_type'] ?? '') === 'merged') {
+                        $baseItemId = (int)($baseItem['id'] ?? 0);
+                        $baseItem['merge_sources'] = $sourceByItem[$baseItemId] ?? [];
+                    }
+                }
+                unset($baseItem);
+
+                // Activity scores map for source_type=activity
+                $activityIds = [];
+                foreach ($srcRows as $src) {
+                    if (($src['source_type'] ?? '') === 'activity' && !empty($src['source_activity_id'])) {
+                        $activityIds[] = (int)$src['source_activity_id'];
+                    }
+                }
+                $activityIds = array_values(array_unique($activityIds));
+                $activityScoreMap = [];
+                if (!empty($activityIds)) {
+                    $aPlaceholders = implode(',', array_fill(0, count($activityIds), '?'));
+                    $aStmt = $this->db->raw(
+                        "SELECT activity_id, student_id, grade
+                         FROM activity_grades
+                         WHERE activity_id IN ($aPlaceholders)",
+                        $activityIds
+                    );
+                    $aRows = $aStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                    foreach ($aRows as $ar) {
+                        $aid = (int)$ar['activity_id'];
+                        $sid = (int)$ar['student_id'];
+                        if (!isset($activityScoreMap[$aid])) $activityScoreMap[$aid] = [];
+                        $activityScoreMap[$aid][$sid] = is_null($ar['grade']) ? null : (float)$ar['grade'];
+                    }
+                }
+
+                // Compute for all students in section
+                $studentsStmt = $this->db->raw(
+                    "SELECT DISTINCT id
+                     FROM students
+                     WHERE section_id = ?",
+                    [$sectionId]
+                );
+                $studentIds = array_map(function ($r) { return (int)$r['id']; }, $studentsStmt->fetchAll(PDO::FETCH_ASSOC) ?: []);
+
+                foreach ($mergedItems as &$item) {
+                    $iid = (int)$item['id'];
+                    $itemSources = $sourceByItem[$iid] ?? [];
+                    $item['merge_sources'] = $itemSources;
+
+                    foreach ($studentIds as $studentId) {
+                        $sum = 0.0;
+                        $count = 0;
+
+                        foreach ($itemSources as $src) {
+                            $weight = (float)($src['weight'] ?? 1);
+                            $srcType = $src['source_type'] ?? '';
+                            $sourceScore = null;
+
+                            if ($srcType === 'activity') {
+                                $aid = (int)($src['source_activity_id'] ?? 0);
+                                $sourceScore = $activityScoreMap[$aid][$studentId] ?? null;
+                            } elseif ($srcType === 'manual') {
+                                $mid = (int)($src['source_item_id'] ?? 0);
+                                $sourceScore = $manualScoreMap[$mid][$studentId] ?? null;
+                            }
+
+                            if ($sourceScore !== null) {
+                                $sum += ((float)$sourceScore * $weight);
+                                $count++;
+                            }
+                        }
+
+                        $mergeStrategy = strtolower((string)($item['merge_strategy'] ?? 'sum'));
+                        $computed = ($mergeStrategy === 'average' && $count > 0) ? ($sum / $count) : $sum;
+                        $computed = round($computed, 2);
+
+                        $scores[] = ['item_id' => $iid, 'student_id' => $studentId, 'score' => $computed, 'source' => 'merged'];
+                    }
+                }
+                unset($item);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'items' => $items,
+                'hidden_source_items' => $hiddenSourceItems,
+                'scores' => $scores,
+                'count' => count($items)
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to fetch grading inputs: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Create hybrid grading input item
+     * POST /api/grading-inputs
+     */
+    public function api_create_grading_input()
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        if (!$this->is_teacher_or_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            return;
+        }
+
+        try {
+            $data = json_decode(file_get_contents('php://input'), true) ?: [];
+
+            $courseId = (int)($data['course_id'] ?? 0);
+            $sectionId = (int)($data['section_id'] ?? 0);
+            $periodId = (int)($data['academic_period_id'] ?? 0);
+            $title = trim((string)($data['title'] ?? ''));
+            $component = strtolower(trim((string)($data['component'] ?? 'written')));
+            $maxScore = (float)($data['max_score'] ?? 0);
+            $sourceType = strtolower(trim((string)($data['source_type'] ?? 'manual')));
+            $sourceActivityId = isset($data['source_activity_id']) ? (int)$data['source_activity_id'] : null;
+            $quarter = isset($data['quarter']) ? trim((string)$data['quarter']) : null;
+            $mergeStrategy = strtolower(trim((string)($data['merge_strategy'] ?? 'sum')));
+            $displayOrder = (int)($data['display_order'] ?? 0);
+
+            if ($courseId <= 0 || $sectionId <= 0 || $periodId <= 0 || $title === '') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'course_id, section_id, academic_period_id, title are required']);
+                return;
+            }
+            if (!in_array($component, ['written', 'performance', 'quarterly'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid component']);
+                return;
+            }
+            if (!in_array($sourceType, ['activity', 'manual', 'merged'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid source_type']);
+                return;
+            }
+
+            $now = date('Y-m-d H:i:s');
+            $userId = (int)($this->session->userdata('user_id') ?? 0);
+
+            $itemId = (int)$this->db->table('grading_input_items')->insert([
+                'subject_id' => $courseId,
+                'section_id' => $sectionId,
+                'academic_period_id' => $periodId,
+                'quarter' => $quarter,
+                'title' => $title,
+                'component' => $component,
+                'max_score' => $maxScore,
+                'source_type' => $sourceType,
+                'source_activity_id' => $sourceActivityId,
+                'merge_strategy' => $mergeStrategy,
+                'display_order' => $displayOrder,
+                'is_active' => 1,
+                'created_by' => $userId > 0 ? $userId : null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            if ($sourceType === 'merged' && !empty($data['merge_sources']) && is_array($data['merge_sources'])) {
+                $sourceItemIdsToDeactivate = [];
+                foreach ($data['merge_sources'] as $src) {
+                    $srcType = strtolower(trim((string)($src['source_type'] ?? '')));
+                    $srcActivityId = isset($src['source_activity_id']) ? (int)$src['source_activity_id'] : null;
+                    $srcItemId = isset($src['source_item_id']) ? (int)$src['source_item_id'] : null;
+                    $weight = (float)($src['weight'] ?? 1);
+                    if (!in_array($srcType, ['activity', 'manual'], true)) continue;
+
+                    $this->db->table('grading_input_item_sources')->insert([
+                        'grading_input_item_id' => $itemId,
+                        'source_type' => $srcType,
+                        'source_activity_id' => $srcActivityId,
+                        'source_item_id' => $srcItemId,
+                        'weight' => $weight,
+                        'created_at' => $now,
+                    ]);
+
+                    // Track which grading_input_items to deactivate (hide from grid)
+                    if ($srcItemId > 0) {
+                        $sourceItemIdsToDeactivate[] = $srcItemId;
+                    }
+                }
+
+                // Deactivate source items so they are hidden and not double-counted
+                if (!empty($sourceItemIdsToDeactivate)) {
+                    $deactivatePlaceholders = implode(',', array_fill(0, count($sourceItemIdsToDeactivate), '?'));
+                    $deactivateParams = array_merge($sourceItemIdsToDeactivate, [$now]);
+                    $this->db->raw(
+                        "UPDATE grading_input_items SET is_active = 0, updated_at = ? WHERE id IN ($deactivatePlaceholders)",
+                        array_merge([$now], $sourceItemIdsToDeactivate)
+                    );
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Grading input created',
+                'id' => $itemId
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Create failed: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Update hybrid grading input item
+     * PUT /api/grading-inputs/{id}
+     */
+    public function api_update_grading_input($id)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        if (!$this->is_teacher_or_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            return;
+        }
+
+        try {
+            $itemId = (int)$id;
+            $data = json_decode(file_get_contents('php://input'), true) ?: [];
+
+            $existingStmt = $this->db->raw("SELECT * FROM grading_input_items WHERE id = ? LIMIT 1", [$itemId]);
+            $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$existing) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Grading input not found']);
+                return;
+            }
+
+            $title = isset($data['title']) ? trim((string)$data['title']) : $existing['title'];
+            $component = isset($data['component']) ? strtolower(trim((string)$data['component'])) : $existing['component'];
+            $maxScore = isset($data['max_score']) ? (float)$data['max_score'] : (float)$existing['max_score'];
+            $displayOrder = isset($data['display_order']) ? (int)$data['display_order'] : (int)$existing['display_order'];
+            $quarter = array_key_exists('quarter', $data) ? (is_null($data['quarter']) ? null : trim((string)$data['quarter'])) : $existing['quarter'];
+            $isActive = isset($data['is_active']) ? ((int)$data['is_active'] ? 1 : 0) : (int)$existing['is_active'];
+            $mergeStrategy = isset($data['merge_strategy']) ? strtolower(trim((string)$data['merge_strategy'])) : (string)($existing['merge_strategy'] ?? 'sum');
+
+            if (!in_array($component, ['written', 'performance', 'quarterly'], true)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid component']);
+                return;
+            }
+
+            $this->db->raw(
+                "UPDATE grading_input_items
+                 SET title = ?, component = ?, max_score = ?, merge_strategy = ?, display_order = ?, quarter = ?, is_active = ?, updated_at = ?
+                 WHERE id = ?",
+                [$title, $component, $maxScore, $mergeStrategy, $displayOrder, $quarter, $isActive, date('Y-m-d H:i:s'), $itemId]
+            );
+
+            if (($existing['source_type'] ?? '') === 'merged' && isset($data['merge_sources']) && is_array($data['merge_sources'])) {
+                $now = date('Y-m-d H:i:s');
+
+                // Re-activate items that were previously sources of this merge (before replacing)
+                $oldSrcStmt = $this->db->raw(
+                    "SELECT source_item_id FROM grading_input_item_sources WHERE grading_input_item_id = ? AND source_item_id IS NOT NULL",
+                    [$itemId]
+                );
+                $oldSrcRows = $oldSrcStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                $oldSourceItemIds = array_filter(array_map(fn($r) => (int)$r['source_item_id'], $oldSrcRows));
+                if (!empty($oldSourceItemIds)) {
+                    $rePlaceholders = implode(',', array_fill(0, count($oldSourceItemIds), '?'));
+                    $this->db->raw(
+                        "UPDATE grading_input_items SET is_active = 1, updated_at = ? WHERE id IN ($rePlaceholders)",
+                        array_merge([$now], array_values($oldSourceItemIds))
+                    );
+                }
+
+                // Replace source rows
+                $this->db->raw("DELETE FROM grading_input_item_sources WHERE grading_input_item_id = ?", [$itemId]);
+
+                $newSourceItemIds = [];
+                foreach ($data['merge_sources'] as $src) {
+                    $srcType = strtolower(trim((string)($src['source_type'] ?? '')));
+                    $srcActivityId = isset($src['source_activity_id']) ? (int)$src['source_activity_id'] : null;
+                    $srcItemId = isset($src['source_item_id']) ? (int)$src['source_item_id'] : null;
+                    $weight = (float)($src['weight'] ?? 1);
+                    if (!in_array($srcType, ['activity', 'manual'], true)) continue;
+                    $this->db->table('grading_input_item_sources')->insert([
+                        'grading_input_item_id' => $itemId,
+                        'source_type' => $srcType,
+                        'source_activity_id' => $srcActivityId,
+                        'source_item_id' => $srcItemId,
+                        'weight' => $weight,
+                        'created_at' => $now,
+                    ]);
+                    if ($srcItemId > 0) {
+                        $newSourceItemIds[] = $srcItemId;
+                    }
+                }
+
+                // Deactivate the new source items
+                if (!empty($newSourceItemIds)) {
+                    $newPlaceholders = implode(',', array_fill(0, count($newSourceItemIds), '?'));
+                    $this->db->raw(
+                        "UPDATE grading_input_items SET is_active = 0, updated_at = ? WHERE id IN ($newPlaceholders)",
+                        array_merge([$now], $newSourceItemIds)
+                    );
+                }
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Grading input updated']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Update failed: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Soft-delete grading input item
+     * DELETE /api/grading-inputs/{id}
+     */
+    public function api_delete_grading_input($id)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        if (!$this->is_teacher_or_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            return;
+        }
+
+        try {
+            $itemId = (int)$id;
+            $now = date('Y-m-d H:i:s');
+
+            // If this is a merged item, re-activate its source items before removing it
+            $deletingItemStmt = $this->db->raw(
+                "SELECT source_type FROM grading_input_items WHERE id = ? LIMIT 1",
+                [$itemId]
+            );
+            $deletingItem = $deletingItemStmt->fetch(PDO::FETCH_ASSOC);
+            if ($deletingItem && ($deletingItem['source_type'] ?? '') === 'merged') {
+                $srcStmt = $this->db->raw(
+                    "SELECT source_item_id FROM grading_input_item_sources WHERE grading_input_item_id = ? AND source_item_id IS NOT NULL",
+                    [$itemId]
+                );
+                $srcRows = $srcStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                $restoreIds = array_filter(array_map(fn($r) => (int)$r['source_item_id'], $srcRows));
+                if (!empty($restoreIds)) {
+                    $restorePlaceholders = implode(',', array_fill(0, count($restoreIds), '?'));
+                    $this->db->raw(
+                        "UPDATE grading_input_items SET is_active = 1, updated_at = ? WHERE id IN ($restorePlaceholders)",
+                        array_merge([$now], array_values($restoreIds))
+                    );
+                }
+            }
+
+            $this->db->raw(
+                "UPDATE grading_input_items SET is_active = 0, updated_at = ? WHERE id = ?",
+                [$now, $itemId]
+            );
+            echo json_encode(['success' => true, 'message' => 'Grading input deleted']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Delete failed: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Upsert score for non-activity grading input
+     * POST /api/grading-inputs/{id}/score
+     */
+    public function api_set_grading_input_score($id)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+        if (!$this->is_teacher_or_admin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            return;
+        }
+
+        try {
+            $itemId = (int)$id;
+            $data = json_decode(file_get_contents('php://input'), true) ?: [];
+            $studentId = (int)($data['student_id'] ?? 0);
+            $score = isset($data['score']) ? (float)$data['score'] : null;
+
+            if ($studentId <= 0 || $score === null) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'student_id and score are required']);
+                return;
+            }
+
+            $itemStmt = $this->db->raw("SELECT id, source_type, max_score FROM grading_input_items WHERE id = ? AND is_active = 1 LIMIT 1", [$itemId]);
+            $item = $itemStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$item) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Grading input item not found']);
+                return;
+            }
+            if (($item['source_type'] ?? '') === 'merged') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Merged columns are computed and cannot be edited directly']);
+                return;
+            }
+
+            $maxScore = (float)($item['max_score'] ?? 0);
+            $score = max(0, $score);
+            if ($maxScore > 0) $score = min($score, $maxScore);
+
+            $existingStmt = $this->db->raw(
+                "SELECT id FROM grading_input_scores WHERE grading_input_item_id = ? AND student_id = ? LIMIT 1",
+                [$itemId, $studentId]
+            );
+            $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $this->db->raw(
+                    "UPDATE grading_input_scores SET score = ?, updated_at = ? WHERE id = ?",
+                    [$score, date('Y-m-d H:i:s'), (int)$existing['id']]
+                );
+            } else {
+                $now = date('Y-m-d H:i:s');
+                $this->db->raw(
+                    "INSERT INTO grading_input_scores (grading_input_item_id, student_id, score, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?)",
+                    [$itemId, $studentId, $score, $now, $now]
+                );
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Grading input score saved', 'score' => $score]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Score save failed: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Bulk fetch activity grades + manual grading input scores for the student sidebar.
+     * Single request replaces N individual grade lookups.
+     * GET /api/activities/student-sidebar-grades
+     *   ?student_id=MCAF2025-0253   (student_code OR numeric students.id)
+     *   &course_id=51
+     *   &section_id=11
+     *   &academic_period_id=30      (optional)
+     */
+    public function api_get_student_sidebar_grades()
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $rawStudentId = $_GET['student_id'] ?? null;
+            $courseId     = isset($_GET['course_id'])  ? (int)$_GET['course_id']  : 0;
+            $sectionId    = isset($_GET['section_id']) ? (int)$_GET['section_id'] : 0;
+            $periodId     = isset($_GET['academic_period_id']) ? (int)$_GET['academic_period_id'] : 0;
+
+            if (!$rawStudentId || !$courseId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'student_id and course_id are required']);
+                return;
+            }
+
+            // Resolve numeric students.id — accept both student_code and numeric PK
+            $studentIdInt = (int)$rawStudentId;
+            if ($studentIdInt === 0 || !ctype_digit(ltrim((string)$rawStudentId, ' '))) {
+                // It's a student_code string like "MCAF2025-0253"
+                $stRow = $this->db->raw(
+                    "SELECT id FROM students WHERE student_id = ? LIMIT 1",
+                    [$rawStudentId]
+                )->fetch(PDO::FETCH_ASSOC);
+                if ($stRow) {
+                    $studentIdInt = (int)$stRow['id'];
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'message' => 'Student not found']);
+                    return;
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // 1. Activity grades (LMS activities via activity_grades table)
+            // ------------------------------------------------------------------
+            $actSql = "SELECT a.id, a.title, a.type, a.max_score, a.academic_period_id, a.due_at,
+                              ag.grade  AS student_grade,
+                              ag.status AS grade_status,
+                              ag.id     AS grade_id
+                       FROM activities a
+                       LEFT JOIN activity_grades ag
+                              ON a.id = ag.activity_id AND ag.student_id = ?
+                       WHERE a.subject_id = ?";
+            $actParams = [$studentIdInt, $courseId];
+
+            if ($sectionId) {
+                $actSql .= " AND a.section_id = ?";
+                $actParams[] = $sectionId;
+            }
+            if ($periodId) {
+                $actSql .= " AND a.academic_period_id = ?";
+                $actParams[] = $periodId;
+            }
+            $actSql .= " ORDER BY a.created_at ASC";
+
+            $actRows = $this->db->raw($actSql, $actParams)->fetchAll(PDO::FETCH_ASSOC);
+
+            $activityGrades   = [];
+            $gradedActivityCount = 0;
+            foreach ($actRows as $row) {
+                $graded = ($row['student_grade'] !== null);
+                if ($graded) $gradedActivityCount++;
+                $activityGrades[] = [
+                    'id'            => (int)$row['id'],
+                    'title'         => $row['title'],
+                    'type'          => $row['type'],
+                    'max_score'     => (float)$row['max_score'],
+                    'due_at'        => $row['due_at'],
+                    'student_grade' => $graded ? (float)$row['student_grade'] : null,
+                    'grade_status'  => $row['grade_status'] ?? null,
+                    'source'        => 'activity',
+                ];
+            }
+
+            // ------------------------------------------------------------------
+            // 2. Manual / merged grading input scores
+            // ------------------------------------------------------------------
+            $giSql = "SELECT gi.id, gi.title, gi.source_type, gi.component, gi.max_score,
+                             gi.academic_period_id,
+                             gs.score AS student_grade,
+                             gs.id    AS score_id
+                      FROM grading_input_items gi
+                      LEFT JOIN grading_input_scores gs
+                             ON gi.id = gs.grading_input_item_id AND gs.student_id = ?
+                      WHERE gi.subject_id = ?
+                        AND gi.is_active  = 1
+                        AND gi.source_type IN ('manual', 'merged')";
+            $giParams = [$studentIdInt, $courseId];
+
+            if ($sectionId) {
+                $giSql .= " AND gi.section_id = ?";
+                $giParams[] = $sectionId;
+            }
+            if ($periodId) {
+                $giSql .= " AND gi.academic_period_id = ?";
+                $giParams[] = $periodId;
+            }
+            $giSql .= " ORDER BY gi.created_at ASC";
+
+            $giRows = $this->db->raw($giSql, $giParams)->fetchAll(PDO::FETCH_ASSOC);
+
+            $manualGrades      = [];
+            $gradedManualCount = 0;
+            foreach ($giRows as $row) {
+                $graded = ($row['student_grade'] !== null);
+                if ($graded) $gradedManualCount++;
+                $manualGrades[] = [
+                    'id'            => (int)$row['id'],
+                    'title'         => $row['title'],
+                    'source_type'   => $row['source_type'],
+                    'component'     => $row['component'],
+                    'max_score'     => (float)$row['max_score'],
+                    'student_grade' => $graded ? (float)$row['student_grade'] : null,
+                    'source'        => 'manual_input',
+                ];
+            }
+
+            // ------------------------------------------------------------------
+            // 3. Summary statistics
+            // ------------------------------------------------------------------
+            $totalActivities = count($activityGrades);
+            $totalManual     = count($manualGrades);
+            $gradedTotal     = $gradedActivityCount + $gradedManualCount;
+            $totalItems      = $totalActivities + $totalManual;
+
+            // Weighted average percentage across all graded items
+            $sumScores    = 0;
+            $sumMaxScores = 0;
+            foreach (array_merge($activityGrades, $manualGrades) as $g) {
+                if ($g['student_grade'] !== null && $g['max_score'] > 0) {
+                    $sumScores    += $g['student_grade'];
+                    $sumMaxScores += $g['max_score'];
+                }
+            }
+            $averagePercent = $sumMaxScores > 0 ? round(($sumScores / $sumMaxScores) * 100, 1) : null;
+
+            http_response_code(200);
+            echo json_encode([
+                'success'        => true,
+                'summary'        => [
+                    'total_activities'  => $totalActivities,
+                    'graded_activities' => $gradedActivityCount,
+                    'total_items'       => $totalItems,
+                    'graded_total'      => $gradedTotal,
+                    'average_percent'   => $averagePercent,
+                ],
+                'activity_grades' => $activityGrades,
+                'manual_grades'   => $manualGrades,
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
+    }
+
     /**
      * Get activity submissions (for file upload activities)
      * GET /api/activities/{id}/submissions
@@ -1981,6 +2887,9 @@ class ActivityController extends Controller
                     'file_url' => $fileUrl,
                     'file_name' => $fileName,
                     'file_size' => $fileSize,
+                    'submission_type' => $submission['submission_type'] ?? 'none',
+                    'submission_text' => $submission['submission_text'] ?? null,
+                    'submission_url' => $submission['submission_url'] ?? null,
                     'submitted_at' => $submission['submitted_at'] ?? null,
                     'grade' => $grade['grade'] ?? null,
                     'feedback' => $grade['feedback'] ?? null,
@@ -1996,6 +2905,109 @@ class ActivityController extends Controller
 
         } catch (Exception $e) {
             error_log('Get submissions error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get student's own submission for an activity
+     * GET /api/activities/{id}/my-submission
+     */
+    public function api_get_my_submission($activityId)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            $userId = $this->session->userdata('user_id');
+            
+            // Get student record from user_id
+            $student = $this->db->table('students')
+                ->where('user_id', $userId)
+                ->get();
+
+            if (!$student) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Student record not found'
+                ]);
+                return;
+            }
+
+            $studentId = $student['id'];
+
+            // Get submission for this student
+            $submission = $this->db->table('activity_submissions')
+                ->where('activity_id', $activityId)
+                ->where('student_id', $studentId)
+                ->get();
+
+            if (!$submission) {
+                // No submission exists yet
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'data' => null
+                ]);
+                return;
+            }
+
+            // Get files for this submission
+            $files = $this->db->table('activity_submission_files')
+                ->where('submission_id', $submission['id'])
+                ->get_all();
+
+            // Prepare file data
+            $fileUrl = null;
+            $fileName = null;
+            $fileSize = null;
+            
+            if (!empty($files)) {
+                // Create JSON arrays for multiple files
+                $fileUrls = array_column($files, 'file_path');
+                $fileNames = array_column($files, 'file_name');
+                $fileSizes = array_column($files, 'file_size');
+                
+                $fileUrl = count($fileUrls) > 1 ? json_encode($fileUrls) : ($fileUrls[0] ?? null);
+                $fileName = count($fileNames) > 1 ? json_encode($fileNames) : ($fileNames[0] ?? null);
+                $fileSize = count($fileSizes) > 0 ? $fileSizes[0] : null;
+            }
+
+            $result = [
+                'id' => $submission['id'],
+                'activity_id' => $submission['activity_id'],
+                'student_id' => $submission['student_id'],
+                'submission_type' => $submission['submission_type'],
+                'submission_text' => $submission['submission_text'],
+                'submission_url' => $submission['submission_url'],
+                'submitted_at' => $submission['submitted_at'],
+                'is_late' => $submission['is_late'],
+                'file_url' => $fileUrl,
+                'file_name' => $fileName,
+                'file_size' => $fileSize
+            ];
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => $result
+            ]);
+
+        } catch (Exception $e) {
+            error_log('Get my submission error: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -2186,13 +3198,15 @@ class ActivityController extends Controller
 
             if ($existingSubmission) {
                 // Update existing submission
+                $updateData = [
+                    'submission_text' => $submissionText,
+                    'submitted_at' => date('Y-m-d H:i:s'),
+                    'is_late' => $isLate ? 1 : 0
+                ];
+
                 $this->db->table('activity_submissions')
                     ->where('id', $existingSubmission['id'])
-                    ->update([
-                        'submission_text' => $submissionText,
-                        'submitted_at' => date('Y-m-d H:i:s'),
-                        'is_late' => $isLate ? 1 : 0
-                    ]);
+                    ->update($updateData);
 
                 $submissionId = $existingSubmission['id'];
 
@@ -2202,15 +3216,13 @@ class ActivityController extends Controller
                     ->delete();
             } else {
                 // Create new submission
-                $this->db->table('activity_submissions')->insert([
+                $submissionId = (int)$this->db->table('activity_submissions')->insert([
                     'activity_id' => $activityId,
                     'student_id' => $studentId,
                     'submission_text' => $submissionText,
                     'submitted_at' => date('Y-m-d H:i:s'),
                     'is_late' => $isLate ? 1 : 0
                 ]);
-
-                $submissionId = $this->db->insert_id();
             }
 
             // Handle file uploads
@@ -2262,5 +3274,5 @@ class ActivityController extends Controller
             ]);
         }
     }
-}
 
+}

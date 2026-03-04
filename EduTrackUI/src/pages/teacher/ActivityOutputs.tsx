@@ -41,6 +41,9 @@ interface Submission {
   file_url: string | null;
   file_name: string | null;
   file_size: number | null;
+  submission_type: 'file' | 'text' | 'link' | 'none';
+  submission_text: string | null;
+  submission_url: string | null;
   submitted_at: string | null;
   grade: number | null;
   feedback: string | null;
@@ -367,49 +370,68 @@ const ActivityOutputs = () => {
 
                   <CardContent className="p-6">
                     <div className="grid grid-cols-2 gap-6">
-                      {/* Left Column - Files */}
+                      {/* Left Column - Submission Content */}
                       <div>
-                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                          <FileIcon className="h-4 w-4" />
-                          Submitted Files
+                        <Label className="text-sm font-medium text-gray-600 mb-4 block">
+                          Submission Content
                         </Label>
                         
-                        {!submission || !submission.file_url ? (
-                          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                            <FileIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500">No files submitted</p>
+                        {!submission || !submission.submitted_at ? (
+                          <div className="border border-dashed border-gray-300 rounded-lg p-12 text-center">
+                            <FileIcon className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                            <p className="text-sm text-gray-500">No submission</p>
                           </div>
                         ) : (
-                          <div className="space-y-2">
-                            {(() => {
+                          <div className="space-y-3">
+                            {/* Text Submission Content */}
+                            {submission.submission_text && submission.submission_type !== 'link' && (
+                              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                                  <div className="flex items-center gap-2">
+                                    <MessageSquare className="h-3.5 w-3.5 text-gray-500" />
+                                    <span className="text-xs font-medium text-gray-600">Text</span>
+                                  </div>
+                                </div>
+                                <div className="p-3 bg-white max-h-48 overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
+                                  {submission.submission_text}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* File Submissions */}
+                            {submission.file_url && (() => {
                               try {
                                 const fileUrls = JSON.parse(submission.file_url);
                                 const fileNames = submission.file_name ? JSON.parse(submission.file_name) : [];
                                 const fileSizes = submission.file_size ? [submission.file_size] : [];
                                 
-                                return (Array.isArray(fileUrls) ? fileUrls : [submission.file_url]).map((url: string, idx: number) => (
-                                  <a
-                                    key={idx}
-                                    href={url}
-                                    download
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors group"
-                                  >
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center group-hover:from-blue-200 group-hover:to-blue-300 transition-colors">
-                                      <FileText className="h-5 w-5 text-blue-600" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate">
-                                        {fileNames[idx] || `File ${idx + 1}`}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        {formatFileSize(fileSizes[idx] || null)}
-                                      </p>
-                                    </div>
-                                    <Download className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                                  </a>
-                                ));
+                                return (
+                                  <div className="space-y-2">
+                                    {(Array.isArray(fileUrls) ? fileUrls : [submission.file_url]).map((url: string, idx: number) => (
+                                      <a
+                                        key={idx}
+                                        href={url}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-all group"
+                                      >
+                                        <div className="w-8 h-8 rounded bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                                          <FileText className="h-4 w-4 text-blue-600" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium text-gray-800 truncate">
+                                            {fileNames[idx] || `File ${idx + 1}`}
+                                          </p>
+                                          <p className="text-xs text-gray-500">
+                                            {formatFileSize(fileSizes[idx] || null)}
+                                          </p>
+                                        </div>
+                                        <Download className="h-4 w-4 text-gray-400 flex-shrink-0 group-hover:text-blue-600 transition-colors" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                );
                               } catch {
                                 return (
                                   <a
@@ -417,24 +439,46 @@ const ActivityOutputs = () => {
                                     download
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors group"
+                                    className="flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50/50 transition-all group"
                                   >
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                                      <FileText className="h-5 w-5 text-blue-600" />
+                                    <div className="w-8 h-8 rounded bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                                      <FileText className="h-4 w-4 text-blue-600" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                      <p className="text-sm font-medium text-gray-800 truncate">
                                         {submission.file_name || 'Submitted File'}
                                       </p>
                                       <p className="text-xs text-gray-500">
                                         {formatFileSize(submission.file_size)}
                                       </p>
                                     </div>
-                                    <Download className="h-4 w-4 text-gray-400 group-hover:text-blue-600" />
+                                    <Download className="h-4 w-4 text-gray-400 flex-shrink-0 group-hover:text-blue-600 transition-colors" />
                                   </a>
                                 );
                               }
                             })()}
+
+                            {/* Link Submission */}
+                            {(submission.submission_url || (submission.submission_type === 'link' && submission.submission_text)) && (
+                              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                                  <div className="flex items-center gap-2">
+                                    <FileIcon className="h-3.5 w-3.5 text-gray-500" />
+                                    <span className="text-xs font-medium text-gray-600">Link</span>
+                                  </div>
+                                </div>
+                                <div className="p-3 bg-white">
+                                  <a 
+                                    href={submission.submission_url || submission.submission_text} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline break-all"
+                                  >
+                                    {submission.submission_url || submission.submission_text}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

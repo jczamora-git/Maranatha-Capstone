@@ -236,6 +236,7 @@ export const Sidebar = () => {
     ...(FEATURES.grading ? [{ to: "/student/grades", icon: Award, label: "My Grades" }] : []),
     ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: Coins, label: "Payment" }] : []),
     ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
+    { to: "/student/forum", icon: Users, label: "Forum" },
     { to: "/student/feedback", icon: MessageSquare, label: "Feedback" },
     { to: "/student/settings", icon: Settings, label: "Settings" },
   ];

@@ -18,7 +18,7 @@ class ActivityModel extends Model
 
         // Course filter (required)
         if (!empty($filters['course_id'])) {
-            $query = $query->where('course_id', $filters['course_id']);
+            $query = $query->where('subject_id', $filters['course_id']);
         }
 
         // Section filter (optional)
@@ -76,8 +76,6 @@ class ActivityModel extends Model
      */
     public function update($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        
         return $this->db->table($this->table)
                         ->where('id', $id)
                         ->update($data);
