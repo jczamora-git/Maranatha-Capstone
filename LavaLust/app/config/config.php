@@ -341,7 +341,7 @@ if ($config['ENVIRONMENT'] === 'development') {
 */
 $config['sentiment_api_mode'] = 'external'; // 'local' | 'external' | 'auto'
 $config['sentiment_local_url'] = 'http://localhost:5000';
-$config['sentiment_hf_token'] = getenv('HF_API_TOKEN') ?: ''; // Set HF_API_TOKEN environment variable
+$config['sentiment_hf_token'] = $_ENV['HF_API_TOKEN'] ?? getenv('HF_API_TOKEN') ?: ''; // Read from .env file or environment variable
 $config['sentiment_hf_url'] = 'https://router.huggingface.co/hf-inference/models/tabularisai/multilingual-sentiment-analysis';
 $config['insights_hf_url'] = 'https://router.huggingface.co/v1/chat/completions';
 $config['insights_hf_model'] = 'Qwen/Qwen2.5-7B-Instruct:together';
@@ -351,5 +351,5 @@ $config['chat_hf_url'] = 'https://router.huggingface.co/v1/chat/completions';
 $config['chat_hf_model'] = 'Qwen/Qwen2.5-7B-Instruct:together';
 $config['chat_system_prompt'] = 'You are the Campus Companion assistant for a Philippine elementary school. You assist users based on their role (admin, teacher, student, or enrollee). Rules: (1) For navigation questions ("where do I...", "how do I go to...", "find the page for..."), ALWAYS use routes from the AVAILABLE NAVIGATION ROUTES block — never invent routes. Format links as [link:Label|/route]. (2) For factual data (fees, balances, enrollment status), use the LIVE DATABASE CONTEXT block — never invent or estimate numbers. (3) Use the Knowledge base only for school policies and custom school info not covered by live data. (4) Only mention pages that exist in the AVAILABLE NAVIGATION ROUTES for the user\'s role. Do not suggest pages the user cannot access. (5) If the answer is not in any context block, say you do not have that information yet and suggest contacting the admin. Be concise and friendly.';
 $config['chat_knowledge_only'] = false; // Set true to disable LLM fallback
-$config['rfid_admin_passkey'] = getenv('RFID_ADMIN_PASSKEY') ?: 'admin123'; // Admin-only RFID lock exit
+$config['rfid_admin_passkey'] = $_ENV['RFID_ADMIN_PASSKEY'] ?? getenv('RFID_ADMIN_PASSKEY') ?: 'admin123'; // Admin-only RFID lock exit
 ?>

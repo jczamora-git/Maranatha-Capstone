@@ -110,6 +110,32 @@ define('PUBLIC_DIR', $public_folder);
 
 /*
  * ------------------------------------------------------
+ * Load Composer Autoloader (needed for .env loading)
+ * ------------------------------------------------------
+ */
+$composer_autoload = APP_DIR . 'vendor/autoload.php';
+if (file_exists($composer_autoload)) {
+    require_once $composer_autoload;
+}
+
+/*
+ * ------------------------------------------------------
+ * Load Environment Variables (.env file)
+ * ------------------------------------------------------
+ */
+if (file_exists(ROOT_DIR . '.env') && class_exists('Dotenv\Dotenv')) {
+    try {
+        $dotenv = Dotenv\Dotenv::createImmutable(ROOT_DIR);
+        $dotenv->load();
+    } catch (Exception $e) {
+        // Silently fail if .env doesn't exist or can't be loaded
+        // This allows the app to run without .env in production
+        // where environment variables might be set differently
+    }
+}
+
+/*
+ * ------------------------------------------------------
  * Setup done? Then Hurray!
  * ------------------------------------------------------
  */
