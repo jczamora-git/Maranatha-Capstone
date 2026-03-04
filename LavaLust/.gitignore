@@ -6,6 +6,9 @@ runtime/*
 !runtime/.htaccess
 !runtime/index.html
 
+# Environment variables with secrets - NEVER commit
+.env
+
 # Firebase service account (contains private key) - do not commit
 app/config/service-account.json
 
