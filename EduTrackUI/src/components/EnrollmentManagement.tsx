@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Eye, Search, Clock, AlertCircle, CheckCircle2, XCircle, Plus, ArrowUpDown, LayoutGrid, List, FileText, Settings, ArrowRight, Users, UserPlus } from 'lucide-react';
+import { Eye, Search, Clock, AlertCircle, CheckCircle2, XCircle, Plus, FileText, Settings, ArrowRight, Users, UserPlus, FileCheck, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiGet, API_ENDPOINTS } from '@/lib/api';
 import { useRoleBasedAuth } from '@/hooks/useRoleBasedAuth';
+import { useEnrollmentList, useAdviserLevels } from '@/hooks/useEnrollmentList';
 import { Pagination } from './Pagination';
 
 interface EnrollmentData {
@@ -98,29 +101,69 @@ const statusPriority: Record<string, number> = {
 
 export const EnrollmentManagement = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const highlightedEnrollmentRef = useRef<HTMLTableRowElement>(null);
+  
   const { user } = useRoleBasedAuth(['admin', 'teacher']);
   const isTeacher = user?.role === 'teacher';
-  const [enrollments, setEnrollments] = useState<EnrollmentData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [adviserLevels, setAdviserLevels] = useState<string[]>([]);
+  
+  // Get highlighted enrollment ID from URL (from notification click)
+  const highlightId = searchParams.get('highlight');
+  const highlightedEnrollmentId = highlightId ? parseInt(highlightId) : null;
+  
+  // State
   const [activeAdviserLevel, setActiveAdviserLevel] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showPaidFirst, setShowPaidFirst] = useState(false);
-
-  // Payment status tracking
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
   const [paidEnrollments, setPaidEnrollments] = useState<Set<number>>(new Set());
-
-  // Modal for enrollment type selection
   const [enrollmentTypeModalOpen, setEnrollmentTypeModalOpen] = useState(false);
   const [selectedEnrollmentType, setSelectedEnrollmentType] = useState<string>('');
-
-  // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
+
+  // React Query hooks
+  const { data: adviserLevelsData } = useAdviserLevels();
+  const { data: enrollments = [], isLoading: loading, refetch } = useEnrollmentList({
+    userRole: user?.role,
+    adviserLevel: isTeacher ? activeAdviserLevel : undefined,
+    enabled: !!user && (!isTeacher || !!activeAdviserLevel),
+  });
+
+  // Set default adviser level for teachers
+  useEffect(() => {
+    if (isTeacher && adviserLevelsData && adviserLevelsData.length > 0 && !activeAdviserLevel) {
+      setActiveAdviserLevel(adviserLevelsData[0]);
+    }
+  }, [isTeacher, adviserLevelsData, activeAdviserLevel]);
+
+  // Scroll to and highlight the enrollment when URL param changes
+  useEffect(() => {
+    if (highlightedEnrollmentId && highlightedEnrollmentRef.current) {
+      // Scroll to the highlighted row with smooth animation
+      setTimeout(() => {
+        highlightedEnrollmentRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 300);
+
+      // Remove highlight param after 5 seconds
+      const timer = setTimeout(() => {
+        setSearchParams((params) => {
+          params.delete('highlight');
+          return params;
+        });
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedEnrollmentId, setSearchParams]);
 
   const grades = ['Nursery 1', 'Nursery 2', 'Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
   const enrollmentTypes = ['New Student', 'Transferee', 'Returning Student', 'Continuing Student'];
@@ -142,11 +185,6 @@ export const EnrollmentManagement = () => {
     navigate('/admin/enrollments/new', { state: { enrollmentType: selectedEnrollmentType } });
   };
 
-  useEffect(() => {
-    if (!user) return;
-    fetchEnrollments();
-  }, [user]);
-
   // Fetch payment status for enrollments
   const fetchPaymentStatuses = async (enrollmentIds: number[]) => {
     if (enrollmentIds.length === 0) return;
@@ -160,10 +198,10 @@ export const EnrollmentManagement = () => {
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {
           // Only include enrollments with Approved payment status
-          const paidSet = new Set(
+          const paidSet = new Set<number>(
             data.data
               .filter((p: any) => p.status === 'Approved')
-              .map((p: any) => p.enrollment_id)
+              .map((p: any) => Number(p.enrollment_id))
           );
           setPaidEnrollments(paidSet);
         }
@@ -181,68 +219,6 @@ export const EnrollmentManagement = () => {
     }
   }, [enrollments]);
 
-  const fetchEnrollments = async () => {
-    try {
-      setLoading(true);
-      if (user?.role === 'teacher') {
-        let levels: string[] = [];
-        try {
-          const cached = localStorage.getItem('adviserLevels');
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed)) levels = parsed;
-          }
-        } catch (err) {
-          levels = [];
-        }
-
-        if (levels.length === 0) {
-          const levelsRes = await apiGet(API_ENDPOINTS.TEACHER_ADVISER_LEVELS);
-          if (levelsRes && levelsRes.success && Array.isArray(levelsRes.levels)) {
-            levels = levelsRes.levels;
-            try {
-              localStorage.setItem('adviserLevels', JSON.stringify(levels));
-            } catch (err) {
-              // ignore storage errors
-            }
-          }
-        }
-
-        if (levels.length === 0) {
-          setEnrollments([]);
-          return;
-        }
-
-        setAdviserLevels(levels);
-        setActiveAdviserLevel(levels[0]);
-
-        const response = await apiGet(API_ENDPOINTS.ADVISER_ENROLLMENTS(levels[0]));
-        if (response.success && Array.isArray(response.data)) {
-          setEnrollments(response.data);
-        } else if (Array.isArray(response.data)) {
-          setEnrollments(response.data);
-        } else {
-          toast.error('Failed to load enrollments');
-        }
-        return;
-      }
-
-      const response = await apiGet(API_ENDPOINTS.ADMIN_ENROLLMENTS);
-      if (response.success && Array.isArray(response.data)) {
-        setEnrollments(response.data);
-      } else if (Array.isArray(response.data)) {
-        setEnrollments(response.data);
-      } else {
-        toast.error('Failed to load enrollments');
-      }
-    } catch (error) {
-      console.error('Error fetching enrollments:', error);
-      toast.error('Error loading enrollments');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filteredEnrollments = enrollments.filter((enrollment) => {
     const matchesSearch =
       String(enrollment.id).includes(searchQuery) ||
@@ -253,13 +229,16 @@ export const EnrollmentManagement = () => {
     const matchesStatus = statusFilter === 'all' || enrollment.status === statusFilter;
     const matchesGrade = gradeFilter === 'all' || enrollment.grade_level === gradeFilter;
 
-    return matchesSearch && matchesStatus && matchesGrade;
+    const matchesDate = (!dateFromFilter || enrollment.submitted_date >= dateFromFilter) &&
+                       (!dateToFilter || enrollment.submitted_date <= dateToFilter);
+
+    return matchesSearch && matchesStatus && matchesGrade && matchesDate;
   });
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, gradeFilter, showPaidFirst]);
+  }, [searchQuery, statusFilter, gradeFilter, showPaidFirst, dateFromFilter, dateToFilter]);
 
   // Clamp currentPage to valid pages
   const totalItems = filteredEnrollments.length;
@@ -330,138 +309,165 @@ export const EnrollmentManagement = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
-        <div className="p-4 rounded-lg border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-slate-900">{stats.total}</div>
-            <div className="text-sm text-slate-600 mt-1 font-medium">Total Enrollments</div>
-          </div>
-        </div>
-        <div className="p-4 rounded-lg border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-yellow-100">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-700">{stats.pending}</div>
-            <div className="text-sm text-yellow-600 mt-1 font-medium">Pending Review</div>
-          </div>
-        </div>
-        <div className="p-4 rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-700">{stats.approved}</div>
-            <div className="text-sm text-green-600 mt-1 font-medium">Approved</div>
-          </div>
-        </div>
-        <div className="p-4 rounded-lg border-2 border-red-200 bg-gradient-to-br from-red-50 to-red-100">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-red-700">{stats.rejected}</div>
-            <div className="text-sm text-red-600 mt-1 font-medium">Rejected</div>
-          </div>
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-slate-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-600 font-semibold">Total Enrollments</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
+                <Users className="h-6 w-6 text-slate-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-yellow-600 font-semibold">Pending Review</p>
+                <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 font-semibold">Approved</p>
+                <p className="text-2xl font-bold text-green-700">{stats.approved}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-600 font-semibold">Rejected</p>
+                <p className="text-2xl font-bold text-red-700">{stats.rejected}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-red-200 flex items-center justify-center">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Main Card */}
-      <Card className="shadow-lg border-0">
-        <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b pb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold">All Enrollments ({filteredEnrollments.length})</CardTitle>
-              <CardDescription className="text-base">Student enrollment records and documents</CardDescription>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="relative w-72">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, ID or grade..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 py-2 text-base border-2 focus:border-accent-500 rounded-lg"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder((s) => (s === 'asc' ? 'desc' : 'asc'))}
-                  className="flex items-center gap-2 font-medium"
-                  title={`Sort ${sortOrder === 'asc' ? 'A → Z' : 'Z → A'}`}
-                  aria-pressed={sortOrder === 'desc'}
-                >
-                  <ArrowUpDown className="h-4 w-4" />
-                  <span className="hidden sm:inline">{sortOrder === 'asc' ? 'A → Z' : 'Z → A'}</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewMode((v) => (v === 'grid' ? 'list' : 'grid'))}
-                  className="flex items-center gap-2"
-                  title="Toggle view"
-                  aria-pressed={viewMode === 'list'}
-                >
-                  {viewMode === 'grid' ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
-                  <span className="hidden sm:inline">{viewMode === 'grid' ? 'Grid' : 'List'}</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        {/* Filters */}
-        <CardContent className="p-6 border-b">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="status-filter" className="text-sm font-semibold">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger id="status-filter" className="mt-2 border-2 focus:border-accent-500">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Incomplete">Incomplete</SelectItem>
-                  <SelectItem value="Under Review">Under Review</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Filters */}
+      <Card className="mb-6 border-0 shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, ID, grade..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
 
-            <div>
-              <Label htmlFor="grade-filter" className="text-sm font-semibold">Grade Level</Label>
-              <Select value={gradeFilter} onValueChange={setGradeFilter}>
-                <SelectTrigger id="grade-filter" className="mt-2 border-2 focus:border-accent-500">
-                  <SelectValue placeholder="All Grades" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Grades</SelectItem>
-                  {grades.map((grade) => (
-                    <SelectItem key={grade} value={grade}>
-                      {grade}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Incomplete">Incomplete</SelectItem>
+                <SelectItem value="Under Review">Under Review</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={gradeFilter} onValueChange={setGradeFilter}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="Grade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Grades</SelectItem>
+                {grades.map((grade) => (
+                  <SelectItem key={grade} value={grade}>
+                    {grade}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="date"
+              value={dateFromFilter}
+              onChange={(e) => setDateFromFilter(e.target.value)}
+              placeholder="From Date"
+              className="w-[155px]"
+            />
+
+            <Input
+              type="date"
+              value={dateToFilter}
+              onChange={(e) => setDateToFilter(e.target.value)}
+              placeholder="To Date"
+              className="w-[155px]"
+            />
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-paid-first"
+                checked={showPaidFirst}
+                onCheckedChange={setShowPaidFirst}
+              />
+              <Label htmlFor="show-paid-first" className="text-xs font-medium cursor-pointer whitespace-nowrap">
+                Paid
+              </Label>
             </div>
 
-            <div>
-              <Label className="text-sm font-semibold">Display Options</Label>
-              <div className="flex items-center gap-3 p-3 mt-2 bg-gray-50 rounded-lg border-2 border-gray-200">
-                <Checkbox
-                  id="show-paid-first"
-                  checked={showPaidFirst}
-                  onCheckedChange={(checked) => setShowPaidFirst(checked as boolean)}
-                />
-                <Label htmlFor="show-paid-first" className="font-medium text-gray-700 cursor-pointer flex items-center gap-2">
-                  <span className="text-emerald-600">💰</span>
-                  Show Paid First
-                </Label>
-              </div>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setGradeFilter('all');
+                setDateFromFilter('');
+                setDateToFilter('');
+                setShowPaidFirst(false);
+              }}
+              className="gap-2"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset
+            </Button>
           </div>
         </CardContent>
+      </Card>
+
+      {/* Main Table Card */}
+      <Card className="shadow-lg border-0">
+        <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Enrollment Records ({filteredEnrollments.length})
+          </CardTitle>
+        </CardHeader>
 
         {/* Content */}
-        <CardContent className="p-6">
+        <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-12">
               <div className="h-8 w-8 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4"></div>
@@ -473,156 +479,88 @@ export const EnrollmentManagement = () => {
               <p className="text-lg text-muted-foreground font-medium">No enrollments found matching your filters</p>
             </div>
           ) : (
-            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-              {(() => {
-                const list = [...pagedEnrollments];
-                list.sort((a, b) => {
-                  // If showPaidFirst is enabled, prioritize paid enrollments
-                  if (showPaidFirst) {
-                    const aPaid = paidEnrollments.has(a.id);
-                    const bPaid = paidEnrollments.has(b.id);
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Student Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Grade Level</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Academic Period</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Submitted</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Documents</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {(() => {
+                    const list = [...pagedEnrollments];
+                    list.sort((a, b) => {
+                      // If showPaidFirst is enabled, prioritize paid enrollments
+                      if (showPaidFirst) {
+                        const aPaid = paidEnrollments.has(a.id);
+                        const bPaid = paidEnrollments.has(b.id);
+                        
+                        if (aPaid && !bPaid) return -1;
+                        if (!aPaid && bPaid) return 1;
+                      }
+                      
+                      // Then, sort by status priority (Pending → Under Review → Verified → Approved)
+                      const statusPriorityA = statusPriority[a.status] || 999;
+                      const statusPriorityB = statusPriority[b.status] || 999;
+                      
+                      if (statusPriorityA !== statusPriorityB) {
+                        return statusPriorityA - statusPriorityB;
+                      }
+                      
+                      // If same status, sort by submitted date (most recent first)
+                      const dateA = new Date(a.submitted_date).getTime();
+                      const dateB = new Date(b.submitted_date).getTime();
+                      return dateB - dateA; // Descending order (newest first)
+                    });
                     
-                    if (aPaid && !bPaid) return -1;
-                    if (!aPaid && bPaid) return 1;
-                  }
-                  
-                  // Then, sort by status priority (Pending → Under Review → Verified → Approved)
-                  const statusPriorityA = statusPriority[a.status] || 999;
-                  const statusPriorityB = statusPriority[b.status] || 999;
-                  
-                  if (statusPriorityA !== statusPriorityB) {
-                    return statusPriorityA - statusPriorityB;
-                  }
-                  
-                  // If same status, sort by ID
-                  return sortOrder === 'asc'
-                    ? String(a.id).localeCompare(String(b.id))
-                    : String(b.id).localeCompare(String(a.id));
-                });
-                return list.map((enrollment) => {
-                  const status = statusConfig[enrollment.status] || {
-                    bg: 'bg-gray-500', 
-                    bgLight: 'bg-gray-100', 
-                    text: 'text-gray-800', 
-                    icon: <AlertCircle className="w-4 h-4" />
-                  };
-                  if (viewMode === 'grid') {
-                    return (
-                      <div
-                        key={enrollment.id}
-                        className="rounded-2xl border-2 border-accent-200 bg-gradient-to-br from-card to-muted/30 hover:border-accent-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
-                      >
-                        {/* Header */}
-                        <div className={`${status.bg} px-5 py-4 text-white`}>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-bold text-xl">{enrollment.student_name}</p>
-                              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                <Badge className="bg-white text-gray-900 font-semibold">
-                                  {enrollment.enrollment_type || 'New Student'}
-                                </Badge>
-                                {paidEnrollments.has(enrollment.id) && enrollment.status !== 'Approved' && (
-                                  <Badge className="bg-emerald-600 text-white font-semibold">
-                                    Paid
-                                  </Badge>
+                    return list.map((enrollment) => {
+                      const status = statusConfig[enrollment.status] || {
+                        bg: 'bg-gray-500', 
+                        bgLight: 'bg-gray-100', 
+                        text: 'text-gray-800', 
+                        icon: <AlertCircle className="w-4 h-4" />
+                      };
+
+                      const isHighlighted = highlightedEnrollmentId === enrollment.id;
+                      
+                      return (
+                        <tr 
+                          key={enrollment.id} 
+                          ref={isHighlighted ? highlightedEnrollmentRef : null}
+                          className={`transition-all duration-500 ${
+                            isHighlighted 
+                              ? 'bg-primary/5 dark:bg-primary/10 border-l-2 border-l-primary' 
+                              : 'hover:bg-muted/50'
+                          }`}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{enrollment.student_name}</p>
+                                {enrollment.formatted_student_id && (
+                                  <p className="text-xs text-gray-500">ID: {enrollment.formatted_student_id}</p>
+                                )} 
+                                {isHighlighted && (
+                                  <p className="text-xs font-medium text-primary mt-1">Selected from notification</p>
                                 )}
                               </div>
                             </div>
-                            <Badge className={`${status.bgLight} ${status.text} font-semibold`}>
-                              {status.icon}
-                              <span className="ml-1">{enrollment.status}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge variant="outline" className="text-xs font-medium">
+                              {enrollment.grade_level}
                             </Badge>
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-5 flex-1">
-                          <div className="space-y-3 mb-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Grade Level</span>
-                              <Badge variant="outline" className="capitalize">
-                                {enrollment.grade_level}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Academic Period</span>
-                              <span className="font-medium text-sm">
-                                {enrollment.school_year} - {enrollment.quarter}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Submitted</span>
-                              <span className="font-medium text-sm">
-                                {new Date(enrollment.submitted_date).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <span className="text-sm text-muted-foreground">Documents</span>
-                              <div className="text-right">
-                                <div className="font-bold">
-                                  {enrollment.documents_verified}/{enrollment.documents_count} verified
-                                </div>
-                                {enrollment.documents_rejected > 0 && (
-                                  <div className="text-xs text-red-600 font-semibold mt-0.5">
-                                    {enrollment.documents_rejected} rejected
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            {enrollment.formatted_student_id && (
-                              <div className="flex items-center justify-between pt-2 border-t">
-                                <span className="text-sm text-muted-foreground">Student Created</span>
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  ID: {enrollment.formatted_student_id}
-                                </Badge>
-                              </div>
-                            )}
-                            {enrollment.created_student_id && !enrollment.formatted_student_id && (
-                              <div className="flex items-center justify-between pt-2 border-t">
-                                <span className="text-sm text-muted-foreground">Student Created</span>
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  ID: {enrollment.created_student_id}
-                                </Badge>
-                              </div>
-                            )}
-                            {enrollment.status === 'Rejected' && enrollment.rejection_reason && (
-                              <div className="pt-2 border-t">
-                                <p className="text-xs text-muted-foreground mb-1">Rejection Reason:</p>
-                                <p className="text-sm text-red-700 font-medium">{enrollment.rejection_reason}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="p-5 border-t border-accent-100 bg-card/50">
-                          <Button
-                            onClick={() => navigate(`/admin/enrollments/${enrollment.id}`)}
-                            className="w-full gap-2 font-medium bg-gradient-to-r from-primary to-accent text-white hover:shadow-md transition-all"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Review Details
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  } else {
-                    // List view
-                    return (
-                      <div
-                        key={enrollment.id}
-                        className="rounded-2xl border-2 border-accent-100 bg-card hover:border-accent-300 hover:shadow-md transition-all duration-300 flex items-center justify-between p-4"
-                      >
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className={`${status.bg} w-14 h-14 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 text-white`}>
-                            {status.icon}
-                          </div>
-                          <div className="flex-1">
+                          </td>
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-semibold text-lg">{enrollment.student_name}</p>
-                              <Badge variant="outline" className="text-xs">
-                                {enrollment.grade_level}
-                              </Badge>
                               <Badge className="text-xs font-semibold bg-blue-100 text-blue-800 border-blue-200">
                                 {enrollment.enrollment_type || 'New Student'}
                               </Badge>
@@ -632,37 +570,64 @@ export const EnrollmentManagement = () => {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              ID: {enrollment.id}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {enrollment.documents_verified}/{enrollment.documents_count} verified
-                              {enrollment.documents_rejected > 0 && (
-                                <span className="text-red-600 font-semibold ml-2">
-                                  • {enrollment.documents_rejected} rejected
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge className={`${status.bgLight} ${status.text} font-semibold`}>
-                            {enrollment.status}
-                          </Badge>
-                          <Button
-                            onClick={() => navigate(`/admin/enrollments/${enrollment.id}`)}
-                            size="sm"
-                            className="gap-2 font-medium"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Review
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  }
-                });
-              })()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{enrollment.school_year}</p>
+                              <p className="text-xs text-gray-500">{enrollment.quarter}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{new Date(enrollment.submitted_date).toLocaleDateString()}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <FileCheck className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-bold">
+                                  {enrollment.documents_verified}/{enrollment.documents_count}
+                                </p>
+                                {enrollment.documents_rejected > 0 && (
+                                  <p className="text-xs text-red-600 font-semibold">
+                                    {enrollment.documents_rejected} rejected
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge className={`${status.bgLight} ${status.text} font-semibold flex items-center gap-1 w-fit`}>
+                              {status.icon}
+                              <span>{enrollment.status}</span>
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/admin/enrollments/${enrollment.id}`)}
+                              className="gap-2 font-medium"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Review
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+
+              {filteredEnrollments.length === 0 && (
+                <div className="text-center py-16">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No enrollments found</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

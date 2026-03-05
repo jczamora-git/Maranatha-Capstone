@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -176,6 +177,7 @@ export default function EnrollmentDetail() {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [enrollment, setEnrollment] = useState<EnrollmentData | null>(null);
   const [editedEnrollment, setEditedEnrollment] = useState<EnrollmentData | null>(null);
@@ -510,6 +512,12 @@ export default function EnrollmentDetail() {
       const data = await response.json();
       if (data.success) {
         await fetchEnrollmentDetail();
+        
+        // Invalidate notification queries to update sidebar/notification bell
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'enrollment-count'] });
+        
         toast({
           title: 'Success',
           description: `Enrollment status updated to ${newStatus}`,

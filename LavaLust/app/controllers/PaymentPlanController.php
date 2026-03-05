@@ -13,6 +13,10 @@ class PaymentPlanController extends Controller
         $this->call->model('PaymentPlanModel');
         $this->call->model('InstallmentModel');
         $this->call->model('PaymentScheduleTemplateModel');
+        $this->call->library('AuditLogger');
+        $this->call->library('NotificationService');
+        $this->call->library('session');
+        $this->call->database();
     }
 
     /**
@@ -162,6 +166,133 @@ class PaymentPlanController extends Controller
 
             $installments_created = $this->InstallmentModel->create_batch($installments);
 
+            // Create audit log + notifications (same approach as PaymentController)
+            try {
+                $currentUser = [
+                    'user_id' => $this->session->userdata('user_id'),
+                    'role' => $this->session->userdata('role') ?: 'student',
+                    'first_name' => $this->session->userdata('first_name'),
+                    'last_name' => $this->session->userdata('last_name')
+                ];
+
+                $actor_name = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+                if (empty($actor_name)) {
+                    $actor_name = 'System User';
+                }
+
+                $studentName = $actor_name;
+                $studentQuery = $this->db->table('users')
+                    ->select('first_name, last_name')
+                    ->where('id', $input['student_id'])
+                    ->get();
+                if ($studentQuery) {
+                    $resolvedName = trim(($studentQuery['first_name'] ?? '') . ' ' . ($studentQuery['last_name'] ?? ''));
+                    if (!empty($resolvedName)) {
+                        $studentName = $resolvedName;
+                    }
+                }
+
+                $formattedTotal = number_format((float)$input['total_tuition'], 2);
+                $scheduleType = $template['schedule_type'] ?? 'Installment';
+                $installmentCount = (int)($template['number_of_installments'] ?? 0);
+
+                if (($currentUser['role'] ?? 'student') === 'student') {
+                    // Student created installment plan -> notify admins
+                    $recipients = $this->NotificationService->getRecipientsByRole('admin');
+                    $notifTitle = 'New Installment Plan Created';
+                    $notifBody = "{$studentName} selected a {$scheduleType} tuition installment plan";
+                    $notifActionUrl = '/admin/payment-plans';
+                    $description = "{$studentName} created a {$scheduleType} installment plan (₱{$formattedTotal})";
+                } else {
+                    // Admin created installment plan -> notify student
+                    $recipients = [[
+                        'user_id' => $input['student_id'],
+                        'role' => 'student'
+                    ]];
+                    $notifTitle = 'Installment Plan Approved';
+                    $notifBody = "Your {$scheduleType} tuition installment plan has been created";
+                    $notifActionUrl = '/enrollment/payment';
+                    $description = "{$actor_name} created a {$scheduleType} installment plan for {$studentName} (₱{$formattedTotal})";
+                }
+
+                $notificationData = [
+                    'type' => NotificationService::TYPE_PAYMENT_RECEIVED,
+                    'title' => $notifTitle,
+                    'body' => $notifBody,
+                    'icon' => 'calendar',
+                    'action_url' => $notifActionUrl,
+                    'push_data' => [
+                        'screen' => 'PaymentPlans',
+                        'payment_plan_id' => $plan_id
+                    ],
+                    'metadata' => [
+                        'payment_plan_id' => $plan_id,
+                        'student_id' => (int)$input['student_id'],
+                        'enrollment_id' => isset($input['enrollment_id']) ? (int)$input['enrollment_id'] : null,
+                        'academic_period_id' => (int)$input['academic_period_id'],
+                        'total_tuition' => (float)$input['total_tuition'],
+                        'schedule_type' => $scheduleType,
+                        'number_of_installments' => $installmentCount
+                    ],
+                    'action' => 'payment_plan.created',
+                    'entity_type' => 'payment_plan',
+                    'entity_id' => $plan_id,
+                    'actor_user_id' => $currentUser['user_id'] ?? null,
+                    'actor_role' => $currentUser['role'] ?? 'student',
+                    'actor_name' => $actor_name,
+                    'description' => $description,
+                    'recipients' => $recipients
+                ];
+
+                $notificationResult = $this->NotificationService->create($notificationData);
+
+                // Fallback: if notification service fails, still write audit log
+                if (!$notificationResult['success']) {
+                    $this->AuditLogger->log([
+                        'action' => 'payment_plan.created',
+                        'entity_type' => 'payment_plan',
+                        'entity_id' => $plan_id,
+                        'actor_user_id' => $currentUser['user_id'] ?? null,
+                        'actor_role' => $currentUser['role'] ?? 'student',
+                        'actor_name' => $actor_name,
+                        'description' => $description,
+                        'metadata' => [
+                            'payment_plan_id' => $plan_id,
+                            'student_id' => (int)$input['student_id'],
+                            'academic_period_id' => (int)$input['academic_period_id'],
+                            'total_tuition' => (float)$input['total_tuition'],
+                            'schedule_type' => $scheduleType,
+                            'number_of_installments' => $installmentCount
+                        ]
+                    ]);
+                }
+            } catch (Exception $auditNotifError) {
+                error_log('PaymentPlan audit/notification failed: ' . $auditNotifError->getMessage());
+
+                // Last-resort fallback audit log
+                try {
+                    $this->AuditLogger->log([
+                        'action' => 'payment_plan.created',
+                        'entity_type' => 'payment_plan',
+                        'entity_id' => $plan_id,
+                        'actor_user_id' => $this->session->userdata('user_id') ?? null,
+                        'actor_role' => $this->session->userdata('role') ?? 'student',
+                        'actor_name' => trim(($this->session->userdata('first_name') ?? '') . ' ' . ($this->session->userdata('last_name') ?? '')),
+                        'description' => 'Installment payment plan created',
+                        'metadata' => [
+                            'payment_plan_id' => $plan_id,
+                            'student_id' => (int)$input['student_id'],
+                            'academic_period_id' => (int)$input['academic_period_id'],
+                            'total_tuition' => (float)$input['total_tuition'],
+                            'schedule_type' => $template['schedule_type'] ?? 'Installment',
+                            'number_of_installments' => (int)($template['number_of_installments'] ?? 0)
+                        ]
+                    ]);
+                } catch (Exception $fallbackAuditError) {
+                    error_log('PaymentPlan fallback audit log failed: ' . $fallbackAuditError->getMessage());
+                }
+            }
+
             echo json_encode([
                 'success' => true,
                 'message' => 'Payment plan created successfully',
@@ -267,6 +398,7 @@ class PaymentPlanController extends Controller
         header('Content-Type: application/json');
         
         try {
+            $existingInstallment = $this->InstallmentModel->get_installment($installment_id);
             $input = json_decode(file_get_contents('php://input'), true);
             
             $update_data = [];
@@ -304,6 +436,94 @@ class PaymentPlanController extends Controller
             }
             
             $result = $this->InstallmentModel->update($installment_id, $update_data);
+
+            if ($result) {
+                try {
+                    $updatedInstallment = $this->InstallmentModel->get_installment($installment_id);
+                    $plan = null;
+                    if ($updatedInstallment && !empty($updatedInstallment['payment_plan_id'])) {
+                        $plan = $this->PaymentPlanModel->get_plan($updatedInstallment['payment_plan_id']);
+                    }
+
+                    $currentUser = [
+                        'user_id' => $this->session->userdata('user_id'),
+                        'role' => $this->session->userdata('role') ?: 'admin',
+                        'first_name' => $this->session->userdata('first_name'),
+                        'last_name' => $this->session->userdata('last_name')
+                    ];
+
+                    $actorName = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+                    if (empty($actorName)) {
+                        $actorName = 'Admin';
+                    }
+
+                    $description = "Installment #{$installment_id} updated";
+                    if ($plan && isset($plan['student_name'])) {
+                        $description = "Installment #{$installment_id} updated for {$plan['student_name']}";
+                    }
+
+                    // Audit log
+                    $this->AuditLogger->log([
+                        'action' => 'payment_plan.installment_updated',
+                        'entity_type' => 'installment',
+                        'entity_id' => $installment_id,
+                        'actor_user_id' => $currentUser['user_id'] ?? null,
+                        'actor_role' => $currentUser['role'] ?? 'admin',
+                        'actor_name' => $actorName,
+                        'description' => $description,
+                        'metadata' => [
+                            'payment_plan_id' => $updatedInstallment['payment_plan_id'] ?? null,
+                            'installment_number' => $updatedInstallment['installment_number'] ?? null,
+                            'old_due_date' => $existingInstallment['due_date'] ?? null,
+                            'new_due_date' => $updatedInstallment['due_date'] ?? null,
+                            'old_amount_due' => $existingInstallment['amount_due'] ?? null,
+                            'new_amount_due' => $updatedInstallment['amount_due'] ?? null,
+                            'old_balance' => $existingInstallment['balance'] ?? null,
+                            'new_balance' => $updatedInstallment['balance'] ?? null,
+                        ]
+                    ]);
+
+                    // Notify student when admin updates installment schedule/details
+                    if (($currentUser['role'] ?? '') === 'admin' && $plan && !empty($plan['student_id'])) {
+                        $notifResult = $this->NotificationService->create([
+                            'type' => 'payment_plan.installment_updated',
+                            'title' => 'Installment Schedule Updated',
+                            'body' => 'Your installment payment details were updated by the admin.',
+                            'icon' => 'calendar',
+                            'action_url' => '/enrollment/payment',
+                            'push_data' => [
+                                'screen' => 'PaymentPlans',
+                                'payment_plan_id' => $updatedInstallment['payment_plan_id'] ?? null,
+                                'installment_id' => $installment_id
+                            ],
+                            'metadata' => [
+                                'payment_plan_id' => $updatedInstallment['payment_plan_id'] ?? null,
+                                'installment_id' => $installment_id,
+                                'installment_number' => $updatedInstallment['installment_number'] ?? null,
+                                'due_date' => $updatedInstallment['due_date'] ?? null,
+                                'amount_due' => $updatedInstallment['amount_due'] ?? null
+                            ],
+                            'action' => 'payment_plan.installment_updated',
+                            'entity_type' => 'installment',
+                            'entity_id' => $installment_id,
+                            'actor_user_id' => $currentUser['user_id'] ?? null,
+                            'actor_role' => $currentUser['role'] ?? 'admin',
+                            'actor_name' => $actorName,
+                            'description' => $description,
+                            'recipients' => [[
+                                'user_id' => $plan['student_id'],
+                                'role' => 'student'
+                            ]]
+                        ]);
+
+                        if (!$notifResult['success']) {
+                            error_log('PaymentPlan installment update notification failed: ' . ($notifResult['error'] ?? 'unknown error'));
+                        }
+                    }
+                } catch (Exception $auditNotifError) {
+                    error_log('PaymentPlan installment update audit/notification failed: ' . $auditNotifError->getMessage());
+                }
+            }
             
             echo json_encode([
                 'success' => $result,

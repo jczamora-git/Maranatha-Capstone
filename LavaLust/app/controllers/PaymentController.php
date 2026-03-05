@@ -719,6 +719,12 @@ class PaymentController extends Controller
                             
                             $this->NotificationService->create($notificationData);
                         }
+                        
+                        // Mark ALL admin notifications as read when any admin takes action
+                        // This ensures Admin2 doesn't see stale notifications after Admin1 processed the payment
+                        if ($newStatus === 'Approved' || $newStatus === 'Verified' || $newStatus === 'Rejected') {
+                            $this->markAllAdminNotificationsAsRead('payment', $id);
+                        }
                     } catch (Exception $notifError) {
                         error_log('Failed to send payment status notification: ' . $notifError->getMessage());
                         // Don't fail the update if notification fails
@@ -1470,6 +1476,31 @@ class PaymentController extends Controller
             ]);
 
         return true;
+    }
+
+    /**
+     * Mark ALL admin notifications as read for a given entity
+     * This ensures multi-admin synchronization: when Admin1 takes action,
+     * Admin2's notification is also marked as read to prevent stale notifications
+     * 
+     * @param string $entityType Entity type (e.g., 'payment', 'enrollment')
+     * @param int $entityId Entity ID
+     */
+    private function markAllAdminNotificationsAsRead($entityType, $entityId)
+    {
+        try {
+            $this->db->table('notifications')
+                ->where('entity_type', $entityType)
+                ->where('entity_id', $entityId)
+                ->where('is_read', 0)
+                ->update([
+                    'is_read' => 1,
+                    'read_at' => date('Y-m-d H:i:s')
+                ]);
+        } catch (Exception $e) {
+            error_log('Failed to mark all admin notifications as read: ' . $e->getMessage());
+            // Don't fail the main operation if notification sync fails
+        }
     }
 }
 

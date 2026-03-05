@@ -39,7 +39,7 @@ const PRODUCTION_FEATURES = {
   
   // Phase 2: Communication Features (Under Development - DISABLED in production)
   messages: false,
-  announcements: false,
+  announcements: true,  // ENABLED: Admin notifications/announcements
   broadcasts: false,
   
   // Phase 2: Attendance Features (Under Development - DISABLED in production)
@@ -49,7 +49,7 @@ const PRODUCTION_FEATURES = {
   
   // Phase 3: Advanced Features (Future - DISABLED in production)
   reports: false,
-  analytics: false,
+  analytics: false,  // DISABLED: Predictive analytics hidden in production
   learningMaterials: false,
   studentProgress: false,
 } as const;

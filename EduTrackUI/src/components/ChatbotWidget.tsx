@@ -98,7 +98,7 @@ const getJijiIntro = (role: string | undefined, firstName: string): string => {
   const spark = "\u2728";
   switch (role) {
     case "admin":
-      return `Kamusta${name}! ${wave} Ako si Jiji ${spark}\n\nAng iyong Campus Companion assistant! Maaari akong tumulong sa pamamahala ng enrollment, fees, student records, at reports. Ano ang kailangan mo ngayon?`;
+      return `Kamusta${name}! ${wave} Ako si Jiji ${spark}\n\nAng iyong Campus Companion ✨ Nandito ako para tumulong sa management ng school, student records, enrollment, at analytics. Ano ang kailangan mo ngayong araw?`;
     case "teacher":
       return `Kumusta${name}! ${wave} Ako si Jiji ${spark}\n\nAng iyong school assistant! Nandito ako para tumulong sa iyong mga subject, class schedule, grades ng mga estudyante, at announcements. Paano kita matutulungan?`;
     case "student":
@@ -106,7 +106,7 @@ const getJijiIntro = (role: string | undefined, firstName: string): string => {
     case "enrollee":
       return `Maligayang pagdating${name}! ${party} Ako si Jiji ${spark}\n\nNandito ako para gabayan ka sa iyong enrollment journey! Maaari akong tumulong sa requirements, tuition fees, at pag-set up ng iyong account. Magsimula na tayo!`;
     default:
-      return `Kamusta${name}! ${wave} Ako si Jiji ${spark}\n\nAng iyong Campus Companion assistant. Paano kita matutulungan ngayon?`;
+      return `Kamusta${name}! ${wave} Ako si Jiji ${spark}\n\nAng iyong Campus Companion ✨ Paano kita matutulungan ngayong araw?`;
   }
 };
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +9,7 @@ import { useTheme } from "next-themes";
 import { NotificationBell } from "./NotificationBell";
 import { FEATURES } from "@/config/features";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
+import { usePaymentNotificationCount, useEnrollmentNotificationCount } from "@/hooks/useNotifications";
 import {
   LayoutDashboard,
   Users,
@@ -37,7 +39,11 @@ import {
   Radio,
   Shirt,
   Package,
-  TrendingUp
+  TrendingUp,
+  ChevronRight,
+  DollarSign,
+  Megaphone,
+  Wrench
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -45,6 +51,7 @@ interface SidebarItemProps {
   label: string;
   href: string;
   isActive?: boolean;
+  badgeCount?: number;
 }
 
 const ChatbotIcon = ({ className }: { className?: string }) => (
@@ -65,20 +72,34 @@ const ChatbotIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const SidebarItem = ({ icon, label, href, isActive }: SidebarItemProps) => {
+const SidebarItem = ({ icon, label, href, isActive, badgeCount }: SidebarItemProps) => {
   const navigate = useNavigate();
   const { isOpen } = useSidebar();
   return (
     <button
       onClick={() => navigate(href)}
       className={cn(
-        "w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-all text-xs sm:text-sm",
+        "w-full flex items-center gap-2 p-1.5 sm:p-2 rounded-lg transition-all text-xs sm:text-sm relative",
         isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80",
         !isOpen && "justify-center"
       )}
     >
-      {icon}
-      {isOpen && <span className="truncate hidden sm:inline">{label}</span>}
+      <div className="relative">
+        {icon}
+        {/* Small circular badge on icon (same style as notification bell) */}
+        {!isOpen && badgeCount != null && badgeCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[16px] h-[16px] text-[9px] flex items-center justify-center font-bold shadow-sm border border-background">
+            {badgeCount > 9 ? '9' : badgeCount}
+          </span>
+        )}
+      </div>
+      {isOpen && <span className="truncate hidden sm:inline flex-1 text-left">{label}</span>}
+      {/* Circular badge for open sidebar (matches notification bell style) */}
+      {isOpen && badgeCount != null && badgeCount > 0 && (
+        <span className="ml-auto bg-red-500 text-white rounded-full min-w-[18px] h-[18px] px-1.5 text-[10px] flex items-center justify-center font-bold shadow-sm">
+          {badgeCount > 99 ? '99' : badgeCount}
+        </span>
+      )}
     </button>
   );
 };
@@ -90,6 +111,13 @@ export const Sidebar = () => {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    'academic': true,
+    'finance': true,
+    'services': true,
+    'communication': true,
+    'tools': true
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isTeacherAdviser, setIsTeacherAdviser] = useState(() => {
     try {
@@ -111,6 +139,18 @@ export const Sidebar = () => {
     }
   });
 
+  // Fetch payment notification count for admin
+  const { data: paymentNotifCount } = usePaymentNotificationCount({
+    enabled: user?.role === 'admin'
+  });
+  const paymentBadgeCount = paymentNotifCount?.count ?? 0;
+
+  // Fetch enrollment notification count for admin
+  const { data: enrollmentNotifCount } = useEnrollmentNotificationCount({
+    enabled: user?.role === 'admin'
+  });
+  const enrollmentBadgeCount = enrollmentNotifCount?.count ?? 0;
+
   // Check if any admin submenu is active (includes the main users page)
   const isAdminSubmenuActive = location.pathname.startsWith('/admin/users');
 
@@ -121,6 +161,13 @@ export const Sidebar = () => {
     setExpandedMenus((prev) => ({
       ...prev,
       [menuId]: !prev[menuId],
+    }));
+  };
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
     }));
   };
 
@@ -202,22 +249,73 @@ export const Sidebar = () => {
 
   const isProd = import.meta.env.MODE === "production";
 
-  const adminLinks = [
-    { to: "/admin/dashboard", icon: BarChart3, label: "Dashboard" },
-    { to: "/admin/users", icon: Users, label: "Manage Users" },
-    ...(FEATURES.enrollment ? [{ to: "/admin/enrollments", icon: ClipboardList, label: "Enrollments" }] : []),
-    ...(FEATURES.payment ? [{ to: "/admin/payments", icon: Coins, label: "Payments" }] : []),
-    ...(FEATURES.payment ? [{ to: "/admin/payment-plans", icon: CalendarClock, label: "Payment Plans" }] : []),
-    ...(FEATURES.payment ? [{ to: "/admin/uniform-orders", icon: Shirt, label: "Uniform Orders" }] : []),
-    ...(FEATURES.payment ? [{ to: "/admin/school-services", icon: Package, label: "School Services" }] : []),
-    ...(FEATURES.attendance ? [{ to: "/admin/rfid-attendance", icon: Radio, label: "RFID Scanner" }] : []),
-    // ...(FEATURES.attendance ? [{ to: "/admin/campuses", icon: School, label: "Campuses" }] : []),
-    ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
-    { to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" },
-    { to: "/admin/predictive-analytics", icon: TrendingUp, label: "Predictive Analytics" },
-    { to: "/admin/chatbot-knowledge", icon: ChatbotIcon, label: "Chatbot Knowledge" },
-    ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : []),
-  ];
+  // Organized menu structure with sections
+  const adminMenuSections = [
+    {
+      id: 'main',
+      label: 'MAIN',
+      icon: LayoutDashboard,
+      collapsible: false,
+      items: [
+        { to: "/admin/dashboard", icon: BarChart3, label: "Dashboard" }
+      ]
+    },
+    {
+      id: 'academic',
+      label: 'ACADEMIC MANAGEMENT',
+      icon: GraduationCap,
+      collapsible: true,
+      items: [
+        { to: "/admin/users", icon: Users, label: "Manage Users", hasSubmenu: true },
+        ...(FEATURES.enrollment ? [{ to: "/admin/enrollments", icon: ClipboardList, label: "Enrollments" }] : [])
+      ]
+    },
+    {
+      id: 'finance',
+      label: 'FINANCE',
+      icon: DollarSign,
+      collapsible: true,
+      items: [
+        ...(FEATURES.payment ? [{ to: "/admin/payments", icon: Coins, label: "Payments" }] : []),
+        ...(FEATURES.payment ? [{ to: "/admin/payment-plans", icon: CalendarClock, label: "Payment Plans" }] : [])
+      ]
+    },
+    {
+      id: 'services',
+      label: 'SERVICES',
+      icon: Wrench,
+      collapsible: true,
+      items: [
+        ...(FEATURES.payment ? [{ to: "/admin/uniform-orders", icon: Shirt, label: "Uniform Orders" }] : []),
+        ...(FEATURES.payment ? [{ to: "/admin/school-services", icon: Package, label: "School Services" }] : []),
+        ...(FEATURES.attendance ? [{ to: "/admin/rfid-attendance", icon: Radio, label: "RFID Scanner" }] : [])
+      ]
+    },
+    {
+      id: 'communication',
+      label: 'COMMUNICATION',
+      icon: Megaphone,
+      collapsible: true,
+      items: [
+        ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
+        { to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" }
+      ]
+    },
+    {
+      id: 'tools',
+      label: 'ADVANCED TOOLS',
+      icon: TrendingUp,
+      collapsible: true,
+      items: [
+        ...(FEATURES.analytics ? [{ to: "/admin/predictive-analytics", icon: TrendingUp, label: "Predictive Analytics" }] : []),
+        { to: "/admin/chatbot-knowledge", icon: ChatbotIcon, label: "Chatbot Knowledge" },
+        ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : [])
+      ]
+    }
+  ].filter(section => section.items.length > 0); // Filter out empty sections
+
+  // Flatten for legacy compatibility (teacher/student/enrollee links still use flat structure)
+  const adminLinks = adminMenuSections.flatMap(section => section.items);
 
   const teacherLinks = [
     { to: "/teacher/dashboard", icon: BarChart3, label: "Dashboard" },
@@ -236,7 +334,7 @@ export const Sidebar = () => {
     ...(FEATURES.grading ? [{ to: "/student/grades", icon: Award, label: "My Grades" }] : []),
     ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: Coins, label: "Payment" }] : []),
     ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
-    { to: "/student/forum", icon: Users, label: "Forum" },
+    ...(!isProd ? [{ to: "/student/forum", icon: Users, label: "Forum" }] : []),
     { to: "/student/feedback", icon: MessageSquare, label: "Feedback" },
     { to: "/student/settings", icon: Settings, label: "Settings" },
   ];
@@ -304,139 +402,214 @@ export const Sidebar = () => {
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="p-4 space-y-1">
-          {links.map((link) => {
-            const Icon = link.icon as any;
-            const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
-            const isManageUsers = link.to === "/admin/users";
-            const isMenuExpanded = isManageUsers ? isManageUsersExpanded : expandedMenus[link.to] ?? true;
+        <div className="p-4 space-y-3">
+          {user?.role === "admin" ? (
+            // Admin role: Use organized sections
+            adminMenuSections.map((section) => {
+              const SectionIcon = section.icon as any;
+              const isSectionExpanded = section.collapsible ? (expandedSections[section.id] ?? true) : true;
 
-            return (
-              <div key={link.to}>
-                {isManageUsers && user?.role === "admin" ? (
-                  <button
-                    onClick={() => toggleMenu(link.to)}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg transition-all text-sm",
-                      isActive || isAdminSubmenuActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="flex-1 text-left">{link.label}</span>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 transition-transform duration-300",
-                        isMenuExpanded ? "rotate-0" : "-rotate-90"
-                      )}
-                    />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      navigate(link.to);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg transition-all text-sm",
-                      isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="truncate">{link.label}</span>
-                  </button>
-                )}
+              return (
+                <div key={section.id} className="space-y-1">
+                  {section.collapsible ? (
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                    >
+                      <SectionIcon className="h-3 w-3" />
+                      <span className="flex-1 text-left">{section.label}</span>
+                      <ChevronDown
+                        className={cn(
+                          "h-3 w-3 transition-transform duration-200",
+                          isSectionExpanded ? "rotate-0" : "-rotate-90"
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {section.label}
+                    </div>
+                  )}
 
-                {isManageUsers && user?.role === "admin" && (
                   <div
                     className={cn(
-                      "overflow-hidden transition-all duration-300 ease-in-out",
-                      isMenuExpanded ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+                      "space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
+                      section.collapsible && !isSectionExpanded ? "max-h-0 opacity-0" : "max-h-[1000px] opacity-100"
                     )}
                   >
-                    <div className="mt-1 space-y-1 pl-6">
-                      <button
-                        onClick={() => {
-                          navigate('/admin/users');
-                          setMobileMenuOpen(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname === '/admin/users' ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>User Directory</span>
-                      </button>
-                      {FEATURES.teacherManagement && (
-                        <button
-                          onClick={() => {
-                            navigate('/admin/users/teachers');
-                            setMobileMenuOpen(false);
-                          }}
-                          className={cn(
-                            "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
-                            location.pathname.startsWith('/admin/users/teachers') && !location.pathname.includes('assignments') ? 'bg-primary/10 text-primary' : ''
+                    {section.items.map((link) => {
+                      const Icon = link.icon as any;
+                      const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
+                      const isManageUsers = link.hasSubmenu && link.to === "/admin/users";
+                      const isMenuExpanded = isManageUsers ? isManageUsersExpanded : expandedMenus[link.to] ?? true;
+
+                      return (
+                        <div key={link.to}>
+                          {isManageUsers && user?.role === "admin" ? (
+                            <button
+                              onClick={() => toggleMenu(link.to)}
+                              className={cn(
+                                "w-full flex items-center gap-2 p-2 rounded-lg transition-all text-sm",
+                                isActive || isAdminSubmenuActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
+                              )}
+                            >
+                              <Icon className="h-5 w-5" />
+                              <span className="flex-1 text-left">{link.label}</span>
+                              <ChevronDown
+                                className={cn(
+                                  "h-4 w-4 transition-transform duration-300",
+                                  isMenuExpanded ? "rotate-0" : "-rotate-90"
+                                )}
+                              />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                navigate(link.to);
+                                setMobileMenuOpen(false);
+                              }}
+                              className={cn(
+                                "w-full flex items-center gap-2 p-2 rounded-lg transition-all text-sm",
+                                isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
+                              )}
+                            >
+                              <div className="relative">
+                                <Icon className="h-5 w-5" />
+                                {/* Badge on icon for payment notifications */}
+                                {link.to === '/admin/payments' && paymentBadgeCount > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[16px] h-[16px] text-[9px] flex items-center justify-center font-bold shadow-sm border border-background">
+                                    {paymentBadgeCount > 9 ? '9' : paymentBadgeCount}
+                                  </span>
+                                )}
+                                {/* Badge on icon for enrollment notifications */}
+                                {link.to === '/admin/enrollments' && enrollmentBadgeCount > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[16px] h-[16px] text-[9px] flex items-center justify-center font-bold shadow-sm border border-background">
+                                    {enrollmentBadgeCount > 9 ? '9' : enrollmentBadgeCount}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="truncate flex-1">{link.label}</span>
+                            </button>
                           )}
-                        >
-                          <GraduationCap className="h-4 w-4" />
-                          <span>Manage Teachers</span>
-                        </button>
-                      )}
-                      {/* Teacher Assignments removed - page deprecated */}
-                      <button
-                        onClick={() => {
-                          navigate('/admin/users/students');
-                          setMobileMenuOpen(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/students') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>Manage Students</span>
-                      </button>
-                      {FEATURES.subjects && (
-                        <button
-                          onClick={() => {
-                            navigate('/admin/users/subjects');
-                            setMobileMenuOpen(false);
-                          }}
-                          className={cn(
-                            "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
-                            location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
+
+                          {isManageUsers && user?.role === "admin" && (
+                            <div
+                              className={cn(
+                                "overflow-hidden transition-all duration-300 ease-in-out",
+                                isMenuExpanded ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+                              )}
+                            >
+                              <div className="mt-1 space-y-1 pl-6">
+                                <button
+                                  onClick={() => {
+                                    navigate('/admin/users');
+                                    setMobileMenuOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
+                                    location.pathname === '/admin/users' ? 'bg-primary/10 text-primary' : ''
+                                  )}
+                                >
+                                  <Users className="h-4 w-4" />
+                                  <span>User Directory</span>
+                                </button>
+                                {FEATURES.teacherManagement && (
+                                  <button
+                                    onClick={() => {
+                                      navigate('/admin/users/teachers');
+                                      setMobileMenuOpen(false);
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
+                                      location.pathname.startsWith('/admin/users/teachers') && !location.pathname.includes('assignments') ? 'bg-primary/10 text-primary' : ''
+                                    )}
+                                  >
+                                    <GraduationCap className="h-4 w-4" />
+                                    <span>Manage Teachers</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    navigate('/admin/users/students');
+                                    setMobileMenuOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
+                                    location.pathname.startsWith('/admin/users/students') ? 'bg-primary/10 text-primary' : ''
+                                  )}
+                                >
+                                  <Users className="h-4 w-4" />
+                                  <span>Manage Students</span>
+                                </button>
+                                {FEATURES.subjects && (
+                                  <button
+                                    onClick={() => {
+                                      navigate('/admin/users/subjects');
+                                      setMobileMenuOpen(false);
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
+                                      location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
+                                    )}
+                                  >
+                                    <BookOpen className="h-4 w-4" />
+                                    <span>Manage Subjects</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    navigate('/admin/users/sections');
+                                    setMobileMenuOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
+                                    location.pathname.startsWith('/admin/users/sections') ? 'bg-primary/10 text-primary' : ''
+                                  )}
+                                >
+                                  <Grid3x3 className="h-4 w-4" />
+                                  <span>Manage Sections</span>
+                                </button>
+                              </div>
+                            </div>
                           )}
-                        >
-                          <BookOpen className="h-4 w-4" />
-                          <span>Manage Subjects</span>
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          navigate('/admin/users/sections');
-                          setMobileMenuOpen(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/sections') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <Grid3x3 className="h-4 w-4" />
-                        <span>Manage Sections</span>
-                      </button>
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })
+          ) : (
+            // Other roles: Use flat links structure
+            links.map((link) => {
+              const Icon = link.icon as any;
+              const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
+
+              return (
+                <button
+                  key={link.to}
+                  onClick={() => {
+                    navigate(link.to);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-2 p-2 rounded-lg transition-all text-sm",
+                    isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="truncate">{link.label}</span>
+                </button>
+              );
+            })
+          )}
         </div>
 
         <div className="border-t p-4 space-y-2">
           {!isProd && (
             <button
               onClick={cycleTheme}
-              className="w-full flex items-center gap-2 p-3 rounded-lg text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
+              className="w-full flex items-center gap-2 p-1.5 rounded-lg text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
             >
               {getThemeIcon()}
               <span>{getThemeLabel()}</span>
@@ -447,7 +620,7 @@ export const Sidebar = () => {
               handleLogout();
               setMobileMenuOpen(false);
             }}
-            className="w-full flex items-center gap-2 p-3 rounded-lg text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+            className="w-full flex items-center gap-2 p-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
           >
             <LogOut className="h-5 w-5" />
             <span>Logout</span>
@@ -483,125 +656,187 @@ export const Sidebar = () => {
           </Button>
         </div>
 
-        <div className="flex-1 px-2 sm:px-4 space-y-1 sm:space-y-2 overflow-y-auto">
-          {links.map((link) => {
-            const Icon = link.icon as any;
-            const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
-            const isManageUsers = link.to === "/admin/users";
-            const isMenuExpanded = isManageUsers ? isManageUsersExpanded : expandedMenus[link.to] ?? true;
-            
-            return (
-              <div key={link.to}>
-                {isManageUsers && user?.role === "admin" && isOpen ? (
-                  <button
-                    onClick={() => {
-                      toggleMenu(link.to);
-                    }}
-                    className={cn(
-                      "w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-all text-xs sm:text-sm",
-                      isActive || isAdminSubmenuActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
-                    )}
-                  >
-                    <Icon className="h-4 sm:h-5 w-4 sm:w-5" />
-                    <span className="truncate flex-1 text-left hidden sm:inline">{link.label}</span>
-                    <ChevronDown
-                      className={cn(
-                        "h-3 sm:h-4 w-3 sm:w-4 transition-transform duration-300 hidden sm:block",
-                        isMenuExpanded ? "rotate-0" : "-rotate-90"
-                      )}
-                    />
-                  </button>
-                ) : (
-                  <SidebarItem
-                    icon={<Icon className="h-5 w-5" />}
-                    label={link.label}
-                    href={link.to}
-                    isActive={isActive}
-                  />
-                )}
+        <div className="flex-1 px-2 sm:px-4 space-y-1 overflow-y-auto">
+          {user?.role === "admin" ? (
+            // Admin role: Use organized sections
+            adminMenuSections.map((section) => {
+              const SectionIcon = section.icon as any;
+              const isSectionExpanded = section.collapsible ? (expandedSections[section.id] ?? true) : true;
 
-                {isManageUsers && user?.role === "admin" && isOpen && (
+              return (
+                <div key={section.id} className="space-y-1">
+                  {isOpen ? (
+                    section.collapsible ? (
+                      <button
+                        onClick={() => toggleSection(section.id)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                      >
+                        <SectionIcon className="h-3 w-3" />
+                        <span className="flex-1 text-left hidden sm:inline">{section.label}</span>
+                        <ChevronDown
+                          className={cn(
+                            "h-3 w-3 transition-transform duration-200 hidden sm:block",
+                            isSectionExpanded ? "rotate-0" : "-rotate-90"
+                          )}
+                        />
+                      </button>
+                    ) : (
+                      <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        <span className="hidden sm:inline">{section.label}</span>
+                      </div>
+                    )
+                  ) : (
+                    <div className="h-px bg-border my-2" />
+                  )}
+
                   <div
                     className={cn(
-                      "overflow-hidden transition-all duration-300 ease-in-out",
-                      isMenuExpanded ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+                      "space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
+                      isOpen && section.collapsible && !isSectionExpanded ? "max-h-0 opacity-0" : "max-h-[1000px] opacity-100"
                     )}
                   >
-                    <div className="mt-1 space-y-1 pl-4 sm:pl-6">
-                      <button
-                        onClick={() => navigate('/admin/users')}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname === '/admin/users' ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <Users className="h-3 sm:h-4 w-3 sm:w-4" />
-                        <span className="hidden sm:inline">User Directory</span>
-                      </button>
+                    {section.items.map((link) => {
+                      const Icon = link.icon as any;
+                      const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
+                      const isManageUsers = link.hasSubmenu && link.to === "/admin/users";
+                      const isMenuExpanded = isManageUsers ? isManageUsersExpanded : expandedMenus[link.to] ?? true;
 
-                      {FEATURES.teacherManagement && (
-                        <button
-                          onClick={() => navigate('/admin/users/teachers')}
-                          className={cn(
-                            "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
-                            location.pathname.startsWith('/admin/users/teachers') && !location.pathname.includes('assignments') ? 'bg-primary/10 text-primary' : ''
+                      return (
+                        <div key={link.to}>
+                          {isManageUsers && user?.role === "admin" && isOpen ? (
+                            <button
+                              onClick={() => {
+                                toggleMenu(link.to);
+                              }}
+                              className={cn(
+                                "w-full flex items-center gap-2 p-1.5 sm:p-2 rounded-lg transition-all text-xs sm:text-sm",
+                                isActive || isAdminSubmenuActive ? "bg-primary/10 text-primary" : "hover:bg-muted/80"
+                              )}
+                            >
+                              <Icon className="h-4 sm:h-5 w-4 sm:w-5" />
+                              <span className="truncate flex-1 text-left hidden sm:inline">{link.label}</span>
+                              <ChevronDown
+                                className={cn(
+                                  "h-3 sm:h-4 w-3 sm:w-4 transition-transform duration-300 hidden sm:block",
+                                  isMenuExpanded ? "rotate-0" : "-rotate-90"
+                                )}
+                              />
+                            </button>
+                          ) : (
+                            <SidebarItem
+                              icon={<Icon className="h-5 w-5" />}
+                              label={link.label}
+                              href={link.to}
+                              isActive={isActive}
+                              badgeCount={
+                                link.to === '/admin/payments' ? paymentBadgeCount : 
+                                link.to === '/admin/enrollments' ? enrollmentBadgeCount : 
+                                undefined
+                              }
+                            />
                           )}
-                        >
-                          <GraduationCap className="h-3 sm:h-4 w-3 sm:w-4" />
-                          <span className="hidden sm:inline">Manage Teachers</span>
-                        </button>
-                      )}
 
-                      {/* Teacher Assignments removed - page deprecated */}
+                          {isManageUsers && user?.role === "admin" && isOpen && (
+                            <div
+                              className={cn(
+                                "overflow-hidden transition-all duration-300 ease-in-out",
+                                isMenuExpanded ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+                              )}
+                            >
+                              <div className="mt-1 space-y-0.5 pl-4 sm:pl-6">
+                                <button
+                                  onClick={() => navigate('/admin/users')}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 p-1.5 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
+                                    location.pathname === '/admin/users' ? 'bg-primary/10 text-primary' : ''
+                                  )}
+                                >
+                                  <Users className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="hidden sm:inline">User Directory</span>
+                                </button>
 
-                      <button
-                        onClick={() => navigate('/admin/users/students')}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/students') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <Users className="h-3 sm:h-4 w-3 sm:w-4" />
-                        <span className="hidden sm:inline">Manage Students</span>
-                      </button>
+                                {FEATURES.teacherManagement && (
+                                  <button
+                                    onClick={() => navigate('/admin/users/teachers')}
+                                    className={cn(
+                                      "w-full flex items-center gap-2 p-1.5 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
+                                      location.pathname.startsWith('/admin/users/teachers') && !location.pathname.includes('assignments') ? 'bg-primary/10 text-primary' : ''
+                                    )}
+                                  >
+                                    <GraduationCap className="h-3 sm:h-4 w-3 sm:w-4" />
+                                    <span className="hidden sm:inline">Manage Teachers</span>
+                                  </button>
+                                )}
 
-                      {FEATURES.subjects && (
-                        <button
-                          onClick={() => navigate('/admin/users/subjects')}
-                          className={cn(
-                            "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
-                            location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
+                                <button
+                                  onClick={() => navigate('/admin/users/students')}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 p-1.5 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
+                                    location.pathname.startsWith('/admin/users/students') ? 'bg-primary/10 text-primary' : ''
+                                  )}
+                                >
+                                  <Users className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="hidden sm:inline">Manage Students</span>
+                                </button>
+
+                                {FEATURES.subjects && (
+                                  <button
+                                    onClick={() => navigate('/admin/users/subjects')}
+                                    className={cn(
+                                      "w-full flex items-center gap-2 p-1.5 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
+                                      location.pathname.startsWith('/admin/users/subjects') ? 'bg-primary/10 text-primary' : ''
+                                    )}
+                                  >
+                                    <BookOpen className="h-3 sm:h-4 w-3 sm:w-4" />
+                                    <span className="hidden sm:inline">Manage Subjects</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => navigate('/admin/users/sections')}
+                                  className={cn(
+                                    "w-full flex items-center gap-2 p-1.5 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
+                                    location.pathname.startsWith('/admin/users/sections') ? 'bg-primary/10 text-primary' : ''
+                                  )}
+                                >
+                                  <Grid3x3 className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="hidden sm:inline">Manage Sections</span>
+                                </button>
+                              </div>
+                            </div>
                           )}
-                        >
-                          <BookOpen className="h-3 sm:h-4 w-3 sm:w-4" />
-                          <span className="hidden sm:inline">Manage Subjects</span>
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => navigate('/admin/users/sections')}
-                        className={cn(
-                          "w-full flex items-center gap-2 p-2 rounded-md text-xs sm:text-sm hover:bg-muted/80 transition-colors",
-                          location.pathname.startsWith('/admin/users/sections') ? 'bg-primary/10 text-primary' : ''
-                        )}
-                      >
-                        <Grid3x3 className="h-3 sm:h-4 w-3 sm:w-4" />
-                        <span className="hidden sm:inline">Manage Sections</span>
-                      </button>
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })
+          ) : (
+            // Other roles: Use flat links structure
+            links.map((link) => {
+              const Icon = link.icon as any;
+              const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
+
+              return (
+                <SidebarItem
+                  key={link.to}
+                  icon={<Icon className="h-5 w-5" />}
+                  label={link.label}
+                  href={link.to}
+                  isActive={isActive}
+                />
+              );
+            })
+          )}
         </div>
 
-        <div className="border-t p-2 sm:p-4 space-y-1 sm:space-y-2">
+        <div className="border-t p-2 sm:p-4 space-y-0.5 sm:space-y-1">
           {!isProd && (
             <button
               onClick={cycleTheme}
               className={cn(
-                "w-full flex items-center gap-2 p-2 sm:p-3 rounded-lg text-xs sm:text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all",
+                "w-full flex items-center gap-2 p-1.5 sm:p-2 rounded-lg text-xs sm:text-sm text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all",
                 !isOpen && "justify-center"
               )}
               title={isOpen ? undefined : getThemeLabel()}
@@ -614,7 +849,7 @@ export const Sidebar = () => {
           <button
             onClick={handleLogout}
             className={cn(
-              "w-full flex items-center gap-2 p-2 sm:p-3 rounded-lg text-xs sm:text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all",
+              "w-full flex items-center gap-2 p-1.5 sm:p-2 rounded-lg text-xs sm:text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all",
               !isOpen && "justify-center"
             )}
           >

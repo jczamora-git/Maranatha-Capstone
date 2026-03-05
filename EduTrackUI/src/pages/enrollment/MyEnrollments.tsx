@@ -987,6 +987,19 @@ const MyEnrollments = () => {
                   </div>
                 )}
 
+                {isEnrollmentTypeEnabled('continuing_student') && (
+                  <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg border-2 border-green-200 hover:border-green-400 transition-colors cursor-pointer">
+                    <RadioGroupItem value="Continuing Student" id="continuing-student-enrollee" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="continuing-student-enrollee" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
+                        <Users className="w-5 h-5 text-green-600" />
+                        Continuing Student
+                      </Label>
+                      <p className="text-sm text-gray-600 mt-1">Previously enrolled at Maranatha, continuing education</p>
+                    </div>
+                  </div>
+                )}
+
                 {isEnrollmentTypeEnabled('transferee') && (
                   <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-colors cursor-pointer">
                     <RadioGroupItem value="Transferee" id="transferee" className="mt-1" />

@@ -158,21 +158,6 @@ export default function AdminEnrollmentCreate() {
     }
   }, [location.state]);
 
-  // If enrollment type is Continuing Student, disable optional account creation
-  useEffect(() => {
-    if (formData.enrollment_type === 'Continuing Student') {
-      setCreateAccount(false);
-      setAccountEmail('');
-      setAccountPhone('');
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next.account_email;
-        delete next.account_phone;
-        return next;
-      });
-    }
-  }, [formData.enrollment_type]);
-
   // Check for open enrollment period, fallback to latest if not open
   useEffect(() => {
     const checkEnrollmentPeriod = async () => {
@@ -1220,13 +1205,12 @@ export default function AdminEnrollmentCreate() {
             </div>
           </div>
 
-          {/* Optional Account Creation: hidden for Continuing Student */}
-          {formData.enrollment_type !== 'Continuing Student' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
-                <h2 className="text-lg font-semibold text-white">Optional Account Creation</h2>
-                <p className="text-teal-100 text-sm mt-1">Create a student user account for payments</p>
-              </div>
+          {/* Optional Account Creation */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+              <h2 className="text-lg font-semibold text-white">Optional Account Creation</h2>
+              <p className="text-teal-100 text-sm mt-1">Create a student user account for payments</p>
+            </div>
               <div className="p-6 space-y-6">
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                   <Checkbox
@@ -1296,7 +1280,6 @@ export default function AdminEnrollmentCreate() {
                 )}
               </div>
             </div>
-          )}
 
           {/* Current Address Card */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-visible">

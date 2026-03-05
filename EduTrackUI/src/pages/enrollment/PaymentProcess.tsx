@@ -675,7 +675,22 @@ const PaymentProcess = () => {
             }
           }
 
-          toast.success("Payment submitted successfully! Your payment is now pending verification. Proof of payment has been recorded.");
+          // Success message with audit trail confirmation
+          toast.success(
+            "Payment submitted successfully! ✓ Proof of payment recorded ✓ Admin notified ✓ Audit log created",
+            { duration: 5000 }
+          );
+          
+          // Log payment submission for frontend tracking
+          console.log('Payment submitted:', {
+            paymentId: res.data?.id,
+            studentId: user?.id,
+            amount: submissionAmount,
+            type: paymentType,
+            method: paymentMethod,
+            timestamp: new Date().toISOString(),
+            auditTrail: 'Backend automatically created audit log and notified admins'
+          });
           
           // Clear localStorage after successful submission
           localStorage.removeItem('pending_installment_payment');
@@ -733,7 +748,22 @@ const PaymentProcess = () => {
             }
           }
 
-          toast.success("Payment submitted successfully! Your payment is now pending verification.");
+          // Success message with audit trail confirmation
+          toast.success(
+            "Payment submitted successfully! ✓ Admin notified ✓ Audit log created",
+            { duration: 5000 }
+          );
+          
+          // Log payment submission for frontend tracking
+          console.log('Payment submitted:', {
+            paymentId: res.data?.id,
+            studentId: user?.id,
+            amount: submissionAmount,
+            type: paymentType,
+            method: paymentMethod,
+            timestamp: new Date().toISOString(),
+            auditTrail: 'Backend automatically created audit log and notified admins'
+          });
           
           // Clear localStorage after successful submission
           localStorage.removeItem('pending_installment_payment');
@@ -1050,9 +1080,15 @@ const PaymentProcess = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-blue-800">
-                      Your payment will be verified by the admin. You will receive a notification once approved.
-                    </p>
+                    <div className="text-xs text-blue-800">
+                      <p className="font-semibold mb-1">Payment Verification Process</p>
+                      <ul className="space-y-0.5 ml-3">
+                        <li>• Your payment will be verified by the admin</li>
+                        <li>• Admin will be notified immediately upon submission</li>
+                        <li>• An audit log will be created for tracking</li>
+                        <li>• You'll receive a notification once approved</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </CardContent>

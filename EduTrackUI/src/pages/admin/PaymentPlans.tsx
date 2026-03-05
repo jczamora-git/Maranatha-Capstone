@@ -568,7 +568,7 @@ export default function PaymentPlans() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="p-8 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>

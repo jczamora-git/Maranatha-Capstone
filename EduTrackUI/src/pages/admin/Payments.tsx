@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -278,7 +279,12 @@ const DISCOUNT_STATUS = [
 const Payments = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightedPaymentRef = useRef<HTMLTableRowElement>(null);
   const confirm = useConfirm();
+  const queryClient = useQueryClient();
+
+  const highlightedPaymentId = searchParams.get("highlight");
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentPlans, setPaymentPlans] = useState<any[]>([]);
@@ -852,6 +858,10 @@ const Payments = () => {
       if (res && res.success) {
         showAlert("success", "Payment verified successfully");
         fetchData();
+        // Refresh notification list to reflect read status
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'payment-count'] });
       }
     } catch (error: any) {
       showAlert("error", error.message || "Error verifying payment");
@@ -894,6 +904,10 @@ const Payments = () => {
           : "Payment approved successfully";
         showAlert("success", message);
         fetchData();
+        // Refresh notification list to reflect read status
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'payment-count'] });
       }
     } catch (error: any) {
       showAlert("error", error.message || "Error approving payment");
@@ -927,6 +941,10 @@ const Payments = () => {
         setRejectTargetPayment(null);
         setRejectReason("");
         fetchData();
+        // Refresh notification list to reflect read status
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'payment-count'] });
       } else {
         showAlert("error", res?.message || "Failed to reject payment");
       }
@@ -1384,6 +1402,45 @@ const Payments = () => {
     currentPage * itemsPerPage
   );
 
+  useEffect(() => {
+    if (!highlightedPaymentId) return;
+
+    const highlightedIndex = filteredPayments.findIndex(
+      (payment) => String(payment.id) === highlightedPaymentId
+    );
+
+    if (highlightedIndex === -1) return;
+
+    const targetPage = Math.floor(highlightedIndex / itemsPerPage) + 1;
+    if (currentPage !== targetPage) {
+      setCurrentPage(targetPage);
+    }
+  }, [highlightedPaymentId, filteredPayments, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    if (!highlightedPaymentId || !highlightedPaymentRef.current) return;
+
+    const scrollTimer = setTimeout(() => {
+      highlightedPaymentRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 250);
+
+    const clearTimer = setTimeout(() => {
+      setSearchParams((params) => {
+        const nextParams = new URLSearchParams(params);
+        nextParams.delete("highlight");
+        return nextParams;
+      });
+    }, 5000);
+
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [highlightedPaymentId, currentPage, setSearchParams]);
+
   // Filtered School Fees - with grouping for display only
   const filteredSchoolFees = (() => {
     const filtered = schoolFees.filter((f) => {
@@ -1670,7 +1727,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
 
   return (
     <DashboardLayout>
-      <div className="">
+      <div className="p-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -1936,8 +1993,19 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {pagedPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-muted/50 transition-colors">
+                  {pagedPayments.map((payment) => {
+                    const isHighlighted = highlightedPaymentId === String(payment.id);
+
+                    return (
+                    <tr
+                      key={payment.id}
+                      ref={isHighlighted ? highlightedPaymentRef : null}
+                      className={`transition-colors duration-500 ${
+                        isHighlighted
+                          ? "bg-primary/5 dark:bg-primary/10 border-l-2 border-l-primary"
+                          : "hover:bg-muted/50"
+                      }`}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Receipt className="h-4 w-4 text-muted-foreground" />
@@ -1950,6 +2018,9 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                           <div>
                             <p className="text-sm font-medium text-gray-900">{payment.student_name}</p>
                             <p className="text-xs text-gray-500">{payment.student_number}</p>
+                            {isHighlighted && (
+                              <p className="text-xs font-medium text-primary mt-1">Selected from notification</p>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -2054,7 +2125,8 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
 

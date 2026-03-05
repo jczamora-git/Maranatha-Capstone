@@ -9,6 +9,11 @@ class EnrollmentController extends Controller
     public function __construct()
     {
         parent::__construct();
+        $this->call->library('NotificationService');
+        $this->call->helper('notification_templates');
+        $this->call->model('EnrollmentModel');
+        $this->call->model('StudentModel');
+        $this->call->model('UserModel');
     }
 
     /**
@@ -36,6 +41,7 @@ class EnrollmentController extends Controller
 
             $userId = $this->session->userdata('user_id');
             $userEmail = $this->session->userdata('email');
+            $userRole = $this->session->userdata('role');
             $userName = $this->session->userdata('first_name') . ' ' . $this->session->userdata('last_name');
 
             // Get form input (FormData from frontend)
@@ -157,6 +163,16 @@ class EnrollmentController extends Controller
                 }
             }
 
+            // For student-submitted continuing student enrollments, fetch student ID from database
+            // Note: Only applies to role='student'. Enrollees with 'Continuing Student' will have
+            // created_student_id=NULL since they don't have a student record yet (no legacy data available)
+            if (!$isAdminCreated && $userRole === 'student' && ($input['enrollment_type'] ?? '') === 'Continuing Student') {
+                $studentRecord = $this->StudentModel->get_by_user_id($userId);
+                if ($studentRecord) {
+                    $createdStudentId = (int)$studentRecord['id'];
+                }
+            }
+
             // Validate required fields
             $errors = $this->validate_enrollment_input($input);
             if (!empty($errors)) {
@@ -253,7 +269,57 @@ class EnrollmentController extends Controller
 
             // Update student record with enrollment_id if account was created
             if ($createdStudentId) {
-                $this->StudentModel->update_student($createdStudentId, ['enrollment_id' => $enrollmentId]);
+                $this->StudentModel->update($createdStudentId, ['enrollment_id' => $enrollmentId]);
+            }
+
+            // Send notification to admins about new enrollment submission
+            try {
+                $student_name = trim(($input['learner_first_name'] ?? '') . ' ' . ($input['learner_last_name'] ?? ''));
+                $grade_level = $input['grade_level'] ?? 'Unknown';
+                $enrollment_type = $input['enrollment_type'] ?? 'New Student';
+                
+                // Build current user context
+                $currentUser = [
+                    'user_id' => $userId,
+                    'role' => $userRole,
+                    'email' => $userEmail,
+                    'name' => $userName
+                ];
+
+                // Notify all admins about the new enrollment
+                $recipients = $this->NotificationService->getRecipientsByRole('admin');
+                
+                $notificationData = [
+                    'type' => NotificationService::TYPE_ENROLLMENT_SUBMITTED,
+                    'title' => 'New Enrollment Submitted',
+                    'body' => "{$student_name} submitted an enrollment application for Grade {$grade_level}",
+                    'icon' => 'user-plus',
+                    'action_url' => '/admin/enrollments',
+                    'push_data' => [
+                        'screen' => 'EnrollmentDetails',
+                        'enrollment_id' => $enrollmentId
+                    ],
+                    'metadata' => [
+                        'enrollment_id' => $enrollmentId,
+                        'grade_level' => $grade_level,
+                        'enrollment_type' => $enrollment_type,
+                        'student_name' => $student_name
+                    ],
+                    'action' => 'enrollment.submitted',
+                    'entity_type' => 'enrollment',
+                    'entity_id' => $enrollmentId,
+                    'actor_user_id' => $currentUser['user_id'],
+                    'actor_role' => $currentUser['role'],
+                    'actor_name' => $currentUser['name'],
+                    'description' => "{$student_name} submitted a {$enrollment_type} enrollment for Grade {$grade_level}",
+                    'recipients' => $recipients
+                ];
+
+                $this->NotificationService->create($notificationData);
+            } catch (Exception $notifError) {
+                error_log('Failed to send enrollment notification: ' . $notifError->getMessage());
+                error_log('Notification error stack: ' . $notifError->getTraceAsString());
+                // Don't fail the enrollment if notification fails
             }
 
             http_response_code(201);
@@ -665,6 +731,15 @@ class EnrollmentController extends Controller
                 http_response_code(404);
                 echo json_encode(['success' => false, 'message' => 'Enrollment not found']);
                 return;
+            }
+
+            // Mark ALL admin notifications as read when any admin takes action
+            // This ensures Admin2 doesn't see stale notifications after Admin1 processed the enrollment
+            try {
+                $this->markAllAdminNotificationsAsRead('enrollment', $enrollmentId);
+            } catch (Exception $notifError) {
+                error_log('Failed to mark enrollment notification as read: ' . $notifError->getMessage());
+                // Don't fail the status update if notification update fails
             }
 
             // log_activity($userId, 'enrollment_status_updated', "Enrollment {$enrollmentId} status changed to {$input['status']}", ['enrollment_id' => $enrollmentId]);
@@ -1436,5 +1511,28 @@ class EnrollmentController extends Controller
         }
     }
 
-
+    /**
+     * Mark ALL admin notifications as read for a given entity
+     * This ensures multi-admin synchronization: when Admin1 takes action,
+     * Admin2's notification is also marked as read to prevent stale notifications
+     * 
+     * @param string $entityType Entity type (e.g., 'payment', 'enrollment')
+     * @param int $entityId Entity ID
+     */
+    private function markAllAdminNotificationsAsRead($entityType, $entityId)
+    {
+        try {
+            $this->db->table('notifications')
+                ->where('entity_type', $entityType)
+                ->where('entity_id', $entityId)
+                ->where('is_read', 0)
+                ->update([
+                    'is_read' => 1,
+                    'read_at' => date('Y-m-d H:i:s')
+                ]);
+        } catch (Exception $e) {
+            error_log('Failed to mark all admin notifications as read: ' . $e->getMessage());
+            // Don't fail the main operation if notification sync fails
+        }
+    }
 }

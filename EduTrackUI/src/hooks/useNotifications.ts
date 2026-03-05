@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { subscribeFCMMessages } from '@/lib/firebase';
 import { API_ENDPOINTS, apiGet, apiPost } from '@/lib/api';
 
@@ -187,6 +188,112 @@ export function useAnnouncements(options?: { enabled?: boolean }) {
 }
 
 /**
+ * Hook to fetch unread payment notification count (admin only)
+ * Counts all unread payment-related notifications
+ * Uses aggressive 3-second polling when on payments page for real-time sync across admins
+ */
+export function usePaymentNotificationCount(options?: { enabled?: boolean }) {
+  const { enabled = true } = options || {};
+  const location = useLocation();
+  
+  // Aggressive polling (3s) when on payments page for multi-admin synchronization
+  // Standard polling (30s) on other pages
+  const isOnPaymentsPage = location.pathname.includes('/payments');
+  const refreshInterval = isOnPaymentsPage ? 3 * 1000 : 30 * 1000;
+
+  return useQuery<{ success: boolean; count: number }>({
+    queryKey: ['notifications', 'payment-count'],
+    queryFn: async () => {
+      // Fetch all unread notifications and filter payment-related ones
+      const params = new URLSearchParams();
+      params.append('unread_only', 'true');
+      params.append('limit', '100'); // Get enough to count
+
+      const response = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?${params.toString()}`);
+      
+      if (response.success && response.data) {
+        // Filter for payment-related notifications by checking action_url or entity_type
+        const paymentNotifications = response.data.filter((notif: any) => {
+          const actionUrl = notif.action_url || '';
+          const entityType = notif.entity_type || '';
+          const type = notif.type || '';
+          
+          // Check if notification is payment-related
+          return (
+            actionUrl.includes('/admin/payments') || 
+            entityType === 'payment' ||
+            type.includes('payment')
+          );
+        });
+        
+        return {
+          success: true,
+          count: paymentNotifications.length
+        };
+      }
+      
+      return { success: false, count: 0 };
+    },
+    refetchInterval: refreshInterval,
+    refetchOnWindowFocus: true,
+    enabled
+  });
+}
+
+/**
+ * Hook to fetch unread enrollment notification count (admin only)
+ * Counts all unread enrollment-related notifications
+ * Uses aggressive 3-second polling when on enrollments page for real-time sync across admins
+ */
+export function useEnrollmentNotificationCount(options?: { enabled?: boolean }) {
+  const { enabled = true } = options || {};
+  const location = useLocation();
+  
+  // Aggressive polling (3s) when on enrollments page for multi-admin synchronization
+  // Standard polling (30s) on other pages
+  const isOnEnrollmentsPage = location.pathname.includes('/enrollments');
+  const refreshInterval = isOnEnrollmentsPage ? 3 * 1000 : 30 * 1000;
+
+  return useQuery<{ success: boolean; count: number }>({
+    queryKey: ['notifications', 'enrollment-count'],
+    queryFn: async () => {
+      // Fetch all unread notifications and filter enrollment-related ones
+      const params = new URLSearchParams();
+      params.append('unread_only', 'true');
+      params.append('limit', '100'); // Get enough to count
+
+      const response = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?${params.toString()}`);
+      
+      if (response.success && response.data) {
+        // Filter for enrollment-related notifications by checking action_url or entity_type
+        const enrollmentNotifications = response.data.filter((notif: any) => {
+          const actionUrl = notif.action_url || '';
+          const entityType = notif.entity_type || '';
+          const type = notif.type || '';
+          
+          // Check if notification is enrollment-related
+          return (
+            actionUrl.includes('/admin/enrollments') || 
+            entityType === 'enrollment' ||
+            type.includes('enrollment')
+          );
+        });
+        
+        return {
+          success: true,
+          count: enrollmentNotifications.length
+        };
+      }
+      
+      return { success: false, count: 0 };
+    },
+    refetchInterval: refreshInterval,
+    refetchOnWindowFocus: true,
+    enabled
+  });
+}
+
+/**
  * Hook that listens for foreground FCM push notifications and
  * immediately invalidates the notifications + announcements cache.
  * Mount this ONCE high in the tree (e.g. DashboardLayout).
@@ -229,5 +336,42 @@ export function useMarkAnnouncementRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
     }
+  });
+}
+
+/**
+ * Hook to fetch notifications with infinite pagination (lazy loading)
+ */
+export function useInfiniteNotifications(options?: {
+  limit?: number;
+  type?: string;
+  unread_only?: boolean;
+  enabled?: boolean;
+}) {
+  const { limit = 10, type, unread_only = false, enabled = true } = options || {};
+
+  return useInfiniteQuery<NotificationsResponse>({
+    queryKey: ['notifications', 'infinite', limit, type, unread_only],
+    queryFn: async ({ pageParam = 0 }) => {
+      const params = new URLSearchParams();
+      params.append('limit', String(limit));
+      params.append('offset', String(pageParam));
+      if (type) params.append('type', type);
+      if (unread_only) params.append('unread_only', 'true');
+
+      const response = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?${params.toString()}`);
+      return response;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.reduce((sum, page) => sum + (page.data?.length || 0), 0);
+      if (loadedCount < (lastPage.total || 0)) {
+        return loadedCount;
+      }
+      return undefined;
+    },
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    enabled,
   });
 }

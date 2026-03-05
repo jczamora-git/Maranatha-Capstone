@@ -125,7 +125,7 @@ const AppContent = () => {
   // Monitor payment section lock/unlock across all pages
   usePaymentPageLock();
   const isProd = import.meta.env.MODE === "production";
-  const showFloatingChatbot = !isProd || user?.role === "admin";
+  const showFloatingChatbot = true;  // Chatbot enabled for all users in production
   
   // Lazy-load Campuses only at runtime inside the component to avoid top-level evaluation issues
   let LazyCampuses: any = null;
@@ -177,7 +177,9 @@ const AppContent = () => {
             {FEATURES.messages && (
               <Route path="/student/messages" element={<ProtectedRoute requiredRole="student"><StudentMessaging /></ProtectedRoute>} />
             )}
-            <Route path="/student/forum" element={<ProtectedRoute requiredRole="student"><StudentForum /></ProtectedRoute>} />
+            {!isProd && (
+              <Route path="/student/forum" element={<ProtectedRoute requiredRole="student"><StudentForum /></ProtectedRoute>} />
+            )}
             <Route path="/student/feedback" element={<ProtectedRoute requiredRole="student"><StudentFeedbackSentiment /></ProtectedRoute>} />
             
             {/* Enrollee Routes */}
@@ -302,7 +304,9 @@ const AppContent = () => {
             )}
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
             <Route path="/admin/sentiment" element={<ProtectedRoute requiredRole="admin"><AdminSentimentAnalytics /></ProtectedRoute>} />
-            <Route path="/admin/predictive-analytics" element={<ProtectedRoute requiredRole="admin"><PredictiveAnalytics /></ProtectedRoute>} />
+            {FEATURES.analytics && (
+              <Route path="/admin/predictive-analytics" element={<ProtectedRoute requiredRole="admin"><PredictiveAnalytics /></ProtectedRoute>} />
+            )}
             
             {/* Enrollment Routes - Open to both enrollees and students */}
             {FEATURES.enrollment && (
