@@ -1844,6 +1844,23 @@ export default function AdminEnrollmentCreate() {
                   </div>
                 </div>
               )}
+
+              {!createAccount && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-semibold text-amber-900">No account will be created</p>
+                  <div className="text-sm text-amber-800 space-y-1">
+                    <p>
+                      The student/parent cannot log in to online features (like payment tracking) without an account.
+                    </p>
+                    <p>
+                      If needed, go back and enable <span className="font-semibold">Create user account for this student</span> before confirming.
+                    </p>
+                    <p className="text-amber-700 font-semibold">
+                      You can ignore this reminder if the student already has an account.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>

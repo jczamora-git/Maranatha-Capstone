@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Mar 05, 2026 at 08:47 PM
+-- Generation Time: Mar 07, 2026 at 08:05 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -546,7 +546,19 @@ INSERT INTO `audit_logs` (`id`, `actor_user_id`, `actor_role`, `actor_name`, `ac
 (29, 340, 'student', 'Juan Lim', 'payment.created', 'payment', 135, 'Juan Lim submitted a payment of ₱4,275.00', '{\"amount\": 4275, \"payment_id\": 135, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-06 04:21:50'),
 (30, 343, 'student', 'Chloe Katindig', 'payment_plan.created', 'payment_plan', 41, 'Chloe Katindig created a Quarterly installment plan (₱17,100.00)', '{\"student_id\": 343, \"enrollment_id\": 63, \"schedule_type\": \"Quarterly\", \"total_tuition\": 17100, \"payment_plan_id\": 41, \"academic_period_id\": 30, \"number_of_installments\": 4}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-06 04:27:26'),
 (31, 343, 'student', 'Chloe Katindig', 'payment.created', 'payment', 136, 'Chloe Katindig submitted a payment of ₱4,275.00', '{\"amount\": 4275, \"payment_id\": 136, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-06 04:28:02'),
-(32, 3, 'admin', 'Demo Admin', 'payment_plan.created', 'payment_plan', 42, 'Demo Admin created a Monthly installment plan for Joana Santos (₱17,000.00)', '{\"student_id\": 457, \"enrollment_id\": 60, \"schedule_type\": \"Monthly\", \"total_tuition\": 17000, \"payment_plan_id\": 42, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-06 04:42:09');
+(32, 3, 'admin', 'Demo Admin', 'payment_plan.created', 'payment_plan', 42, 'Demo Admin created a Monthly installment plan for Joana Santos (₱17,000.00)', '{\"student_id\": 457, \"enrollment_id\": 60, \"schedule_type\": \"Monthly\", \"total_tuition\": 17000, \"payment_plan_id\": 42, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-06 04:42:09'),
+(33, 3, 'admin', 'Demo Admin', 'payment_plan.created', 'payment_plan', 43, 'Demo Admin created a Monthly installment plan for Chloe Katindig (₱17,100.00)', '{\"student_id\": 343, \"enrollment_id\": 63, \"schedule_type\": \"Monthly\", \"total_tuition\": 17100, \"payment_plan_id\": 43, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-07 18:46:15'),
+(34, 3, 'admin', 'Demo Admin', 'payment.created', 'payment', 137, 'Demo Admin recorded a Tuition Installment payment of ₱5,000.00 for Chloe Katindig', '{\"amount\": 5000, \"payment_id\": 137, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-07 19:11:45'),
+(35, 458, 'enrollee', 'Jose Rizal', 'enrollment.submitted', 'enrollment', 65, 'Jose Rizal submitted a Continuing Student enrollment for Grade Grade 2', '{\"grade_level\": \"Grade 2\", \"student_name\": \"Jose Rizal\", \"enrollment_id\": 65, \"enrollment_type\": \"Continuing Student\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-07 20:03:32'),
+(36, 458, 'enrollee', 'Jose Rizal', 'enrollment.submitted', 'enrollment', 66, 'Jose Rizal submitted a New Student enrollment for Grade Grade 3', '{\"grade_level\": \"Grade 3\", \"student_name\": \"Jose Rizal\", \"enrollment_id\": 66, \"enrollment_type\": \"New Student\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 00:23:52'),
+(37, 458, 'enrollee', 'Jose Rizal', 'payment_plan.created', 'payment_plan', 44, 'Jose Rizal created a Monthly installment plan for Jose Rizal (₱17,000.00)', '{\"student_id\": 458, \"enrollment_id\": 66, \"schedule_type\": \"Monthly\", \"total_tuition\": 17000, \"payment_plan_id\": 44, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:04:23'),
+(38, 458, 'enrollee', 'Jose Rizal', 'payment.created', 'payment', 140, 'Jose Rizal recorded a Tuition Installment payment of ₱5,000.00 for Jose Rizal', '{\"amount\": 5000, \"payment_id\": 140, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:04:36'),
+(39, 458, 'enrollee', 'Jose Rizal', 'payment_plan.created', 'payment_plan', 45, 'Jose Rizal created a Monthly installment plan (₱17,000.00)', '{\"student_id\": 458, \"enrollment_id\": 66, \"schedule_type\": \"Monthly\", \"total_tuition\": 17000, \"payment_plan_id\": 45, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:12:47'),
+(40, 458, 'enrollee', 'Jose Rizal', 'payment.created', 'payment', 141, 'Jose Rizal submitted a payment of ₱5,000.00', '{\"amount\": 5000, \"payment_id\": 141, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:12:56'),
+(41, 3, 'admin', 'Demo Admin', 'update', 'payment', 141, 'Payment updated: Status changed from Pending to Approved', '{\"new_status\": \"Approved\", \"old_status\": \"Pending\", \"payment_id\": \"141\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:22:42'),
+(42, 3, 'admin', 'Demo Admin', 'payment.approved', 'payment', 141, 'Payment of ₱5,000.00 has been approved', '{\"amount\": 5000, \"new_status\": \"approved\", \"old_status\": \"pending\", \"payment_id\": \"141\", \"payment_type\": \"Tuition Installment\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:22:42'),
+(43, 3, 'admin', 'Demo Admin', 'update', 'payment', 136, 'Payment updated: Status changed from Pending to Approved', '{\"new_status\": \"Approved\", \"old_status\": \"Pending\", \"payment_id\": \"136\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:55:38'),
+(44, 3, 'admin', 'Demo Admin', 'payment.approved', 'payment', 136, 'Payment of ₱4,275.00 has been approved', '{\"amount\": 4275, \"new_status\": \"approved\", \"old_status\": \"pending\", \"payment_id\": \"136\", \"payment_type\": \"Tuition Installment\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:55:38');
 
 -- --------------------------------------------------------
 
@@ -708,18 +720,46 @@ INSERT INTO `discount_templates` (`id`, `name`, `type`, `value`, `value_type`, `
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `document_catalog`
+--
+
+CREATE TABLE `document_catalog` (
+  `id` int UNSIGNED NOT NULL,
+  `code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `document_catalog`
+--
+
+INSERT INTO `document_catalog` (`id`, `code`, `name`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
+(7, 'birth_certificate', 'Birth Certificate', 'Government-issued document verifying legal identity, age, and citizenship.', 1, '2026-03-07 13:15:43', '2026-03-07 15:10:03'),
+(8, 'parent_s_agreement_form', 'Parent\'s Agreement Form', 'Contract outlining parental responsibilities and school policies.', 1, '2026-03-07 13:24:27', '2026-03-07 15:10:03'),
+(9, 'enrollment_form', 'Enrollment Form', 'Official document capturing student biographical and academic information for registration.', 1, '2026-03-07 13:28:08', '2026-03-07 15:10:03'),
+(10, 'data_privacy_act_consent_form', 'Data Privacy Act Consent Form', 'Authorization for collection and processing of student data per privacy regulations.', 1, '2026-03-07 13:28:23', '2026-03-07 15:10:03'),
+(11, 'eccd_checklist', 'ECCD Checklist', 'Assessment tool evaluating school readiness and developmental milestones.', 1, '2026-03-07 13:28:35', '2026-03-07 15:11:35'),
+(12, 'sf10', 'SF10', 'Official transcript of complete academic history and previous scholastic performance.', 1, '2026-03-07 13:28:47', '2026-03-07 15:11:08'),
+(13, 'certificate_of_good_moral_character', 'Certificate of Good Moral Character', 'Endorsement affirming student\'s behavioral conduct and ethical standing.', 1, '2026-03-07 13:28:56', '2026-03-07 15:11:55');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `document_requirements`
 --
 
 CREATE TABLE `document_requirements` (
-  `id` int NOT NULL,
-  `grade_level` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nursery 1, Nursery 2, Kinder, Grade 1, Grade 2, etc.',
-  `enrollment_type` enum('New Student','Returning Student','Transferee') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'NULL means applies to all types',
-  `document_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Birth Certificate, Form 137, SF-10, etc.',
-  `is_required` tinyint(1) DEFAULT '1' COMMENT 'If false, document is optional',
-  `display_order` int DEFAULT '0' COMMENT 'Order to display in UI',
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Helper text for the document (e.g., "For age verification")',
-  `is_active` tinyint(1) DEFAULT '1' COMMENT 'Can be disabled without deleting',
+  `id` int UNSIGNED NOT NULL,
+  `document_id` int UNSIGNED NOT NULL,
+  `grade_level` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `enrollment_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_required` tinyint(1) DEFAULT '1',
+  `display_order` int DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -728,60 +768,54 @@ CREATE TABLE `document_requirements` (
 -- Dumping data for table `document_requirements`
 --
 
-INSERT INTO `document_requirements` (`id`, `grade_level`, `enrollment_type`, `document_name`, `is_required`, `display_order`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'Nursery 1', NULL, 'Birth Certificate', 1, 1, 'For age verification (3-4 years old)', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(2, 'Nursery 2', NULL, 'Birth Certificate', 1, 1, 'For age verification (4-5 years old)', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(3, 'Kinder', NULL, 'Birth Certificate', 1, 1, 'For age verification (5-6 years old)', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(4, 'Grade 1', 'New Student', 'ECCD Checklist', 1, 1, 'Early Childhood Care and Development assessment', 1, '2026-02-04 10:00:04', '2026-02-06 10:28:18'),
-(5, 'Grade 1', 'New Student', 'Birth Certificate', 1, 1, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-06 10:28:23'),
-(6, 'Grade 1', 'Returning Student', 'Birth Certificate', 1, 1, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-06 10:28:23'),
-(7, 'Grade 2', 'New Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(8, 'Grade 2', 'New Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(9, 'Grade 2', 'New Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(10, 'Grade 2', 'Returning Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(11, 'Grade 2', 'Returning Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(12, 'Grade 2', 'Returning Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(13, 'Grade 3', 'New Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(14, 'Grade 3', 'New Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(15, 'Grade 3', 'New Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(16, 'Grade 3', 'Returning Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(17, 'Grade 3', 'Returning Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(18, 'Grade 3', 'Returning Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(19, 'Grade 4', 'New Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(20, 'Grade 4', 'New Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(21, 'Grade 4', 'New Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(22, 'Grade 4', 'Returning Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(23, 'Grade 4', 'Returning Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(24, 'Grade 4', 'Returning Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(25, 'Grade 5', 'New Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 18:50:57'),
-(26, 'Grade 5', 'New Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 18:22:18'),
-(27, 'Grade 5', 'New Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 18:44:42'),
-(28, 'Grade 5', 'Returning Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 18:50:57'),
-(29, 'Grade 5', 'Returning Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 18:22:18'),
-(30, 'Grade 5', 'Returning Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 18:44:42'),
-(31, 'Grade 6', 'New Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(32, 'Grade 6', 'New Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(33, 'Grade 6', 'New Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(34, 'Grade 6', 'Returning Student', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(35, 'Grade 6', 'Returning Student', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(36, 'Grade 6', 'Returning Student', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(37, 'Grade 2', 'Transferee', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(38, 'Grade 2', 'Transferee', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(39, 'Grade 2', 'Transferee', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(41, 'Grade 3', 'Transferee', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(42, 'Grade 3', 'Transferee', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(43, 'Grade 3', 'Transferee', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(45, 'Grade 4', 'Transferee', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(46, 'Grade 4', 'Transferee', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(47, 'Grade 4', 'Transferee', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(49, 'Grade 5', 'Transferee', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 18:50:57'),
-(50, 'Grade 5', 'Transferee', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 18:22:18'),
-(51, 'Grade 5', 'Transferee', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 18:44:42'),
-(53, 'Grade 6', 'Transferee', 'Parent\'s Agreement Form', 1, 1, 'Signed consent form', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(54, 'Grade 6', 'Transferee', 'Birth Certificate', 1, 2, 'Official birth record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(55, 'Grade 6', 'Transferee', 'Form 137', 1, 3, 'Permanent Academic Record', 1, '2026-02-04 10:00:04', '2026-02-04 10:00:04'),
-(57, 'Grade 1', 'Transferee', 'ECCD Checklist', 1, 1, 'Early Childhood Care and Development assessment', 1, '2026-02-06 10:28:19', '2026-02-06 10:28:19'),
-(58, 'Grade 1', 'Transferee', 'Birth Certificate', 1, 1, 'Official birth record', 1, '2026-02-06 10:28:23', '2026-02-06 10:28:23');
+INSERT INTO `document_requirements` (`id`, `document_id`, `grade_level`, `enrollment_type`, `is_required`, `display_order`, `is_active`, `created_at`, `updated_at`) VALUES
+(10, 7, 'Nursery 1', NULL, 1, 1, 1, '2026-03-07 13:43:20', '2026-03-07 13:43:20'),
+(11, 10, 'Nursery 1', NULL, 1, 2, 1, '2026-03-07 13:43:20', '2026-03-07 13:43:20'),
+(12, 9, 'Nursery 1', NULL, 1, 3, 1, '2026-03-07 13:43:20', '2026-03-07 13:43:20'),
+(13, 8, 'Nursery 1', NULL, 1, 4, 1, '2026-03-07 13:43:20', '2026-03-07 13:43:20'),
+(14, 7, 'Nursery 2', NULL, 1, 1, 1, '2026-03-07 13:43:20', '2026-03-07 13:43:20'),
+(15, 10, 'Nursery 2', NULL, 1, 2, 1, '2026-03-07 13:43:21', '2026-03-07 13:43:21'),
+(16, 9, 'Nursery 2', NULL, 1, 3, 1, '2026-03-07 13:43:21', '2026-03-07 13:43:21'),
+(17, 8, 'Nursery 2', NULL, 1, 4, 1, '2026-03-07 13:43:21', '2026-03-07 13:43:21'),
+(18, 7, 'Kinder', NULL, 1, 1, 1, '2026-03-07 13:43:21', '2026-03-07 13:43:21'),
+(19, 10, 'Kinder', NULL, 1, 2, 1, '2026-03-07 13:43:21', '2026-03-07 13:43:21'),
+(20, 9, 'Kinder', NULL, 1, 3, 1, '2026-03-07 13:43:21', '2026-03-07 13:43:21'),
+(21, 8, 'Kinder', NULL, 1, 4, 1, '2026-03-07 13:43:21', '2026-03-07 13:43:21'),
+(23, 7, 'Grade 1', NULL, 1, 1, 1, '2026-03-07 15:10:01', '2026-03-07 15:10:01'),
+(24, 10, 'Grade 1', NULL, 1, 2, 1, '2026-03-07 15:10:01', '2026-03-07 15:10:01'),
+(25, 9, 'Grade 1', NULL, 1, 3, 1, '2026-03-07 15:10:01', '2026-03-07 15:10:01'),
+(26, 8, 'Grade 1', NULL, 1, 4, 1, '2026-03-07 15:10:01', '2026-03-07 15:10:01'),
+(27, 7, 'Grade 2', NULL, 1, 1, 1, '2026-03-07 15:10:01', '2026-03-07 15:10:01'),
+(28, 10, 'Grade 2', NULL, 1, 2, 1, '2026-03-07 15:10:01', '2026-03-07 15:10:01'),
+(29, 9, 'Grade 2', NULL, 1, 3, 1, '2026-03-07 15:10:01', '2026-03-07 15:10:01'),
+(30, 8, 'Grade 2', NULL, 1, 4, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(31, 7, 'Grade 3', NULL, 1, 1, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(32, 10, 'Grade 3', NULL, 1, 2, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(33, 9, 'Grade 3', NULL, 1, 3, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(34, 8, 'Grade 3', NULL, 1, 4, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(35, 7, 'Grade 4', NULL, 1, 1, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(36, 10, 'Grade 4', NULL, 1, 2, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(37, 9, 'Grade 4', NULL, 1, 3, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(38, 8, 'Grade 4', NULL, 1, 4, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(39, 7, 'Grade 5', NULL, 1, 1, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(40, 10, 'Grade 5', NULL, 1, 2, 1, '2026-03-07 15:10:02', '2026-03-07 15:10:02'),
+(41, 9, 'Grade 5', NULL, 1, 3, 1, '2026-03-07 15:10:03', '2026-03-07 15:10:03'),
+(42, 8, 'Grade 5', NULL, 1, 4, 1, '2026-03-07 15:10:03', '2026-03-07 15:10:03'),
+(43, 7, 'Grade 6', NULL, 1, 1, 1, '2026-03-07 15:10:03', '2026-03-07 15:10:03'),
+(44, 10, 'Grade 6', NULL, 1, 2, 1, '2026-03-07 15:10:03', '2026-03-07 15:10:03'),
+(45, 9, 'Grade 6', NULL, 1, 3, 1, '2026-03-07 15:10:03', '2026-03-07 15:10:03'),
+(46, 8, 'Grade 6', NULL, 1, 4, 1, '2026-03-07 15:10:03', '2026-03-07 15:10:03'),
+(49, 12, 'Grade 2', NULL, 1, 5, 1, '2026-03-07 15:11:07', '2026-03-07 15:11:07'),
+(50, 12, 'Grade 3', NULL, 1, 5, 1, '2026-03-07 15:11:07', '2026-03-07 15:11:07'),
+(51, 12, 'Grade 4', NULL, 1, 5, 1, '2026-03-07 15:11:07', '2026-03-07 15:11:07'),
+(52, 12, 'Grade 5', NULL, 1, 5, 1, '2026-03-07 15:11:08', '2026-03-07 15:11:08'),
+(53, 12, 'Grade 6', NULL, 1, 5, 1, '2026-03-07 15:11:08', '2026-03-07 15:11:08'),
+(54, 11, 'Grade 1', NULL, 1, 5, 1, '2026-03-07 15:11:35', '2026-03-07 15:11:35'),
+(55, 13, 'Grade 2', 'Transferee', 1, 1, 1, '2026-03-07 15:11:55', '2026-03-07 15:11:55'),
+(56, 13, 'Grade 4', 'Transferee', 1, 1, 1, '2026-03-07 15:11:55', '2026-03-07 15:11:55'),
+(57, 13, 'Grade 3', 'Transferee', 1, 1, 1, '2026-03-07 15:11:55', '2026-03-07 15:11:55'),
+(58, 13, 'Grade 5', 'Transferee', 1, 1, 1, '2026-03-07 15:11:55', '2026-03-07 15:11:55'),
+(59, 13, 'Grade 6', 'Transferee', 1, 1, 1, '2026-03-07 15:11:55', '2026-03-07 15:11:55');
 
 -- --------------------------------------------------------
 
@@ -828,12 +862,13 @@ INSERT INTO `enrollments` (`id`, `academic_period_id`, `enrollment_period_id`, `
 (48, 30, 1, 443, NULL, 'Continuing Student', 'Kinder', 'Pending', NULL, NULL, '2026-02-22 13:13:28', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-22 06:13:28', '2026-02-22 06:13:28', 0),
 (51, 30, 1, 376, 359, 'Continuing Student', 'Kinder', 'Approved', NULL, NULL, '2026-02-23 10:09:14', NULL, '2026-02-23 03:24:36', NULL, 3, 3, '2026-02-23 03:10:58', '2026-02-23 03:09:14', '2026-02-23 10:24:36', 0),
 (52, 30, 1, 71, NULL, 'Continuing Student', 'Nursery 2', 'Pending', NULL, NULL, '2026-02-23 10:30:05', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-23 03:30:05', '2026-02-23 03:30:05', 0),
-(53, 30, 1, 453, NULL, 'New Student', 'Grade 2', 'Pending', NULL, NULL, '2026-02-24 17:09:04', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-24 10:09:04', '2026-02-24 10:09:04', 0),
+(53, 30, 1, 453, NULL, 'Transferee', 'Grade 2', 'Pending', NULL, NULL, '2026-02-24 17:09:04', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-24 10:09:04', '2026-03-07 16:06:14', 0),
 (54, 30, 1, 454, 419, 'Transferee', 'Grade 2', 'Approved', NULL, NULL, '2026-02-24 17:45:12', NULL, '2026-03-02 14:13:05', NULL, 455, 455, '2026-03-02 14:12:56', '2026-02-24 10:45:12', '2026-03-02 14:13:05', 0),
 (60, 30, 1, 457, NULL, 'Continuing Student', 'Grade 2', 'Under Review', NULL, NULL, '2026-03-05 17:03:40', NULL, NULL, NULL, NULL, 455, '2026-03-05 17:04:21', '2026-03-05 17:03:40', '2026-03-05 17:04:21', 0),
 (62, 30, 1, 299, 282, 'Continuing Student', 'Grade 3', 'Pending', NULL, NULL, '2026-03-05 17:25:48', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 17:25:48', '2026-03-05 17:25:48', 0),
 (63, 30, 1, 343, 326, 'Continuing Student', 'Grade 5', 'Pending', NULL, NULL, '2026-03-05 20:19:23', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 20:19:23', '2026-03-05 20:19:23', 0),
-(64, 30, 1, 340, 323, 'Continuing Student', 'Grade 5', 'Pending', NULL, NULL, '2026-03-05 20:20:21', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 20:20:21', '2026-03-05 20:20:21', 0);
+(64, 30, 1, 340, 323, 'Continuing Student', 'Grade 5', 'Pending', NULL, NULL, '2026-03-05 20:20:21', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 20:20:21', '2026-03-05 20:20:21', 0),
+(66, 30, 1, 458, NULL, 'New Student', 'Grade 3', 'Pending', NULL, NULL, '2026-03-07 16:23:52', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-07 16:23:52', '2026-03-07 16:23:52', 0);
 
 -- --------------------------------------------------------
 
@@ -876,7 +911,8 @@ INSERT INTO `enrollment_addresses` (`id`, `enrollment_id`, `address_type`, `addr
 (58, 60, 'Current', 'Shoda', 'Adams (Pob.)', 'Adams', 'Ilocos Norte', '3023', '0912374425', '2026-03-05 17:03:40'),
 (60, 62, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Alag', 'Baco', 'Oriental Mindoro', '5200', '09123124123', '2026-03-05 17:25:48'),
 (61, 63, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Bangkatan', 'Baco', 'Oriental Mindoro', '5200', '09123124123', '2026-03-05 20:19:23'),
-(62, 64, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Balite', 'City of Calapan', 'Oriental Mindoro', '5200', '09123124123', '2026-03-05 20:20:21');
+(62, 64, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Balite', 'City of Calapan', 'Oriental Mindoro', '5200', '09123124123', '2026-03-05 20:20:21'),
+(64, 66, 'Current', 'koasdij', 'Banbanaal', 'Banayoyo', 'Ilocos Sur', '5200', '091237862462', '2026-03-07 16:23:52');
 
 -- --------------------------------------------------------
 
@@ -939,20 +975,6 @@ CREATE TABLE `enrollment_documents` (
   `resubmitted_date` timestamp NULL DEFAULT NULL COMMENT 'When student uploaded new version'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores documents uploaded during enrollment process';
 
---
--- Dumping data for table `enrollment_documents`
---
-
-INSERT INTO `enrollment_documents` (`id`, `enrollment_id`, `file_name`, `file_path`, `file_type`, `file_size`, `document_type`, `submission_method`, `upload_date`, `verified_by`, `physical_verified_by`, `verification_status`, `rejection_reason`, `physical_verification_status`, `verification_notes`, `verified_date`, `physical_verified_date`, `created_at`, `updated_at`, `resubmission_count`, `previous_version_id`, `is_current_version`, `resubmission_requested_date`, `resubmitted_date`) VALUES
-(7, 19, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-02-07 10:11:17', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-07 10:11:17', NULL, '2026-02-07 17:11:17', '2026-02-07 17:11:17', 0, NULL, 1, NULL, NULL),
-(8, 19, 'Physical Copy', '', 'N/A', NULL, 'ECCD Checklist', 'Physical', '2026-02-07 10:11:20', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-07 10:11:20', NULL, '2026-02-07 17:11:20', '2026-02-07 17:11:20', 0, NULL, 1, NULL, NULL),
-(9, 20, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-02-07 12:49:12', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-07 12:49:12', NULL, '2026-02-07 19:49:12', '2026-02-07 19:49:12', 0, NULL, 1, NULL, NULL),
-(10, 20, 'Physical Copy', '', 'N/A', NULL, 'ECCD Checklist', 'Physical', '2026-02-07 12:49:13', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-07 12:49:13', NULL, '2026-02-07 19:49:13', '2026-02-07 19:49:13', 0, NULL, 1, NULL, NULL),
-(19, 33, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-02-12 03:56:10', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-02-12 03:56:10', NULL, '2026-02-12 10:56:10', '2026-02-12 10:56:10', 0, NULL, 1, NULL, NULL),
-(20, 54, 'Physical Copy', '', 'N/A', NULL, 'Parent\'s Agreement Form', 'Physical', '2026-03-02 14:12:48', 455, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-02 14:12:48', NULL, '2026-03-02 14:12:48', '2026-03-02 14:12:48', 0, NULL, 1, NULL, NULL),
-(21, 54, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-03-02 14:12:51', 455, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-02 14:12:51', NULL, '2026-03-02 14:12:51', '2026-03-02 14:12:51', 0, NULL, 1, NULL, NULL),
-(22, 54, 'Physical Copy', '', 'N/A', NULL, 'Form 137', 'Physical', '2026-03-02 14:12:54', 455, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-02 14:12:54', NULL, '2026-03-02 14:12:54', '2026-03-02 14:12:54', 0, NULL, 1, NULL, NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -1011,7 +1033,8 @@ INSERT INTO `enrollment_flags` (`id`, `enrollment_id`, `is_returning_student`, `
 (53, 60, 0, 0, 0, 0, '', '', '2026-03-05 17:03:40'),
 (55, 62, 0, 0, 0, 0, '', '', '2026-03-05 17:25:48'),
 (56, 63, 0, 0, 0, 0, '', '', '2026-03-05 20:19:23'),
-(57, 64, 0, 0, 0, 0, '', '', '2026-03-05 20:20:21');
+(57, 64, 0, 0, 0, 0, '', '', '2026-03-05 20:20:21'),
+(59, 66, 0, 0, 0, 0, '', '', '2026-03-07 16:23:52');
 
 -- --------------------------------------------------------
 
@@ -1052,7 +1075,8 @@ INSERT INTO `enrollment_learners` (`id`, `enrollment_id`, `first_name`, `middle_
 (53, 60, 'Joana', 'Miller', 'Santos', '2022-02-02', 'Female', '', '2026-03-05 17:03:40'),
 (55, 62, 'Ellie', 'Madrigal', 'Alvarez', '2022-02-02', 'Female', '', '2026-03-05 17:25:48'),
 (56, 63, 'Chloe', 'Flores', 'Katindig', '2022-02-02', 'Female', '', '2026-03-05 20:19:23'),
-(57, 64, 'Juan', 'Flores', 'Lim', '2020-02-02', 'Male', '', '2026-03-05 20:20:21');
+(57, 64, 'Juan', 'Flores', 'Lim', '2020-02-02', 'Male', '', '2026-03-05 20:20:21'),
+(59, 66, 'Jose', 'ko', 'Rizal', '2020-02-22', 'Male', '', '2026-03-07 16:23:52');
 
 -- --------------------------------------------------------
 
@@ -1092,7 +1116,8 @@ INSERT INTO `enrollment_parent_contacts` (`id`, `enrollment_id`, `contact_type`,
 (56, 60, 'Father', 'Amos Ildkjo', '09123748234', 'amos@gmail.com', 1, '2026-03-05 17:03:40'),
 (58, 62, 'Father', 'Nik Soriano', '0123912747123', 'nikaldabasoriano@gmail.com', 1, '2026-03-05 17:25:48'),
 (59, 63, 'Father', 'Nik Soriano', '0123912747123', 'nikaldabasoriano@gmail.com', 1, '2026-03-05 20:19:23'),
-(60, 64, 'Father', 'Nik Soriano', '0123912747123', 'nikaldabasoriano@gmail.com', 1, '2026-03-05 20:20:21');
+(60, 64, 'Father', 'Nik Soriano', '0123912747123', 'nikaldabasoriano@gmail.com', 1, '2026-03-05 20:20:21'),
+(62, 66, 'Father', 'oiqwjdoiqwd', '091237892742', 'qweqwpiewq@gmail.com', 1, '2026-03-07 16:23:52');
 
 -- --------------------------------------------------------
 
@@ -1109,7 +1134,6 @@ CREATE TABLE `enrollment_periods` (
   `end_date` date NOT NULL COMMENT 'When enrollment closes',
   `status` enum('Upcoming','Open','Closed','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Upcoming',
   `max_slots` int UNSIGNED DEFAULT NULL COMMENT 'Maximum enrollees (optional)',
-  `current_enrollees` int UNSIGNED DEFAULT '0',
   `allowed_grade_levels` json DEFAULT NULL COMMENT 'Array of grade levels allowed, NULL = all grades',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1120,9 +1144,9 @@ CREATE TABLE `enrollment_periods` (
 -- Dumping data for table `enrollment_periods`
 --
 
-INSERT INTO `enrollment_periods` (`id`, `academic_period_id`, `enrollment_name`, `enrollment_type`, `start_date`, `end_date`, `status`, `max_slots`, `current_enrollees`, `allowed_grade_levels`, `description`, `created_at`, `updated_at`) VALUES
-(1, 30, '2026-2027 Enrollment', 'Regular', '2026-02-03', '2026-03-31', 'Open', NULL, 0, '[]', '', '2026-02-03 15:38:18', '2026-02-11 12:07:26'),
-(2, 34, '2027-2028 Enrollment', 'Regular', '2026-03-03', '2026-04-08', 'Closed', NULL, 0, '[]', '', '2026-02-08 15:40:07', '2026-02-11 12:07:22');
+INSERT INTO `enrollment_periods` (`id`, `academic_period_id`, `enrollment_name`, `enrollment_type`, `start_date`, `end_date`, `status`, `max_slots`, `allowed_grade_levels`, `description`, `created_at`, `updated_at`) VALUES
+(1, 30, '2026-2027 Enrollment', 'Regular', '2026-02-03', '2026-04-30', 'Open', NULL, '[]', '', '2026-02-03 15:38:18', '2026-03-07 12:25:14'),
+(2, 34, '2027-2028 Enrollment', 'Regular', '2026-03-03', '2026-04-08', 'Closed', NULL, '[]', '', '2026-02-08 15:40:07', '2026-02-11 12:07:22');
 
 -- --------------------------------------------------------
 
@@ -1575,98 +1599,26 @@ CREATE TABLE `installments` (
 --
 
 INSERT INTO `installments` (`id`, `payment_plan_id`, `installment_number`, `amount_due`, `amount_paid`, `balance`, `due_date`, `paid_date`, `status`, `late_fee`, `days_overdue`, `created_at`, `updated_at`, `version`) VALUES
-(25, 9, 1, 1250.00, 1250.00, 0.00, '2026-08-15', '2026-02-07', 'Paid', 0.00, 0, '2026-02-07 09:23:32', '2026-02-07 09:23:36', 0),
-(26, 9, 2, 1250.00, 1250.00, 0.00, '2026-11-15', '2026-02-12', 'Paid', 0.00, 0, '2026-02-07 09:23:32', '2026-02-12 04:55:54', 0),
-(27, 9, 3, 1250.00, 0.00, 1250.00, '2027-02-15', NULL, 'Pending', 0.00, 0, '2026-02-07 09:23:32', '2026-02-07 09:23:32', 0),
-(28, 9, 4, 1250.00, 0.00, 1250.00, '2027-05-15', NULL, 'Pending', 0.00, 0, '2026-02-07 09:23:32', '2026-02-07 09:23:32', 0),
-(125, 27, 1, 1250.00, 1250.00, 0.00, '2026-08-15', '2026-02-13', 'Paid', 0.00, 0, '2026-02-13 10:03:36', '2026-02-13 10:03:40', 0),
-(126, 27, 2, 1250.00, 0.00, 1250.00, '2026-11-15', NULL, 'Pending', 0.00, 0, '2026-02-13 10:03:36', '2026-02-13 10:03:36', 0),
-(127, 27, 3, 1250.00, 0.00, 1250.00, '2027-02-15', NULL, 'Pending', 0.00, 0, '2026-02-13 10:03:36', '2026-02-13 10:03:36', 0),
-(128, 27, 4, 1250.00, 0.00, 1250.00, '2027-05-15', NULL, 'Pending', 0.00, 0, '2026-02-13 10:03:36', '2026-02-13 10:03:36', 0),
-(159, 31, 1, 1710.00, 0.00, 0.00, '2026-02-19', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:47', '2026-02-20 23:29:44', 0),
-(160, 31, 2, 1710.00, 0.00, 1710.00, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:47', '2026-02-19 04:50:47', 0),
-(161, 31, 3, 1710.00, 0.00, 1710.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:47', '2026-02-19 04:50:47', 0),
-(162, 31, 4, 1710.00, 0.00, 1710.00, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:47', '2026-02-19 04:50:47', 0),
-(163, 31, 5, 1710.00, 0.00, 1710.00, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:47', '2026-02-19 04:50:47', 0),
-(164, 31, 6, 1710.00, 0.00, 1710.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:47', '2026-02-19 04:50:47', 0),
-(165, 31, 7, 1710.00, 0.00, 1710.00, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:47', '2026-02-19 04:50:47', 0),
-(166, 31, 8, 1710.00, 0.00, 1710.00, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:48', '2026-02-19 04:50:48', 0),
-(167, 31, 9, 1710.00, 0.00, 1710.00, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:48', '2026-02-19 04:50:48', 0),
-(168, 31, 10, 1710.00, 0.00, 1710.00, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-02-19 04:50:48', '2026-02-19 04:50:48', 0),
-(179, 33, 1, 1700.00, 1700.00, 0.00, '2026-01-10', '2026-02-21', 'Paid', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 04:20:07', 0),
-(180, 33, 2, 1700.00, 1785.00, 0.00, '2026-02-10', '2026-02-21', 'Paid', 85.00, 11, '2026-02-21 03:42:58', '2026-02-21 04:51:21', 0),
-(181, 33, 3, 1700.00, 1700.00, 0.00, '2026-03-10', '2026-02-21', 'Paid', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 04:26:29', 0),
-(182, 33, 4, 1700.00, 0.00, 1700.00, '2026-04-10', NULL, 'Pending', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 10:44:34', 0),
-(183, 33, 5, 1700.00, 0.00, 1700.00, '2026-05-10', NULL, 'Pending', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 10:44:34', 0),
-(184, 33, 6, 1700.00, 0.00, 1700.00, '2026-06-10', NULL, 'Pending', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 10:44:34', 0),
-(185, 33, 7, 1700.00, 0.00, 1700.00, '2026-07-10', NULL, 'Pending', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 10:44:34', 0),
-(186, 33, 8, 1700.00, 0.00, 1700.00, '2026-08-10', NULL, 'Pending', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 10:44:34', 0),
-(187, 33, 9, 1700.00, 0.00, 1700.00, '2026-09-10', NULL, 'Pending', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 10:44:34', 0),
-(188, 33, 10, 1700.00, 0.00, 1700.00, '2026-10-10', NULL, 'Pending', 0.00, 0, '2026-02-21 03:42:58', '2026-02-21 10:44:34', 0),
-(189, 34, 1, 1700.00, 1700.00, 0.00, '2026-02-22', '2026-02-22', 'Paid', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 06:10:56', 0),
-(190, 34, 2, 1700.00, 0.00, 1700.00, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(191, 34, 3, 1700.00, 0.00, 1700.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(192, 34, 4, 1700.00, 0.00, 1700.00, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(193, 34, 5, 1700.00, 0.00, 1700.00, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(194, 34, 6, 1700.00, 0.00, 1700.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(195, 34, 7, 1700.00, 0.00, 1700.00, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(196, 34, 8, 1700.00, 0.00, 1700.00, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(197, 34, 9, 1700.00, 0.00, 1700.00, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(198, 34, 10, 1700.00, 0.00, 1700.00, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-02-22 05:55:44', '2026-02-22 05:55:44', 0),
-(199, 35, 1, 8250.00, 0.00, 8250.00, '2026-02-22', NULL, 'Pending', 0.00, 0, '2026-02-22 06:18:35', '2026-02-22 06:18:35', 0),
-(200, 35, 2, 8250.00, 0.00, 8250.00, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-02-22 06:18:35', '2026-02-22 06:18:35', 0),
-(201, 36, 1, 1650.00, 1650.00, 0.00, '2026-02-23', '2026-02-23', 'Paid', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:12:08', 0),
-(202, 36, 2, 1650.00, 0.00, 1650.00, '2025-08-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(203, 36, 3, 1650.00, 0.00, 1650.00, '2025-09-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(204, 36, 4, 1650.00, 0.00, 1650.00, '2025-10-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(205, 36, 5, 1650.00, 0.00, 1650.00, '2025-11-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(206, 36, 6, 1650.00, 0.00, 1650.00, '2025-12-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(207, 36, 7, 1650.00, 0.00, 1650.00, '2026-01-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(208, 36, 8, 1650.00, 0.00, 1650.00, '2026-02-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(209, 36, 9, 1650.00, 0.00, 1650.00, '2026-03-05', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(210, 36, 10, 1650.00, 0.00, 1650.00, '2026-04-12', NULL, 'Pending', 0.00, 0, '2026-02-23 04:11:42', '2026-02-23 04:11:42', 0),
-(211, 37, 1, 1700.00, 1700.00, 0.00, '2026-02-24', '2026-02-24', 'Paid', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:44', 0),
-(212, 37, 2, 1700.00, 0.00, 1700.00, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(213, 37, 3, 1700.00, 0.00, 1700.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(214, 37, 4, 1700.00, 0.00, 1700.00, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(215, 37, 5, 1700.00, 0.00, 1700.00, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(216, 37, 6, 1700.00, 0.00, 1700.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(217, 37, 7, 1700.00, 0.00, 1700.00, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(218, 37, 8, 1700.00, 0.00, 1700.00, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(219, 37, 9, 1700.00, 0.00, 1700.00, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(220, 37, 10, 1700.00, 0.00, 1700.00, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:13:27', '2026-02-24 10:13:27', 0),
-(221, 38, 1, 4250.00, 4250.00, 0.00, '2026-02-24', '2026-02-24', 'Paid', 0.00, 0, '2026-02-24 10:45:36', '2026-02-24 10:45:44', 0),
-(222, 38, 2, 4250.00, 0.00, 4250.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:45:36', '2026-02-24 10:45:36', 0),
-(223, 38, 3, 4250.00, 0.00, 4250.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:45:36', '2026-02-24 10:45:36', 0),
-(224, 38, 4, 4250.00, 0.00, 4250.00, '2027-03-12', NULL, 'Pending', 0.00, 0, '2026-02-24 10:45:36', '2026-02-24 10:45:36', 0),
-(225, 39, 1, 1650.00, 1650.00, 0.00, '2026-02-24', '2026-02-24', 'Paid', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:31', 0),
-(226, 39, 2, 1650.00, 0.00, 1650.00, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(227, 39, 3, 1650.00, 0.00, 1650.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(228, 39, 4, 1650.00, 0.00, 1650.00, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(229, 39, 5, 1650.00, 0.00, 1650.00, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(230, 39, 6, 1650.00, 0.00, 1650.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(231, 39, 7, 1650.00, 0.00, 1650.00, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(232, 39, 8, 1650.00, 0.00, 1650.00, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(233, 39, 9, 1650.00, 0.00, 1650.00, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(234, 39, 10, 1650.00, 0.00, 1650.00, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-02-24 11:08:00', '2026-02-24 11:08:00', 0),
-(235, 40, 1, 4275.00, 4275.00, 0.00, '2026-03-05', '2026-03-06', 'Paid', 0.00, 0, '2026-03-05 20:21:45', '2026-03-05 20:21:50', 0),
-(236, 40, 2, 4275.00, 0.00, 4275.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:21:45', '2026-03-05 20:21:45', 0),
-(237, 40, 3, 4275.00, 0.00, 4275.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:21:45', '2026-03-05 20:21:45', 0),
-(238, 40, 4, 4275.00, 0.00, 4275.00, '2027-03-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:21:45', '2026-03-05 20:21:45', 0),
-(239, 41, 1, 4275.00, 4275.00, 0.00, '2026-03-05', '2026-03-06', 'Paid', 0.00, 0, '2026-03-05 20:27:26', '2026-03-05 20:28:02', 0),
-(240, 41, 2, 4275.00, 0.00, 4275.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:27:26', '2026-03-05 20:27:26', 0),
-(241, 41, 3, 4275.00, 0.00, 4275.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:27:26', '2026-03-05 20:27:26', 0),
-(242, 41, 4, 4275.00, 0.00, 4275.00, '2027-03-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:27:26', '2026-03-05 20:27:26', 0),
-(243, 42, 1, 1700.00, 0.00, 1700.00, '2026-03-05', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:08', '2026-03-05 20:42:08', 0),
-(244, 42, 2, 1700.00, 0.00, 1700.00, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:08', '2026-03-05 20:42:08', 0),
-(245, 42, 3, 1700.00, 0.00, 1700.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:08', '2026-03-05 20:42:08', 0),
-(246, 42, 4, 1700.00, 0.00, 1700.00, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:08', '2026-03-05 20:42:08', 0),
-(247, 42, 5, 1700.00, 0.00, 1700.00, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:08', '2026-03-05 20:42:08', 0),
-(248, 42, 6, 1700.00, 0.00, 1700.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:08', '2026-03-05 20:42:08', 0),
-(249, 42, 7, 1700.00, 0.00, 1700.00, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:08', '2026-03-05 20:42:08', 0),
-(250, 42, 8, 1700.00, 0.00, 1700.00, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:09', '2026-03-05 20:42:09', 0),
-(251, 42, 9, 1700.00, 0.00, 1700.00, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:09', '2026-03-05 20:42:09', 0),
-(252, 42, 10, 1700.00, 0.00, 1700.00, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-03-05 20:42:09', '2026-03-05 20:42:09', 0);
+(253, 43, 1, 5000.00, 5000.00, 0.00, '2026-03-07', '2026-03-07', 'Paid', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 11:11:45', 0),
+(254, 43, 2, 1344.44, 0.00, 1344.44, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(255, 43, 3, 1344.44, 0.00, 1344.44, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(256, 43, 4, 1344.44, 0.00, 1344.44, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(257, 43, 5, 1344.44, 0.00, 1344.44, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(258, 43, 6, 1344.44, 0.00, 1344.44, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(259, 43, 7, 1344.44, 0.00, 1344.44, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(260, 43, 8, 1344.44, 0.00, 1344.44, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(261, 43, 9, 1344.44, 0.00, 1344.44, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(262, 43, 10, 1344.48, 0.00, 1344.48, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
+(273, 45, 1, 5000.00, 5000.00, 0.00, '2026-03-07', '2026-03-08', 'Paid', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:56', 0),
+(274, 45, 2, 1333.33, 0.00, 1333.33, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(275, 45, 3, 1333.33, 0.00, 1333.33, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(276, 45, 4, 1333.33, 0.00, 1333.33, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(277, 45, 5, 1333.33, 0.00, 1333.33, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(278, 45, 6, 1333.33, 0.00, 1333.33, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(279, 45, 7, 1333.33, 0.00, 1333.33, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(280, 45, 8, 1333.33, 0.00, 1333.33, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(281, 45, 9, 1333.33, 0.00, 1333.33, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
+(282, 45, 10, 1333.36, 0.00, 1333.36, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0);
 
 -- --------------------------------------------------------
 
@@ -1867,9 +1819,21 @@ INSERT INTO `notifications` (`id`, `user_id`, `role`, `type`, `title`, `body`, `
 (30, 455, 'admin', 'payment.received', 'New Payment Received', 'Juan Lim submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 135, NULL, 29, 0, NULL, 0, NULL, '2026-03-06 04:21:50', '2026-03-06 04:21:50'),
 (31, 3, 'admin', 'payment.received', 'New Installment Plan Created', 'Chloe Katindig selected a Quarterly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 41, NULL, 30, 0, NULL, 0, NULL, '2026-03-06 04:27:26', '2026-03-06 04:27:26'),
 (32, 455, 'admin', 'payment.received', 'New Installment Plan Created', 'Chloe Katindig selected a Quarterly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 41, NULL, 30, 0, NULL, 0, NULL, '2026-03-06 04:27:26', '2026-03-06 04:27:26'),
-(33, 3, 'admin', 'payment.received', 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 136, NULL, 31, 0, NULL, 0, NULL, '2026-03-06 04:28:02', '2026-03-06 04:28:02'),
-(34, 455, 'admin', 'payment.received', 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 136, NULL, 31, 0, NULL, 0, NULL, '2026-03-06 04:28:02', '2026-03-06 04:28:02'),
-(35, 457, 'student', 'payment.received', 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', 'calendar', '/enrollment/payment', 'payment_plan', 42, NULL, 32, 0, NULL, 0, NULL, '2026-03-06 04:42:09', '2026-03-06 04:42:09');
+(33, 3, 'admin', 'payment.received', 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 136, NULL, 31, 1, '2026-03-08 03:55:38', 0, NULL, '2026-03-06 04:28:02', '2026-03-08 03:55:38'),
+(34, 455, 'admin', 'payment.received', 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 136, NULL, 31, 1, '2026-03-08 03:55:38', 0, NULL, '2026-03-06 04:28:02', '2026-03-08 03:55:38'),
+(35, 457, 'student', 'payment.received', 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', 'calendar', '/enrollment/payment', 'payment_plan', 42, NULL, 32, 0, NULL, 0, NULL, '2026-03-06 04:42:09', '2026-03-06 04:42:09'),
+(36, 343, 'student', 'payment.received', 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', 'calendar', '/enrollment/payment', 'payment_plan', 43, NULL, 33, 0, NULL, 0, NULL, '2026-03-07 18:46:15', '2026-03-07 18:46:15'),
+(37, 343, 'student', 'payment.received', 'Payment Recorded', 'Your Tuition Installment payment of ₱5,000.00 has been recorded', 'dollar-sign', '/enrollment/payment', 'payment', 137, NULL, 34, 0, NULL, 0, NULL, '2026-03-07 19:11:45', '2026-03-07 19:11:45'),
+(38, 3, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', 'user-plus', '/admin/enrollments', 'enrollment', 65, NULL, 35, 0, NULL, 0, NULL, '2026-03-07 20:03:32', '2026-03-07 20:03:32'),
+(39, 455, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', 'user-plus', '/admin/enrollments', 'enrollment', 65, NULL, 35, 0, NULL, 0, NULL, '2026-03-07 20:03:32', '2026-03-07 20:03:32'),
+(40, 3, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', 'user-plus', '/admin/enrollments', 'enrollment', 66, NULL, 36, 0, NULL, 0, NULL, '2026-03-08 00:23:52', '2026-03-08 00:23:52'),
+(41, 455, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', 'user-plus', '/admin/enrollments', 'enrollment', 66, NULL, 36, 0, NULL, 0, NULL, '2026-03-08 00:23:52', '2026-03-08 00:23:52'),
+(44, 3, 'admin', 'payment.received', 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 45, NULL, 39, 0, NULL, 0, NULL, '2026-03-08 03:12:47', '2026-03-08 03:12:47'),
+(45, 455, 'admin', 'payment.received', 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 45, NULL, 39, 0, NULL, 0, NULL, '2026-03-08 03:12:47', '2026-03-08 03:12:47'),
+(46, 3, 'admin', 'payment.received', 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 141, NULL, 40, 1, '2026-03-08 03:22:42', 0, NULL, '2026-03-08 03:12:56', '2026-03-08 03:22:42'),
+(47, 455, 'admin', 'payment.received', 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 141, NULL, 40, 1, '2026-03-08 03:22:42', 0, NULL, '2026-03-08 03:12:56', '2026-03-08 03:22:42'),
+(48, 458, 'student', 'payment.confirmed', 'Payment Approved', 'Your Tuition Installment payment of ₱5,000.00 has been approved', 'check-circle', '/enrollment/payment', 'payment', 141, NULL, 42, 1, '2026-03-08 03:22:42', 0, NULL, '2026-03-08 03:22:42', '2026-03-08 03:22:42'),
+(49, 343, 'student', 'payment.confirmed', 'Payment Approved', 'Your Tuition Installment payment of ₱4,275.00 has been approved', 'check-circle', '/enrollment/payment', 'payment', 136, NULL, 44, 1, '2026-03-08 03:55:38', 0, NULL, '2026-03-08 03:55:38', '2026-03-08 03:55:38');
 
 -- --------------------------------------------------------
 
@@ -1929,7 +1893,19 @@ INSERT INTO `notification_outbox` (`id`, `notification_id`, `user_id`, `fcm_titl
 (32, 32, 455, 'New Installment Plan Created', 'Chloe Katindig selected a Quarterly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 41}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:27:26', NULL, '2026-03-07 04:27:26'),
 (33, 33, 3, 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 136}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:28:02', NULL, '2026-03-07 04:28:02'),
 (34, 34, 455, 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 136}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:28:02', NULL, '2026-03-07 04:28:02'),
-(35, 35, 457, 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 42}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:42:09', NULL, '2026-03-07 04:42:09');
+(35, 35, 457, 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 42}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:42:09', NULL, '2026-03-07 04:42:09'),
+(36, 36, 343, 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 43}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 18:46:15', NULL, '2026-03-08 18:46:15'),
+(37, 37, 343, 'Payment Recorded', 'Your Tuition Installment payment of ₱5,000.00 has been recorded', '{\"screen\": \"PaymentHistory\", \"payment_id\": 137}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 19:11:45', NULL, '2026-03-08 19:11:45'),
+(38, 38, 3, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 65}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 20:03:32', NULL, '2026-03-08 20:03:32'),
+(39, 39, 455, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 65}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 20:03:32', NULL, '2026-03-08 20:03:32'),
+(40, 40, 3, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 66}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 00:23:52', NULL, '2026-03-09 00:23:52'),
+(41, 41, 455, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 66}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 00:23:52', NULL, '2026-03-09 00:23:52'),
+(44, 44, 3, 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 45}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:47', NULL, '2026-03-09 03:12:47'),
+(45, 45, 455, 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 45}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:47', NULL, '2026-03-09 03:12:47'),
+(46, 46, 3, 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 141}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:56', NULL, '2026-03-09 03:12:56'),
+(47, 47, 455, 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 141}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:56', NULL, '2026-03-09 03:12:56'),
+(48, 48, 458, 'Payment Approved', 'Your Tuition Installment payment of ₱5,000.00 has been approved', '{\"screen\": \"PaymentHistory\", \"payment_id\": \"141\"}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:22:42', NULL, '2026-03-09 03:22:42'),
+(49, 49, 343, 'Payment Approved', 'Your Tuition Installment payment of ₱4,275.00 has been approved', '{\"screen\": \"PaymentHistory\", \"payment_id\": \"136\"}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:55:38', NULL, '2026-03-09 03:55:38');
 
 -- --------------------------------------------------------
 
@@ -2085,15 +2061,15 @@ CREATE TABLE `payments` (
 --
 
 INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id`, `receipt_number`, `payment_type`, `payment_for`, `amount`, `total_discount`, `payment_method`, `payment_date`, `reference_number`, `idempotency_key`, `installment_id`, `proof_of_payment_url`, `status`, `is_refund`, `refund_reason`, `original_payment_id`, `remarks`, `received_by`, `verified_by`, `verified_at`, `created_at`, `updated_at`, `version`, `service_period_month`, `service_period_year`, `is_recurring_service`) VALUES
-(16, 429, 19, 30, 'RCP-202602-2864', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 1250.00, 0.00, 'Cash', '2026-02-07', 'MCAFINV-20260208002334478', NULL, 25, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-07 09:23:36', '2026-02-07 09:23:36', 0, NULL, NULL, 0),
+(16, 429, 19, 30, 'RCP-202602-2864', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 1250.00, 0.00, 'Cash', '2026-02-07', 'MCAFINV-20260208002334478', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-07 09:23:36', '2026-02-07 09:23:36', 0, NULL, NULL, 0),
 (17, 430, 20, 30, 'RCP-202602-6223', 'Tuition Full Payment', 'Tuition Fee', 5000.00, 1000.00, 'Cash', '2026-02-07', 'MCAFINV-20260208041013725', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-07 13:10:22', '2026-02-07 14:20:42', 0, NULL, NULL, 0),
 (44, 432, 33, 30, 'RCP-202602-5524', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 555.56, 0.00, 'Cash', '2026-02-12', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-12 06:08:24', '2026-02-12 06:09:02', 0, NULL, NULL, 0),
 (45, 432, 33, 30, 'RCP-202602-2007', 'Tuition Installment', 'Installment #2 - SY 2026-2027', 555.56, 0.00, 'Cash', '2026-02-12', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-12 06:09:12', '2026-02-12 06:09:12', 0, NULL, NULL, 0),
-(46, 398, 34, 30, 'RCP-202602-6942', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1250.00, 0.00, 'Cash', '2026-02-13', NULL, NULL, 125, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-13 10:03:40', '2026-02-13 10:03:40', 0, NULL, NULL, 0),
-(68, 110, 35, 30, 'RCP-202602-5857', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 1700.00, 85.00, 'Cash', '2026-02-21', 'MCAFINV-20260221192004310', NULL, 179, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-21 04:20:06', '2026-02-21 04:20:06', 0, NULL, NULL, 0),
-(69, 110, 35, 30, 'RCP-202602-2434', 'Tuition Installment', 'Installment #2 - 2026-2027 - 1st Quarter', 1785.00, 0.00, 'Cash', '2026-02-21', 'MCAFINV-20260221192037216', NULL, 180, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-21 04:20:42', '2026-02-21 04:20:42', 0, NULL, NULL, 0),
-(70, 110, 35, 30, 'RCP-202602-5589', 'Tuition Installment', 'Installment #3 - SY 2026-2027', 1700.00, 0.00, 'GCash', '2026-02-21', '90812747238', NULL, 181, 'uploads/payments/2026/02/photo_2026-02-20_18-24-40_20260221122629_699996650d3ff.jpg', 'Pending', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-21 04:26:29', '2026-02-21 14:30:29', 0, NULL, NULL, 0),
-(72, 110, 35, 30, 'RCP-202602-3057', 'Tuition Installment', 'Refund - Installment #2 - 2026-2027 - 1st Quarter', 1785.00, 0.00, 'Cash', '2026-02-21', NULL, NULL, 180, NULL, 'Approved', 1, 'balik taya', 69, 'Refund for payment RCP-202602-2434', 3, NULL, NULL, '2026-02-21 04:51:21', '2026-02-21 04:51:21', 0, NULL, NULL, 0),
+(46, 398, 34, 30, 'RCP-202602-6942', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1250.00, 0.00, 'Cash', '2026-02-13', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-13 10:03:40', '2026-02-13 10:03:40', 0, NULL, NULL, 0),
+(68, 110, 35, 30, 'RCP-202602-5857', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 1700.00, 85.00, 'Cash', '2026-02-21', 'MCAFINV-20260221192004310', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-21 04:20:06', '2026-02-21 04:20:06', 0, NULL, NULL, 0),
+(69, 110, 35, 30, 'RCP-202602-2434', 'Tuition Installment', 'Installment #2 - 2026-2027 - 1st Quarter', 1785.00, 0.00, 'Cash', '2026-02-21', 'MCAFINV-20260221192037216', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-21 04:20:42', '2026-02-21 04:20:42', 0, NULL, NULL, 0),
+(70, 110, 35, 30, 'RCP-202602-5589', 'Tuition Installment', 'Installment #3 - SY 2026-2027', 1700.00, 0.00, 'GCash', '2026-02-21', '90812747238', NULL, NULL, 'uploads/payments/2026/02/photo_2026-02-20_18-24-40_20260221122629_699996650d3ff.jpg', 'Pending', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-21 04:26:29', '2026-02-21 14:30:29', 0, NULL, NULL, 0),
+(72, 110, 35, 30, 'RCP-202602-3057', 'Tuition Installment', 'Refund - Installment #2 - 2026-2027 - 1st Quarter', 1785.00, 0.00, 'Cash', '2026-02-21', NULL, NULL, NULL, NULL, 'Approved', 1, 'balik taya', 69, 'Refund for payment RCP-202602-2434', 3, NULL, NULL, '2026-02-21 04:51:21', '2026-02-21 04:51:21', 0, NULL, NULL, 0),
 (78, 110, NULL, 30, 'RCP-202602-3575', 'Service Fee', 'School Shuttle - February 2026', 1500.00, 0.00, 'Cash', '2026-02-21', '09012384', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2026-02-21 11:15:00', '2026-02-21 11:15:00', 0, 2, 2026, 1),
 (83, 443, NULL, 30, 'RCP-202602-2853', 'Uniform', 'School Dress (S) x1', 600.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:51:46', '2026-02-21 23:51:46', 0, NULL, NULL, 0),
 (84, 441, NULL, 30, 'RCP-202602-9643', 'Uniform', 'School Polo (#12) x1', 300.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:51:53', '2026-02-21 23:51:53', 0, NULL, NULL, 0),
@@ -2125,21 +2101,25 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (111, 374, NULL, 30, 'RCP-202602-143074', 'Uniform', 'Refund - PE Uniform (#12) x1', 225.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 1, 'wrong item', 108, 'Refund for payment RCP-202602-593538', 3, NULL, NULL, '2026-02-22 02:11:28', '2026-02-22 02:11:28', 0, NULL, NULL, 0),
 (112, 82, NULL, 30, 'RCP-202602-7716', 'Service Fee', 'School Shuttle - February 2026', 1500.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2026-02-22 02:45:26', '2026-02-22 02:45:26', 0, 2, 2026, 1),
 (113, 127, NULL, 30, 'RCP-202602-536162', 'Uniform', 'School Dress (XL) x1', 620.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-22 05:48:40', '2026-02-22 05:48:40', 0, NULL, NULL, 0),
-(114, 451, 47, 30, 'RCP-202602-292427', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, 189, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-22 06:10:56', '2026-02-22 06:10:56', 0, NULL, NULL, 0),
+(114, 451, 47, 30, 'RCP-202602-292427', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-22 06:10:56', '2026-02-22 06:10:56', 0, NULL, NULL, 0),
 (115, 376, 51, 30, 'RCP-202602-8868', 'Tuition Full Payment', 'Tuition Package - Nursery 1, Nursery 2, Kinder', 16500.00, 0.00, 'Cash', '2026-02-23', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2026-02-23 03:11:26', '2026-02-23 03:11:26', 0, NULL, NULL, 0),
 (116, 450, NULL, 30, 'RCP-202602-3022', 'Book', 'Text Book N2-G2', 4200.00, 0.00, 'Cash', '2026-02-23', '0927748', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2026-02-23 03:25:30', '2026-02-23 03:25:30', 0, NULL, NULL, 0),
 (117, 71, 52, 30, 'RCP-202602-2639', 'Tuition Full Payment', 'Tuition Package - Nursery 1, Nursery 2, Kinder', 16500.00, 500.00, 'Cash', '2026-02-23', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-23 04:06:51', '2026-02-23 11:06:51', 0, NULL, NULL, 0),
-(118, 431, 36, 26, 'RCP-202602-5141', 'Tuition Installment', 'Installment #1 - 2025-2026 - 1st Quarter', 1650.00, 82.50, 'Cash', '2026-02-23', '', NULL, 201, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-23 04:12:08', '2026-02-23 04:12:08', 0, NULL, NULL, 0),
-(119, 453, 53, 30, 'RCP-202602-525412', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-24', NULL, NULL, 211, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:13:44', '2026-02-24 11:08:54', 0, NULL, NULL, 0),
-(120, 454, 54, 30, 'RCP-202602-033032', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4250.00, 0.00, 'Cash', '2026-02-24', NULL, NULL, 221, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:45:44', '2026-02-24 11:08:48', 0, NULL, NULL, 0),
+(118, 431, 36, 26, 'RCP-202602-5141', 'Tuition Installment', 'Installment #1 - 2025-2026 - 1st Quarter', 1650.00, 82.50, 'Cash', '2026-02-23', '', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-23 04:12:08', '2026-02-23 04:12:08', 0, NULL, NULL, 0),
+(119, 453, 53, 30, 'RCP-202602-525412', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-24', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:13:44', '2026-02-24 11:08:54', 0, NULL, NULL, 0),
+(120, 454, 54, 30, 'RCP-202602-033032', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4250.00, 0.00, 'Cash', '2026-02-24', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:45:44', '2026-02-24 11:08:48', 0, NULL, NULL, 0),
 (129, 71, NULL, 30, 'RCP-202602-0915', 'Book', 'Text Book N1', 4000.00, 0.00, 'Cash', '2026-02-25', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-25 05:13:53', '2026-02-25 05:13:53', 0, NULL, NULL, 0),
 (130, 454, NULL, 30, 'RCP-202603-4396', 'Contribution', 'test', 100.00, 0.00, 'Cash', '2026-03-02', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-02 14:11:04', '2026-03-02 14:11:04', 0, NULL, NULL, 0),
 (131, 110, 35, 30, 'RCP-202603-680585', 'Miscellaneous', 'test', 100.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 13:05:25', '2026-03-05 16:27:42', 0, NULL, NULL, 0),
 (132, 110, 35, 30, 'RCP-202603-968052', 'Book', 'Text Book G3', 5100.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 16:13:50', '2026-03-05 16:27:37', 0, NULL, NULL, 0),
 (133, 110, 35, 30, 'RCP-202603-237760', 'Service Fee', 'School Shuttle', 1500.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 16:30:15', '2026-03-05 16:30:25', 0, NULL, NULL, 0),
 (134, 299, 62, 30, 'RCP-202603-923392', 'Tuition Full Payment', '2026-2027 Tuition Fee (Full Payment)', 17000.00, 500.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, 'Applied Full Payment Discount', NULL, NULL, NULL, '2026-03-05 17:31:29', '2026-03-05 17:31:29', 0, NULL, NULL, 0),
-(135, 340, 64, 30, 'RCP-202603-551057', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4275.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, 235, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-05 20:21:50', '2026-03-05 20:21:50', 0, NULL, NULL, 0),
-(136, 343, 63, 30, 'RCP-202603-953389', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4275.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, 239, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-05 20:28:02', '2026-03-05 20:28:02', 0, NULL, NULL, 0);
+(135, 340, 64, 30, 'RCP-202603-551057', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4275.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-05 20:21:50', '2026-03-05 20:21:50', 0, NULL, NULL, 0),
+(136, 343, 63, 30, 'RCP-202603-953389', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4275.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 20:28:02', '2026-03-07 19:55:38', 0, NULL, NULL, 0),
+(137, 343, 63, 30, 'RCP-202603-0248', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 5000.00, 0.00, 'Cash', '2026-03-07', '', NULL, 253, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-07 11:11:45', '2026-03-07 11:11:45', 0, NULL, NULL, 0),
+(138, 443, NULL, 30, 'RCP-202603-740457', 'Uniform', 'Uniform order (2 items)', 770.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order (2 items)', NULL, NULL, NULL, '2026-03-07 16:47:09', '2026-03-07 16:47:09', 0, NULL, NULL, 0),
+(139, 443, NULL, 30, 'RCP-202603-419953', 'Uniform', 'Uniform order (3 items)', 2250.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order (3 items)', NULL, NULL, NULL, '2026-03-07 17:45:13', '2026-03-07 17:45:13', 0, NULL, NULL, 0),
+(141, 458, 66, 30, 'RCP-202603-875531', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 5000.00, 0.00, 'Cash', '2026-03-07', NULL, NULL, 273, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-07 19:12:56', '2026-03-07 19:22:42', 0, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -2193,19 +2173,8 @@ CREATE TABLE `payment_plans` (
 --
 
 INSERT INTO `payment_plans` (`id`, `student_id`, `enrollment_id`, `academic_period_id`, `total_tuition`, `total_paid`, `balance`, `schedule_type`, `number_of_installments`, `template_id`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(9, 429, 19, 30, 5000.00, 2500.00, 2500.00, 'Quarterly', 4, NULL, 'Active', NULL, '2026-02-07 09:23:32', '2026-02-12 04:55:54'),
-(27, 398, 34, 30, 5000.00, 1250.00, 3750.00, 'Quarterly', 4, NULL, 'Active', NULL, '2026-02-13 10:03:36', '2026-02-13 10:03:40'),
-(31, 446, 44, 30, 17100.00, 0.00, 17100.00, 'Monthly', 10, 2, 'Active', NULL, '2026-02-19 04:50:47', '2026-02-20 23:30:26'),
-(33, 110, 35, 30, 17000.00, 5185.00, 11815.00, 'Monthly', 10, 2, 'Active', NULL, '2026-02-21 03:42:58', '2026-02-21 04:51:21'),
-(34, 451, 47, 30, 17000.00, 1700.00, 15300.00, 'Monthly', 10, 2, 'Active', NULL, '2026-02-22 05:55:44', '2026-02-22 06:10:56'),
-(35, 443, 48, 30, 16500.00, 0.00, 16500.00, 'Semestral', 2, 1, 'Active', NULL, '2026-02-22 06:18:35', '2026-02-22 06:18:35'),
-(36, 431, 36, 26, 16500.00, 1650.00, 14850.00, 'Monthly', 10, 2, 'Active', NULL, '2026-02-23 04:11:42', '2026-02-23 04:12:08'),
-(37, 453, 53, 30, 17000.00, 1700.00, 15300.00, 'Monthly', 10, 2, 'Active', NULL, '2026-02-24 10:13:27', '2026-02-24 10:13:44'),
-(38, 454, 54, 30, 17000.00, 4250.00, 12750.00, 'Quarterly', 4, 3, 'Active', NULL, '2026-02-24 10:45:36', '2026-02-24 10:45:44'),
-(39, 432, 33, 30, 16500.00, 1650.00, 14850.00, 'Monthly', 10, 2, 'Active', NULL, '2026-02-24 11:08:00', '2026-02-24 11:08:31'),
-(40, 340, 64, 30, 17100.00, 4275.00, 12825.00, 'Quarterly', 4, 3, 'Active', NULL, '2026-03-05 20:21:45', '2026-03-05 20:21:50'),
-(41, 343, 63, 30, 17100.00, 4275.00, 12825.00, 'Quarterly', 4, 3, 'Active', NULL, '2026-03-05 20:27:26', '2026-03-05 20:28:02'),
-(42, 457, 60, 30, 17000.00, 0.00, 17000.00, 'Monthly', 10, 2, 'Active', NULL, '2026-03-05 20:42:08', '2026-03-05 20:42:08');
+(43, 343, 63, 30, 17100.00, 5000.00, 12100.00, 'Monthly', 10, 2, 'Active', NULL, '2026-03-07 10:46:15', '2026-03-07 11:11:45'),
+(45, 458, 66, 30, 17000.00, 5000.00, 12000.00, 'Monthly', 10, 2, 'Active', NULL, '2026-03-07 19:12:47', '2026-03-07 19:12:56');
 
 -- --------------------------------------------------------
 
@@ -2237,19 +2206,6 @@ CREATE TABLE `payment_proof_sessions` (
 --
 
 INSERT INTO `payment_proof_sessions` (`session_id`, `token`, `user_id`, `plan_id`, `installment_id`, `payment_id`, `installment_number`, `amount_due`, `payment_description`, `status`, `file_path`, `original_filename`, `ocr_reference`, `created_at`, `expires_at`, `uploaded_at`) VALUES
-(1, '14a30032bac8f2d166823f4481f56ca8f2d07aa7e5f8656e', 446, 31, 159, NULL, 1, 1710.00, NULL, 'pending', NULL, NULL, NULL, '2026-02-20 08:15:16', '2026-02-20 09:45:16', NULL),
-(2, '0dd3472493555c010c4c74164f491619b4436e76e228acca', 446, 31, 159, NULL, 1, 1710.00, NULL, 'pending', NULL, NULL, NULL, '2026-02-20 08:18:13', '2026-02-20 09:48:13', NULL),
-(3, '2607024033f7d36fd5c521b826595979cd2391aed4809e50', 446, 31, 159, NULL, 1, 1710.00, NULL, 'pending', NULL, NULL, NULL, '2026-02-20 08:18:21', '2026-02-20 09:48:21', NULL),
-(4, '1d84e6981f78d3911a7e375c07b6b22554d016afc67029ba', 446, 31, 159, NULL, 1, 1710.00, NULL, 'pending', NULL, NULL, NULL, '2026-02-20 08:20:23', '2026-02-20 09:50:23', NULL),
-(5, 'e0dc02ff73cbf9c1ed46da0ed29933385b13152d265e09a7', 446, 31, 159, NULL, 1, 1710.00, NULL, 'pending', NULL, NULL, NULL, '2026-02-20 08:24:57', '2026-02-20 09:54:57', NULL),
-(6, '0d4df37e58599476f2d2e529f1fef29c66e0c7bb9ceb33c8', 446, 31, 159, NULL, 1, 1710.00, NULL, 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_16-32-31_20260220093310_69981c462fd1f.jpg', 'photo_2026-02-20_16-32-31.jpg', NULL, '2026-02-20 08:28:30', '2026-02-20 09:58:30', '2026-02-20 09:33:10'),
-(7, '5ff0026ef8b55ed1ce225a60348f25e3964b73fdfbfb1982', 446, 31, 159, NULL, 1, 1710.00, NULL, 'pending', NULL, NULL, NULL, '2026-02-20 08:33:26', '2026-02-20 10:03:26', NULL),
-(8, '8422b3af3b6e555e6cd8896d4d30674c01cd9f066d67361f', 446, 31, 159, NULL, 1, 1710.00, NULL, 'expired', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_16-32-31_20260220095505_69982169cbb8d.jpg', 'photo_2026-02-20_16-32-31.jpg', NULL, '2026-02-20 08:40:23', '2026-02-20 10:10:23', '2026-02-20 09:55:05'),
-(9, 'f72712392c27cfbe6432513665cfb41c133ae373109cc758', 446, 31, 159, NULL, 1, 1710.00, NULL, 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_16-32-31_20260220101456_69982610412a4.jpg', 'photo_2026-02-20_16-32-31.jpg', NULL, '2026-02-20 09:14:20', '2026-02-20 10:44:20', '2026-02-20 10:14:56'),
-(10, '8cdfba74036103d5600499494974a009b8854c7907046014', 446, 31, 159, NULL, 1, 1710.00, NULL, 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_16-32-31_20260220102253_699827ed7ecbe.jpg', 'photo_2026-02-20_16-32-31.jpg', NULL, '2026-02-20 09:22:25', '2026-02-20 10:52:25', '2026-02-20 10:22:53'),
-(11, '4e9d89335daf860a040618d2333081995032131b285a4616', 446, 31, 159, NULL, 1, 1710.00, NULL, 'expired', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_16-32-31_20260220103006_6998299ecedfa.jpg', 'photo_2026-02-20_16-32-31.jpg', NULL, '2026-02-20 09:23:47', '2026-02-20 10:53:47', '2026-02-20 10:30:06'),
-(12, '29eb205e1e39bb12085cf2e1d8bb1f8e8b4e1ff88e4dc3d4', 446, 31, 159, NULL, 1, 1710.00, NULL, 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_16-32-31_20260220112032_6998357071c2e.jpg', 'photo_2026-02-20_16-32-31.jpg', NULL, '2026-02-20 10:20:06', '2026-02-20 11:50:06', '2026-02-20 11:20:32'),
-(13, 'b0069b6c58526377194e308722d4f1260c308e767cc9dc43', 446, 31, 160, NULL, 2, 1710.00, NULL, 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_18-24-40_20260220112734_699837167d568.jpg', 'photo_2026-02-20_18-24-40.jpg', NULL, '2026-02-20 10:26:15', '2026-02-20 11:56:15', '2026-02-20 11:27:34'),
 (17, '7b3a8441c0b0daffc45982db55354838bb38c3ec5822fbb1', 443, NULL, NULL, NULL, 0, 5700.00, NULL, 'pending', NULL, NULL, NULL, '2026-02-20 10:50:20', '2026-02-20 12:20:20', NULL),
 (18, '0e64cc94c7abc1a03638b2b66ac044e12233b7e3ead746cb', 430, NULL, NULL, NULL, 0, 5700.00, 'Text Book G4-G6', 'pending', NULL, NULL, NULL, '2026-02-20 10:54:54', '2026-02-20 12:24:54', NULL),
 (19, '22e8c23e126f81b5104d7a513416718b5315da1c9ab2d16e', 236, NULL, NULL, NULL, 0, 4200.00, 'Text Book N2-G2', 'viewed', 'uploads/gcash_proofs/2026/02/photo_2026-02-20_18-24-40_20260220121849_69984319284f6.jpg', 'photo_2026-02-20_18-24-40.jpg', NULL, '2026-02-20 11:17:27', '2026-02-20 12:47:27', '2026-02-20 12:18:49'),
@@ -2485,10 +2441,11 @@ INSERT INTO `school_fees` (`id`, `year_level`, `fee_type`, `fee_name`, `amount`,
 (36, 'Grade 4', 'Book', 'Text Book G4-G6', 5700.00, 1, NULL, 1, NULL, '2026-02-18 18:17:08', '2026-02-18 19:23:13', 0),
 (37, 'Grade 5', 'Book', 'Text Book G4-G6', 5700.00, 1, NULL, 1, NULL, '2026-02-18 18:17:08', '2026-02-18 19:23:13', 0),
 (38, 'Grade 6', 'Book', 'Text Book G4-G6', 5700.00, 1, NULL, 1, NULL, '2026-02-18 18:17:08', '2026-02-18 19:23:13', 0),
-(39, NULL, 'Service Fee', 'School Shuttle', 1500.00, 1, NULL, 1, NULL, '2026-02-21 18:01:33', '2026-02-21 18:02:26', 1),
+(39, NULL, 'Service Fee', 'School Shuttle', 1500.00, 0, NULL, 1, NULL, '2026-02-21 18:01:33', '2026-03-07 10:54:03', 1),
 (40, NULL, 'Miscellaneous', 'test', 100.00, 1, NULL, 1, NULL, '2026-02-22 14:15:56', '2026-02-22 14:15:56', 0),
 (41, NULL, 'Contribution', 'test', 100.00, 1, NULL, 1, NULL, '2026-02-22 14:16:04', '2026-02-22 14:16:04', 0),
-(42, NULL, 'Other', 'test', 100.00, 1, NULL, 1, NULL, '2026-02-22 14:16:36', '2026-02-22 14:16:36', 0);
+(42, NULL, 'Other', 'test', 100.00, 1, NULL, 1, NULL, '2026-02-22 14:16:36', '2026-02-22 14:16:36', 0),
+(43, NULL, 'Other', 'Book Bag', 250.00, 0, NULL, 1, NULL, '2026-03-07 10:48:05', '2026-03-07 10:48:05', 0);
 
 -- --------------------------------------------------------
 
@@ -3350,7 +3307,12 @@ INSERT INTO `student_uniform_orders` (`id`, `student_id`, `enrollment_id`, `unif
 (30, 405, NULL, 23, '#20', 1, 470.00, 0, NULL, 470.00, 107, '2026-02-22 08:23:36'),
 (31, 374, NULL, 22, '#12', 1, 225.00, 1, 'Pants', 225.00, 108, '2026-02-22 08:23:55'),
 (32, 443, NULL, 23, '#20', 1, 470.00, 0, NULL, 470.00, 109, '2026-02-22 08:27:26'),
-(33, 127, NULL, 16, 'XL', 1, 620.00, 0, NULL, 620.00, 113, '2026-02-22 12:48:40');
+(33, 127, NULL, 16, 'XL', 1, 620.00, 0, NULL, 620.00, 113, '2026-02-22 12:48:40'),
+(34, 443, NULL, 14, 'M', 1, 420.00, 0, NULL, 420.00, 138, '2026-03-07 16:47:09'),
+(35, 443, NULL, 17, '#18', 1, 350.00, 0, NULL, 350.00, 138, '2026-03-07 16:47:09'),
+(36, 443, NULL, 25, 'One Size', 1, 50.00, 0, NULL, 50.00, 139, '2026-03-07 17:45:13'),
+(37, 443, NULL, 14, 'L', 3, 420.00, 0, NULL, 1260.00, 139, '2026-03-07 17:45:13'),
+(38, 443, NULL, 23, '#18', 2, 470.00, 0, NULL, 940.00, 139, '2026-03-07 17:45:13');
 
 -- --------------------------------------------------------
 
@@ -3454,7 +3416,7 @@ INSERT INTO `teachers` (`id`, `user_id`, `employee_id`, `status`, `status_update
 (3, 21, 'EMP2025-002', 'active', NULL, '2025-11-08 09:18:02', '2025-11-08 16:18:02'),
 (4, 52, 'EMP2025-003', 'active', NULL, '2025-11-10 02:38:20', '2026-01-17 13:01:51'),
 (5, 382, 'EMP2025-004', 'active', NULL, '2025-11-10 22:42:14', '2026-01-17 13:02:34'),
-(6, 406, 'EMP2025-005', 'active', NULL, '2025-11-18 07:58:38', '2026-01-17 13:02:26'),
+(6, 406, 'EMP2025-005', 'active', NULL, '2025-11-18 07:58:38', '2026-03-07 18:53:37'),
 (7, 407, 'EMP2025-006', 'active', NULL, '2025-11-18 08:15:48', '2025-11-18 15:15:48'),
 (8, 408, 'EMP2025-007', 'active', NULL, '2025-11-18 08:16:06', '2025-11-18 15:16:06'),
 (9, 409, 'EMP2025-008', 'active', NULL, '2025-11-18 08:17:15', '2026-01-17 13:02:12'),
@@ -3647,7 +3609,7 @@ INSERT INTO `tuition_package_levels` (`id`, `package_id`, `year_level`, `created
 CREATE TABLE `uniform_items` (
   `id` int UNSIGNED NOT NULL,
   `item_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `item_group` enum('Dress','Blouse','Skirt','Polo','PE') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_group` enum('Dress','Blouse','Skirt','Polo','PE','Others') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `applicable_levels` json DEFAULT NULL,
   `applicable_gender` enum('Male','Female','All') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'All',
   `is_pair` tinyint(1) DEFAULT '0',
@@ -3675,7 +3637,8 @@ INSERT INTO `uniform_items` (`id`, `item_name`, `item_group`, `applicable_levels
 (21, 'PE Uniform', 'PE', '[]', 'All', 1, 1, 1, '2026-02-22 04:55:34', '2026-02-22 08:20:34'),
 (22, 'PE Uniform', 'PE', '[]', 'All', 1, 1, 1, '2026-02-22 04:56:29', '2026-02-22 08:20:40'),
 (23, 'PE Uniform', 'PE', '[]', 'All', 1, 1, 1, '2026-02-22 04:59:10', '2026-02-22 08:20:51'),
-(24, 'PE Uniform', 'PE', '[]', 'All', 1, 1, 1, '2026-02-22 05:16:25', '2026-02-22 08:20:46');
+(24, 'PE Uniform', 'PE', '[]', 'All', 1, 1, 1, '2026-02-22 05:16:25', '2026-02-22 08:20:46'),
+(25, 'School Patch', 'Others', '[]', 'All', 0, 0, 1, '2026-03-07 17:22:29', '2026-03-07 17:22:29');
 
 -- --------------------------------------------------------
 
@@ -3686,7 +3649,7 @@ INSERT INTO `uniform_items` (`id`, `item_name`, `item_group`, `applicable_levels
 CREATE TABLE `uniform_prices` (
   `id` int UNSIGNED NOT NULL,
   `uniform_item_id` int UNSIGNED NOT NULL,
-  `size` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `size` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `price` decimal(8,2) NOT NULL,
   `half_price` decimal(8,2) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
@@ -3740,7 +3703,8 @@ INSERT INTO `uniform_prices` (`id`, `uniform_item_id`, `size`, `price`, `half_pr
 (109, 23, '#14', 470.00, 235.00, 1, '2026-02-22 08:20:51'),
 (110, 23, '#16', 470.00, 235.00, 1, '2026-02-22 08:20:51'),
 (111, 23, '#18', 470.00, 235.00, 1, '2026-02-22 08:20:51'),
-(112, 23, '#20', 470.00, 235.00, 1, '2026-02-22 08:20:51');
+(112, 23, '#20', 470.00, 235.00, 1, '2026-02-22 08:20:51'),
+(113, 25, 'One Size', 50.00, NULL, 1, '2026-03-07 17:22:29');
 
 -- --------------------------------------------------------
 
@@ -3757,6 +3721,8 @@ CREATE TABLE `users` (
   `middle_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `last_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `profile_photo_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `profile_photo_updated_at` timestamp NULL DEFAULT NULL,
   `status` enum('active','inactive','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `must_change_password` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -3772,404 +3738,405 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `status`, `must_change_password`, `created_at`, `updated_at`, `version`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
-(1, 'student@demo.com', '$2y$10$Ll4dzxFoqlaGCC1aL702BOdZ3xtLLijHcLKzW4SF1HPrlEgP9Frz6', 'student', 'Demo', NULL, 'Student', '', 'active', 0, '2025-11-06 11:13:56', '2025-11-10 01:05:04', 0, NULL, NULL, 0, NULL),
-(2, 'teacher@demo.com', '$2y$10$/zuE1Q4AmA1J6MXuovoRoenUL5PoblPSzSxXA3ubUw47wpiTNfoVS', 'teacher', 'Demo', NULL, 'Teacher', '', 'active', 0, '2025-11-06 11:14:42', '2026-01-06 20:49:02', 0, NULL, NULL, 0, NULL),
-(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', 'active', 0, '2025-11-06 11:15:04', '2026-03-05 19:48:38', 0, NULL, NULL, 0, NULL),
-(16, 'john.doe@example.com', '$2y$10$I19hzyUWwzkG9HMk8wEutekUr7tC9GmtiRFvW4lqePlq4eKBKXQtS', 'teacher', 'John', NULL, 'Doe', '', 'active', 0, '2025-11-06 14:05:34', '2025-11-06 18:29:13', 0, NULL, NULL, 0, NULL),
-(18, 'juan.delacruz@mcc.edu.ph', '$2y$10$762nxMWoGHGu7kRyvzc8K.FGrrYGGJpRdMbm5jentTkF4mfui3iBK', 'student', 'Juan', NULL, 'Dela Cruz', '', 'active', 0, '2025-11-06 18:30:24', '2025-11-06 18:30:24', 0, NULL, NULL, 0, NULL),
-(19, 'maria.santos@mcc.edu.ph', '$2y$10$KGlfA0PiOWB4HR0pds9.1epVHMzpgv3hsk.qLKXZCSh9mgaD20FCW', 'student', 'Maria', NULL, 'Santos', '', 'active', 0, '2025-11-06 18:30:45', '2026-02-14 08:35:58', 0, '$2y$10$eHfLDD/lkTefVxHXDsIUc.aQ5zhzyP.vp/AckoRlj.F42gZ4oEXku', '2026-02-14 01:35:58', 0, NULL),
-(21, 'jose.reyes@mcc.edu.ph', '$2y$10$a6oQ6s6.ZLrnMN2ShismvunFw6HSUJb/lrIcxQfhLfHp2HWc2W7xK', 'teacher', 'Jose', NULL, 'Reyes', '', 'active', 0, '2025-11-08 16:18:01', '2025-11-24 01:32:02', 0, NULL, NULL, 0, NULL),
-(23, 'ana.bautista@mcc.edu.ph', '$2y$10$Jj6j4oDteBovsiSxQ5M2juwj3pExJM5R80gRSCnWB40b8csyWQhHW', 'student', 'Ana Marie', NULL, 'Bautista', '', 'active', 0, '2025-11-10 08:39:01', '2026-02-14 08:39:15', 0, '$2y$10$M7h1ArBs8oOe80wrJMuKoODg4OxYZ4wYKybFnFp8cevQt7MsIJyy2', '2026-02-14 01:39:15', 0, NULL),
-(24, 'carlos.mendoza@mcc.edu.ph', '$2y$10$XjdtGF0u5jkv3wbYlJm4D.Np7Cv9hDp7Of/zlEv7Bt5D2GHtWugQe', 'student', 'Carlos', NULL, 'Mendoza', '', 'active', 0, '2025-11-10 08:39:16', '2026-02-14 01:40:58', 0, NULL, NULL, 0, NULL),
-(25, 'luisa.fernandez@mcc.edu.ph', '$2y$10$Md1tZhHnZfFfpgo90cwXj.qCrDmEZWcBp.8389tzsbGESBvKxiIlO', 'student', 'Luisa', NULL, 'Fernandez', '', 'active', 0, '2025-11-10 08:39:29', '2025-11-10 08:39:29', 0, NULL, NULL, 0, NULL),
-(26, 'michael.tan@mcc.edu.ph', '$2y$10$PGFuueRiY5pqZ6QPBOWX.urcBujwzBH/0d9PnuitX9pQQhA0.FK0O', 'student', 'Michael', NULL, 'Tan', '', 'active', 0, '2025-11-10 08:39:43', '2025-11-10 08:39:43', 0, NULL, NULL, 0, NULL),
-(27, 'jasmine.lim@mcc.edu.ph', '$2y$10$btaZvRIyT0kmUkODKStX7.OyTMTUefBFw.Uz7wiab4ow/p8FoUbsO', 'student', 'Jasmine', NULL, 'Lim', '', 'active', 0, '2025-11-10 08:39:58', '2025-11-10 08:39:58', 0, NULL, NULL, 0, NULL),
-(28, 'catherine.aquino@mcc.edu.ph', '$2y$10$awoQxoT6ormmhF6JRA1OPucz8FWLN7NcUJN8SAR4DHqZN3yNEfbbi', 'student', 'Catherine', NULL, 'Aquino', '', 'active', 0, '2025-11-10 08:40:16', '2025-11-10 08:40:16', 0, NULL, NULL, 0, NULL),
-(29, 'ricardo.gomez@mcc.edu.ph', '$2y$10$myDlCmDtauZwb2yGZLJVLuBQnu455aDE3SkY/KEeNYvhjOI9v6/QS', 'student', 'Ricardo', NULL, 'Gomez', '', 'active', 0, '2025-11-10 08:40:28', '2025-11-10 08:40:28', 0, NULL, NULL, 0, NULL),
-(30, 'angelica.perez@mcc.edu.ph', '$2y$10$8C8gZCGXWNgFk1pqgsX0.Oeee8xazbRRiTclXJiSl2sbQYKa62L.m', 'student', 'Angelica', NULL, 'Perez', '', 'active', 0, '2025-11-10 08:40:42', '2025-11-10 08:40:42', 0, NULL, NULL, 0, NULL),
-(31, 'christian.delossantos@mcc.edu.ph', '$2y$10$/2PhuFDJAAb0RjTTwcd/auIaYSAXyIkx5LDm4H729vfGtbsHORNvu', 'student', 'Christian', NULL, 'Delos Santos', '', 'active', 0, '2025-11-10 08:40:56', '2025-11-10 08:40:56', 0, NULL, NULL, 0, NULL),
-(32, 'kristine.apolonio@mcc.edu.ph', '$2y$10$LJdoxOyj5sDC0cAiQucWR.g8ckA.CcQQEAqJgRU3pYAJNZIvAoz4m', 'student', 'Kristine Joy', NULL, 'Apolonio', '', 'active', 0, '2025-11-10 08:41:11', '2025-11-10 08:41:11', 0, NULL, NULL, 0, NULL),
-(33, 'emmanuel.rivera@mcc.edu.ph', '$2y$10$EkBQqe.Zau2J1BSqBQSZQu1iVJU8JUFgTmrmwkA/ooKqzSZJFsIGK', 'student', 'Emmanuel', NULL, 'Rivera', '', 'active', 0, '2025-11-10 08:41:28', '2025-11-10 08:41:28', 0, NULL, NULL, 0, NULL),
-(34, 'samantha.lopez@mcc.edu.ph', '$2y$10$shoW7DnaD2eOcoSkosYGH.xkPvqIoCuRqwtCm7NjU9s/iaeR/I5Ge', 'student', 'Samantha', NULL, 'Lopez', '', 'active', 0, '2025-11-10 08:41:39', '2025-11-10 08:41:39', 0, NULL, NULL, 0, NULL),
-(35, 'rafael.valdez@mcc.edu.ph', '$2y$10$sbcy6wENv1x.LIJTV85iNOFIG7LvUTB63hL9Xb8BvmZ0ojEB22XgC', 'student', 'Rafael Paolo', NULL, 'Valdez', '', 'active', 0, '2025-11-10 08:42:03', '2025-11-10 08:42:03', 0, NULL, NULL, 0, NULL),
-(36, 'nicole.villanueva@mcc.edu.ph', '$2y$10$KNVaAGgtjnMrdPX92/Uv7.p7GEalZLUmfhu7ws1jc6At7/RXX6N6S', 'student', 'Nicole Ann', NULL, 'Villanueva', '', 'active', 0, '2025-11-10 08:42:15', '2025-11-10 08:42:15', 0, NULL, NULL, 0, NULL),
-(37, 'adrian.co@mcc.edu.ph', '$2y$10$4s0/H8yNcei4d6sX5S8Jb.ZoESlPMGGlDRDMCfMSeVUen1j7BqxCG', 'student', 'Adrian James', NULL, 'Co', '', 'active', 0, '2025-11-10 08:42:29', '2025-11-19 03:11:39', 0, NULL, NULL, 0, NULL),
-(38, 'tricia.balingit@mcc.edu.ph', '$2y$10$cac/8cufGbKTeVh45ItQiuhIefWl3POl0evpDR1V/1p7f8bCXRYu6', 'student', 'Tricia Mae', NULL, 'Balingit', '', 'active', 0, '2025-11-10 08:42:43', '2025-11-10 08:42:43', 0, NULL, NULL, 0, NULL),
-(39, 'johnlloyd.cruz@mcc.edu.ph', '$2y$10$FdX0lIglHbOsVzWVdcLn7u6wJccWMJq8eG.nHqAXnnId8Ed63ox/O', 'student', 'John Lloyd', NULL, 'Cruz', '', 'active', 0, '2025-11-10 08:42:56', '2025-11-10 08:42:56', 0, NULL, NULL, 0, NULL),
-(40, 'andrea.reyes@mcc.edu.ph', '$2y$10$go/31KlI0JlS.l2Y32vvreimnJ7pdTwVx9svuuoGpjtyKg038IG92', 'student', 'Andrea', NULL, 'Reyes', '', 'active', 0, '2025-11-10 08:46:11', '2025-11-10 08:46:11', 0, NULL, NULL, 0, NULL),
-(41, 'bernard.tan@mcc.edu.ph', '$2y$10$FISx9fakhxSvkwOqRq.rNezpjt2QQ7vOKEa8k20/9v7ZiIR/uDldK', 'student', 'Bernard', NULL, 'Tan', '', 'active', 0, '2025-11-10 08:46:20', '2025-11-10 08:46:20', 0, NULL, NULL, 0, NULL),
-(42, 'carmela.rivera@mcc.edu.ph', '$2y$10$4Lt.CkETBeUFKczXr2mxK.pc.UxpMVqFUK4/ykEpLiOXMsnUs5luO', 'student', 'Carmela', NULL, 'Rivera', '', 'active', 0, '2025-11-10 08:46:29', '2025-11-10 08:46:29', 0, NULL, NULL, 0, NULL),
-(43, 'derek.lim@mcc.edu.ph', '$2y$10$08TnQwMMr4V55GaYAAy.4eAoX8HWBN5COF1IYy0trneS4to8EQxlK', 'student', 'Derek', NULL, 'Lim', '', 'active', 0, '2025-11-10 08:46:37', '2025-11-10 08:46:37', 0, NULL, NULL, 0, NULL),
-(44, 'ella.fernandez@mcc.edu.ph', '$2y$10$2N/HRZvYJuz5ZP75iIJ.kOubTmfOOVi7pv8QvwMyh/V/umwRhs1Dm', 'student', 'Ella Marie', NULL, 'Fernandez', '', 'active', 0, '2025-11-10 08:46:49', '2025-11-10 08:46:49', 0, NULL, NULL, 0, NULL),
-(45, 'francis.go@mcc.edu.ph', '$2y$10$nCBsX87fHih6uk.hJ2oVo.FfLl9sL35lmkxaUya44ekFRwMeUTscq', 'student', 'Francis', NULL, 'Go', '', 'active', 0, '2025-11-10 08:46:57', '2025-11-10 08:46:57', 0, NULL, NULL, 0, NULL),
-(46, 'gia.pascual@mcc.edu.ph', '$2y$10$O0/7Yxhk0cHNOm4ZKXU0x.xOlBQbBhqV8Y8O3fcr66NOOy1zPu.JS', 'student', 'Gia', NULL, 'Pascual', '', 'active', 0, '2025-11-10 08:47:05', '2025-11-10 08:47:05', 0, NULL, NULL, 0, NULL),
-(47, 'harold.javier@mcc.edu.ph', '$2y$10$UNkC/6TddFTEsbHW1EtY7OFyJLJ6EpEumY/dJ0RCVrypFV9dvCbF.', 'student', 'Harold', NULL, 'Javier', '', 'active', 0, '2025-11-10 08:47:14', '2026-02-24 17:15:10', 0, '$2y$10$rqmgITSLtyv1yMWc7I2JYeUC7Ij7llwPCnLoPqa8eHMCS./XT8MAy', '2026-02-24 10:15:10', 0, NULL),
-(48, 'ingrid.navarro@mcc.edu.ph', '$2y$10$a2I3Bmcm2tU8eArKhusxo.629tX6hypN8DA9EYfp6tkYL/SvvxDvi', 'student', 'Ingrid', NULL, 'Navarro', '', 'active', 0, '2025-11-10 08:47:22', '2025-11-10 08:47:22', 0, NULL, NULL, 0, NULL),
-(49, 'jake.silva@mcc.edu.ph', '$2y$10$KkoQ0Kd5xJgW5f653dpUiOcCyZbZYuZwMRKxzW9Mhq05np6P25mvu', 'student', 'Jake Anthony', NULL, 'Silva', '', 'active', 0, '2025-11-10 08:47:32', '2025-11-10 08:47:32', 0, NULL, NULL, 0, NULL),
-(50, 'kaye.castro@mcc.edu.ph', '$2y$10$E5sxDNYuS7PQPqFEdcdqcupccfatEk39MJsK7LNx0ujWmpNwocPWy', 'student', 'Kaye', NULL, 'Castro', '', 'active', 0, '2025-11-10 08:47:40', '2025-11-10 08:47:40', 0, NULL, NULL, 0, NULL),
-(51, 'leandro.morales@mcc.edu.ph', '$2y$10$icTlD1gFj.SReFcPhM./bec13jp9ru0KFZlfEChhE4zpue7Mzz4CW', 'student', 'Leandro', NULL, 'Morales', '', 'active', 0, '2025-11-10 09:21:56', '2025-11-10 09:21:56', 0, NULL, NULL, 0, NULL),
-(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', 'active', 0, '2025-11-10 09:38:20', '2026-03-05 19:48:27', 0, NULL, NULL, 0, NULL),
-(53, 'nico.perez@mcc.edu.ph', '$2y$10$m.hi3cAvdrAUzCF7TMoaseMCqY.oGHNorWf7U4e1.IXkR7ANud61S', 'student', 'Nico Allan', NULL, 'Perez', '', 'active', 0, '2025-11-10 09:46:50', '2025-11-10 09:46:50', 0, NULL, NULL, 0, NULL),
-(54, 'olivia.delgado@mcc.edu.ph', '$2y$10$0h4mahiMCDm96OWctcRdXeujn7Yr/PRJvgyO7KQtO954d7V39.26m', 'student', 'Olivia Anne', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
-(55, 'paul.uy@mcc.edu.ph', '$2y$10$8IsNfV4is0Sgs0N6e70Zk.PP.DcSJswNe.GBdLa3aLZhDxvJ.KiZG', 'student', 'Paul Vincent', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
-(56, 'queenie.lopez@mcc.edu.ph', '$2y$10$e4xcXVIj5hELgNvr0JSjMeNWmz3GxGWSSqd0QPAvuKj.AXYyClTOC', 'student', 'Queenie', NULL, 'Lopez', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
-(57, 'ronald.bautista@mcc.edu.ph', '$2y$10$5iq5Sg5fW/Jj07.ycapvzuZ8gUt7J7fqwHRbX4IbS6zCpD8y/0cqa', 'student', 'Ronald', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
-(58, 'shiela.gomez@mcc.edu.ph', '$2y$10$LC2kMt3TVD6aqjNVpXd4NuM2wnx4orznYG0kYyBP..V1aXokO3Wuu', 'student', 'Shiela Mae', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
-(59, 'troy.medina@mcc.edu.ph', '$2y$10$J.YdQQGoR434pyKxeo/0VO9f0lvImfo96CE59z0wO0vmjED0g6ecq', 'student', 'Troy James', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
-(60, 'aaliyah.bernardo@mcc.edu.ph', '$2y$10$uXV2HkyxgNzjiwawUN28gOdd.sWz3d70N8ITep2YFnL5j0vz4OX8e', 'student', 'Aaliyah Grace', NULL, 'Bernardo', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-18 09:23:02', 0, NULL, NULL, 0, NULL),
-(61, 'aaron.cabrera@mcc.edu.ph', '$2y$10$KdB0VAtZtivUzWn.Ag.sruoSaFFQ181.Gi5JbsXBsgfY/9vFJZ2z2', 'student', 'Aaron James', NULL, 'Cabrera', NULL, 'active', 0, '2025-11-10 12:15:39', '2026-02-08 08:08:45', 0, NULL, NULL, 0, NULL),
-(62, 'bianca.dizon@mcc.edu.ph', '$2y$10$IZOT1.ui78sarUox3cIRM.f0cp2NwhBDs2TScFVFJ1QbH6as9Ffye', 'student', 'Bianca Marie', NULL, 'Dizon', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(63, 'carl.escobar@mcc.edu.ph', '$2y$10$i3pR0rXeg85zZlRqR1bULuDWJh/QUnp76ZuQ.NCqaiDtX5WQOwb0i', 'student', 'Carl John', NULL, 'Escobar', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(64, 'diana.flores@mcc.edu.ph', '$2y$10$viJpN1ONZW8VODk7ME01yOwMy1SJqkXjcAVezILdE3DHVQYkpgbFa', 'student', 'Diana Rose', NULL, 'Flores', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(65, 'ethan.gutierrez@mcc.edu.ph', '$2y$10$8SpTP21UQefARRxLUDP1PebAgqNmjZOZ2XKUJg3ORX6/Kdgjaqnei', 'student', 'Ethan Blake', NULL, 'Gutierrez', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(66, 'faye.hernandez@mcc.edu.ph', '$2y$10$DzJnEKL8OYo1p8mobOoSd.Ptd4mVCjUpO/87KssXd6btzYkKnDoaK', 'student', 'Faye Louise', NULL, 'Hernandez', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(67, 'gabriel.ignacio@mcc.edu.ph', '$2y$10$iN6fvdGyY/WOG4rGLrUuyeXQf.pyTiVrwYwjSOyHm20fdK8tdevMC', 'student', 'Gabriel Jude', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(68, 'hannah.jacinto@mcc.edu.ph', '$2y$10$cLWd8bspuRNBX6tZ2MlUxuollV85PA9ggVHzOje8.IkMQ1eMbadk.', 'student', 'Hannah Joy', NULL, 'Jacinto', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(69, 'ian.katindig@mcc.edu.ph', '$2y$10$q7.N2ibOC.k3XWk2nu8A.udJdEtrwHxH/tmX0zzzbN7OT9CQSmvDC', 'student', 'Ian Miguel', NULL, 'Katindig', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(70, 'julia.lansang@mcc.edu.ph', '$2y$10$1HjeQJ9mliW96XQh2qzCW.nxShA/pp8z1gYbiGNlqGcl3SmQaCVdm', 'student', 'Julia Anne', NULL, 'Lansang', NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
-(71, 'karl.manzano@mcc.edu.ph', '$2y$10$gsHxS215nra7FF.x52aneucouOSMEf4lL8nNUW8G/pj/vDmKKE4Ga', 'student', 'Karl Matthew', NULL, 'Manzano', NULL, 'active', 0, '2025-11-10 12:15:40', '2026-03-01 09:02:08', 0, '$2y$10$gpAkDdLC9Pmcy8UHDx/oiu7l5Ct8TDoWCF4hyLtloQn4rgfWPMJc2', '2026-02-24 08:51:48', 0, NULL),
-(72, 'lia.navarro@mcc.edu.ph', '$2y$10$e3XWFVuY0aOtQL8Q3C310.9oHnms82K3vUEH7dU8qep3xr8.gL5IW', 'student', 'Lia Victoria', NULL, 'Navarro', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(73, 'martin.ocampo@mcc.edu.ph', '$2y$10$vysmQG.YFuihnflHAQBH6eS4yHwGceVqhMw0bBx2CmLcUIKSeSlhW', 'student', 'Martin Jay', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(74, 'nina.paredes@mcc.edu.ph', '$2y$10$0cEhSKtXyxihWuTWG.vJduFFxh9JcdBRL62jEOecnz.ovMpvFxTVK', 'student', 'Nina Sofia', NULL, 'Paredes', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(75, 'orlando.quintos@mcc.edu.ph', '$2y$10$nPO08Utsn7QnMPMtixy3q.HR7kV3D5FhT7eoKfKwDNXEcvv3xM/H2', 'student', 'Orlando Jr.', NULL, 'Quintos', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(76, 'princess.ramos@mcc.edu.ph', '$2y$10$BztYNu9Y5emb.Xu5foTtyeceHpd4RYFwviwBEEFY7WVepPUSztBke', 'student', 'Princess Leigh', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(77, 'raymond.santiago@mcc.edu.ph', '$2y$10$UZS4AUqIRHgZrQGk6KzzlO38ISaMx703Bo/T2CTYWqBCN3Y41kphi', 'student', 'Raymond Paul', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(78, 'shane.torres@mcc.edu.ph', '$2y$10$Bcv4jsGB8rNQdqfIndpz0eIjaLahU/BjnHX7PEBKbIW0BVyV9QD5y', 'student', 'Shane Elizabeth', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(79, 'tristan.urbano@mcc.edu.ph', '$2y$10$C.J0v5Z4qKZimrgt.VW1ZebJaBowpHF24pQGtDhCW7YmTBf.5Caay', 'student', 'Tristan Kyle', NULL, 'Urbano', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(80, 'vanessa.velasquez@mcc.edu.ph', '$2y$10$5GCO3K/a/p3a44lRvR2fjOCZ0i2fzMGTTyg1MzLfLyQ3Wy.Q8GKF6', 'student', 'Vanessa Mae', NULL, 'Velasquez', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(81, 'wilbert.yap@mcc.edu.ph', '$2y$10$se4XUrT2oq6C9uA/jxzWGuY2nmLcL6pmgQIVDthmplhoi2WpeFKAy', 'student', 'Wilbert John', NULL, 'Yap', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(82, 'xandra.alvarez@mcc.edu.ph', '$2y$10$wxZZLnF3oNjCSdJ4ssv3nOY4V9qrkPOByR8R7Q/OxTW0Ufg8dZW8O', 'student', 'Xandra Kaye', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(83, 'yohan.bautista@mcc.edu.ph', '$2y$10$SuYOTDMS2IJ10v1tI7V0.OLLl5D0tx6vd04iijPGj61vNnHUS1Aji', 'student', 'Yohan Andrei', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(84, 'zarah.castillo@mcc.edu.ph', '$2y$10$NL1466inaS1UvKLsoMEkNeeO6YF/u5gAx2TyqREkIfEc6hKwA22Ty', 'student', 'Zarah Jane', NULL, 'Castillo', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(85, 'beatrice.estrella@mcc.edu.ph', '$2y$10$WaC84AZ912YwqD8U6Z8go.pk89eFZcHHPmt1VaBcmnJsJXt4RbDfi', 'student', 'Beatrice Ann', NULL, 'Estrella', NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
-(86, 'cedric.galvez@mcc.edu.ph', '$2y$10$mwd7YiN9swM0bdsDKTcKJu2ubgLKYeoXQnsAagBtzuBIq6ebXY0Ne', 'student', 'Cedric James', NULL, 'Galvez', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(87, 'donna.herrera@mcc.edu.ph', '$2y$10$qoZ57HUP.8xu6x/ZkuMxJe6x0vQ8pz06F6cLbYU7GypbblNbGaSQO', 'student', 'Donna Rose', NULL, 'Herrera', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(88, 'emilio.ibarra@mcc.edu.ph', '$2y$10$RFbZjsOEKFKjJ0Ux5l6Tm.uRXQOtdH7rT5FF4Om6dgaqoeLXcYzR.', 'student', 'Emilio Jose', NULL, 'Ibarra', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(89, 'francesca.jalandoni@mcc.edu.ph', '$2y$10$DQdW5zBUHMiQhzDrJIwA0u0Qgr49r7QZZEo9zOb9MMWzIufpdKIWe', 'student', 'Francesca Marie', NULL, 'Jalandoni', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(90, 'gregory.legaspi@mcc.edu.ph', '$2y$10$JJ/H/SeAHQunhoQSOLz4/OtPDXx9IqArQmW8skBRLFdYZ/Nrh7TYK', 'student', 'Gregory Sean', NULL, 'Legaspi', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(91, 'imani.molina@mcc.edu.ph', '$2y$10$roDUsY4wBvtKn50JYy/8leIgNOQI7vYXHT5n8qXKlq1aViQtP0dfy', 'student', 'Imani Grace', NULL, 'Molina', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(92, 'julius.natividad@mcc.edu.ph', '$2y$10$S9GEmh75BVxNsEw2MkHxyOIYYnicxuGjTwghqGxJMHkm/HGAW/Xne', 'student', 'Julius Caesar', NULL, 'Natividad', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(93, 'kaitlyn.padilla@mcc.edu.ph', '$2y$10$RruDygNDucZfqYvZfCsmMOlqHWuWA5hCAYcntJiVcTUepuojDOW6K', 'student', 'Kaitlyn Joy', NULL, 'Padilla', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(94, 'leonardo.salazar@mcc.edu.ph', '$2y$10$qOWWHlu43FeSfkF8ldOGd./Nk5hjrKIxuGz0mA0jyym0ATlJ2FBC6', 'student', 'Leonardo David', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(95, 'mikaela.tolentino@mcc.edu.ph', '$2y$10$SMg7vvi9e4LAzWI/qMwlNuW2fLkM703UNxHvpr1BSWWWdkOxczty6', 'student', 'Mikaela Rose', NULL, 'Tolentino', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(96, 'nathaniel.valencia@mcc.edu.ph', '$2y$10$XatFD2uxwosY846UpZJo9uMJsDRGnQjn3DpWwk9MXW8IzLEq7Mw.u', 'student', 'Nathaniel Jude', NULL, 'Valencia', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(97, 'oliver.zamora@mcc.edu.ph', '$2y$10$0L1OolhGjvywA6x1PRTvV.VgqmNy.ZCRbew5dz2../JuVtxutw2Vi', 'student', 'Oliver Martin', NULL, 'Zamora', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(98, 'pauleen.aquino@mcc.edu.ph', '$2y$10$uDMkNg1eNPvdq/gPusU0EOnyIRhTQRwIVP78t1M8Ps0JvIo5uZxh2', 'student', 'Pauleen Joy', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(99, 'quincy.brillantes@mcc.edu.ph', '$2y$10$o2CPCMpiPz7kqFizGjpOXOyUMTV4TwF0JQ8.OZLiENDkzfruHjomq', 'student', 'Quincy Rae', NULL, 'Brillantes', NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(100, 'regina.concepcion@mcc.edu.ph', '$2y$10$b4DY7b6i6wrlmn6vvRuDluIT3l3sj07tHALks9MMgnFKeFzEyiV5y', 'student', 'Regina Faith', NULL, 'Concepcion', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(101, 'samuel.domingo@mcc.edu.ph', '$2y$10$lo/1HMyWsbaeSxorvPeyCOwSA271SufrhFR89fGEa6Spk60TNAata', 'student', 'Samuel Ray', NULL, 'Domingo', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(102, 'therese.estrada@mcc.edu.ph', '$2y$10$f9d7DqMNBgZEkcCW0Z.V7eLL3BVRMjSHT8k2fWB/T2hRnR/F9nQai', 'student', 'Therese Marie', NULL, 'Estrada', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(103, 'uriel.ferrer@mcc.edu.ph', '$2y$10$CAXd1aZr4Cx0hisETzV9wuskxcxSUYSasubZkaBvpJ4zF360dYBRu', 'student', 'Uriel James', NULL, 'Ferrer', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(104, 'violet.gallardo@mcc.edu.ph', '$2y$10$Y3Gj25t7aTq9wSNKJr0P.e9abi94XsKV0eCFKy/5O2sKvlSgR0BWO', 'student', 'Violet Grace', NULL, 'Gallardo', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(105, 'wendell.huang@mcc.edu.ph', '$2y$10$eGdUYQ1/qIo.MLfn9uzTbOamC9Y63WlF9vZmlMRXt0TVfgTIVttyq', 'student', 'Wendell Andre', NULL, 'Huang', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(106, 'xyrus.irving@mcc.edu.ph', '$2y$10$4vrMVF8AFF/KlmoPIrCanuR/Ec78bQjavGsW9r3MfVcV3CgVQiyj.', 'student', 'Xyrus Kyle', NULL, 'Irving', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(107, 'yara.malonzo@mcc.edu.ph', '$2y$10$oJSjMflWYI2WHCutruB4iO.HflHnYW4oYmh7e4X7BzKJ4uewlaJs.', 'student', 'Yara Nicole', NULL, 'Malonzo', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(108, 'zeke.noble@mcc.edu.ph', '$2y$10$Do.MIHhKjzqTsd8N9rU.Nekp2W2JzIz/QLVCRi3.CJSf70CJSksr6', 'student', 'Zeke Daniel', NULL, 'Noble', NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
-(109, 'abigail.pineda@mcc.edu.ph', '$2y$10$Nl81BwhhufU0cKkd3yOfA.bbRUkcgfXb/NJJ6Bo4x8xAZkzMzOtpq', 'student', 'Abigail Rose', NULL, 'Pineda', NULL, 'active', 0, '2025-11-10 12:15:42', '2026-02-09 04:59:02', 0, NULL, NULL, 0, NULL),
-(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:35', '2026-03-05 20:15:04', 0, '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
-(111, 'ricardo.lim@mcc.edu.ph', '$2y$10$oO3esbnhLoSBMVVAEpi/5.oT2SZ4ht0cj1N1Bpg/Nug.hAicPeL/m', 'student', 'Ricardo', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
-(112, 'diego.alvarez@mcc.edu.ph', '$2y$10$RzvrH2OmfCYy8g5rf9YNuu/0eIfT0qnWWPwxU6A3x38lBR7r.QVE.', 'student', 'Diego', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
-(113, 'julian.sy@mcc.edu.ph', '$2y$10$//yUsNWHi4oBimdkncqP0uhb0MgunJa4PDtINSAPbFT6S152uVm66', 'student', 'Julian', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
-(114, 'ian.navarro@mcc.edu.ph', '$2y$10$Lv8VW5L/qd6dhQ3Qe3EpYuL2.Z1mOtUZRlNdy/KGPWLZ2uQ/1pPaW', 'student', 'Ian', NULL, 'Navarro', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
-(115, 'ava.aquino@mcc.edu.ph', '$2y$10$IuK1OPjM8U80QkPaXS0FFOQf1swNvAexMgD3umm7APk/0AyI5vZe2', 'student', 'Ava', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
-(116, 'ellie.go@mcc.edu.ph', '$2y$10$ZCXB3y0k06FHufahS/V2teJraA/W6IrNYSqzWvQjucKqNnqab1GdG', 'student', 'Ellie', NULL, 'Go', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(117, 'maria.delgado@mcc.edu.ph', '$2y$10$Z6QQ/qH2D7gVhmPvvWdB4.rLJ79g3txauDq2Fvb.Fb00NGw8dUyzi', 'student', 'Maria', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(118, 'isabella.delgado@mcc.edu.ph', '$2y$10$9YeXTq1gfpAKYPumeO6wJuzHOMCQI9MMB4P2HWAhwUtcagchsB.0.', 'student', 'Isabella', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(119, 'camila.delos.santos@mcc.edu.ph', '$2y$10$dQyyKqDYjILaEpQlbSgJoONmz7cr5czVhUS/sPvNRmMYq.RaMVilm', 'student', 'Camila', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(120, 'miguel.ortega@mcc.edu.ph', '$2y$10$b2ey6HQ529Go4V4TvOL9C.IHDeDEeIsYB0Pydxiz8LBHc0UDodJlO', 'student', 'Miguel', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(121, 'lucia.pineda@mcc.edu.ph', '$2y$10$Lrym9nnQukuWCWiyg3baBuep.utlPtfKEBCxFqBrIwVi4WDhs4oFG', 'student', 'Lucia', NULL, 'Pineda', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(122, 'stella.delos.santos@mcc.edu.ph', '$2y$10$CWwtdqdzT8m3PYlOZgCSgOc1R9zGLJYz.PlsNbWmvAz5c8E7dpvO2', 'student', 'Stella', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(123, 'chloe.aquino@mcc.edu.ph', '$2y$10$9XuzGkzfSmq79V/usvcvHeJdwOk0F.4WtLgmWUHvwjWNRU5HDvq0W', 'student', 'Chloe', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(124, 'ian.perez@mcc.edu.ph', '$2y$10$cGwyIpiCs2aQUFTTlMJ.I.W8YBeyLc27oRH.BFuiZD6egI/F/C0bO', 'student', 'Ian', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(125, 'ellie.santos@mcc.edu.ph', '$2y$10$tBnqZJMZCgqMXtYkZYYj/OZkVGaYjok.TlnFsylch5n/MLQIk3xUW', 'student', 'Ellie', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(126, 'isabella.rivera@mcc.edu.ph', '$2y$10$SB9FM/e0eE53T8GH7YtLv.mYYBbY39VKIlPitvBbFwbbjdjTmYFw.', 'student', 'Isabella', NULL, 'Rivera', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(127, 'felipe.ramos@mcc.edu.ph', '$2y$10$YL7fpcigO5IWiEzzY21U4u.7cenvcg./.24hvOBBQg71kd0Q4fO.q', 'student', 'Felipe', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(128, 'sophia.navarro@mcc.edu.ph', '$2y$10$2Ctqa1L.LUxOeHXixC.9seKNhaNFiIVq118ZbukRYrgxFn7GmIjtC', 'student', 'Sophia', NULL, 'Navarro', NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(129, 'lily.santos@mcc.edu.ph', '$2y$10$vp6PCd.r7tFo9rZa5DL89esN06ox9TFthX4TAOK1.pDcSH33quAey', 'student', 'Lily', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(130, 'diego.lozano@mcc.edu.ph', '$2y$10$.XfW9SMn4H9ukixKorTpWuQqFOmLQ6g9ztgWk6IJXM8Hlrb2pyXNG', 'student', 'Diego', NULL, 'Lozano', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(131, 'diego.dela.cruz@mcc.edu.ph', '$2y$10$3Bx/4FfjwkLH2N77rU0pdeejY.tk.lS88Hv8qoG.gCDgT4Gsi.RBC', 'student', 'Diego', NULL, 'Dela Cruz', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(132, 'marcus.quinto@mcc.edu.ph', '$2y$10$2cRZof65Xzsp0.Nh6baUY.VYpq1ZIRPNI2iQfP9f90uGCllYYg.fO', 'student', 'Marcus', NULL, 'Quinto', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(133, 'zoe.garcia@mcc.edu.ph', '$2y$10$qtvF/qIOUyi0D9Wg6fxNrefhCLiL9Vqrk1ZNbvTm7RupUToLc9DUm', 'student', 'Zoe', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(134, 'lucia.delgado@mcc.edu.ph', '$2y$10$h963tNYSUAuEd/TiIhDLI.SF9FJoLij3UWVGVUMpDNcUncNNYQTAy', 'student', 'Lucia', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(135, 'sophia.santos@mcc.edu.ph', '$2y$10$3OuKz.NQIzcBgagKU2gVreQUd6EPmW.ExrBckxurhILNrmSRQd2Qe', 'student', 'Sophia', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(136, 'cristina.garcia@mcc.edu.ph', '$2y$10$sIq54Bdi.Mvxs2d9kTaB4OEjo8SoIzWUfrtETfro3ebdlx2xEV0xO', 'student', 'Cristina', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(137, 'dylan.perez@mcc.edu.ph', '$2y$10$xLusCvnOsHfGXWSSwUNT9e3qxx6uKZHfS9KB2Yc5YfOsszVPUiXOS', 'student', 'Dylan', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(138, 'victor.santos@mcc.edu.ph', '$2y$10$K.65ATyJZcTui4JznRG1VOm5n/jv178fClxYvF7B09IpYl3Aw7aB6', 'student', 'Victor', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(139, 'diego.villanueva@mcc.edu.ph', '$2y$10$ddPXbQ3m1FxEYE4qr8hgj.5GtAAN6sUDASmU9tR15eAHpOag87vhy', 'student', 'Diego', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(140, 'ricardo.reyes@mcc.edu.ph', '$2y$10$3GlcTUqfhmMtRKvolNg3a.mVL3OeRlRlqcOFWBgwCqv1VI2m6BAgO', 'student', 'Ricardo', NULL, 'Reyes', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(141, 'gabriela.fernandez@mcc.edu.ph', '$2y$10$E.H45zNesHnsyWDlGjvLU.ynRVPurBXot0w8Kvjxy4VFvG0tzXv0i', 'student', 'Gabriela', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(142, 'luis.garcia@mcc.edu.ph', '$2y$10$q1OO3FdOBQvH4Sg//qDeredqTnk3JPlZBeXC/5WtmkRmFWe6TMSBK', 'student', 'Luis', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(143, 'jorge.delos.santos@mcc.edu.ph', '$2y$10$4cejWj.phjNl64jJLoWxWOCSvU1Q2xa6bMdjD/0ZWHbZcEsCOvRie', 'student', 'Jorge', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(144, 'leo.aquino@mcc.edu.ph', '$2y$10$tEoWo5184VhAxWmKz6hWXuQX47TZ7vh.ZxuPntHQHyPLbPb3gDWfW', 'student', 'Leo', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(145, 'nathan.ramos@mcc.edu.ph', '$2y$10$L4XGzrMaJPQ.L32V0VtTbeouxIXwrtnIzl6CqrGAZJrlO7hD/kwEq', 'student', 'Nathan', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(146, 'gabriela.santiago@mcc.edu.ph', '$2y$10$HGpNeDWVOqsc0NdJf1ulve3iFqDYaDP5mvG92WdpRm7dY7gXOGSDG', 'student', 'Gabriela', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(147, 'oscar.lim@mcc.edu.ph', '$2y$10$lxfGFuNzrcc8GhFcaTVLQui49HQXwclHm5nkMQ1ls86/EXgxavhrm', 'student', 'Oscar', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(148, 'mia.perez@mcc.edu.ph', '$2y$10$9fqTsxt2Nfm12pKuMPF7wuXONgEspD3UzrE8i7Zr0CHNJDtZbqjWK', 'student', 'Mia', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(149, 'elena.gomez@mcc.edu.ph', '$2y$10$ShQsDgooIRAoLxHnBpGkzeS1qSRSDRHb8.HiFrQHfD8H/W..WdANK', 'student', 'Elena', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(150, 'ana.gomez@mcc.edu.ph', '$2y$10$tHlpjZQlleSw8GDpOAHU1OBICZGYWp9DKHS2G4iIoDpuX71vw72Py', 'student', 'Ana', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-18 10:22:47', 0, NULL, NULL, 0, NULL),
-(151, 'ava.mendoza@mcc.edu.ph', '$2y$10$pABA8e6y/hrnKPvjw8Heouv2LtgXWFjJATsDnQattdXIyyoSII9bu', 'student', 'Ava', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(152, 'sebastian.alvarez@mcc.edu.ph', '$2y$10$40.uU5bY.UXyAvO4V7Yaq.eo9REmrXOreHLgfcs1wbNtWS.WxOvA2', 'student', 'Sebastian', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(153, 'brian.beltran@mcc.edu.ph', '$2y$10$6pv2rhmneJes3bF6pocxnOBEVyLSoIFuv4082ZvLwpSxITrH0rYvS', 'student', 'Brian', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(154, 'nathan.santiago@mcc.edu.ph', '$2y$10$oMur4j7cUFAMOLqhOSfn3OvHLc2QuyJmV7KxDdv/fTbylOXsPDXQS', 'student', 'Nathan', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(155, 'nathan.ignacio@mcc.edu.ph', '$2y$10$O1JguGd0lV/I9S3YvRj2e.JSNFol2nmnFnIFgC6N5NTfA7PWhNSRS', 'student', 'Nathan', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(156, 'lily.rivera@mcc.edu.ph', '$2y$10$fcibbDy/CqFPF0cH7211H.T7tIHvH3yPA3LcehN/wDS.lzbFmZBgy', 'student', 'Lily', NULL, 'Rivera', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(157, 'carlos.lim@mcc.edu.ph', '$2y$10$ZX3SWDpZaZBf5ZJvfKBzhOHEOsx9RfPo8gYX.hdxacphRPM0CFzK.', 'student', 'Carlos', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
-(158, 'carlos.dela.cruz@mcc.edu.ph', '$2y$10$5RgwKPORf.ylXlnAgbg0Kuxj5sHv9yAxgm0b/Yzq2UmJWKLQVp1hK', 'student', 'Carlos', NULL, 'Dela Cruz', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(159, 'ana.santiago@mcc.edu.ph', '$2y$10$x7AumFpCvIhEDSc2KbW5NOxyfAb41q4tRcPceO4ffP3YJebAUFVFK', 'student', 'Ana', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(160, 'ian.diaz@mcc.edu.ph', '$2y$10$P1jUfUwoVa6ZtIVKz/EsveK.hltkVp64Yfiqgeljs7kVkVcIM9aeK', 'student', 'Ian', NULL, 'Diaz', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(161, 'carlos.santiago@mcc.edu.ph', '$2y$10$mJIZig7GgF3fVEFpJCgmZeR8SWsTmnIYlK3CRetrtyxojmvSJkc9W', 'student', 'Carlos', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(162, 'julian.cruz@mcc.edu.ph', '$2y$10$dVWmr.opMW2MvKGk5w/EwuerYVJpebZ8I3Tz9qywThvMvMoDVUcW2', 'student', 'Julian', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(163, 'chloe.sy@mcc.edu.ph', '$2y$10$iZlkrPlzDq4gfYE7rMxf/OsGDCSwF3ZjWZg9lPpbKaNMAuIjGVMqa', 'student', 'Chloe', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(164, 'mia.sy@mcc.edu.ph', '$2y$10$nmS/2aU2hcSGmOf11PmGtuiveA8vk6WO4tmxw.cxYZZIzv4NexS3O', 'student', 'Mia', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(165, 'ava.diaz@mcc.edu.ph', '$2y$10$ek7OI4yUpyv3Oa391R5/reYVfXPloSeePVthzCZbrId082wsYmZQe', 'student', 'Ava', NULL, 'Diaz', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(166, 'miguel.cruz@mcc.edu.ph', '$2y$10$VLYP7sy60i.YRan/eM0fjOGDeRuPIhYIAeWPVWpkhYVcUTQ/Lh7w2', 'student', 'Miguel', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(167, 'andres.ramos@mcc.edu.ph', '$2y$10$07iXCmOrwY2D6j84rfujOOq50551Vf/cubLD4/618PXDHd3LpPUYa', 'student', 'Andres', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(168, 'andres.medina@mcc.edu.ph', '$2y$10$iKYlhg3mrzRywe06DzQmD.guRSYsDiG2grki4bTCLJikcMmA/6dTy', 'student', 'Andres', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(169, 'nathan.perez@mcc.edu.ph', '$2y$10$HoAR3pU4a5OKfaurVf6rpOV5gOroKygy6aH7x.Yp5SjmVhc2i2wVG', 'student', 'Nathan', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(170, 'leo.delgado@mcc.edu.ph', '$2y$10$.nG/ngRKMaZDZ/LmZHEYK.7IxcDqcotmqxQVNQooocijHu/p/L37W', 'student', 'Leo', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(171, 'ricardo.tan@mcc.edu.ph', '$2y$10$En/d2jrleAUH68gc5c.5veAz4tFE7Oe4sqfSSIaN29wq07cFBiqUi', 'student', 'Ricardo', NULL, 'Tan', NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(172, 'ava.santos@mcc.edu.ph', '$2y$10$y9pl4lJT4glN8UpBJNT8p.4iV8naP4PULP6x1.OFTCWi6.GbxXg3.', 'student', 'Ava', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(173, 'chloe.cruz@mcc.edu.ph', '$2y$10$AnqgrrNcHHXSi6LX7qrRre9cqfN29UdaWXqqNgcmsZNTmEmj7nJtu', 'student', 'Chloe', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(174, 'axel.lozano@mcc.edu.ph', '$2y$10$UBju2VyhuwcKtPav.I3BROrTvxWbl3DsbjpaeAu/fg/K4saxyQVZC', 'student', 'Axel', NULL, 'Lozano', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(175, 'sebastian.ocampo@mcc.edu.ph', '$2y$10$bySvMk.ImSpVFioYdR4dGee9mmxqaCissyIkktgqgVQfTqYsf4W9i', 'student', 'Sebastian', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(176, 'leo.ocampo@mcc.edu.ph', '$2y$10$xBOTFbA2m7FzSJHRJzrMh.dufD3gs3fpShlx3ybNkE1RtrkcDwWjy', 'student', 'Leo', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(177, 'jorge.ocampo@mcc.edu.ph', '$2y$10$FiItD.oc4m56/htZZ8bNcOUi8dSuFSS25Lm1AlLHGjE5AN7SXb0y.', 'student', 'Jorge', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(178, 'luis.delgado@mcc.edu.ph', '$2y$10$j1Uy.NJ17hxbRk0fbShZz.dRo8iuPVtvqyCpuSQI.RallHKQDISyu', 'student', 'Luis', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(179, 'axel.salazar@mcc.edu.ph', '$2y$10$6CSOgn44T8ot7lSSw/RLpeBT.Byj4QvnO.SVYzuhGKFK0oQb.ROBG', 'student', 'Axel', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(180, 'stella.fernandez@mcc.edu.ph', '$2y$10$5eCe1/IfHN0dWm3Aiplsv.35o40zwnpwpNLkwtA4duH2D2lZDmdX2', 'student', 'Stella', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(181, 'chloe.lozano@mcc.edu.ph', '$2y$10$ixofoCCbY1N6YWvoKfJrruYBXFW0lAMRlV44qtP3wjgYYOzupb0CC', 'student', 'Chloe', NULL, 'Lozano', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(182, 'leo.mendoza@mcc.edu.ph', '$2y$10$iB6b2BfZ8JepEowWl9KPge/2iwfGL65yrIwPo5HpJtfsUkWb6cYna', 'student', 'Leo', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(183, 'cristina.aquino@mcc.edu.ph', '$2y$10$/92vguj3gZU4.pgBQ4rP3e4nEWyCiIBbjvEOgbShS.SPEG0X/DiYC', 'student', 'Cristina', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(184, 'nathan.gomez@mcc.edu.ph', '$2y$10$xHT0D.QmtCta4HcQQkQl9e5UycfSomiilFt0v1.DVbbeRLtmJaRrW', 'student', 'Nathan', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(185, 'andres.rivera@mcc.edu.ph', '$2y$10$hDWxIrKxTh6Ad7ZBUOvbDOLPOVe.q0/RV3jFx3p/hGj4qKpCm0L4i', 'student', 'Andres', NULL, 'Rivera', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(186, 'sophia.sy@mcc.edu.ph', '$2y$10$3anl6UAZ2EnumB3rGZRzteKfPQq3dgWTh42/eRGhXQk.6aaGJpzNe', 'student', 'Sophia', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
-(187, 'luis.medina@mcc.edu.ph', '$2y$10$8ZhMcWozItV/rWZpceYqfeLrtXu1eAnSTtz3mYXdKKxOhGNo5L/3O', 'student', 'Luis', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(188, 'stella.katindig@mcc.edu.ph', '$2y$10$vBB/kEgfia0taz8tZNsIZOGqhhweyxqRDcCbpruy/c1/Pb0GCFbOW', 'student', 'Stella', NULL, 'Katindig', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(189, 'marcus.lim@mcc.edu.ph', '$2y$10$FRoTN67zYiT.TET97efoT.lBQXHjZVONV8njSq1x8Yy/SVkiP2DdG', 'student', 'Marcus', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(190, 'axel.santiago@mcc.edu.ph', '$2y$10$8tibOWJt.2HwEH61Xo0RNe1rRhcxz4wGwmT/AmaYs9z/svSnlD6rO', 'student', 'Axel', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(191, 'ava.medina@mcc.edu.ph', '$2y$10$5gkZOaWQJ/HV8eQeZ4Z7u.vw5EWqCVbgBF8C/cmFltYt3JNS1lSYi', 'student', 'Ava', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(192, 'ana.torres@mcc.edu.ph', '$2y$10$cFmE2Nnm552VOeHd4cYQROM5Y1VYgxWZGlghyDDfzFHSdjDdn0jkK', 'student', 'Ana', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(193, 'maria.villanueva@mcc.edu.ph', '$2y$10$tAnYVNu/bd5IFJMJ./QjMO5IIMHRGbGn3HtiaSEP/9T2yV/.nzTA2', 'student', 'Maria', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(194, 'brian.rivera@mcc.edu.ph', '$2y$10$xFzta20hl6XQvMUXUc8v5.KZmEaY5S1/cQAhoY0aw0My8giu3p3NG', 'student', 'Brian', NULL, 'Rivera', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(195, 'nathan.ortega@mcc.edu.ph', '$2y$10$YxU9VaEFwoj02IoytvovweNQ/jI.XOMEgGqp6fZTUAlYk0s3ix6Xy', 'student', 'Nathan', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(196, 'cristina.katindig@mcc.edu.ph', '$2y$10$rsoojUmE7nK7lWsaR5c.VOEZ2giJ365NPQ.BCYf.G4qKB1Ome.iom', 'student', 'Cristina', NULL, 'Katindig', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(197, 'jorge.torres@mcc.edu.ph', '$2y$10$ANAvQm.AKIRRZX8U/8qAkePDBTaAn09SjGcTLfBYV5ouO3MCuXKuC', 'student', 'Jorge', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(198, 'leo.bautista@mcc.edu.ph', '$2y$10$3n1cxdSzFIZnTES3SFkbJOdIP6x2B0eWiD/W/PA4wz1GKde7Hlliy', 'student', 'Leo', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(199, 'stella.medina@mcc.edu.ph', '$2y$10$Bn7CpqX70W9gKzDaVl.ARe6raegJBu9MnSC4DP/HzgxccKdKm583i', 'student', 'Stella', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(200, 'jorge.ortega@mcc.edu.ph', '$2y$10$qS/.Q9UBgzwWgyUZaTC82ePg09wW/zX6gV0kKm3TdEw/dacDJ0oA.', 'student', 'Jorge', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
-(201, 'cristina.tan@mcc.edu.ph', '$2y$10$hfwxrB30oCz5WZFRwx2KBO19dzH4HSZ9buG1RrPinrkzZKck.gQlG', 'student', 'Cristina', NULL, 'Tan', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(202, 'stella.rivera@mcc.edu.ph', '$2y$10$dR3iI5yfyiyXrfKYJsgQO.Dejobx5lwJqzclSP2OcBnUCpjvOzye6', 'student', 'Stella', NULL, 'Rivera', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(203, 'julian.ignacio@mcc.edu.ph', '$2y$10$tEsIbgvvrSq/SAlEjs/Onutv6HwSA92GsEKgFRSp0F4AF87JXWTXy', 'student', 'Julian', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(204, 'sofia.bautista@mcc.edu.ph', '$2y$10$h4M918HFbQ5TnoeGxWkAq.37Kpw4NWKkDsi0ZOvUb9s4otxFj06MG', 'student', 'Sofia', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(205, 'nathan.mendoza@mcc.edu.ph', '$2y$10$bUQRSBVxJuJwq5rkNrZRleIjrB4UBROx7ySSzO9ST4KgnP.fMH.g2', 'student', 'Nathan', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(206, 'nathan.delos.santos@mcc.edu.ph', '$2y$10$kc/XCUJOlrHiomyHhokDBOGp/NEM4.x3R8BuWoh4Q8DHF.1AbOxAK', 'student', 'Nathan', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(207, 'jorge.tan@mcc.edu.ph', '$2y$10$CP.Te3UH3fPT5Lvnt.agfe51QU29Azq7YACLWFndPRq65pjdigC5q', 'student', 'Jorge', NULL, 'Tan', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(208, 'oscar.uy@mcc.edu.ph', '$2y$10$WuxxVDI46Fl0HV0FhZZTHOzJipN7dYUmxzJcvnPt9wCxiuIesfEwW', 'student', 'Oscar', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(209, 'cristina.lim@mcc.edu.ph', '$2y$10$8QfaQtyTDlJmgT91ANCgEOpUTmUMPR1CrDcBmskOdnIZXpkfYufX2', 'student', 'Cristina', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(210, 'gabriela.torres@mcc.edu.ph', '$2y$10$UJXily9ApB9CH0w0gVWa/ev7LQOCEkLpfMWdGjh1PVhuejWaDc7uS', 'student', 'Gabriela', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(211, 'ellie.rivera@mcc.edu.ph', '$2y$10$XSlC7QoQmsTE.dBgqrQjZ.CaS0WukkD/QQt7/YA9jI5TdrpHjh5T.', 'student', 'Ellie', NULL, 'Rivera', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(212, 'dylan.bravo@mcc.edu.ph', '$2y$10$I/2UvqCqwJalfgP2rjzkkeJ7rX2RoVGl11QsnHchx5z78uGJcjRgS', 'student', 'Dylan', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(213, 'oscar.garcia@mcc.edu.ph', '$2y$10$S9BYkd723SuKan9oYt4p8.7NirYpV7hdBADWsl2mEblqHIBL4nW..', 'student', 'Oscar', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(214, 'nina.medina@mcc.edu.ph', '$2y$10$0Kruj1cP/doFfDkHPhMDy.2yUn536q9gkE6HIQhDfNJLI3dqdnWDe', 'student', 'Nina', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(215, 'mia.huang@mcc.edu.ph', '$2y$10$LndX0/I3IX4D/WZ58cyryepiIHTrbm3NtD1jzfCwQaJn9mhntMR7O', 'student', 'Mia', NULL, 'Huang', NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
-(216, 'isabella.alvarez@mcc.edu.ph', '$2y$10$p2EVctSTRnd4UpYepDNgfea5MKaIW1Tp6iOV8ypkCRWoJq7pUsD0y', 'student', 'Isabella', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(217, 'mia.quinto@mcc.edu.ph', '$2y$10$6v4z2o130mC8QLi0C7v/9u5pxVj3383ArXgH16/2skmn3pfNReUwm', 'student', 'Mia', NULL, 'Quinto', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(218, 'andres.uy@mcc.edu.ph', '$2y$10$dkNqnWKVBiPia7BFJgTDLO6IvrwR3qneHyf8OdsPkMVoHG1d/.1eS', 'student', 'Andres', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(219, 'maria.uy@mcc.edu.ph', '$2y$10$qctTeH8Xf4PvFARehPDb4eiD//KNEnuZRhaMzk/Qjf3YJiYfVv7pu', 'student', 'Maria', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(220, 'ricardo.ramos@mcc.edu.ph', '$2y$10$LXmAppKZiv5SRosloS1lV.zJ2nFUhUXYr0iXlpklKhMwFl94/nKSS', 'student', 'Ricardo', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(221, 'emma.salazar@mcc.edu.ph', '$2y$10$VhJrZCureVjidPNNZ9IyYulORdGvhlwTip//zVPJ4WOrDOIRMii66', 'student', 'Emma', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(222, 'andres.dela.cruz@mcc.edu.ph', '$2y$10$cfX9Tt4UKWDa2WsmOOGSYu5zRp1ycQ1MHOXZx/iJAHwk4RqZWkabq', 'student', 'Andres', NULL, 'Dela Cruz', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(223, 'oscar.reyes@mcc.edu.ph', '$2y$10$JNj.p9tugyODl2DQJ602meO3XV2F5g3XFfvdeR9PiNOvz8cMOGTkm', 'student', 'Oscar', NULL, 'Reyes', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(224, 'lily.perez@mcc.edu.ph', '$2y$10$d6cHK9MusOK9J2bq9EEiAOcqwMDoaHm0ay3m1fGASdm42furLC0em', 'student', 'Lily', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(225, 'isabella.lim@mcc.edu.ph', '$2y$10$Y3jf5xF6X11STfDCCY1fxOJtU20gd25z6rTRse4BHeAieudijun/K', 'student', 'Isabella', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(226, 'cristina.medina@mcc.edu.ph', '$2y$10$dKWR3XHJ1kuJ4VOz4u2tIu6jI19KjEgt1R7upnLUhb8j3cNREax2e', 'student', 'Cristina', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(227, 'ava.go@mcc.edu.ph', '$2y$10$RrhfVp7JoDCufYit4NDvT.hh3gdt6sjNSaZzMBWK9.UnZ3.QTxQ/W', 'student', 'Ava', NULL, 'Go', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(228, 'emma.pineda@mcc.edu.ph', '$2y$10$0U50dSH25gvFe9hs5sOQJOBuVHI/8rBLBWcCWlk2Qm2nWBsOV8u1y', 'student', 'Emma', NULL, 'Pineda', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(229, 'ian.fernandez@mcc.edu.ph', '$2y$10$S3G4nIkCRgSOlofGrBfqzuv2AOzyxUK4YalMvROqrB50o0abyOVna', 'student', 'Ian', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
-(230, 'ava.garcia@mcc.edu.ph', '$2y$10$5YSIjR1CKwuSDr90.2BanecyOtByXkrfRlsMrdsDJIFUiMpLUgiPu', 'student', 'Ava', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(231, 'stella.santos@mcc.edu.ph', '$2y$10$5RpO2DktXN9Y5MWPdmWPu.JXCNH8OIGpM770keOI6ftLYR2Zti.1K', 'student', 'Stella', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(232, 'camila.beltran@mcc.edu.ph', '$2y$10$RXT/7iHAy92E157yYOgV/uohko0R7BKuLTKwyJ7Vx2PzjXOxnmKhu', 'student', 'Camila', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(233, 'isabella.perez@mcc.edu.ph', '$2y$10$kkF72.TOY3iW.yMiXY.bjOZGD1xDYqDcCEPs9hFG/qvvGhCWn7GfC', 'student', 'Isabella', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(234, 'emma.santos@mcc.edu.ph', '$2y$10$79ENSumESqqiwfGaMdWDTOSNURr0K5oYDYntoXvmTZ/1qNzJGGp4W', 'student', 'Emma', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(235, 'lily.sy@mcc.edu.ph', '$2y$10$4of6Af5AMvL530BOsKyBNuS.U1crd0KDJZ1ZUmLRM8pTPSbnAD5jS', 'student', 'Lily', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(236, 'zoe.lozano@mcc.edu.ph', '$2y$10$Fq7Y1Jg1jiILsKSH5fLtMuz3V345ttCeAgxV3MKgl5HjaecPohrnO', 'student', 'Zoe', NULL, 'Lozano', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL);
-INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `status`, `must_change_password`, `created_at`, `updated_at`, `version`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
-(237, 'isabella.delos.santos@mcc.edu.ph', '$2y$10$44fGnBH17F3XiS4Yur6v..7ygyGbT1T1qNjLQ/lXOrRMMW.yADII.', 'student', 'Isabella', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(238, 'sebastian.mendoza@mcc.edu.ph', '$2y$10$G9IuKGAAWBjUj7irGBku9e1V1nQ1q39lk7G4oKYwEUK3umgovgUjm', 'student', 'Sebastian', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(239, 'miguel.santos@mcc.edu.ph', '$2y$10$YXmxTcDT.eEii0PULE4mLO/KwWYxn9CSZih47UTfL2Seps2Bs1tQu', 'student', 'Miguel', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(240, 'chloe.villanueva@mcc.edu.ph', '$2y$10$RozhBIXn/NscEtDV3Qz38eOB78K9jJVFBDfdhX9e12kpelkgJ1e3S', 'student', 'Chloe', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(241, 'elena.manalo@mcc.edu.ph', '$2y$10$ojDM10TusYjQmQ.Z/uzNR.9.uUGh7MNwKIkCjr.TFeMeZGwi4SQXS', 'student', 'Elena', NULL, 'Manalo', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(242, 'emma.bautista@mcc.edu.ph', '$2y$10$bFNQc4UtddMaNiLy06/K8./gAxHJXQPSFs9SteVEIK.KLyNTHZ0g.', 'student', 'Emma', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(243, 'ian.villanueva@mcc.edu.ph', '$2y$10$8VaaE4jX9FOcYs/iXhqSVOaInWWe7WEmNFxGErm8yywPt6FmbWpya', 'student', 'Ian', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(244, 'oscar.mendoza@mcc.edu.ph', '$2y$10$7IU65frn8ZeTNX7n7.rH6ekwrJ4aX8/SDZy1u39c0or3t5HNm48lm', 'student', 'Oscar', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
-(245, 'sophia.lim@mcc.edu.ph', '$2y$10$Ap1Ba61K2lIzHctXAoFO2.EdhjjM6D5N9RrKQKL2ol2bFQOc0n6pO', 'student', 'Sophia', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(246, 'andres.salazar@mcc.edu.ph', '$2y$10$fB9.NUTS0sd4b/B2bvwWeey7MT2WeqWjsynygDnuB6eO1hC0lBR2G', 'student', 'Andres', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(247, 'nathan.aquino@mcc.edu.ph', '$2y$10$ZGaPAePTHKDeiBceXvNbrORzFSpueUTthr/SBAcC2rfCEVR0IDQp.', 'student', 'Nathan', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(248, 'brian.bravo@mcc.edu.ph', '$2y$10$vOlyrZjQsQlhuRuZsQCaAeycSNZiuVdYdPD9tL4mcF7xt0LuM77z2', 'student', 'Brian', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(249, 'lucia.cruz@mcc.edu.ph', '$2y$10$4/wT3mKiJVMdvfCwcqSDOOG5XSRVYxs0V9T8RqSiWqwv28QNOFIB6', 'student', 'Lucia', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(250, 'victor.go@mcc.edu.ph', '$2y$10$PeHt64OQHl/wLIJSeSmulOSbU9tAr5oLOGRf8eGqYx.nF.ARlRDO.', 'student', 'Victor', NULL, 'Go', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(251, 'sebastian.fernandez@mcc.edu.ph', '$2y$10$on4rnAfl0hVutARz3fdno.IjtL/pbf5sbxCVB3qxG6I97hsApMViO', 'student', 'Sebastian', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(252, 'ian.ignacio@mcc.edu.ph', '$2y$10$qUvAi/i6FZ0PnzMczeO0Z.xzfQ79LIzMIOxpX19bL8uw5ro9WxhF6', 'student', 'Ian', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(253, 'diego.bautista@mcc.edu.ph', '$2y$10$RWWg5f5xFgTcsboF3ZoamOPw5c4GRsV6gbQye6.IN4vLgvcN6iHB2', 'student', 'Diego', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(254, 'jorge.sy@mcc.edu.ph', '$2y$10$cNdCP5v3enSpe38.NRvYru46URbP/91pAxe8J9WbGGkj2wlz5O6BO', 'student', 'Jorge', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(255, 'sophia.quinto@mcc.edu.ph', '$2y$10$E4/3YOK6sA18uJHnGM/yz.8gTqOmptkJLOohdsCFkMcbVDDJ25iZC', 'student', 'Sophia', NULL, 'Quinto', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(256, 'emma.medina@mcc.edu.ph', '$2y$10$sGYSOYkRmS8B3H9bq6dseOYV9K8wNWTeSJUnNoIPi5vcet3s0BVSG', 'student', 'Emma', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(257, 'ricardo.ocampo@mcc.edu.ph', '$2y$10$SRJRYtYCsVTBtPZJASsJGOBlue7NRsZpKFO/y.DRVTLN1TUQcqcqu', 'student', 'Ricardo', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(258, 'julian.ortega@mcc.edu.ph', '$2y$10$wb0gEVZFObyD8kJFqUlJUeTB.ya9pcYz2EVhBAwf0BEDP311G8Uii', 'student', 'Julian', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(259, 'andres.cruz@mcc.edu.ph', '$2y$10$aKCRjeNFvoCEjiNwRPms9.FJWSKK.QS4QdgiPQV3DLlKglCAdiYOO', 'student', 'Andres', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(260, 'cristina.fernandez@mcc.edu.ph', '$2y$10$amUk9buUSoczA7xDbok.d.h0Spfz76nNCejy46u373DiFxn/ZpRlS', 'student', 'Cristina', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(261, 'marcus.medina@mcc.edu.ph', '$2y$10$UMw9BWGs1phQ.cEUGYfOUeIvvTYzuV/tTP1q/T9QkjeMKEoC0G4ra', 'student', 'Marcus', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(262, 'elena.sy@mcc.edu.ph', '$2y$10$OZ8XRgrDChQtK.ZlUsEZ2eDRmn/tkOizgPm9Ndn9f7is0enwicuIe', 'student', 'Elena', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(263, 'ian.beltran@mcc.edu.ph', '$2y$10$nGvq6ShY80NZMFJWdSkzQuaXFZEY8gDdvjnBQT.5EZk8Kq0Gl6rRa', 'student', 'Ian', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(264, 'chloe.salazar@mcc.edu.ph', '$2y$10$WVTAp2apHvfucSlHaaueIegMxa47qL5NjugvH/NSQBQMNwajwR4K.', 'student', 'Chloe', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(265, 'sofia.santiago@mcc.edu.ph', '$2y$10$5oDw/iSze/FjjE/tsJnMMOiKgzj1SCjsx8sPutbmI39MKwDWs4RcS', 'student', 'Sofia', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(266, 'chloe.navarro@mcc.edu.ph', '$2y$10$IH.8yCwsji1kX5id8ZTsbeGrJoXgGnAu6FX3WQHAqaFPDvbk0FIAe', 'student', 'Chloe', NULL, 'Navarro', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(267, 'lucia.santos@mcc.edu.ph', '$2y$10$VUskD3FBIgQDxGbrzNfBbODuaKnX51ePR5IoBWTfXWFGh1nGzm8ru', 'student', 'Lucia', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(268, 'luis.ignacio@mcc.edu.ph', '$2y$10$QnZyNQ9JbDVU5eN5GwBo6.ah2ihms8g86qf0UbyvC0dQl90U8V6Ny', 'student', 'Luis', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(269, 'luis.uy@mcc.edu.ph', '$2y$10$P.NrWf8IzHwrVU2hpR/DYOBhTa7p2P2DqMkhDG6Yz4kgJtvUEl5M2', 'student', 'Luis', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(270, 'chloe.manalo@mcc.edu.ph', '$2y$10$vyiJnouwsLmew9q4mCRBZesW5NLgpNaDgHKjCNSIiB/8v6v8231Pm', 'student', 'Chloe', NULL, 'Manalo', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(271, 'brian.gomez@mcc.edu.ph', '$2y$10$KXHSjfyyYu/J1h58aF1SkOfWNo.zt1uv2XOv5oToUrJRq/2RAzUp6', 'student', 'Brian', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(272, 'luis.huang@mcc.edu.ph', '$2y$10$gHIMqFzn1m2unptNOXX1/./.MI.2eOUGE6kxa0MyKcE4FqrVfehWe', 'student', 'Luis', NULL, 'Huang', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(273, 'nathan.alvarez@mcc.edu.ph', '$2y$10$djGGyZxyBcmj8xGDhzKUfO1bFfdtQacYJeNaIJefk2Hy1kz7WGRvK', 'student', 'Nathan', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
-(274, 'chloe.reyes@mcc.edu.ph', '$2y$10$BLPMq.K7k.XQxr/FmDrVbOFmOl0O8XzkMkCbzlxL6aYVCKDfJ5RU2', 'student', 'Chloe', NULL, 'Reyes', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(275, 'jorge.uy@mcc.edu.ph', '$2y$10$xSP.qL6yg6zzLKFXFZy6QOpaTEdI27ZGtVdZHSPSOX.Cf/80ay0HK', 'student', 'Jorge', NULL, 'Uy', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(276, 'ian.manalo@mcc.edu.ph', '$2y$10$GyRg7.kDe0zbEmWB6PmWbujXYfXMIKyxMmwwbEWZ5aoy0INciAUAy', 'student', 'Ian', NULL, 'Manalo', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(277, 'axel.pineda@mcc.edu.ph', '$2y$10$TkgxoebMjTAKNLNt4NcC8Oqe2yBUf1v/JCWcYzNsFjmhERs/gC4bC', 'student', 'Axel', NULL, 'Pineda', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(278, 'chloe.mendoza@mcc.edu.ph', '$2y$10$2lqR427Oh/PEJpxHOAlCkeFWc9tDQ/BsVSl.XQT8uhp.wkwxfJ5Mu', 'student', 'Chloe', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(279, 'isabella.ramos@mcc.edu.ph', '$2y$10$Ex6LlVfDA5C8ztGA/VeGqOafvHlUXmV1Q4JPK43a5EyC95LUl07la', 'student', 'Isabella', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(280, 'maria.delos.santos@mcc.edu.ph', '$2y$10$w7YVsGlzzwN6qqewh./MKu795ABD1DM/kphxViLXWpeofOALxj3Cu', 'student', 'Maria', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(281, 'felipe.fernandez@mcc.edu.ph', '$2y$10$rMwr8ItwaK1X04muL190U.oY6e5YicxpM4RW98q6ktEiGUnqjVMVq', 'student', 'Felipe', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(282, 'elena.aquino@mcc.edu.ph', '$2y$10$6p/dn2X0Mrs27HdQmpEZ7.6eFBriSR.5nJLonW.dkiqRrxLburmHe', 'student', 'Elena', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(283, 'maria.bravo@mcc.edu.ph', '$2y$10$8MgjrftnnszBDgLfl9AeFeIXdVifAjbmOQ0m.OQQy6AUpxyS053oq', 'student', 'Maria', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(284, 'victor.alvarez@mcc.edu.ph', '$2y$10$5b2sMFpAc/5BuDTjQARupuGBEtqTX6A3NXd5BXN0fo8VSn2xs8FpG', 'student', 'Victor', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(285, 'luis.lim@mcc.edu.ph', '$2y$10$OSUl40mJM5DB5UtakEkeIuTFPb2FilnJYAdivYwRloJPqJr2G9JcW', 'student', 'Luis', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(286, 'valentina.cruz@mcc.edu.ph', '$2y$10$m8U2U9bOzTtZbxKgI9AFa.ee8PO.PIOT4DjbLtUKv/8XxKHicnLlO', 'student', 'Valentina', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:47', '2026-03-04 13:53:00', 0, '$2y$10$2fuDWX/lfVGI1sw43PtG8O2oNNCHU38c.IsjTaBQtiC8d7/8ZSh16', '2026-03-04 13:26:27', 0, NULL),
-(287, 'nathan.beltran@mcc.edu.ph', '$2y$10$KWTkyoixrEhQ2Evs/B/DgOfYC01MGcjNi6uVdCpevRrzXkfjgKRJm', 'student', 'Nathan', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(288, 'nina.fernandez@mcc.edu.ph', '$2y$10$.uC6OipkkMkMBk2/4WT.jOaWt3xV0mru3g3/kvWk97H0ODbkFGb1m', 'student', 'Nina', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(289, 'ian.salazar@mcc.edu.ph', '$2y$10$z0gtaLcG2/cp7/K0Sv3sM.iDdLbxvJvYDRfDsGlGRG06HH239Qju6', 'student', 'Ian', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(290, 'gabriela.delos.santos@mcc.edu.ph', '$2y$10$TwXGJhupvxyNnwsNZiY84uXpU3kcLWB99IoaFCt/u9qrKO/DbzbQW', 'student', 'Gabriela', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(291, 'camila.mendoza@mcc.edu.ph', '$2y$10$JG9ebse8qzAz8E58GRvnTukoXyuJTCRaPmTysFU8Z69WbSG8LzMC2', 'student', 'Camila', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(292, 'marcus.santos@mcc.edu.ph', '$2y$10$NJ5.pcYoSnWamTfRIMqVDORKgmUg6i7hA5rCCXrh6/px5Q1QakJTG', 'student', 'Marcus', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(293, 'juan.castro@mcc.edu.ph', '$2y$10$j5uuZ8INhECFQC/RFx7eTOOYO2gT.xs6cMi66tuSrkwIk/lG8Ofge', 'student', 'Juan', NULL, 'Castro', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(294, 'emma.fernandez@mcc.edu.ph', '$2y$10$3E2tFjuNKhpjWh5q25FzJuJod2/MKzu4dWDtVOUI3IhJMCaR0asJu', 'student', 'Emma', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(295, 'andres.manalo@mcc.edu.ph', '$2y$10$oXa5LmkFncALXarzwsb1SezP4JscuDXL/c4MXJRr46CBG9FLEadHC', 'student', 'Andres', NULL, 'Manalo', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(296, 'mia.aquino@mcc.edu.ph', '$2y$10$gM9dWBXSV0lWoKJN7GL4CeRbhotsG/cS9LMmjiTLKPR3ItqA5dnba', 'student', 'Mia', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(297, 'marcus.gomez@mcc.edu.ph', '$2y$10$4eWjl3RNGbojtKSmpyaBke9j0SkdsobXWvOw.AmCys9CgYa.MVME2', 'student', 'Marcus', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(298, 'andres.diaz@mcc.edu.ph', '$2y$10$veiNWID2DjAfy6K5uexeHucRUdYYVbGh9c5BroxzEg7LA1rYivkJu', 'student', 'Andres', NULL, 'Diaz', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(299, 'ellie.alvarez@mcc.edu.ph', '$2y$10$PqvmuT0zBLAAxOA8p7SxTumnHu9WiVx2O1xz0cVe0.WLvgt9pNAkW', 'student', 'Ellie', NULL, 'Alvarez', NULL, 'active', 0, '2025-11-10 12:30:48', '2026-03-05 17:23:19', 0, '$2y$10$ZxmO7FgxabKfx5.vGQvchu.Iz8duF6D.JEBk9lZJCeuv48cRsPuFi', '2026-03-05 17:23:19', 0, NULL),
-(300, 'isabella.ignacio@mcc.edu.ph', '$2y$10$zganDea5m0YCpYRAvoTDm.GT2TNpi.E7zXWo8kxFxDe34CUjKDe.2', 'student', 'Isabella', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(301, 'lily.huang@mcc.edu.ph', '$2y$10$JO.acPWALoINfn5g44Z51.cpgHTyYTJMIO9W0.XuFiqwZ4p8DZg1C', 'student', 'Lily', NULL, 'Huang', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(302, 'leo.salazar@mcc.edu.ph', '$2y$10$6NeCkVp2PM6rIp1cgkr6Cux8PG9kCjGor5T/ZlO/0yKBqxJ/rIWsy', 'student', 'Leo', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(303, 'camila.santos@mcc.edu.ph', '$2y$10$n/zm9GOJAfvDTZs5NIZX8ezU/1V5e.lcqcUOPoofDLBqyVuWOG3Yi', 'student', 'Camila', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(304, 'isabella.cruz@mcc.edu.ph', '$2y$10$VKn7fG/7xmSayDkRC63vYuoZFXNX47D3YNxK4V9WH8k93M2aIY0Qe', 'student', 'Isabella', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(305, 'nina.beltran@mcc.edu.ph', '$2y$10$ALhxBKcV72/Q3uqOnv.jB.0iwtTf9WiCs9AvcNMwSS7Frb5w.T9Pi', 'student', 'Nina', NULL, 'Beltran', NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:42:26', 0, NULL, NULL, 0, NULL),
-(306, 'sebastian.reyes@mcc.edu.ph', '$2y$10$f7ap3Ldh/0UOTdkM89EkRucNRjVYZ8pUML0xTemwQF41BH/.T82Em', 'student', 'Sebastian', NULL, 'Reyes', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(307, 'ana.santos@mcc.edu.ph', '$2y$10$SpapZhthzPExKx9.X91pUO.iz0FYW3FSw6PzKj3sV6T4FEYM9Z8/a', 'student', 'Ana', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(308, 'lucia.garcia@mcc.edu.ph', '$2y$10$XWFoWZ3CYMEhnx89XqgGMuW5f9gMTjwYULcr2Bl.M5UG9Sdo1Tl/O', 'student', 'Lucia', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(309, 'camila.santiago@mcc.edu.ph', '$2y$10$PmwuPkJcuOOF2TUs6MUjo.HqCnS/6jB5hMeoB/tju.C5rp9XRWJIG', 'student', 'Camila', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(310, 'camila.villanueva@mcc.edu.ph', '$2y$10$KbRAMosF8IBQC4OpSo.PUeAt2BqADKUYiaQ7AKLeI8XyYtlWyakHi', 'student', 'Camila', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(311, 'ricardo.santiago@mcc.edu.ph', '$2y$10$ZmL/q0HOgcwuh0ESQcOzj.zwBskIMH4dkO6MiFH0D9Z2GNeQvddYq', 'student', 'Ricardo', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(312, 'elena.santos@mcc.edu.ph', '$2y$10$o8b371BaNTBthCZta7MsWeEVzeupUIFNHZebqF4LeC6vXsbkR9QJe', 'student', 'Elena', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', NULL, 'Bravo', NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:32:45', 0, '$2y$10$uhF.rDj9uHQiTcXpQ5s6C.y5.7qbJf5PSPByONBTWdlMORrpscHhW', '2026-02-25 11:36:12', 0, NULL),
-(314, 'brian.santiago@mcc.edu.ph', '$2y$10$/Pi/2lxuuKqBtaOcED5Xn.9c6HpUd7Mr7g6egOY0ePPm8f6M5Eo62', 'student', 'Brian', NULL, 'Santiago', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(315, 'emma.torres@mcc.edu.ph', '$2y$10$zAFGHsDPmVjfNKIlNVfU5eC7LBrJB1gGjPeP8IKhld30jsjaLbMEm', 'student', 'Emma', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(316, 'chloe.santos@mcc.edu.ph', '$2y$10$7B6iFc11eiMqGrsZH1veiOYk0AV.EfIY9C9zkaG6ElhHR8/k1DEbi', 'student', 'Chloe', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(317, 'carlos.delgado@mcc.edu.ph', '$2y$10$NjwvPjwS14g9Xz.1BgbTyOmA0PaS3rXWImW80mlHDDomRZc.scQnG', 'student', 'Carlos', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(318, 'carlos.aquino@mcc.edu.ph', '$2y$10$bzrNH1TdrgHZ69.5tRUepuwObZxubQlI/bF3NOOhc1BNXEn4EAl2W', 'student', 'Carlos', NULL, 'Aquino', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(319, 'lucia.castro@mcc.edu.ph', '$2y$10$jSnoJv/vD6DkqHm8HhScBOzMMVgrUbUpvQ9NxxyAyPbTW3sF/ys/O', 'student', 'Lucia', NULL, 'Castro', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(320, 'sofia.ignacio@mcc.edu.ph', '$2y$10$T61hx8/lwIsx2mmPmzthr.W9HzWDMqNSXITc9WGSiQZt3N2hBkQ3i', 'student', 'Sofia', NULL, 'Ignacio', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(321, 'brian.delgado@mcc.edu.ph', '$2y$10$3IWAvK/1OCHyQsnYKmcmueL8N0Re0kBvW5RRhR59g3cM7jvfRsDjG', 'student', 'Brian', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(322, 'maria.huang@mcc.edu.ph', '$2y$10$iw1sXN99T4ujWQVMZYIcpeK/2VpunqtzPtu1VeHKXGKoJv44IsNx6', 'student', 'Maria', NULL, 'Huang', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(323, 'axel.garcia@mcc.edu.ph', '$2y$10$Z7eSCP9bBohFT3cN9Yr4/eaIJmp4uujoj7sA7yS12rv6fhqp.onk.', 'student', 'Axel', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(324, 'felipe.rivera@mcc.edu.ph', '$2y$10$S7p60NoGtS5vMowgmWbMB.9jpaQDHdtfmt3sT2OLHQFuDOo0gVCK6', 'student', 'Felipe', NULL, 'Rivera', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(325, 'oscar.santos@mcc.edu.ph', '$2y$10$7hRqJBobkwdqoXbDAkclYuCmsuFpCxmbBV1pXOLxE0mHqLacwgcQO', 'student', 'Oscar', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(326, 'maria.reyes@mcc.edu.ph', '$2y$10$ffrnGXUQ0c36gPmnk5lAGOgdL/ibo1i6eIeEXlVTXxlls80F/c45S', 'student', 'Maria', NULL, 'Reyes', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(327, 'valentina.sy@mcc.edu.ph', '$2y$10$UAPLG5vXyr3Edath/MwvuO25KaBqbYzJ.zmGoR/SQ1MUVU9uVNb6W', 'student', 'Valentina', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(328, 'ana.delos.santos@mcc.edu.ph', '$2y$10$ybZHvFtsWcc3pR3gQmO5YeOJp96F5KYd9Dwp5IbZ1WAk0pOUlRY2y', 'student', 'Ana', NULL, 'Delos Santos', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(329, 'carlos.ortega@mcc.edu.ph', '$2y$10$B1B8HuDZGI51B6nujv.gtuWqHy9S5QaD.fAndYxUXrZv3LjgHwdwm', 'student', 'Carlos', NULL, 'Ortega', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(330, 'stella.salazar@mcc.edu.ph', '$2y$10$NRbbi1.6BUX7CRn5H/RsDOBmmvbW0KinsYVqJywBXht8d36Wh8Lqm', 'student', 'Stella', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(331, 'leo.fernandez@mcc.edu.ph', '$2y$10$u4E3VJ7oukHTHUqgubXr5.ms4FhEBo6uK2ai5hajp9ofQXnSeijkm', 'student', 'Leo', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
-(332, 'dylan.ocampo@mcc.edu.ph', '$2y$10$K.NlluOV0rilBwOICpB9EufumJ6Sjrn94Ummo//WjV8aCy1.o.Miu', 'student', 'Dylan', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(333, 'lucia.huang@mcc.edu.ph', '$2y$10$NGiFTZxweQPBAAReV2nopuqFq5p3FMVwOQiy8RmtQvqxCvKV4Jf2a', 'student', 'Lucia', NULL, 'Huang', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(334, 'cristina.dela.cruz@mcc.edu.ph', '$2y$10$FaBXs9CX7WNyxGq27Ts9OOzrym6DBl473/pVzGcWmznxDZ0EaLCj.', 'student', 'Cristina', NULL, 'Dela Cruz', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(335, 'sofia.fernandez@mcc.edu.ph', '$2y$10$0TmGFdkAG.OloMw9gQMRtOLYL9JcfvtGpWYfQPNmJ0L3.Ngs5wx.u', 'student', 'Sofia', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(336, 'juan.perez@mcc.edu.ph', '$2y$10$odoAHlrVXnUXwSb1vGLzeumw5V9iE9t237CZQUVGx02Vo//RY7epu', 'student', 'Juan', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(337, 'zoe.go@mcc.edu.ph', '$2y$10$i450k4actsLIJNSZr.mAxO0tsgQk7o5sQat/qLpxCMcnkfyif8p6C', 'student', 'Zoe', NULL, 'Go', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(338, 'juan.villanueva@mcc.edu.ph', '$2y$10$gyo1xtanTH30ETWJKYGm3epzI2H9ERARxb7FE3HcX9lEj9VqryTNS', 'student', 'Juan', NULL, 'Villanueva', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(339, 'chloe.tan@mcc.edu.ph', '$2y$10$igsjHcYNvLXkrGtX20Yi3eX1jfmvxx51ws3cpNaoJT5PgiWXcQ29a', 'student', 'Chloe', NULL, 'Tan', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(340, 'juan.lim@mcc.edu.ph', '$2y$10$wXRMuK9g0yBPdWWOGn66JOi0rALIProdHAjn.6Rl3p0mAm1eC38Ja', 'student', 'Juan', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:51', '2026-03-05 20:22:16', 0, '$2y$10$bm5uozh1rjzsE1VdtpuFvufOL4kH5tJT4RzXqCgxI.wEJbujTXmuK', '2026-03-05 20:21:36', 0, NULL),
-(341, 'axel.santos@mcc.edu.ph', '$2y$10$EKGOGgRlSyhktpqZRZKpf.xhXgLuxGyyM.ghd6/vTyPNIOSs11Jb6', 'student', 'Axel', NULL, 'Santos', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(342, 'marcus.manalo@mcc.edu.ph', '$2y$10$NCp5m1f1DmSO/YxYhmTLMumlLyVlrZdA9ZkU2I3WM44e3nmlrrrpe', 'student', 'Marcus', NULL, 'Manalo', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(343, 'chloe.katindig@mcc.edu.ph', '$2y$10$rnjcAfL0hW0UrcllcHfgAOfZuvSjk5N53Ub.FtuwJu8H8dDxMw2cW', 'student', 'Chloe', NULL, 'Katindig', NULL, 'active', 0, '2025-11-10 12:30:51', '2026-03-05 20:22:57', 0, '$2y$10$tBASby7t.TrlrjxJcPK3Sujmn4q0f5LAzZUpEOJQPRRHc4bt3VcwS', '2026-03-05 20:22:57', 0, NULL),
-(344, 'andres.sy@mcc.edu.ph', '$2y$10$2boIjtq01mRR8fbei/LA2OnYUgaO8cLOqTnDVCWBLkCHmM8jMqob6', 'student', 'Andres', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(345, 'felipe.bautista@mcc.edu.ph', '$2y$10$AHHogIQaPC6rnr.WDt55Ku2pf41/CCsWMeKyYZFnhhhtJeHXIUd4K', 'student', 'Felipe', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(346, 'sofia.quinto@mcc.edu.ph', '$2y$10$szUmSYbDuxX0G2hrKTpzLOSJK/kpetuXRm11H50.1ywYZA0uGAwmW', 'student', 'Sofia', NULL, 'Quinto', NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
-(347, 'valentina.perez@mcc.edu.ph', '$2y$10$s9N0XALAVZiqzR/Cee/MF.80VpPmt7UvbsZzjQR9gBrMQ64La/DK2', 'student', 'Valentina', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(348, 'diego.pineda@mcc.edu.ph', '$2y$10$mamLt6zYv8NU27VHQ4UOrOZ1yOASRauy/cfBZy3FUgnQfoDcyt01S', 'student', 'Diego', NULL, 'Pineda', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(349, 'sophia.bautista@mcc.edu.ph', '$2y$10$iERmmwAsIGToc/r05.4LSe3SNnlG2iV8yo4mKd.2mNS20dWuBl.M6', 'student', 'Sophia', NULL, 'Bautista', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(350, 'nathan.medina@mcc.edu.ph', '$2y$10$gde2kaFjmGTpeNFkuGsebuOqEIZqB20TLuTtoVF7m9G8/hEVcxMPq', 'student', 'Nathan', NULL, 'Medina', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(351, 'marcus.pineda@mcc.edu.ph', '$2y$10$YwlfvAEHTzUWUvvdF4cDOuzlAcs0FzT8Fz3x0RNhB6YM8arz.j7/S', 'student', 'Marcus', NULL, 'Pineda', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(352, 'sebastian.salazar@mcc.edu.ph', '$2y$10$.9I6yljFFJhxD4zNHkispecaQovghSHVrc..ypIbWvVBkdHvKudJ.', 'student', 'Sebastian', NULL, 'Salazar', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(353, 'carlos.garcia@mcc.edu.ph', '$2y$10$L7t79Sn3Md4BejridKvu6.o5k.I.DE5HXABQTaRfd0PvnyXNY0bFC', 'student', 'Carlos', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(354, 'sophia.perez@mcc.edu.ph', '$2y$10$OcM21k0QeXOVo4C69WW.NemXfWDd7u7k2UWr3DxZ9GP9L5ggZ3S2O', 'student', 'Sophia', NULL, 'Perez', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(355, 'victor.ocampo@mcc.edu.ph', '$2y$10$NqoABUvQE5fT1OpYgacENeJdIwhOxTwSB.fWdMQTGS0jFqAVbT.pm', 'student', 'Victor', NULL, 'Ocampo', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(356, 'camila.fernandez@mcc.edu.ph', '$2y$10$T5KdbZgkFGuTVxmPmK1ylunrbikYisYPZqGAuVFjTamoKv.DVACIS', 'student', 'Camila', NULL, 'Fernandez', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(357, 'carlos.lozano@mcc.edu.ph', '$2y$10$MmFk6bLJUuc5JhUl9YSOa.Z36gGW7JC238gWC/mOWIVgADmQgSMIW', 'student', 'Carlos', NULL, 'Lozano', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(358, 'victor.sy@mcc.edu.ph', '$2y$10$2qvNqenCkW4yJb.xExld8uiX70YI.Muj2tJk.rI54qId2Er4XiCHe', 'student', 'Victor', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(359, 'dylan.ramos@mcc.edu.ph', '$2y$10$jyTFKV20iL6k2TcETH4I3uf5h6XHTeRdLOkTpzlGSpwTBTeRd2zEC', 'student', 'Dylan', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(360, 'ava.katindig@mcc.edu.ph', '$2y$10$SfrlkkHAod41FjcX9cpzsemhxaOaWPp81wQZbWWXT1iI.S9CLlN7u', 'student', 'Ava', NULL, 'Katindig', NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(361, 'isabella.quinto@mcc.edu.ph', '$2y$10$DiP9PerWajlEiBhoFe1cP.Kg1MZ1OkiT97/wNzi5FQ8wsv.S7q006', 'student', 'Isabella', NULL, 'Quinto', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(362, 'sofia.torres@mcc.edu.ph', '$2y$10$WELsZZ76m2uyGGtYw8w81OBSfEl9bHV8MLBYO31y5zybO1ywODzwq', 'student', 'Sofia', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(363, 'luis.sy@mcc.edu.ph', '$2y$10$pEhy3JhC2tQ7Raa2Y0786eKnhjTRuvZSXdojTcVNleWoQLFaITC5q', 'student', 'Luis', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(364, 'axel.tan@mcc.edu.ph', '$2y$10$VRQTBmgOwmWtNBMDBm0d2.hZqRm.WLSBQfkLCxEtxDuuSojdIUi.S', 'student', 'Axel', NULL, 'Tan', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-18 05:04:50', 0, NULL, NULL, 0, NULL),
-(365, 'ian.lim@mcc.edu.ph', '$2y$10$cjqg03G82xLDw.57K9dhPuTvIes9Lp/0quNAKfmohjJIqe5w82Nn2', 'student', 'Ian', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(366, 'valentina.delgado@mcc.edu.ph', '$2y$10$xlXyQ1QjpiCbsdJx5c.aHefji7DflyaGNV3oPa3101RauNBxaRsB.', 'student', 'Valentina', NULL, 'Delgado', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(367, 'leo.torres@mcc.edu.ph', '$2y$10$rrn0hVO8iP.fpGidRQ8z7uzfp2SyPtfnvOFOZ7uqbSxFzPh2Vfgv6', 'student', 'Leo', NULL, 'Torres', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(368, 'dylan.castro@mcc.edu.ph', '$2y$10$a0I18g7zS6IZeknALrqBtOfzoLERwoV31QGe./9qo1k8BlRCYtGUO', 'student', 'Dylan', NULL, 'Castro', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(369, 'zoe.navarro@mcc.edu.ph', '$2y$10$flFVWge79.wrX72ya9PBO.Tud934xoh3SKwwU7YpjMkFKvdj0kXDq', 'student', 'Zoe', NULL, 'Navarro', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(370, 'victor.garcia@mcc.edu.ph', '$2y$10$8EK7EKPOe8ZmL5smL50fEOBls6G4cYN6iBFrWWvM7UcdOF5K.scFe', 'student', 'Victor', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(371, 'ellie.lim@mcc.edu.ph', '$2y$10$VhncG1eTw//O9ahGO7/D1uo5/K.LiyGFFLCOnaLkOMbYaNpqzRjFy', 'student', 'Ellie', NULL, 'Lim', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(372, 'diego.go@mcc.edu.ph', '$2y$10$w0abp2JbiKqJtVu6Il636Ojnxbc1AXpuaWBPp2DHzYePkQGj8eJIK', 'student', 'Diego', NULL, 'Go', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(373, 'cristina.sy@mcc.edu.ph', '$2y$10$rp2mQRkNtPM15Eta9u0OOeDg5scJnMZBb//JHKzC4M9GN1Mf3O/VO', 'student', 'Cristina', NULL, 'Sy', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(374, 'jorge.ramos@mcc.edu.ph', '$2y$10$1oxewx8Y1G4XhIsRareG9uAl3e1dvsChTOqxs/qJLO/3HYoySsRU6', 'student', 'Jorge', NULL, 'Ramos', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(375, 'elena.cruz@mcc.edu.ph', '$2y$10$kwYleD6xg0Zm6IDQvbN2ROMcA20svoFeMX/EeaXsUYgMNoq1k19Oe', 'student', 'Elena', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
-(376, 'ana.mendoza@mcc.edu.ph', '$2y$10$/FbqAPtx3ZpQ/oTxOBVbX.QtIYQMXQfRpZ5bWES9wBXjrGGvpJpXm', 'student', 'Ana', NULL, 'Mendoza', NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-26 02:44:59', 0, NULL, NULL, 0, NULL),
-(377, 'gabriela.gomez@mcc.edu.ph', '$2y$10$k7kWw2uZUHk5igYN.PkDKOlnqLikp2VYmFAFj/516kIksaMgwumBy', 'student', 'Gabriela', NULL, 'Gomez', NULL, 'active', 0, '2025-11-10 12:30:54', '2026-02-22 13:26:25', 0, '$2y$10$3mp8wM99n49RvuQpv54qNuzYYrcd2O8VaO/I10GpSnUrl0vc.gYCa', '2026-02-22 06:26:25', 0, NULL),
-(378, 'victor.cruz@mcc.edu.ph', '$2y$10$b77SW.YmHCfAlV0VaPDLluH69g3tFgEcNwsczKKvDjKt8Q8QlMi2O', 'student', 'Victor', NULL, 'Cruz', NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-10 19:30:54', 0, NULL, NULL, 0, NULL),
-(379, 'nina.tan@mcc.edu.ph', '$2y$10$PF7SvRWH5j0POPZ0a5U.5OZhNJtKJR2QfrQKCUgn9dBHN9t37aaRu', 'student', 'Nina', NULL, 'Tan', NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-10 19:30:54', 0, NULL, NULL, 0, NULL),
-(380, 'lily.quinto@mcc.edu.ph', '$2y$10$A3YCPmKUEkKwcoKrMLXj/u2Ne7VWte/IF4MIKUlhfFK3oX8FsDkA6', 'student', 'Lily', NULL, 'Quinto', NULL, 'active', 0, '2025-11-10 12:30:54', '2026-02-14 08:30:57', 0, '$2y$10$.K2i3l1vqQnzJb9CyBJDN.n6BAxXgl0SOkFytsJ4FE46O2qJAX7uC', '2026-02-14 01:30:57', 0, NULL),
-(381, 'sofia.garcia@mcc.edu.ph', '$2y$10$qUlzEY5fNgrOI616zmet0OnRnKJjb3NFjQuGfBnVby.jtOPwLTipG', 'student', 'Sofia', NULL, 'Garcia', NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-10 19:30:54', 0, NULL, NULL, 0, NULL),
-(382, 'quinn.garcia@mcc.edu.ph', '$2y$10$.enIC7rOQI7guq8c1o2br.hB9QpuKFylpDvpQF1eNvOzgQ9RknVJC', 'teacher', 'Garcia', NULL, 'Quinn', '', 'active', 0, '2025-11-11 05:42:14', '2025-11-17 23:55:14', 0, NULL, NULL, 0, NULL),
-(398, 'jeizi.zamora@gmail.com', '$2y$10$HFVy9f7i7ar5qM.VNvNgSOxYEST5JzbOJ6wdTW9nnIHpX1SACAB0q', 'student', 'JOHN', NULL, 'ZAMORA', '', 'active', 0, '2025-11-13 17:28:17', '2026-02-22 10:00:35', 0, '$2y$10$OyIBhCuKfTnU0urZ0Qsg0Ogr5hgkQuyWFLdxTJ7N91hUfore4KKoa', '2026-02-14 04:50:46', 0, NULL),
-(405, 'iamchris.japan@gmail.com', '$2y$10$rVAv6OZyR5rs2wofK..GXOudFji4TpDuQ0ZoCjjWsvq89OVm3MaGm', 'student', 'JC', NULL, 'Zamora', '', 'active', 0, '2025-11-13 19:16:01', '2025-11-13 19:16:01', 0, NULL, NULL, 0, NULL),
-(406, 'adelina.santos@mcc.edu.ph', '$2y$10$dqseGdJNJLMcEJX5GGooMO2tx0bRXQF6J1JW/JLF0/QCZZkamt12W', 'teacher', 'Adelina', NULL, 'Santos', '', 'active', 0, '2025-11-18 14:58:37', '2026-02-19 01:07:41', 0, NULL, NULL, 0, NULL),
-(407, 'ramon.magsaysay@mcc.edu.ph', '$2y$10$sw9/W5brfU4mTM1zhTQa4O/k2abixtgMxYbHIFwklvcVVZ7RSyrC.', 'teacher', 'Ramon', NULL, 'Magsaysay', '', 'active', 0, '2025-11-18 15:15:48', '2025-11-18 15:15:48', 0, NULL, NULL, 0, NULL),
-(408, 'lourdes.cruz@mcc.edu.ph', '$2y$10$3StPBBTRzzx12rNvAM.oIO7COWJ8IQ.a69ImJf4RibS8amFD22yoC', 'teacher', 'Lourdes', NULL, 'Cruz', '', 'active', 0, '2025-11-18 15:16:06', '2025-11-18 15:16:06', 0, NULL, NULL, 0, NULL),
-(409, 'benito.delrosario@mcc.edu.ph', '$2y$10$NMJFBlpTArzOx1zhkXeacO2gT4QxT8E1LZWhDw4naH8/DZECCttZW', 'teacher', 'Benito', NULL, 'Del Rosario', '', 'active', 0, '2025-11-18 15:17:15', '2025-11-24 01:31:44', 0, NULL, NULL, 0, NULL),
-(410, 'felicidad.reyes@mcc.edu.ph', '$2y$10$w7vSFXrHBVVs.1Ofy3l0BOJoNq7Gf1U3k14JJp/WkPAcQ2IjcOdDe', 'teacher', 'Felicidad', NULL, 'Reyes', '', 'active', 0, '2025-11-18 15:17:29', '2025-11-24 01:31:25', 0, NULL, NULL, 0, NULL),
-(411, 'armando.tan@mcc.edu.ph', '$2y$10$U/vuD1FpTKjNakklMt.i0e/GFtcg1S0R1KgHvrJVPP52XknOYWa0i', 'teacher', 'Armando', NULL, 'Tan', '', 'active', 0, '2025-11-18 15:18:13', '2025-11-24 01:32:40', 0, NULL, NULL, 0, NULL),
-(412, 'consuelo.bautista@mcc.edu.ph', '$2y$10$rGn68TM1SDjlTMPY5pBucOdyAzbfOUB37nivNHrIAxxQyJM121ee2', 'teacher', 'Consuelo', NULL, 'Bautista', '', 'active', 0, '2025-11-18 15:18:28', '2025-11-24 01:32:20', 0, NULL, NULL, 0, NULL),
-(413, 'emilio.quirino@mcc.edu.ph', '$2y$10$qcKyodRXIxiKuD0Svpywk.hrJgvtrjxMcRiQ4nmDHA46pneHcDSbi', 'teacher', 'Emilio', NULL, 'Quirino', '', 'active', 0, '2025-11-18 15:18:47', '2025-11-18 15:18:47', 0, NULL, NULL, 0, NULL),
-(414, 'teresita.lim@mcc.edu.ph', '$2y$10$ilEgX5U7eH4NKn1f81BN9eAH2QJOsOM9NFkNpeYHGPECeHQWBRvJO', 'teacher', 'Teresita', NULL, 'Lim', '', 'active', 0, '2025-11-18 15:19:01', '2025-11-18 15:19:01', 0, NULL, NULL, 0, NULL),
-(415, 'josefa.villanueva@mcc.edu.ph', '$2y$10$oX5uFnmSSkb/64rO1MiJYOJ3OZe7BwOv.DGktp4uqCnw2e/mgBZAO', 'teacher', 'Josefa', NULL, 'Villanueva', '', 'active', 0, '2025-11-18 15:19:17', '2026-03-02 18:40:23', 0, NULL, NULL, 0, NULL),
-(429, 'kairi@gmail.com', '$2y$10$0POMgGARytBr0BnpPkN/6uQ2SWKdYxU/5wN8hoqW.qi7n9XN3P0RC', 'student', 'Kairi', NULL, 'Dela Cruz', '', 'active', 0, '2026-01-19 13:54:35', '2026-02-13 05:12:14', 0, NULL, NULL, 0, NULL),
-(430, 'jeizi.jczamora@gmail.com', '$2y$10$5eYtQ5jXLBmZA6JWm.gmOOT2kppWfUgPAN6cbcObYDtgMP80f4iDm', 'student', 'John Christopher King', 'Visaya', 'Zamora', '', 'active', 0, '2026-01-20 15:07:02', '2026-03-05 12:34:31', 0, NULL, NULL, 0, NULL),
-(431, 'juandelacruz99@gmail.com', '$2y$10$2czTBfblWFLkWS042EjXE.pEBsuSIOK4QNRGTYPO/VFQeAv1z3izi', 'student', 'Juan', NULL, 'Dela Cruz', '', 'active', 0, '2026-02-07 21:48:30', '2026-02-22 11:00:45', 0, '$2y$10$euQ540jXsVyiSVqS156xnez8f9Y3PuW093N/lApcqyfrOV/Al.5Dm', '2026-02-15 02:17:07', 0, NULL),
-(432, 'jordanclarkson@gmail.com', '$2y$10$9aLaE/ELzywl/MIVw9iqRufkz5uHC07qi0M.F2gFxeHdLg1Fjvv9.', 'student', 'Jordan', NULL, 'Clarkson', '', 'active', 0, '2026-02-10 12:03:15', '2026-02-22 06:25:50', 0, '$2y$10$bJzqmwnP0zPF.H7C5oon1ecr80gFARBr2Xp5Cll7AUPyCRlHvVqqu', '2026-02-14 08:07:50', 0, NULL),
-(441, 'mcaflebronjames@gmail.com', '$2y$10$sZCkibdO86R3ST.n4MjbuuFyRJ4acGvPFZLfg4.4J3OOcXpSTDity', 'student', 'Lebron', NULL, 'James', '', 'active', 0, '2026-02-15 09:04:06', '2026-02-15 09:04:06', 0, NULL, NULL, 0, NULL),
-(442, 'karlmcaf@gmail.com', '$2y$10$o3DFLZr0L2rH/qiiTUMvre7CZQpVRmktY.vouH1BjLA/n5DYteiWS', 'enrollee', 'karl', NULL, 'nepomuceno', '', 'active', 0, '2026-02-15 09:18:09', '2026-02-15 02:18:57', 0, NULL, NULL, 0, NULL),
-(443, 'michaeljordanmcaf@gamil.com', '$2y$10$IplfFfH1cNRf3or0sSNAgeoyedmDOzeUx2EJ6JWmI3zBXDUfx/nCK', 'student', 'Michael', NULL, 'Jordan', '', 'active', 0, '2026-02-15 09:28:02', '2026-02-22 13:55:10', 0, '$2y$10$kNn5KqsK/5xIb.GnTqyOcOweIEbst2OujAm4BVtaTzfOpTYUKwEQy', '2026-02-22 06:13:45', 0, NULL),
-(446, 'johnchristopherkingzamora@gmail.com', '$2y$10$XFDfDEADQUXfLGIBJGM.U.vCntZYXDeXmezqAlOz9xqL4cLgt6aYG', 'enrollee', 'Jeizi', 'Production', 'Inc', '09123798273', 'active', 1, '2026-02-19 01:21:05', '2026-02-18 18:22:08', 0, NULL, NULL, 0, NULL),
-(449, 'studentg444@gmail.com', NULL, 'enrollee', 'JOHN', 'CHISTOPHER KING', 'ZAMORA', '09123798273', 'active', 1, '2026-02-19 09:01:13', '2026-02-19 09:01:13', 0, NULL, NULL, 0, NULL),
-(450, 'james9238@gmail.com', '$2y$10$PURkDjDnZipJ4LxF6Mvco.7P1/54yipMnCUdyevxJ4.oV1iPpcOda', 'student', 'James', 'Regata', 'Solaire', '', 'active', 0, '2026-02-22 12:00:32', '2026-02-22 05:01:55', 0, NULL, NULL, 0, NULL),
-(451, 'james1234@gmail.com', '$2y$10$CmzZ3PVqBG6MJZKIWv4B0eP43LAwykJDy30/j895IO73hd2OkZdI.', 'enrollee', 'Joamsd', 'Regate', 'asmom', '', 'active', 0, '2026-02-22 12:02:35', '2026-02-22 05:37:13', 0, '$2y$10$iQ43Lc67KF8JK//i8okZbOOm9JYPd7ljLun6a4B9I5MnlPRYVEGt.', '2026-02-22 05:30:54', 0, NULL),
-(452, 'juanmanzano@gmail.com', '$2y$10$ACZMd/nTeFRNggcYfWEBrO1BFJ5esz9T2Y3qqYlo9DIe5fCLhxKWC', 'enrollee', 'Juan', 'Manzano', 'Torres', '', 'active', 0, '2026-02-24 16:27:04', '2026-02-24 16:29:10', 0, '$2y$10$Fx560as5MjyFX..cDf.tX.iE6lofHD9.B5BdYFBxX0eHQpgASlU6a', '2026-02-24 09:29:10', 0, NULL),
-(453, 'nikmanzano@gmail.com', '$2y$10$yCQFac0OtQXrbJEzYj3FTOmXWK59FpfJ85GyMiZDcSnOuP7DMUXwe', 'enrollee', 'Nik', 'Manzano', 'Santos', '', 'active', 0, '2026-02-24 16:41:22', '2026-02-24 17:12:56', 0, '$2y$10$QEoNk1iBR1XgiXps4CkVVue.AIxFipWBWiebVL3F.Inqd7k.ICrKW', '2026-02-24 10:12:56', 0, NULL),
-(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'student', 'Luna', 'Mendoza', 'Santos', '', 'active', 0, '2026-02-24 17:36:11', '2026-03-02 14:13:05', 0, '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
-(455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', 'active', 0, '2026-03-01 17:22:08', '2026-03-05 16:36:49', 0, NULL, NULL, 0, NULL),
-(456, 'kiel1@gmail.com', '$2y$10$VHcOuEsOihaQlWQhNOpgqu47m8DtSdv16Ok3eJTA5EYxB3HvhmIfa', 'enrollee', 'Kiel', 'Santos', 'Sarmiento', '', 'active', 0, '2026-03-04 13:51:23', '2026-03-04 13:51:57', 0, NULL, NULL, 0, NULL),
-(457, 'joanasantos@gmail.com', '$2y$10$hpZZuedUas9glWD/GHC.8OULQXnYUGFO8DI1yO0HggRts0mR9.tum', 'enrollee', 'Joana', 'Miller', 'Santos', '', 'active', 0, '2026-03-05 16:55:18', '2026-03-05 20:42:36', 0, '$2y$10$no8bnw2v8PiS5pjlOM.U0.s0Vd6a1bZBcAVVOMgRDggxzyK6Uvm/i', '2026-03-05 20:42:36', 0, NULL);
+INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `profile_photo_path`, `profile_photo_updated_at`, `status`, `must_change_password`, `created_at`, `updated_at`, `version`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
+(1, 'student@demo.com', '$2y$10$Ll4dzxFoqlaGCC1aL702BOdZ3xtLLijHcLKzW4SF1HPrlEgP9Frz6', 'student', 'Demo', NULL, 'Student', '', NULL, NULL, 'active', 0, '2025-11-06 11:13:56', '2025-11-10 01:05:04', 0, NULL, NULL, 0, NULL),
+(2, 'teacher@demo.com', '$2y$10$/zuE1Q4AmA1J6MXuovoRoenUL5PoblPSzSxXA3ubUw47wpiTNfoVS', 'teacher', 'Demo', NULL, 'Teacher', '', NULL, NULL, 'active', 0, '2025-11-06 11:14:42', '2026-01-06 20:49:02', 0, NULL, NULL, 0, NULL),
+(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', NULL, NULL, 'active', 0, '2025-11-06 11:15:04', '2026-03-07 19:44:17', 0, NULL, NULL, 0, NULL),
+(16, 'john.doe@example.com', '$2y$10$I19hzyUWwzkG9HMk8wEutekUr7tC9GmtiRFvW4lqePlq4eKBKXQtS', 'teacher', 'John', NULL, 'Doe', '', NULL, NULL, 'active', 0, '2025-11-06 14:05:34', '2025-11-06 18:29:13', 0, NULL, NULL, 0, NULL),
+(18, 'juan.delacruz@mcc.edu.ph', '$2y$10$762nxMWoGHGu7kRyvzc8K.FGrrYGGJpRdMbm5jentTkF4mfui3iBK', 'student', 'Juan', NULL, 'Dela Cruz', '', NULL, NULL, 'active', 0, '2025-11-06 18:30:24', '2025-11-06 18:30:24', 0, NULL, NULL, 0, NULL),
+(19, 'maria.santos@mcc.edu.ph', '$2y$10$KGlfA0PiOWB4HR0pds9.1epVHMzpgv3hsk.qLKXZCSh9mgaD20FCW', 'student', 'Maria', NULL, 'Santos', '', NULL, NULL, 'active', 0, '2025-11-06 18:30:45', '2026-02-14 08:35:58', 0, '$2y$10$eHfLDD/lkTefVxHXDsIUc.aQ5zhzyP.vp/AckoRlj.F42gZ4oEXku', '2026-02-14 01:35:58', 0, NULL),
+(21, 'jose.reyes@mcc.edu.ph', '$2y$10$a6oQ6s6.ZLrnMN2ShismvunFw6HSUJb/lrIcxQfhLfHp2HWc2W7xK', 'teacher', 'Jose', NULL, 'Reyes', '', NULL, NULL, 'active', 0, '2025-11-08 16:18:01', '2025-11-24 01:32:02', 0, NULL, NULL, 0, NULL),
+(23, 'ana.bautista@mcc.edu.ph', '$2y$10$Jj6j4oDteBovsiSxQ5M2juwj3pExJM5R80gRSCnWB40b8csyWQhHW', 'student', 'Ana Marie', NULL, 'Bautista', '', NULL, NULL, 'active', 0, '2025-11-10 08:39:01', '2026-02-14 08:39:15', 0, '$2y$10$M7h1ArBs8oOe80wrJMuKoODg4OxYZ4wYKybFnFp8cevQt7MsIJyy2', '2026-02-14 01:39:15', 0, NULL),
+(24, 'carlos.mendoza@mcc.edu.ph', '$2y$10$XjdtGF0u5jkv3wbYlJm4D.Np7Cv9hDp7Of/zlEv7Bt5D2GHtWugQe', 'student', 'Carlos', NULL, 'Mendoza', '', NULL, NULL, 'active', 0, '2025-11-10 08:39:16', '2026-02-14 01:40:58', 0, NULL, NULL, 0, NULL),
+(25, 'luisa.fernandez@mcc.edu.ph', '$2y$10$Md1tZhHnZfFfpgo90cwXj.qCrDmEZWcBp.8389tzsbGESBvKxiIlO', 'student', 'Luisa', NULL, 'Fernandez', '', NULL, NULL, 'active', 0, '2025-11-10 08:39:29', '2025-11-10 08:39:29', 0, NULL, NULL, 0, NULL),
+(26, 'michael.tan@mcc.edu.ph', '$2y$10$PGFuueRiY5pqZ6QPBOWX.urcBujwzBH/0d9PnuitX9pQQhA0.FK0O', 'student', 'Michael', NULL, 'Tan', '', NULL, NULL, 'active', 0, '2025-11-10 08:39:43', '2025-11-10 08:39:43', 0, NULL, NULL, 0, NULL),
+(27, 'jasmine.lim@mcc.edu.ph', '$2y$10$btaZvRIyT0kmUkODKStX7.OyTMTUefBFw.Uz7wiab4ow/p8FoUbsO', 'student', 'Jasmine', NULL, 'Lim', '', NULL, NULL, 'active', 0, '2025-11-10 08:39:58', '2025-11-10 08:39:58', 0, NULL, NULL, 0, NULL),
+(28, 'catherine.aquino@mcc.edu.ph', '$2y$10$awoQxoT6ormmhF6JRA1OPucz8FWLN7NcUJN8SAR4DHqZN3yNEfbbi', 'student', 'Catherine', NULL, 'Aquino', '', NULL, NULL, 'active', 0, '2025-11-10 08:40:16', '2025-11-10 08:40:16', 0, NULL, NULL, 0, NULL),
+(29, 'ricardo.gomez@mcc.edu.ph', '$2y$10$myDlCmDtauZwb2yGZLJVLuBQnu455aDE3SkY/KEeNYvhjOI9v6/QS', 'student', 'Ricardo', NULL, 'Gomez', '', NULL, NULL, 'active', 0, '2025-11-10 08:40:28', '2025-11-10 08:40:28', 0, NULL, NULL, 0, NULL),
+(30, 'angelica.perez@mcc.edu.ph', '$2y$10$8C8gZCGXWNgFk1pqgsX0.Oeee8xazbRRiTclXJiSl2sbQYKa62L.m', 'student', 'Angelica', NULL, 'Perez', '', NULL, NULL, 'active', 0, '2025-11-10 08:40:42', '2025-11-10 08:40:42', 0, NULL, NULL, 0, NULL),
+(31, 'christian.delossantos@mcc.edu.ph', '$2y$10$/2PhuFDJAAb0RjTTwcd/auIaYSAXyIkx5LDm4H729vfGtbsHORNvu', 'student', 'Christian', NULL, 'Delos Santos', '', NULL, NULL, 'active', 0, '2025-11-10 08:40:56', '2025-11-10 08:40:56', 0, NULL, NULL, 0, NULL),
+(32, 'kristine.apolonio@mcc.edu.ph', '$2y$10$LJdoxOyj5sDC0cAiQucWR.g8ckA.CcQQEAqJgRU3pYAJNZIvAoz4m', 'student', 'Kristine Joy', NULL, 'Apolonio', '', NULL, NULL, 'active', 0, '2025-11-10 08:41:11', '2025-11-10 08:41:11', 0, NULL, NULL, 0, NULL),
+(33, 'emmanuel.rivera@mcc.edu.ph', '$2y$10$EkBQqe.Zau2J1BSqBQSZQu1iVJU8JUFgTmrmwkA/ooKqzSZJFsIGK', 'student', 'Emmanuel', NULL, 'Rivera', '', NULL, NULL, 'active', 0, '2025-11-10 08:41:28', '2025-11-10 08:41:28', 0, NULL, NULL, 0, NULL),
+(34, 'samantha.lopez@mcc.edu.ph', '$2y$10$shoW7DnaD2eOcoSkosYGH.xkPvqIoCuRqwtCm7NjU9s/iaeR/I5Ge', 'student', 'Samantha', NULL, 'Lopez', '', NULL, NULL, 'active', 0, '2025-11-10 08:41:39', '2025-11-10 08:41:39', 0, NULL, NULL, 0, NULL),
+(35, 'rafael.valdez@mcc.edu.ph', '$2y$10$sbcy6wENv1x.LIJTV85iNOFIG7LvUTB63hL9Xb8BvmZ0ojEB22XgC', 'student', 'Rafael Paolo', NULL, 'Valdez', '', NULL, NULL, 'active', 0, '2025-11-10 08:42:03', '2025-11-10 08:42:03', 0, NULL, NULL, 0, NULL),
+(36, 'nicole.villanueva@mcc.edu.ph', '$2y$10$KNVaAGgtjnMrdPX92/Uv7.p7GEalZLUmfhu7ws1jc6At7/RXX6N6S', 'student', 'Nicole Ann', NULL, 'Villanueva', '', NULL, NULL, 'active', 0, '2025-11-10 08:42:15', '2025-11-10 08:42:15', 0, NULL, NULL, 0, NULL),
+(37, 'adrian.co@mcc.edu.ph', '$2y$10$4s0/H8yNcei4d6sX5S8Jb.ZoESlPMGGlDRDMCfMSeVUen1j7BqxCG', 'student', 'Adrian James', NULL, 'Co', '', NULL, NULL, 'active', 0, '2025-11-10 08:42:29', '2025-11-19 03:11:39', 0, NULL, NULL, 0, NULL),
+(38, 'tricia.balingit@mcc.edu.ph', '$2y$10$cac/8cufGbKTeVh45ItQiuhIefWl3POl0evpDR1V/1p7f8bCXRYu6', 'student', 'Tricia Mae', NULL, 'Balingit', '', NULL, NULL, 'active', 0, '2025-11-10 08:42:43', '2025-11-10 08:42:43', 0, NULL, NULL, 0, NULL),
+(39, 'johnlloyd.cruz@mcc.edu.ph', '$2y$10$FdX0lIglHbOsVzWVdcLn7u6wJccWMJq8eG.nHqAXnnId8Ed63ox/O', 'student', 'John Lloyd', NULL, 'Cruz', '', NULL, NULL, 'active', 0, '2025-11-10 08:42:56', '2025-11-10 08:42:56', 0, NULL, NULL, 0, NULL),
+(40, 'andrea.reyes@mcc.edu.ph', '$2y$10$go/31KlI0JlS.l2Y32vvreimnJ7pdTwVx9svuuoGpjtyKg038IG92', 'student', 'Andrea', NULL, 'Reyes', '', NULL, NULL, 'active', 0, '2025-11-10 08:46:11', '2025-11-10 08:46:11', 0, NULL, NULL, 0, NULL),
+(41, 'bernard.tan@mcc.edu.ph', '$2y$10$FISx9fakhxSvkwOqRq.rNezpjt2QQ7vOKEa8k20/9v7ZiIR/uDldK', 'student', 'Bernard', NULL, 'Tan', '', NULL, NULL, 'active', 0, '2025-11-10 08:46:20', '2025-11-10 08:46:20', 0, NULL, NULL, 0, NULL),
+(42, 'carmela.rivera@mcc.edu.ph', '$2y$10$4Lt.CkETBeUFKczXr2mxK.pc.UxpMVqFUK4/ykEpLiOXMsnUs5luO', 'student', 'Carmela', NULL, 'Rivera', '', NULL, NULL, 'active', 0, '2025-11-10 08:46:29', '2025-11-10 08:46:29', 0, NULL, NULL, 0, NULL),
+(43, 'derek.lim@mcc.edu.ph', '$2y$10$08TnQwMMr4V55GaYAAy.4eAoX8HWBN5COF1IYy0trneS4to8EQxlK', 'student', 'Derek', NULL, 'Lim', '', NULL, NULL, 'active', 0, '2025-11-10 08:46:37', '2025-11-10 08:46:37', 0, NULL, NULL, 0, NULL),
+(44, 'ella.fernandez@mcc.edu.ph', '$2y$10$2N/HRZvYJuz5ZP75iIJ.kOubTmfOOVi7pv8QvwMyh/V/umwRhs1Dm', 'student', 'Ella Marie', NULL, 'Fernandez', '', NULL, NULL, 'active', 0, '2025-11-10 08:46:49', '2025-11-10 08:46:49', 0, NULL, NULL, 0, NULL),
+(45, 'francis.go@mcc.edu.ph', '$2y$10$nCBsX87fHih6uk.hJ2oVo.FfLl9sL35lmkxaUya44ekFRwMeUTscq', 'student', 'Francis', NULL, 'Go', '', NULL, NULL, 'active', 0, '2025-11-10 08:46:57', '2025-11-10 08:46:57', 0, NULL, NULL, 0, NULL),
+(46, 'gia.pascual@mcc.edu.ph', '$2y$10$O0/7Yxhk0cHNOm4ZKXU0x.xOlBQbBhqV8Y8O3fcr66NOOy1zPu.JS', 'student', 'Gia', NULL, 'Pascual', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:05', '2025-11-10 08:47:05', 0, NULL, NULL, 0, NULL),
+(47, 'harold.javier@mcc.edu.ph', '$2y$10$UNkC/6TddFTEsbHW1EtY7OFyJLJ6EpEumY/dJ0RCVrypFV9dvCbF.', 'student', 'Harold', NULL, 'Javier', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:14', '2026-02-24 17:15:10', 0, '$2y$10$rqmgITSLtyv1yMWc7I2JYeUC7Ij7llwPCnLoPqa8eHMCS./XT8MAy', '2026-02-24 10:15:10', 0, NULL),
+(48, 'ingrid.navarro@mcc.edu.ph', '$2y$10$a2I3Bmcm2tU8eArKhusxo.629tX6hypN8DA9EYfp6tkYL/SvvxDvi', 'student', 'Ingrid', NULL, 'Navarro', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:22', '2025-11-10 08:47:22', 0, NULL, NULL, 0, NULL),
+(49, 'jake.silva@mcc.edu.ph', '$2y$10$KkoQ0Kd5xJgW5f653dpUiOcCyZbZYuZwMRKxzW9Mhq05np6P25mvu', 'student', 'Jake Anthony', NULL, 'Silva', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:32', '2025-11-10 08:47:32', 0, NULL, NULL, 0, NULL),
+(50, 'kaye.castro@mcc.edu.ph', '$2y$10$E5sxDNYuS7PQPqFEdcdqcupccfatEk39MJsK7LNx0ujWmpNwocPWy', 'student', 'Kaye', NULL, 'Castro', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:40', '2025-11-10 08:47:40', 0, NULL, NULL, 0, NULL),
+(51, 'leandro.morales@mcc.edu.ph', '$2y$10$icTlD1gFj.SReFcPhM./bec13jp9ru0KFZlfEChhE4zpue7Mzz4CW', 'student', 'Leandro', NULL, 'Morales', '', NULL, NULL, 'active', 0, '2025-11-10 09:21:56', '2025-11-10 09:21:56', 0, NULL, NULL, 0, NULL),
+(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', NULL, NULL, 'active', 0, '2025-11-10 09:38:20', '2026-03-05 19:48:27', 0, NULL, NULL, 0, NULL),
+(53, 'nico.perez@mcc.edu.ph', '$2y$10$m.hi3cAvdrAUzCF7TMoaseMCqY.oGHNorWf7U4e1.IXkR7ANud61S', 'student', 'Nico Allan', NULL, 'Perez', '', NULL, NULL, 'active', 0, '2025-11-10 09:46:50', '2025-11-10 09:46:50', 0, NULL, NULL, 0, NULL),
+(54, 'olivia.delgado@mcc.edu.ph', '$2y$10$0h4mahiMCDm96OWctcRdXeujn7Yr/PRJvgyO7KQtO954d7V39.26m', 'student', 'Olivia Anne', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
+(55, 'paul.uy@mcc.edu.ph', '$2y$10$8IsNfV4is0Sgs0N6e70Zk.PP.DcSJswNe.GBdLa3aLZhDxvJ.KiZG', 'student', 'Paul Vincent', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
+(56, 'queenie.lopez@mcc.edu.ph', '$2y$10$e4xcXVIj5hELgNvr0JSjMeNWmz3GxGWSSqd0QPAvuKj.AXYyClTOC', 'student', 'Queenie', NULL, 'Lopez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
+(57, 'ronald.bautista@mcc.edu.ph', '$2y$10$5iq5Sg5fW/Jj07.ycapvzuZ8gUt7J7fqwHRbX4IbS6zCpD8y/0cqa', 'student', 'Ronald', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
+(58, 'shiela.gomez@mcc.edu.ph', '$2y$10$LC2kMt3TVD6aqjNVpXd4NuM2wnx4orznYG0kYyBP..V1aXokO3Wuu', 'student', 'Shiela Mae', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
+(59, 'troy.medina@mcc.edu.ph', '$2y$10$J.YdQQGoR434pyKxeo/0VO9f0lvImfo96CE59z0wO0vmjED0g6ecq', 'student', 'Troy James', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
+(60, 'aaliyah.bernardo@mcc.edu.ph', '$2y$10$uXV2HkyxgNzjiwawUN28gOdd.sWz3d70N8ITep2YFnL5j0vz4OX8e', 'student', 'Aaliyah Grace', NULL, 'Bernardo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-18 09:23:02', 0, NULL, NULL, 0, NULL),
+(61, 'aaron.cabrera@mcc.edu.ph', '$2y$10$KdB0VAtZtivUzWn.Ag.sruoSaFFQ181.Gi5JbsXBsgfY/9vFJZ2z2', 'student', 'Aaron James', NULL, 'Cabrera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2026-02-08 08:08:45', 0, NULL, NULL, 0, NULL),
+(62, 'bianca.dizon@mcc.edu.ph', '$2y$10$IZOT1.ui78sarUox3cIRM.f0cp2NwhBDs2TScFVFJ1QbH6as9Ffye', 'student', 'Bianca Marie', NULL, 'Dizon', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(63, 'carl.escobar@mcc.edu.ph', '$2y$10$i3pR0rXeg85zZlRqR1bULuDWJh/QUnp76ZuQ.NCqaiDtX5WQOwb0i', 'student', 'Carl John', NULL, 'Escobar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(64, 'diana.flores@mcc.edu.ph', '$2y$10$viJpN1ONZW8VODk7ME01yOwMy1SJqkXjcAVezILdE3DHVQYkpgbFa', 'student', 'Diana Rose', NULL, 'Flores', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(65, 'ethan.gutierrez@mcc.edu.ph', '$2y$10$8SpTP21UQefARRxLUDP1PebAgqNmjZOZ2XKUJg3ORX6/Kdgjaqnei', 'student', 'Ethan Blake', NULL, 'Gutierrez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(66, 'faye.hernandez@mcc.edu.ph', '$2y$10$DzJnEKL8OYo1p8mobOoSd.Ptd4mVCjUpO/87KssXd6btzYkKnDoaK', 'student', 'Faye Louise', NULL, 'Hernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(67, 'gabriel.ignacio@mcc.edu.ph', '$2y$10$iN6fvdGyY/WOG4rGLrUuyeXQf.pyTiVrwYwjSOyHm20fdK8tdevMC', 'student', 'Gabriel Jude', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(68, 'hannah.jacinto@mcc.edu.ph', '$2y$10$cLWd8bspuRNBX6tZ2MlUxuollV85PA9ggVHzOje8.IkMQ1eMbadk.', 'student', 'Hannah Joy', NULL, 'Jacinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(69, 'ian.katindig@mcc.edu.ph', '$2y$10$q7.N2ibOC.k3XWk2nu8A.udJdEtrwHxH/tmX0zzzbN7OT9CQSmvDC', 'student', 'Ian Miguel', NULL, 'Katindig', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(70, 'julia.lansang@mcc.edu.ph', '$2y$10$1HjeQJ9mliW96XQh2qzCW.nxShA/pp8z1gYbiGNlqGcl3SmQaCVdm', 'student', 'Julia Anne', NULL, 'Lansang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:39', '2025-11-10 19:15:39', 0, NULL, NULL, 0, NULL),
+(71, 'karl.manzano@mcc.edu.ph', '$2y$10$gsHxS215nra7FF.x52aneucouOSMEf4lL8nNUW8G/pj/vDmKKE4Ga', 'student', 'Karl Matthew', NULL, 'Manzano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2026-03-01 09:02:08', 0, '$2y$10$gpAkDdLC9Pmcy8UHDx/oiu7l5Ct8TDoWCF4hyLtloQn4rgfWPMJc2', '2026-02-24 08:51:48', 0, NULL),
+(72, 'lia.navarro@mcc.edu.ph', '$2y$10$e3XWFVuY0aOtQL8Q3C310.9oHnms82K3vUEH7dU8qep3xr8.gL5IW', 'student', 'Lia Victoria', NULL, 'Navarro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(73, 'martin.ocampo@mcc.edu.ph', '$2y$10$vysmQG.YFuihnflHAQBH6eS4yHwGceVqhMw0bBx2CmLcUIKSeSlhW', 'student', 'Martin Jay', NULL, 'Ocampo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(74, 'nina.paredes@mcc.edu.ph', '$2y$10$0cEhSKtXyxihWuTWG.vJduFFxh9JcdBRL62jEOecnz.ovMpvFxTVK', 'student', 'Nina Sofia', NULL, 'Paredes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(75, 'orlando.quintos@mcc.edu.ph', '$2y$10$nPO08Utsn7QnMPMtixy3q.HR7kV3D5FhT7eoKfKwDNXEcvv3xM/H2', 'student', 'Orlando Jr.', NULL, 'Quintos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(76, 'princess.ramos@mcc.edu.ph', '$2y$10$BztYNu9Y5emb.Xu5foTtyeceHpd4RYFwviwBEEFY7WVepPUSztBke', 'student', 'Princess Leigh', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(77, 'raymond.santiago@mcc.edu.ph', '$2y$10$UZS4AUqIRHgZrQGk6KzzlO38ISaMx703Bo/T2CTYWqBCN3Y41kphi', 'student', 'Raymond Paul', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(78, 'shane.torres@mcc.edu.ph', '$2y$10$Bcv4jsGB8rNQdqfIndpz0eIjaLahU/BjnHX7PEBKbIW0BVyV9QD5y', 'student', 'Shane Elizabeth', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(79, 'tristan.urbano@mcc.edu.ph', '$2y$10$C.J0v5Z4qKZimrgt.VW1ZebJaBowpHF24pQGtDhCW7YmTBf.5Caay', 'student', 'Tristan Kyle', NULL, 'Urbano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(80, 'vanessa.velasquez@mcc.edu.ph', '$2y$10$5GCO3K/a/p3a44lRvR2fjOCZ0i2fzMGTTyg1MzLfLyQ3Wy.Q8GKF6', 'student', 'Vanessa Mae', NULL, 'Velasquez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(81, 'wilbert.yap@mcc.edu.ph', '$2y$10$se4XUrT2oq6C9uA/jxzWGuY2nmLcL6pmgQIVDthmplhoi2WpeFKAy', 'student', 'Wilbert John', NULL, 'Yap', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(82, 'xandra.alvarez@mcc.edu.ph', '$2y$10$wxZZLnF3oNjCSdJ4ssv3nOY4V9qrkPOByR8R7Q/OxTW0Ufg8dZW8O', 'student', 'Xandra Kaye', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(83, 'yohan.bautista@mcc.edu.ph', '$2y$10$SuYOTDMS2IJ10v1tI7V0.OLLl5D0tx6vd04iijPGj61vNnHUS1Aji', 'student', 'Yohan Andrei', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(84, 'zarah.castillo@mcc.edu.ph', '$2y$10$NL1466inaS1UvKLsoMEkNeeO6YF/u5gAx2TyqREkIfEc6hKwA22Ty', 'student', 'Zarah Jane', NULL, 'Castillo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(85, 'beatrice.estrella@mcc.edu.ph', '$2y$10$WaC84AZ912YwqD8U6Z8go.pk89eFZcHHPmt1VaBcmnJsJXt4RbDfi', 'student', 'Beatrice Ann', NULL, 'Estrella', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:40', '2025-11-10 19:15:40', 0, NULL, NULL, 0, NULL),
+(86, 'cedric.galvez@mcc.edu.ph', '$2y$10$mwd7YiN9swM0bdsDKTcKJu2ubgLKYeoXQnsAagBtzuBIq6ebXY0Ne', 'student', 'Cedric James', NULL, 'Galvez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(87, 'donna.herrera@mcc.edu.ph', '$2y$10$qoZ57HUP.8xu6x/ZkuMxJe6x0vQ8pz06F6cLbYU7GypbblNbGaSQO', 'student', 'Donna Rose', NULL, 'Herrera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(88, 'emilio.ibarra@mcc.edu.ph', '$2y$10$RFbZjsOEKFKjJ0Ux5l6Tm.uRXQOtdH7rT5FF4Om6dgaqoeLXcYzR.', 'student', 'Emilio Jose', NULL, 'Ibarra', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(89, 'francesca.jalandoni@mcc.edu.ph', '$2y$10$DQdW5zBUHMiQhzDrJIwA0u0Qgr49r7QZZEo9zOb9MMWzIufpdKIWe', 'student', 'Francesca Marie', NULL, 'Jalandoni', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(90, 'gregory.legaspi@mcc.edu.ph', '$2y$10$JJ/H/SeAHQunhoQSOLz4/OtPDXx9IqArQmW8skBRLFdYZ/Nrh7TYK', 'student', 'Gregory Sean', NULL, 'Legaspi', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(91, 'imani.molina@mcc.edu.ph', '$2y$10$roDUsY4wBvtKn50JYy/8leIgNOQI7vYXHT5n8qXKlq1aViQtP0dfy', 'student', 'Imani Grace', NULL, 'Molina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(92, 'julius.natividad@mcc.edu.ph', '$2y$10$S9GEmh75BVxNsEw2MkHxyOIYYnicxuGjTwghqGxJMHkm/HGAW/Xne', 'student', 'Julius Caesar', NULL, 'Natividad', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(93, 'kaitlyn.padilla@mcc.edu.ph', '$2y$10$RruDygNDucZfqYvZfCsmMOlqHWuWA5hCAYcntJiVcTUepuojDOW6K', 'student', 'Kaitlyn Joy', NULL, 'Padilla', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(94, 'leonardo.salazar@mcc.edu.ph', '$2y$10$qOWWHlu43FeSfkF8ldOGd./Nk5hjrKIxuGz0mA0jyym0ATlJ2FBC6', 'student', 'Leonardo David', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(95, 'mikaela.tolentino@mcc.edu.ph', '$2y$10$SMg7vvi9e4LAzWI/qMwlNuW2fLkM703UNxHvpr1BSWWWdkOxczty6', 'student', 'Mikaela Rose', NULL, 'Tolentino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(96, 'nathaniel.valencia@mcc.edu.ph', '$2y$10$XatFD2uxwosY846UpZJo9uMJsDRGnQjn3DpWwk9MXW8IzLEq7Mw.u', 'student', 'Nathaniel Jude', NULL, 'Valencia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(97, 'oliver.zamora@mcc.edu.ph', '$2y$10$0L1OolhGjvywA6x1PRTvV.VgqmNy.ZCRbew5dz2../JuVtxutw2Vi', 'student', 'Oliver Martin', NULL, 'Zamora', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(98, 'pauleen.aquino@mcc.edu.ph', '$2y$10$uDMkNg1eNPvdq/gPusU0EOnyIRhTQRwIVP78t1M8Ps0JvIo5uZxh2', 'student', 'Pauleen Joy', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(99, 'quincy.brillantes@mcc.edu.ph', '$2y$10$o2CPCMpiPz7kqFizGjpOXOyUMTV4TwF0JQ8.OZLiENDkzfruHjomq', 'student', 'Quincy Rae', NULL, 'Brillantes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(100, 'regina.concepcion@mcc.edu.ph', '$2y$10$b4DY7b6i6wrlmn6vvRuDluIT3l3sj07tHALks9MMgnFKeFzEyiV5y', 'student', 'Regina Faith', NULL, 'Concepcion', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(101, 'samuel.domingo@mcc.edu.ph', '$2y$10$lo/1HMyWsbaeSxorvPeyCOwSA271SufrhFR89fGEa6Spk60TNAata', 'student', 'Samuel Ray', NULL, 'Domingo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(102, 'therese.estrada@mcc.edu.ph', '$2y$10$f9d7DqMNBgZEkcCW0Z.V7eLL3BVRMjSHT8k2fWB/T2hRnR/F9nQai', 'student', 'Therese Marie', NULL, 'Estrada', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(103, 'uriel.ferrer@mcc.edu.ph', '$2y$10$CAXd1aZr4Cx0hisETzV9wuskxcxSUYSasubZkaBvpJ4zF360dYBRu', 'student', 'Uriel James', NULL, 'Ferrer', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(104, 'violet.gallardo@mcc.edu.ph', '$2y$10$Y3Gj25t7aTq9wSNKJr0P.e9abi94XsKV0eCFKy/5O2sKvlSgR0BWO', 'student', 'Violet Grace', NULL, 'Gallardo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(105, 'wendell.huang@mcc.edu.ph', '$2y$10$eGdUYQ1/qIo.MLfn9uzTbOamC9Y63WlF9vZmlMRXt0TVfgTIVttyq', 'student', 'Wendell Andre', NULL, 'Huang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(106, 'xyrus.irving@mcc.edu.ph', '$2y$10$4vrMVF8AFF/KlmoPIrCanuR/Ec78bQjavGsW9r3MfVcV3CgVQiyj.', 'student', 'Xyrus Kyle', NULL, 'Irving', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(107, 'yara.malonzo@mcc.edu.ph', '$2y$10$oJSjMflWYI2WHCutruB4iO.HflHnYW4oYmh7e4X7BzKJ4uewlaJs.', 'student', 'Yara Nicole', NULL, 'Malonzo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(108, 'zeke.noble@mcc.edu.ph', '$2y$10$Do.MIHhKjzqTsd8N9rU.Nekp2W2JzIz/QLVCRi3.CJSf70CJSksr6', 'student', 'Zeke Daniel', NULL, 'Noble', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
+(109, 'abigail.pineda@mcc.edu.ph', '$2y$10$Nl81BwhhufU0cKkd3yOfA.bbRUkcgfXb/NJJ6Bo4x8xAZkzMzOtpq', 'student', 'Abigail Rose', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2026-02-09 04:59:02', 0, NULL, NULL, 0, NULL),
+(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2026-03-05 20:15:04', 0, '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
+(111, 'ricardo.lim@mcc.edu.ph', '$2y$10$oO3esbnhLoSBMVVAEpi/5.oT2SZ4ht0cj1N1Bpg/Nug.hAicPeL/m', 'student', 'Ricardo', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
+(112, 'diego.alvarez@mcc.edu.ph', '$2y$10$RzvrH2OmfCYy8g5rf9YNuu/0eIfT0qnWWPwxU6A3x38lBR7r.QVE.', 'student', 'Diego', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
+(113, 'julian.sy@mcc.edu.ph', '$2y$10$//yUsNWHi4oBimdkncqP0uhb0MgunJa4PDtINSAPbFT6S152uVm66', 'student', 'Julian', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
+(114, 'ian.navarro@mcc.edu.ph', '$2y$10$Lv8VW5L/qd6dhQ3Qe3EpYuL2.Z1mOtUZRlNdy/KGPWLZ2uQ/1pPaW', 'student', 'Ian', NULL, 'Navarro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
+(115, 'ava.aquino@mcc.edu.ph', '$2y$10$IuK1OPjM8U80QkPaXS0FFOQf1swNvAexMgD3umm7APk/0AyI5vZe2', 'student', 'Ava', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
+(116, 'ellie.go@mcc.edu.ph', '$2y$10$ZCXB3y0k06FHufahS/V2teJraA/W6IrNYSqzWvQjucKqNnqab1GdG', 'student', 'Ellie', NULL, 'Go', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(117, 'maria.delgado@mcc.edu.ph', '$2y$10$Z6QQ/qH2D7gVhmPvvWdB4.rLJ79g3txauDq2Fvb.Fb00NGw8dUyzi', 'student', 'Maria', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(118, 'isabella.delgado@mcc.edu.ph', '$2y$10$9YeXTq1gfpAKYPumeO6wJuzHOMCQI9MMB4P2HWAhwUtcagchsB.0.', 'student', 'Isabella', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(119, 'camila.delos.santos@mcc.edu.ph', '$2y$10$dQyyKqDYjILaEpQlbSgJoONmz7cr5czVhUS/sPvNRmMYq.RaMVilm', 'student', 'Camila', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(120, 'miguel.ortega@mcc.edu.ph', '$2y$10$b2ey6HQ529Go4V4TvOL9C.IHDeDEeIsYB0Pydxiz8LBHc0UDodJlO', 'student', 'Miguel', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(121, 'lucia.pineda@mcc.edu.ph', '$2y$10$Lrym9nnQukuWCWiyg3baBuep.utlPtfKEBCxFqBrIwVi4WDhs4oFG', 'student', 'Lucia', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(122, 'stella.delos.santos@mcc.edu.ph', '$2y$10$CWwtdqdzT8m3PYlOZgCSgOc1R9zGLJYz.PlsNbWmvAz5c8E7dpvO2', 'student', 'Stella', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(123, 'chloe.aquino@mcc.edu.ph', '$2y$10$9XuzGkzfSmq79V/usvcvHeJdwOk0F.4WtLgmWUHvwjWNRU5HDvq0W', 'student', 'Chloe', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(124, 'ian.perez@mcc.edu.ph', '$2y$10$cGwyIpiCs2aQUFTTlMJ.I.W8YBeyLc27oRH.BFuiZD6egI/F/C0bO', 'student', 'Ian', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(125, 'ellie.santos@mcc.edu.ph', '$2y$10$tBnqZJMZCgqMXtYkZYYj/OZkVGaYjok.TlnFsylch5n/MLQIk3xUW', 'student', 'Ellie', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(126, 'isabella.rivera@mcc.edu.ph', '$2y$10$SB9FM/e0eE53T8GH7YtLv.mYYBbY39VKIlPitvBbFwbbjdjTmYFw.', 'student', 'Isabella', NULL, 'Rivera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(127, 'felipe.ramos@mcc.edu.ph', '$2y$10$YL7fpcigO5IWiEzzY21U4u.7cenvcg./.24hvOBBQg71kd0Q4fO.q', 'student', 'Felipe', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(128, 'sophia.navarro@mcc.edu.ph', '$2y$10$2Ctqa1L.LUxOeHXixC.9seKNhaNFiIVq118ZbukRYrgxFn7GmIjtC', 'student', 'Sophia', NULL, 'Navarro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(129, 'lily.santos@mcc.edu.ph', '$2y$10$vp6PCd.r7tFo9rZa5DL89esN06ox9TFthX4TAOK1.pDcSH33quAey', 'student', 'Lily', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(130, 'diego.lozano@mcc.edu.ph', '$2y$10$.XfW9SMn4H9ukixKorTpWuQqFOmLQ6g9ztgWk6IJXM8Hlrb2pyXNG', 'student', 'Diego', NULL, 'Lozano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(131, 'diego.dela.cruz@mcc.edu.ph', '$2y$10$3Bx/4FfjwkLH2N77rU0pdeejY.tk.lS88Hv8qoG.gCDgT4Gsi.RBC', 'student', 'Diego', NULL, 'Dela Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(132, 'marcus.quinto@mcc.edu.ph', '$2y$10$2cRZof65Xzsp0.Nh6baUY.VYpq1ZIRPNI2iQfP9f90uGCllYYg.fO', 'student', 'Marcus', NULL, 'Quinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(133, 'zoe.garcia@mcc.edu.ph', '$2y$10$qtvF/qIOUyi0D9Wg6fxNrefhCLiL9Vqrk1ZNbvTm7RupUToLc9DUm', 'student', 'Zoe', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(134, 'lucia.delgado@mcc.edu.ph', '$2y$10$h963tNYSUAuEd/TiIhDLI.SF9FJoLij3UWVGVUMpDNcUncNNYQTAy', 'student', 'Lucia', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(135, 'sophia.santos@mcc.edu.ph', '$2y$10$3OuKz.NQIzcBgagKU2gVreQUd6EPmW.ExrBckxurhILNrmSRQd2Qe', 'student', 'Sophia', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(136, 'cristina.garcia@mcc.edu.ph', '$2y$10$sIq54Bdi.Mvxs2d9kTaB4OEjo8SoIzWUfrtETfro3ebdlx2xEV0xO', 'student', 'Cristina', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(137, 'dylan.perez@mcc.edu.ph', '$2y$10$xLusCvnOsHfGXWSSwUNT9e3qxx6uKZHfS9KB2Yc5YfOsszVPUiXOS', 'student', 'Dylan', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(138, 'victor.santos@mcc.edu.ph', '$2y$10$K.65ATyJZcTui4JznRG1VOm5n/jv178fClxYvF7B09IpYl3Aw7aB6', 'student', 'Victor', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(139, 'diego.villanueva@mcc.edu.ph', '$2y$10$ddPXbQ3m1FxEYE4qr8hgj.5GtAAN6sUDASmU9tR15eAHpOag87vhy', 'student', 'Diego', NULL, 'Villanueva', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(140, 'ricardo.reyes@mcc.edu.ph', '$2y$10$3GlcTUqfhmMtRKvolNg3a.mVL3OeRlRlqcOFWBgwCqv1VI2m6BAgO', 'student', 'Ricardo', NULL, 'Reyes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(141, 'gabriela.fernandez@mcc.edu.ph', '$2y$10$E.H45zNesHnsyWDlGjvLU.ynRVPurBXot0w8Kvjxy4VFvG0tzXv0i', 'student', 'Gabriela', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(142, 'luis.garcia@mcc.edu.ph', '$2y$10$q1OO3FdOBQvH4Sg//qDeredqTnk3JPlZBeXC/5WtmkRmFWe6TMSBK', 'student', 'Luis', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(143, 'jorge.delos.santos@mcc.edu.ph', '$2y$10$4cejWj.phjNl64jJLoWxWOCSvU1Q2xa6bMdjD/0ZWHbZcEsCOvRie', 'student', 'Jorge', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
+(144, 'leo.aquino@mcc.edu.ph', '$2y$10$tEoWo5184VhAxWmKz6hWXuQX47TZ7vh.ZxuPntHQHyPLbPb3gDWfW', 'student', 'Leo', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(145, 'nathan.ramos@mcc.edu.ph', '$2y$10$L4XGzrMaJPQ.L32V0VtTbeouxIXwrtnIzl6CqrGAZJrlO7hD/kwEq', 'student', 'Nathan', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(146, 'gabriela.santiago@mcc.edu.ph', '$2y$10$HGpNeDWVOqsc0NdJf1ulve3iFqDYaDP5mvG92WdpRm7dY7gXOGSDG', 'student', 'Gabriela', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(147, 'oscar.lim@mcc.edu.ph', '$2y$10$lxfGFuNzrcc8GhFcaTVLQui49HQXwclHm5nkMQ1ls86/EXgxavhrm', 'student', 'Oscar', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(148, 'mia.perez@mcc.edu.ph', '$2y$10$9fqTsxt2Nfm12pKuMPF7wuXONgEspD3UzrE8i7Zr0CHNJDtZbqjWK', 'student', 'Mia', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(149, 'elena.gomez@mcc.edu.ph', '$2y$10$ShQsDgooIRAoLxHnBpGkzeS1qSRSDRHb8.HiFrQHfD8H/W..WdANK', 'student', 'Elena', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(150, 'ana.gomez@mcc.edu.ph', '$2y$10$tHlpjZQlleSw8GDpOAHU1OBICZGYWp9DKHS2G4iIoDpuX71vw72Py', 'student', 'Ana', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-18 10:22:47', 0, NULL, NULL, 0, NULL),
+(151, 'ava.mendoza@mcc.edu.ph', '$2y$10$pABA8e6y/hrnKPvjw8Heouv2LtgXWFjJATsDnQattdXIyyoSII9bu', 'student', 'Ava', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(152, 'sebastian.alvarez@mcc.edu.ph', '$2y$10$40.uU5bY.UXyAvO4V7Yaq.eo9REmrXOreHLgfcs1wbNtWS.WxOvA2', 'student', 'Sebastian', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(153, 'brian.beltran@mcc.edu.ph', '$2y$10$6pv2rhmneJes3bF6pocxnOBEVyLSoIFuv4082ZvLwpSxITrH0rYvS', 'student', 'Brian', NULL, 'Beltran', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(154, 'nathan.santiago@mcc.edu.ph', '$2y$10$oMur4j7cUFAMOLqhOSfn3OvHLc2QuyJmV7KxDdv/fTbylOXsPDXQS', 'student', 'Nathan', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(155, 'nathan.ignacio@mcc.edu.ph', '$2y$10$O1JguGd0lV/I9S3YvRj2e.JSNFol2nmnFnIFgC6N5NTfA7PWhNSRS', 'student', 'Nathan', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(156, 'lily.rivera@mcc.edu.ph', '$2y$10$fcibbDy/CqFPF0cH7211H.T7tIHvH3yPA3LcehN/wDS.lzbFmZBgy', 'student', 'Lily', NULL, 'Rivera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(157, 'carlos.lim@mcc.edu.ph', '$2y$10$ZX3SWDpZaZBf5ZJvfKBzhOHEOsx9RfPo8gYX.hdxacphRPM0CFzK.', 'student', 'Carlos', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(158, 'carlos.dela.cruz@mcc.edu.ph', '$2y$10$5RgwKPORf.ylXlnAgbg0Kuxj5sHv9yAxgm0b/Yzq2UmJWKLQVp1hK', 'student', 'Carlos', NULL, 'Dela Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(159, 'ana.santiago@mcc.edu.ph', '$2y$10$x7AumFpCvIhEDSc2KbW5NOxyfAb41q4tRcPceO4ffP3YJebAUFVFK', 'student', 'Ana', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(160, 'ian.diaz@mcc.edu.ph', '$2y$10$P1jUfUwoVa6ZtIVKz/EsveK.hltkVp64Yfiqgeljs7kVkVcIM9aeK', 'student', 'Ian', NULL, 'Diaz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(161, 'carlos.santiago@mcc.edu.ph', '$2y$10$mJIZig7GgF3fVEFpJCgmZeR8SWsTmnIYlK3CRetrtyxojmvSJkc9W', 'student', 'Carlos', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(162, 'julian.cruz@mcc.edu.ph', '$2y$10$dVWmr.opMW2MvKGk5w/EwuerYVJpebZ8I3Tz9qywThvMvMoDVUcW2', 'student', 'Julian', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(163, 'chloe.sy@mcc.edu.ph', '$2y$10$iZlkrPlzDq4gfYE7rMxf/OsGDCSwF3ZjWZg9lPpbKaNMAuIjGVMqa', 'student', 'Chloe', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(164, 'mia.sy@mcc.edu.ph', '$2y$10$nmS/2aU2hcSGmOf11PmGtuiveA8vk6WO4tmxw.cxYZZIzv4NexS3O', 'student', 'Mia', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(165, 'ava.diaz@mcc.edu.ph', '$2y$10$ek7OI4yUpyv3Oa391R5/reYVfXPloSeePVthzCZbrId082wsYmZQe', 'student', 'Ava', NULL, 'Diaz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(166, 'miguel.cruz@mcc.edu.ph', '$2y$10$VLYP7sy60i.YRan/eM0fjOGDeRuPIhYIAeWPVWpkhYVcUTQ/Lh7w2', 'student', 'Miguel', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(167, 'andres.ramos@mcc.edu.ph', '$2y$10$07iXCmOrwY2D6j84rfujOOq50551Vf/cubLD4/618PXDHd3LpPUYa', 'student', 'Andres', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(168, 'andres.medina@mcc.edu.ph', '$2y$10$iKYlhg3mrzRywe06DzQmD.guRSYsDiG2grki4bTCLJikcMmA/6dTy', 'student', 'Andres', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(169, 'nathan.perez@mcc.edu.ph', '$2y$10$HoAR3pU4a5OKfaurVf6rpOV5gOroKygy6aH7x.Yp5SjmVhc2i2wVG', 'student', 'Nathan', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(170, 'leo.delgado@mcc.edu.ph', '$2y$10$.nG/ngRKMaZDZ/LmZHEYK.7IxcDqcotmqxQVNQooocijHu/p/L37W', 'student', 'Leo', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(171, 'ricardo.tan@mcc.edu.ph', '$2y$10$En/d2jrleAUH68gc5c.5veAz4tFE7Oe4sqfSSIaN29wq07cFBiqUi', 'student', 'Ricardo', NULL, 'Tan', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(172, 'ava.santos@mcc.edu.ph', '$2y$10$y9pl4lJT4glN8UpBJNT8p.4iV8naP4PULP6x1.OFTCWi6.GbxXg3.', 'student', 'Ava', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(173, 'chloe.cruz@mcc.edu.ph', '$2y$10$AnqgrrNcHHXSi6LX7qrRre9cqfN29UdaWXqqNgcmsZNTmEmj7nJtu', 'student', 'Chloe', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(174, 'axel.lozano@mcc.edu.ph', '$2y$10$UBju2VyhuwcKtPav.I3BROrTvxWbl3DsbjpaeAu/fg/K4saxyQVZC', 'student', 'Axel', NULL, 'Lozano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(175, 'sebastian.ocampo@mcc.edu.ph', '$2y$10$bySvMk.ImSpVFioYdR4dGee9mmxqaCissyIkktgqgVQfTqYsf4W9i', 'student', 'Sebastian', NULL, 'Ocampo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(176, 'leo.ocampo@mcc.edu.ph', '$2y$10$xBOTFbA2m7FzSJHRJzrMh.dufD3gs3fpShlx3ybNkE1RtrkcDwWjy', 'student', 'Leo', NULL, 'Ocampo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(177, 'jorge.ocampo@mcc.edu.ph', '$2y$10$FiItD.oc4m56/htZZ8bNcOUi8dSuFSS25Lm1AlLHGjE5AN7SXb0y.', 'student', 'Jorge', NULL, 'Ocampo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(178, 'luis.delgado@mcc.edu.ph', '$2y$10$j1Uy.NJ17hxbRk0fbShZz.dRo8iuPVtvqyCpuSQI.RallHKQDISyu', 'student', 'Luis', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(179, 'axel.salazar@mcc.edu.ph', '$2y$10$6CSOgn44T8ot7lSSw/RLpeBT.Byj4QvnO.SVYzuhGKFK0oQb.ROBG', 'student', 'Axel', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(180, 'stella.fernandez@mcc.edu.ph', '$2y$10$5eCe1/IfHN0dWm3Aiplsv.35o40zwnpwpNLkwtA4duH2D2lZDmdX2', 'student', 'Stella', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(181, 'chloe.lozano@mcc.edu.ph', '$2y$10$ixofoCCbY1N6YWvoKfJrruYBXFW0lAMRlV44qtP3wjgYYOzupb0CC', 'student', 'Chloe', NULL, 'Lozano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(182, 'leo.mendoza@mcc.edu.ph', '$2y$10$iB6b2BfZ8JepEowWl9KPge/2iwfGL65yrIwPo5HpJtfsUkWb6cYna', 'student', 'Leo', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(183, 'cristina.aquino@mcc.edu.ph', '$2y$10$/92vguj3gZU4.pgBQ4rP3e4nEWyCiIBbjvEOgbShS.SPEG0X/DiYC', 'student', 'Cristina', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(184, 'nathan.gomez@mcc.edu.ph', '$2y$10$xHT0D.QmtCta4HcQQkQl9e5UycfSomiilFt0v1.DVbbeRLtmJaRrW', 'student', 'Nathan', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(185, 'andres.rivera@mcc.edu.ph', '$2y$10$hDWxIrKxTh6Ad7ZBUOvbDOLPOVe.q0/RV3jFx3p/hGj4qKpCm0L4i', 'student', 'Andres', NULL, 'Rivera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(186, 'sophia.sy@mcc.edu.ph', '$2y$10$3anl6UAZ2EnumB3rGZRzteKfPQq3dgWTh42/eRGhXQk.6aaGJpzNe', 'student', 'Sophia', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:40', '2025-11-10 19:30:40', 0, NULL, NULL, 0, NULL),
+(187, 'luis.medina@mcc.edu.ph', '$2y$10$8ZhMcWozItV/rWZpceYqfeLrtXu1eAnSTtz3mYXdKKxOhGNo5L/3O', 'student', 'Luis', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(188, 'stella.katindig@mcc.edu.ph', '$2y$10$vBB/kEgfia0taz8tZNsIZOGqhhweyxqRDcCbpruy/c1/Pb0GCFbOW', 'student', 'Stella', NULL, 'Katindig', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(189, 'marcus.lim@mcc.edu.ph', '$2y$10$FRoTN67zYiT.TET97efoT.lBQXHjZVONV8njSq1x8Yy/SVkiP2DdG', 'student', 'Marcus', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(190, 'axel.santiago@mcc.edu.ph', '$2y$10$8tibOWJt.2HwEH61Xo0RNe1rRhcxz4wGwmT/AmaYs9z/svSnlD6rO', 'student', 'Axel', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(191, 'ava.medina@mcc.edu.ph', '$2y$10$5gkZOaWQJ/HV8eQeZ4Z7u.vw5EWqCVbgBF8C/cmFltYt3JNS1lSYi', 'student', 'Ava', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(192, 'ana.torres@mcc.edu.ph', '$2y$10$cFmE2Nnm552VOeHd4cYQROM5Y1VYgxWZGlghyDDfzFHSdjDdn0jkK', 'student', 'Ana', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(193, 'maria.villanueva@mcc.edu.ph', '$2y$10$tAnYVNu/bd5IFJMJ./QjMO5IIMHRGbGn3HtiaSEP/9T2yV/.nzTA2', 'student', 'Maria', NULL, 'Villanueva', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(194, 'brian.rivera@mcc.edu.ph', '$2y$10$xFzta20hl6XQvMUXUc8v5.KZmEaY5S1/cQAhoY0aw0My8giu3p3NG', 'student', 'Brian', NULL, 'Rivera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(195, 'nathan.ortega@mcc.edu.ph', '$2y$10$YxU9VaEFwoj02IoytvovweNQ/jI.XOMEgGqp6fZTUAlYk0s3ix6Xy', 'student', 'Nathan', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(196, 'cristina.katindig@mcc.edu.ph', '$2y$10$rsoojUmE7nK7lWsaR5c.VOEZ2giJ365NPQ.BCYf.G4qKB1Ome.iom', 'student', 'Cristina', NULL, 'Katindig', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(197, 'jorge.torres@mcc.edu.ph', '$2y$10$ANAvQm.AKIRRZX8U/8qAkePDBTaAn09SjGcTLfBYV5ouO3MCuXKuC', 'student', 'Jorge', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(198, 'leo.bautista@mcc.edu.ph', '$2y$10$3n1cxdSzFIZnTES3SFkbJOdIP6x2B0eWiD/W/PA4wz1GKde7Hlliy', 'student', 'Leo', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(199, 'stella.medina@mcc.edu.ph', '$2y$10$Bn7CpqX70W9gKzDaVl.ARe6raegJBu9MnSC4DP/HzgxccKdKm583i', 'student', 'Stella', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(200, 'jorge.ortega@mcc.edu.ph', '$2y$10$qS/.Q9UBgzwWgyUZaTC82ePg09wW/zX6gV0kKm3TdEw/dacDJ0oA.', 'student', 'Jorge', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:41', '2025-11-10 19:30:41', 0, NULL, NULL, 0, NULL),
+(201, 'cristina.tan@mcc.edu.ph', '$2y$10$hfwxrB30oCz5WZFRwx2KBO19dzH4HSZ9buG1RrPinrkzZKck.gQlG', 'student', 'Cristina', NULL, 'Tan', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(202, 'stella.rivera@mcc.edu.ph', '$2y$10$dR3iI5yfyiyXrfKYJsgQO.Dejobx5lwJqzclSP2OcBnUCpjvOzye6', 'student', 'Stella', NULL, 'Rivera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(203, 'julian.ignacio@mcc.edu.ph', '$2y$10$tEsIbgvvrSq/SAlEjs/Onutv6HwSA92GsEKgFRSp0F4AF87JXWTXy', 'student', 'Julian', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(204, 'sofia.bautista@mcc.edu.ph', '$2y$10$h4M918HFbQ5TnoeGxWkAq.37Kpw4NWKkDsi0ZOvUb9s4otxFj06MG', 'student', 'Sofia', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(205, 'nathan.mendoza@mcc.edu.ph', '$2y$10$bUQRSBVxJuJwq5rkNrZRleIjrB4UBROx7ySSzO9ST4KgnP.fMH.g2', 'student', 'Nathan', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(206, 'nathan.delos.santos@mcc.edu.ph', '$2y$10$kc/XCUJOlrHiomyHhokDBOGp/NEM4.x3R8BuWoh4Q8DHF.1AbOxAK', 'student', 'Nathan', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(207, 'jorge.tan@mcc.edu.ph', '$2y$10$CP.Te3UH3fPT5Lvnt.agfe51QU29Azq7YACLWFndPRq65pjdigC5q', 'student', 'Jorge', NULL, 'Tan', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(208, 'oscar.uy@mcc.edu.ph', '$2y$10$WuxxVDI46Fl0HV0FhZZTHOzJipN7dYUmxzJcvnPt9wCxiuIesfEwW', 'student', 'Oscar', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(209, 'cristina.lim@mcc.edu.ph', '$2y$10$8QfaQtyTDlJmgT91ANCgEOpUTmUMPR1CrDcBmskOdnIZXpkfYufX2', 'student', 'Cristina', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(210, 'gabriela.torres@mcc.edu.ph', '$2y$10$UJXily9ApB9CH0w0gVWa/ev7LQOCEkLpfMWdGjh1PVhuejWaDc7uS', 'student', 'Gabriela', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(211, 'ellie.rivera@mcc.edu.ph', '$2y$10$XSlC7QoQmsTE.dBgqrQjZ.CaS0WukkD/QQt7/YA9jI5TdrpHjh5T.', 'student', 'Ellie', NULL, 'Rivera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(212, 'dylan.bravo@mcc.edu.ph', '$2y$10$I/2UvqCqwJalfgP2rjzkkeJ7rX2RoVGl11QsnHchx5z78uGJcjRgS', 'student', 'Dylan', NULL, 'Bravo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(213, 'oscar.garcia@mcc.edu.ph', '$2y$10$S9BYkd723SuKan9oYt4p8.7NirYpV7hdBADWsl2mEblqHIBL4nW..', 'student', 'Oscar', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(214, 'nina.medina@mcc.edu.ph', '$2y$10$0Kruj1cP/doFfDkHPhMDy.2yUn536q9gkE6HIQhDfNJLI3dqdnWDe', 'student', 'Nina', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(215, 'mia.huang@mcc.edu.ph', '$2y$10$LndX0/I3IX4D/WZ58cyryepiIHTrbm3NtD1jzfCwQaJn9mhntMR7O', 'student', 'Mia', NULL, 'Huang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:42', '2025-11-10 19:30:42', 0, NULL, NULL, 0, NULL),
+(216, 'isabella.alvarez@mcc.edu.ph', '$2y$10$p2EVctSTRnd4UpYepDNgfea5MKaIW1Tp6iOV8ypkCRWoJq7pUsD0y', 'student', 'Isabella', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(217, 'mia.quinto@mcc.edu.ph', '$2y$10$6v4z2o130mC8QLi0C7v/9u5pxVj3383ArXgH16/2skmn3pfNReUwm', 'student', 'Mia', NULL, 'Quinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(218, 'andres.uy@mcc.edu.ph', '$2y$10$dkNqnWKVBiPia7BFJgTDLO6IvrwR3qneHyf8OdsPkMVoHG1d/.1eS', 'student', 'Andres', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(219, 'maria.uy@mcc.edu.ph', '$2y$10$qctTeH8Xf4PvFARehPDb4eiD//KNEnuZRhaMzk/Qjf3YJiYfVv7pu', 'student', 'Maria', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(220, 'ricardo.ramos@mcc.edu.ph', '$2y$10$LXmAppKZiv5SRosloS1lV.zJ2nFUhUXYr0iXlpklKhMwFl94/nKSS', 'student', 'Ricardo', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(221, 'emma.salazar@mcc.edu.ph', '$2y$10$VhJrZCureVjidPNNZ9IyYulORdGvhlwTip//zVPJ4WOrDOIRMii66', 'student', 'Emma', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(222, 'andres.dela.cruz@mcc.edu.ph', '$2y$10$cfX9Tt4UKWDa2WsmOOGSYu5zRp1ycQ1MHOXZx/iJAHwk4RqZWkabq', 'student', 'Andres', NULL, 'Dela Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(223, 'oscar.reyes@mcc.edu.ph', '$2y$10$JNj.p9tugyODl2DQJ602meO3XV2F5g3XFfvdeR9PiNOvz8cMOGTkm', 'student', 'Oscar', NULL, 'Reyes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(224, 'lily.perez@mcc.edu.ph', '$2y$10$d6cHK9MusOK9J2bq9EEiAOcqwMDoaHm0ay3m1fGASdm42furLC0em', 'student', 'Lily', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL);
+INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `profile_photo_path`, `profile_photo_updated_at`, `status`, `must_change_password`, `created_at`, `updated_at`, `version`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
+(225, 'isabella.lim@mcc.edu.ph', '$2y$10$Y3jf5xF6X11STfDCCY1fxOJtU20gd25z6rTRse4BHeAieudijun/K', 'student', 'Isabella', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(226, 'cristina.medina@mcc.edu.ph', '$2y$10$dKWR3XHJ1kuJ4VOz4u2tIu6jI19KjEgt1R7upnLUhb8j3cNREax2e', 'student', 'Cristina', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(227, 'ava.go@mcc.edu.ph', '$2y$10$RrhfVp7JoDCufYit4NDvT.hh3gdt6sjNSaZzMBWK9.UnZ3.QTxQ/W', 'student', 'Ava', NULL, 'Go', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(228, 'emma.pineda@mcc.edu.ph', '$2y$10$0U50dSH25gvFe9hs5sOQJOBuVHI/8rBLBWcCWlk2Qm2nWBsOV8u1y', 'student', 'Emma', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(229, 'ian.fernandez@mcc.edu.ph', '$2y$10$S3G4nIkCRgSOlofGrBfqzuv2AOzyxUK4YalMvROqrB50o0abyOVna', 'student', 'Ian', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:43', '2025-11-10 19:30:43', 0, NULL, NULL, 0, NULL),
+(230, 'ava.garcia@mcc.edu.ph', '$2y$10$5YSIjR1CKwuSDr90.2BanecyOtByXkrfRlsMrdsDJIFUiMpLUgiPu', 'student', 'Ava', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(231, 'stella.santos@mcc.edu.ph', '$2y$10$5RpO2DktXN9Y5MWPdmWPu.JXCNH8OIGpM770keOI6ftLYR2Zti.1K', 'student', 'Stella', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(232, 'camila.beltran@mcc.edu.ph', '$2y$10$RXT/7iHAy92E157yYOgV/uohko0R7BKuLTKwyJ7Vx2PzjXOxnmKhu', 'student', 'Camila', NULL, 'Beltran', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(233, 'isabella.perez@mcc.edu.ph', '$2y$10$kkF72.TOY3iW.yMiXY.bjOZGD1xDYqDcCEPs9hFG/qvvGhCWn7GfC', 'student', 'Isabella', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(234, 'emma.santos@mcc.edu.ph', '$2y$10$79ENSumESqqiwfGaMdWDTOSNURr0K5oYDYntoXvmTZ/1qNzJGGp4W', 'student', 'Emma', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(235, 'lily.sy@mcc.edu.ph', '$2y$10$4of6Af5AMvL530BOsKyBNuS.U1crd0KDJZ1ZUmLRM8pTPSbnAD5jS', 'student', 'Lily', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(236, 'zoe.lozano@mcc.edu.ph', '$2y$10$Fq7Y1Jg1jiILsKSH5fLtMuz3V345ttCeAgxV3MKgl5HjaecPohrnO', 'student', 'Zoe', NULL, 'Lozano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(237, 'isabella.delos.santos@mcc.edu.ph', '$2y$10$44fGnBH17F3XiS4Yur6v..7ygyGbT1T1qNjLQ/lXOrRMMW.yADII.', 'student', 'Isabella', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(238, 'sebastian.mendoza@mcc.edu.ph', '$2y$10$G9IuKGAAWBjUj7irGBku9e1V1nQ1q39lk7G4oKYwEUK3umgovgUjm', 'student', 'Sebastian', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(239, 'miguel.santos@mcc.edu.ph', '$2y$10$YXmxTcDT.eEii0PULE4mLO/KwWYxn9CSZih47UTfL2Seps2Bs1tQu', 'student', 'Miguel', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(240, 'chloe.villanueva@mcc.edu.ph', '$2y$10$RozhBIXn/NscEtDV3Qz38eOB78K9jJVFBDfdhX9e12kpelkgJ1e3S', 'student', 'Chloe', NULL, 'Villanueva', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(241, 'elena.manalo@mcc.edu.ph', '$2y$10$ojDM10TusYjQmQ.Z/uzNR.9.uUGh7MNwKIkCjr.TFeMeZGwi4SQXS', 'student', 'Elena', NULL, 'Manalo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(242, 'emma.bautista@mcc.edu.ph', '$2y$10$bFNQc4UtddMaNiLy06/K8./gAxHJXQPSFs9SteVEIK.KLyNTHZ0g.', 'student', 'Emma', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(243, 'ian.villanueva@mcc.edu.ph', '$2y$10$8VaaE4jX9FOcYs/iXhqSVOaInWWe7WEmNFxGErm8yywPt6FmbWpya', 'student', 'Ian', NULL, 'Villanueva', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(244, 'oscar.mendoza@mcc.edu.ph', '$2y$10$7IU65frn8ZeTNX7n7.rH6ekwrJ4aX8/SDZy1u39c0or3t5HNm48lm', 'student', 'Oscar', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:44', '2025-11-10 19:30:44', 0, NULL, NULL, 0, NULL),
+(245, 'sophia.lim@mcc.edu.ph', '$2y$10$Ap1Ba61K2lIzHctXAoFO2.EdhjjM6D5N9RrKQKL2ol2bFQOc0n6pO', 'student', 'Sophia', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(246, 'andres.salazar@mcc.edu.ph', '$2y$10$fB9.NUTS0sd4b/B2bvwWeey7MT2WeqWjsynygDnuB6eO1hC0lBR2G', 'student', 'Andres', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(247, 'nathan.aquino@mcc.edu.ph', '$2y$10$ZGaPAePTHKDeiBceXvNbrORzFSpueUTthr/SBAcC2rfCEVR0IDQp.', 'student', 'Nathan', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(248, 'brian.bravo@mcc.edu.ph', '$2y$10$vOlyrZjQsQlhuRuZsQCaAeycSNZiuVdYdPD9tL4mcF7xt0LuM77z2', 'student', 'Brian', NULL, 'Bravo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(249, 'lucia.cruz@mcc.edu.ph', '$2y$10$4/wT3mKiJVMdvfCwcqSDOOG5XSRVYxs0V9T8RqSiWqwv28QNOFIB6', 'student', 'Lucia', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(250, 'victor.go@mcc.edu.ph', '$2y$10$PeHt64OQHl/wLIJSeSmulOSbU9tAr5oLOGRf8eGqYx.nF.ARlRDO.', 'student', 'Victor', NULL, 'Go', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(251, 'sebastian.fernandez@mcc.edu.ph', '$2y$10$on4rnAfl0hVutARz3fdno.IjtL/pbf5sbxCVB3qxG6I97hsApMViO', 'student', 'Sebastian', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(252, 'ian.ignacio@mcc.edu.ph', '$2y$10$qUvAi/i6FZ0PnzMczeO0Z.xzfQ79LIzMIOxpX19bL8uw5ro9WxhF6', 'student', 'Ian', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(253, 'diego.bautista@mcc.edu.ph', '$2y$10$RWWg5f5xFgTcsboF3ZoamOPw5c4GRsV6gbQye6.IN4vLgvcN6iHB2', 'student', 'Diego', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(254, 'jorge.sy@mcc.edu.ph', '$2y$10$cNdCP5v3enSpe38.NRvYru46URbP/91pAxe8J9WbGGkj2wlz5O6BO', 'student', 'Jorge', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(255, 'sophia.quinto@mcc.edu.ph', '$2y$10$E4/3YOK6sA18uJHnGM/yz.8gTqOmptkJLOohdsCFkMcbVDDJ25iZC', 'student', 'Sophia', NULL, 'Quinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(256, 'emma.medina@mcc.edu.ph', '$2y$10$sGYSOYkRmS8B3H9bq6dseOYV9K8wNWTeSJUnNoIPi5vcet3s0BVSG', 'student', 'Emma', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(257, 'ricardo.ocampo@mcc.edu.ph', '$2y$10$SRJRYtYCsVTBtPZJASsJGOBlue7NRsZpKFO/y.DRVTLN1TUQcqcqu', 'student', 'Ricardo', NULL, 'Ocampo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(258, 'julian.ortega@mcc.edu.ph', '$2y$10$wb0gEVZFObyD8kJFqUlJUeTB.ya9pcYz2EVhBAwf0BEDP311G8Uii', 'student', 'Julian', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(259, 'andres.cruz@mcc.edu.ph', '$2y$10$aKCRjeNFvoCEjiNwRPms9.FJWSKK.QS4QdgiPQV3DLlKglCAdiYOO', 'student', 'Andres', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(260, 'cristina.fernandez@mcc.edu.ph', '$2y$10$amUk9buUSoczA7xDbok.d.h0Spfz76nNCejy46u373DiFxn/ZpRlS', 'student', 'Cristina', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(261, 'marcus.medina@mcc.edu.ph', '$2y$10$UMw9BWGs1phQ.cEUGYfOUeIvvTYzuV/tTP1q/T9QkjeMKEoC0G4ra', 'student', 'Marcus', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(262, 'elena.sy@mcc.edu.ph', '$2y$10$OZ8XRgrDChQtK.ZlUsEZ2eDRmn/tkOizgPm9Ndn9f7is0enwicuIe', 'student', 'Elena', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(263, 'ian.beltran@mcc.edu.ph', '$2y$10$nGvq6ShY80NZMFJWdSkzQuaXFZEY8gDdvjnBQT.5EZk8Kq0Gl6rRa', 'student', 'Ian', NULL, 'Beltran', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(264, 'chloe.salazar@mcc.edu.ph', '$2y$10$WVTAp2apHvfucSlHaaueIegMxa47qL5NjugvH/NSQBQMNwajwR4K.', 'student', 'Chloe', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(265, 'sofia.santiago@mcc.edu.ph', '$2y$10$5oDw/iSze/FjjE/tsJnMMOiKgzj1SCjsx8sPutbmI39MKwDWs4RcS', 'student', 'Sofia', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(266, 'chloe.navarro@mcc.edu.ph', '$2y$10$IH.8yCwsji1kX5id8ZTsbeGrJoXgGnAu6FX3WQHAqaFPDvbk0FIAe', 'student', 'Chloe', NULL, 'Navarro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(267, 'lucia.santos@mcc.edu.ph', '$2y$10$VUskD3FBIgQDxGbrzNfBbODuaKnX51ePR5IoBWTfXWFGh1nGzm8ru', 'student', 'Lucia', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(268, 'luis.ignacio@mcc.edu.ph', '$2y$10$QnZyNQ9JbDVU5eN5GwBo6.ah2ihms8g86qf0UbyvC0dQl90U8V6Ny', 'student', 'Luis', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(269, 'luis.uy@mcc.edu.ph', '$2y$10$P.NrWf8IzHwrVU2hpR/DYOBhTa7p2P2DqMkhDG6Yz4kgJtvUEl5M2', 'student', 'Luis', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(270, 'chloe.manalo@mcc.edu.ph', '$2y$10$vyiJnouwsLmew9q4mCRBZesW5NLgpNaDgHKjCNSIiB/8v6v8231Pm', 'student', 'Chloe', NULL, 'Manalo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(271, 'brian.gomez@mcc.edu.ph', '$2y$10$KXHSjfyyYu/J1h58aF1SkOfWNo.zt1uv2XOv5oToUrJRq/2RAzUp6', 'student', 'Brian', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(272, 'luis.huang@mcc.edu.ph', '$2y$10$gHIMqFzn1m2unptNOXX1/./.MI.2eOUGE6kxa0MyKcE4FqrVfehWe', 'student', 'Luis', NULL, 'Huang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(273, 'nathan.alvarez@mcc.edu.ph', '$2y$10$djGGyZxyBcmj8xGDhzKUfO1bFfdtQacYJeNaIJefk2Hy1kz7WGRvK', 'student', 'Nathan', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:46', '2025-11-10 19:30:46', 0, NULL, NULL, 0, NULL),
+(274, 'chloe.reyes@mcc.edu.ph', '$2y$10$BLPMq.K7k.XQxr/FmDrVbOFmOl0O8XzkMkCbzlxL6aYVCKDfJ5RU2', 'student', 'Chloe', NULL, 'Reyes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(275, 'jorge.uy@mcc.edu.ph', '$2y$10$xSP.qL6yg6zzLKFXFZy6QOpaTEdI27ZGtVdZHSPSOX.Cf/80ay0HK', 'student', 'Jorge', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(276, 'ian.manalo@mcc.edu.ph', '$2y$10$GyRg7.kDe0zbEmWB6PmWbujXYfXMIKyxMmwwbEWZ5aoy0INciAUAy', 'student', 'Ian', NULL, 'Manalo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(277, 'axel.pineda@mcc.edu.ph', '$2y$10$TkgxoebMjTAKNLNt4NcC8Oqe2yBUf1v/JCWcYzNsFjmhERs/gC4bC', 'student', 'Axel', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(278, 'chloe.mendoza@mcc.edu.ph', '$2y$10$2lqR427Oh/PEJpxHOAlCkeFWc9tDQ/BsVSl.XQT8uhp.wkwxfJ5Mu', 'student', 'Chloe', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(279, 'isabella.ramos@mcc.edu.ph', '$2y$10$Ex6LlVfDA5C8ztGA/VeGqOafvHlUXmV1Q4JPK43a5EyC95LUl07la', 'student', 'Isabella', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(280, 'maria.delos.santos@mcc.edu.ph', '$2y$10$w7YVsGlzzwN6qqewh./MKu795ABD1DM/kphxViLXWpeofOALxj3Cu', 'student', 'Maria', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(281, 'felipe.fernandez@mcc.edu.ph', '$2y$10$rMwr8ItwaK1X04muL190U.oY6e5YicxpM4RW98q6ktEiGUnqjVMVq', 'student', 'Felipe', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(282, 'elena.aquino@mcc.edu.ph', '$2y$10$6p/dn2X0Mrs27HdQmpEZ7.6eFBriSR.5nJLonW.dkiqRrxLburmHe', 'student', 'Elena', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(283, 'maria.bravo@mcc.edu.ph', '$2y$10$8MgjrftnnszBDgLfl9AeFeIXdVifAjbmOQ0m.OQQy6AUpxyS053oq', 'student', 'Maria', NULL, 'Bravo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(284, 'victor.alvarez@mcc.edu.ph', '$2y$10$5b2sMFpAc/5BuDTjQARupuGBEtqTX6A3NXd5BXN0fo8VSn2xs8FpG', 'student', 'Victor', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(285, 'luis.lim@mcc.edu.ph', '$2y$10$OSUl40mJM5DB5UtakEkeIuTFPb2FilnJYAdivYwRloJPqJr2G9JcW', 'student', 'Luis', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(286, 'valentina.cruz@mcc.edu.ph', '$2y$10$m8U2U9bOzTtZbxKgI9AFa.ee8PO.PIOT4DjbLtUKv/8XxKHicnLlO', 'student', 'Valentina', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2026-03-04 13:53:00', 0, '$2y$10$2fuDWX/lfVGI1sw43PtG8O2oNNCHU38c.IsjTaBQtiC8d7/8ZSh16', '2026-03-04 13:26:27', 0, NULL),
+(287, 'nathan.beltran@mcc.edu.ph', '$2y$10$KWTkyoixrEhQ2Evs/B/DgOfYC01MGcjNi6uVdCpevRrzXkfjgKRJm', 'student', 'Nathan', NULL, 'Beltran', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(288, 'nina.fernandez@mcc.edu.ph', '$2y$10$.uC6OipkkMkMBk2/4WT.jOaWt3xV0mru3g3/kvWk97H0ODbkFGb1m', 'student', 'Nina', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(289, 'ian.salazar@mcc.edu.ph', '$2y$10$z0gtaLcG2/cp7/K0Sv3sM.iDdLbxvJvYDRfDsGlGRG06HH239Qju6', 'student', 'Ian', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(290, 'gabriela.delos.santos@mcc.edu.ph', '$2y$10$TwXGJhupvxyNnwsNZiY84uXpU3kcLWB99IoaFCt/u9qrKO/DbzbQW', 'student', 'Gabriela', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(291, 'camila.mendoza@mcc.edu.ph', '$2y$10$JG9ebse8qzAz8E58GRvnTukoXyuJTCRaPmTysFU8Z69WbSG8LzMC2', 'student', 'Camila', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(292, 'marcus.santos@mcc.edu.ph', '$2y$10$NJ5.pcYoSnWamTfRIMqVDORKgmUg6i7hA5rCCXrh6/px5Q1QakJTG', 'student', 'Marcus', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(293, 'juan.castro@mcc.edu.ph', '$2y$10$j5uuZ8INhECFQC/RFx7eTOOYO2gT.xs6cMi66tuSrkwIk/lG8Ofge', 'student', 'Juan', NULL, 'Castro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(294, 'emma.fernandez@mcc.edu.ph', '$2y$10$3E2tFjuNKhpjWh5q25FzJuJod2/MKzu4dWDtVOUI3IhJMCaR0asJu', 'student', 'Emma', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(295, 'andres.manalo@mcc.edu.ph', '$2y$10$oXa5LmkFncALXarzwsb1SezP4JscuDXL/c4MXJRr46CBG9FLEadHC', 'student', 'Andres', NULL, 'Manalo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(296, 'mia.aquino@mcc.edu.ph', '$2y$10$gM9dWBXSV0lWoKJN7GL4CeRbhotsG/cS9LMmjiTLKPR3ItqA5dnba', 'student', 'Mia', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(297, 'marcus.gomez@mcc.edu.ph', '$2y$10$4eWjl3RNGbojtKSmpyaBke9j0SkdsobXWvOw.AmCys9CgYa.MVME2', 'student', 'Marcus', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(298, 'andres.diaz@mcc.edu.ph', '$2y$10$veiNWID2DjAfy6K5uexeHucRUdYYVbGh9c5BroxzEg7LA1rYivkJu', 'student', 'Andres', NULL, 'Diaz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(299, 'ellie.alvarez@mcc.edu.ph', '$2y$10$PqvmuT0zBLAAxOA8p7SxTumnHu9WiVx2O1xz0cVe0.WLvgt9pNAkW', 'student', 'Ellie', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2026-03-05 17:23:19', 0, '$2y$10$ZxmO7FgxabKfx5.vGQvchu.Iz8duF6D.JEBk9lZJCeuv48cRsPuFi', '2026-03-05 17:23:19', 0, NULL),
+(300, 'isabella.ignacio@mcc.edu.ph', '$2y$10$zganDea5m0YCpYRAvoTDm.GT2TNpi.E7zXWo8kxFxDe34CUjKDe.2', 'student', 'Isabella', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(301, 'lily.huang@mcc.edu.ph', '$2y$10$JO.acPWALoINfn5g44Z51.cpgHTyYTJMIO9W0.XuFiqwZ4p8DZg1C', 'student', 'Lily', NULL, 'Huang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(302, 'leo.salazar@mcc.edu.ph', '$2y$10$6NeCkVp2PM6rIp1cgkr6Cux8PG9kCjGor5T/ZlO/0yKBqxJ/rIWsy', 'student', 'Leo', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(303, 'camila.santos@mcc.edu.ph', '$2y$10$n/zm9GOJAfvDTZs5NIZX8ezU/1V5e.lcqcUOPoofDLBqyVuWOG3Yi', 'student', 'Camila', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(304, 'isabella.cruz@mcc.edu.ph', '$2y$10$VKn7fG/7xmSayDkRC63vYuoZFXNX47D3YNxK4V9WH8k93M2aIY0Qe', 'student', 'Isabella', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(305, 'nina.beltran@mcc.edu.ph', '$2y$10$ALhxBKcV72/Q3uqOnv.jB.0iwtTf9WiCs9AvcNMwSS7Frb5w.T9Pi', 'student', 'Nina', NULL, 'Beltran', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:42:26', 0, NULL, NULL, 0, NULL),
+(306, 'sebastian.reyes@mcc.edu.ph', '$2y$10$f7ap3Ldh/0UOTdkM89EkRucNRjVYZ8pUML0xTemwQF41BH/.T82Em', 'student', 'Sebastian', NULL, 'Reyes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(307, 'ana.santos@mcc.edu.ph', '$2y$10$SpapZhthzPExKx9.X91pUO.iz0FYW3FSw6PzKj3sV6T4FEYM9Z8/a', 'student', 'Ana', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(308, 'lucia.garcia@mcc.edu.ph', '$2y$10$XWFoWZ3CYMEhnx89XqgGMuW5f9gMTjwYULcr2Bl.M5UG9Sdo1Tl/O', 'student', 'Lucia', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(309, 'camila.santiago@mcc.edu.ph', '$2y$10$PmwuPkJcuOOF2TUs6MUjo.HqCnS/6jB5hMeoB/tju.C5rp9XRWJIG', 'student', 'Camila', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(310, 'camila.villanueva@mcc.edu.ph', '$2y$10$KbRAMosF8IBQC4OpSo.PUeAt2BqADKUYiaQ7AKLeI8XyYtlWyakHi', 'student', 'Camila', NULL, 'Villanueva', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(311, 'ricardo.santiago@mcc.edu.ph', '$2y$10$ZmL/q0HOgcwuh0ESQcOzj.zwBskIMH4dkO6MiFH0D9Z2GNeQvddYq', 'student', 'Ricardo', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(312, 'elena.santos@mcc.edu.ph', '$2y$10$o8b371BaNTBthCZta7MsWeEVzeupUIFNHZebqF4LeC6vXsbkR9QJe', 'student', 'Elena', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', NULL, 'Bravo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:32:45', 0, '$2y$10$uhF.rDj9uHQiTcXpQ5s6C.y5.7qbJf5PSPByONBTWdlMORrpscHhW', '2026-02-25 11:36:12', 0, NULL),
+(314, 'brian.santiago@mcc.edu.ph', '$2y$10$/Pi/2lxuuKqBtaOcED5Xn.9c6HpUd7Mr7g6egOY0ePPm8f6M5Eo62', 'student', 'Brian', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(315, 'emma.torres@mcc.edu.ph', '$2y$10$zAFGHsDPmVjfNKIlNVfU5eC7LBrJB1gGjPeP8IKhld30jsjaLbMEm', 'student', 'Emma', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(316, 'chloe.santos@mcc.edu.ph', '$2y$10$7B6iFc11eiMqGrsZH1veiOYk0AV.EfIY9C9zkaG6ElhHR8/k1DEbi', 'student', 'Chloe', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(317, 'carlos.delgado@mcc.edu.ph', '$2y$10$NjwvPjwS14g9Xz.1BgbTyOmA0PaS3rXWImW80mlHDDomRZc.scQnG', 'student', 'Carlos', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
+(318, 'carlos.aquino@mcc.edu.ph', '$2y$10$bzrNH1TdrgHZ69.5tRUepuwObZxubQlI/bF3NOOhc1BNXEn4EAl2W', 'student', 'Carlos', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(319, 'lucia.castro@mcc.edu.ph', '$2y$10$jSnoJv/vD6DkqHm8HhScBOzMMVgrUbUpvQ9NxxyAyPbTW3sF/ys/O', 'student', 'Lucia', NULL, 'Castro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(320, 'sofia.ignacio@mcc.edu.ph', '$2y$10$T61hx8/lwIsx2mmPmzthr.W9HzWDMqNSXITc9WGSiQZt3N2hBkQ3i', 'student', 'Sofia', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(321, 'brian.delgado@mcc.edu.ph', '$2y$10$3IWAvK/1OCHyQsnYKmcmueL8N0Re0kBvW5RRhR59g3cM7jvfRsDjG', 'student', 'Brian', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(322, 'maria.huang@mcc.edu.ph', '$2y$10$iw1sXN99T4ujWQVMZYIcpeK/2VpunqtzPtu1VeHKXGKoJv44IsNx6', 'student', 'Maria', NULL, 'Huang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(323, 'axel.garcia@mcc.edu.ph', '$2y$10$Z7eSCP9bBohFT3cN9Yr4/eaIJmp4uujoj7sA7yS12rv6fhqp.onk.', 'student', 'Axel', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(324, 'felipe.rivera@mcc.edu.ph', '$2y$10$S7p60NoGtS5vMowgmWbMB.9jpaQDHdtfmt3sT2OLHQFuDOo0gVCK6', 'student', 'Felipe', NULL, 'Rivera', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(325, 'oscar.santos@mcc.edu.ph', '$2y$10$7hRqJBobkwdqoXbDAkclYuCmsuFpCxmbBV1pXOLxE0mHqLacwgcQO', 'student', 'Oscar', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(326, 'maria.reyes@mcc.edu.ph', '$2y$10$ffrnGXUQ0c36gPmnk5lAGOgdL/ibo1i6eIeEXlVTXxlls80F/c45S', 'student', 'Maria', NULL, 'Reyes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(327, 'valentina.sy@mcc.edu.ph', '$2y$10$UAPLG5vXyr3Edath/MwvuO25KaBqbYzJ.zmGoR/SQ1MUVU9uVNb6W', 'student', 'Valentina', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(328, 'ana.delos.santos@mcc.edu.ph', '$2y$10$ybZHvFtsWcc3pR3gQmO5YeOJp96F5KYd9Dwp5IbZ1WAk0pOUlRY2y', 'student', 'Ana', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(329, 'carlos.ortega@mcc.edu.ph', '$2y$10$B1B8HuDZGI51B6nujv.gtuWqHy9S5QaD.fAndYxUXrZv3LjgHwdwm', 'student', 'Carlos', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(330, 'stella.salazar@mcc.edu.ph', '$2y$10$NRbbi1.6BUX7CRn5H/RsDOBmmvbW0KinsYVqJywBXht8d36Wh8Lqm', 'student', 'Stella', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(331, 'leo.fernandez@mcc.edu.ph', '$2y$10$u4E3VJ7oukHTHUqgubXr5.ms4FhEBo6uK2ai5hajp9ofQXnSeijkm', 'student', 'Leo', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:50', '2025-11-10 19:30:50', 0, NULL, NULL, 0, NULL),
+(332, 'dylan.ocampo@mcc.edu.ph', '$2y$10$K.NlluOV0rilBwOICpB9EufumJ6Sjrn94Ummo//WjV8aCy1.o.Miu', 'student', 'Dylan', NULL, 'Ocampo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(333, 'lucia.huang@mcc.edu.ph', '$2y$10$NGiFTZxweQPBAAReV2nopuqFq5p3FMVwOQiy8RmtQvqxCvKV4Jf2a', 'student', 'Lucia', NULL, 'Huang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(334, 'cristina.dela.cruz@mcc.edu.ph', '$2y$10$FaBXs9CX7WNyxGq27Ts9OOzrym6DBl473/pVzGcWmznxDZ0EaLCj.', 'student', 'Cristina', NULL, 'Dela Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(335, 'sofia.fernandez@mcc.edu.ph', '$2y$10$0TmGFdkAG.OloMw9gQMRtOLYL9JcfvtGpWYfQPNmJ0L3.Ngs5wx.u', 'student', 'Sofia', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(336, 'juan.perez@mcc.edu.ph', '$2y$10$odoAHlrVXnUXwSb1vGLzeumw5V9iE9t237CZQUVGx02Vo//RY7epu', 'student', 'Juan', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(337, 'zoe.go@mcc.edu.ph', '$2y$10$i450k4actsLIJNSZr.mAxO0tsgQk7o5sQat/qLpxCMcnkfyif8p6C', 'student', 'Zoe', NULL, 'Go', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(338, 'juan.villanueva@mcc.edu.ph', '$2y$10$gyo1xtanTH30ETWJKYGm3epzI2H9ERARxb7FE3HcX9lEj9VqryTNS', 'student', 'Juan', NULL, 'Villanueva', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(339, 'chloe.tan@mcc.edu.ph', '$2y$10$igsjHcYNvLXkrGtX20Yi3eX1jfmvxx51ws3cpNaoJT5PgiWXcQ29a', 'student', 'Chloe', NULL, 'Tan', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(340, 'juan.lim@mcc.edu.ph', '$2y$10$wXRMuK9g0yBPdWWOGn66JOi0rALIProdHAjn.6Rl3p0mAm1eC38Ja', 'student', 'Juan', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2026-03-05 20:22:16', 0, '$2y$10$bm5uozh1rjzsE1VdtpuFvufOL4kH5tJT4RzXqCgxI.wEJbujTXmuK', '2026-03-05 20:21:36', 0, NULL),
+(341, 'axel.santos@mcc.edu.ph', '$2y$10$EKGOGgRlSyhktpqZRZKpf.xhXgLuxGyyM.ghd6/vTyPNIOSs11Jb6', 'student', 'Axel', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(342, 'marcus.manalo@mcc.edu.ph', '$2y$10$NCp5m1f1DmSO/YxYhmTLMumlLyVlrZdA9ZkU2I3WM44e3nmlrrrpe', 'student', 'Marcus', NULL, 'Manalo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(343, 'chloe.katindig@mcc.edu.ph', '$2y$10$rnjcAfL0hW0UrcllcHfgAOfZuvSjk5N53Ub.FtuwJu8H8dDxMw2cW', 'student', 'Chloe', NULL, 'Katindig', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2026-03-05 20:22:57', 0, '$2y$10$tBASby7t.TrlrjxJcPK3Sujmn4q0f5LAzZUpEOJQPRRHc4bt3VcwS', '2026-03-05 20:22:57', 0, NULL),
+(344, 'andres.sy@mcc.edu.ph', '$2y$10$2boIjtq01mRR8fbei/LA2OnYUgaO8cLOqTnDVCWBLkCHmM8jMqob6', 'student', 'Andres', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(345, 'felipe.bautista@mcc.edu.ph', '$2y$10$AHHogIQaPC6rnr.WDt55Ku2pf41/CCsWMeKyYZFnhhhtJeHXIUd4K', 'student', 'Felipe', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(346, 'sofia.quinto@mcc.edu.ph', '$2y$10$szUmSYbDuxX0G2hrKTpzLOSJK/kpetuXRm11H50.1ywYZA0uGAwmW', 'student', 'Sofia', NULL, 'Quinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:51', '2025-11-10 19:30:51', 0, NULL, NULL, 0, NULL),
+(347, 'valentina.perez@mcc.edu.ph', '$2y$10$s9N0XALAVZiqzR/Cee/MF.80VpPmt7UvbsZzjQR9gBrMQ64La/DK2', 'student', 'Valentina', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(348, 'diego.pineda@mcc.edu.ph', '$2y$10$mamLt6zYv8NU27VHQ4UOrOZ1yOASRauy/cfBZy3FUgnQfoDcyt01S', 'student', 'Diego', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(349, 'sophia.bautista@mcc.edu.ph', '$2y$10$iERmmwAsIGToc/r05.4LSe3SNnlG2iV8yo4mKd.2mNS20dWuBl.M6', 'student', 'Sophia', NULL, 'Bautista', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(350, 'nathan.medina@mcc.edu.ph', '$2y$10$gde2kaFjmGTpeNFkuGsebuOqEIZqB20TLuTtoVF7m9G8/hEVcxMPq', 'student', 'Nathan', NULL, 'Medina', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(351, 'marcus.pineda@mcc.edu.ph', '$2y$10$YwlfvAEHTzUWUvvdF4cDOuzlAcs0FzT8Fz3x0RNhB6YM8arz.j7/S', 'student', 'Marcus', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(352, 'sebastian.salazar@mcc.edu.ph', '$2y$10$.9I6yljFFJhxD4zNHkispecaQovghSHVrc..ypIbWvVBkdHvKudJ.', 'student', 'Sebastian', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(353, 'carlos.garcia@mcc.edu.ph', '$2y$10$L7t79Sn3Md4BejridKvu6.o5k.I.DE5HXABQTaRfd0PvnyXNY0bFC', 'student', 'Carlos', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(354, 'sophia.perez@mcc.edu.ph', '$2y$10$OcM21k0QeXOVo4C69WW.NemXfWDd7u7k2UWr3DxZ9GP9L5ggZ3S2O', 'student', 'Sophia', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(355, 'victor.ocampo@mcc.edu.ph', '$2y$10$NqoABUvQE5fT1OpYgacENeJdIwhOxTwSB.fWdMQTGS0jFqAVbT.pm', 'student', 'Victor', NULL, 'Ocampo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(356, 'camila.fernandez@mcc.edu.ph', '$2y$10$T5KdbZgkFGuTVxmPmK1ylunrbikYisYPZqGAuVFjTamoKv.DVACIS', 'student', 'Camila', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(357, 'carlos.lozano@mcc.edu.ph', '$2y$10$MmFk6bLJUuc5JhUl9YSOa.Z36gGW7JC238gWC/mOWIVgADmQgSMIW', 'student', 'Carlos', NULL, 'Lozano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(358, 'victor.sy@mcc.edu.ph', '$2y$10$2qvNqenCkW4yJb.xExld8uiX70YI.Muj2tJk.rI54qId2Er4XiCHe', 'student', 'Victor', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(359, 'dylan.ramos@mcc.edu.ph', '$2y$10$jyTFKV20iL6k2TcETH4I3uf5h6XHTeRdLOkTpzlGSpwTBTeRd2zEC', 'student', 'Dylan', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(360, 'ava.katindig@mcc.edu.ph', '$2y$10$SfrlkkHAod41FjcX9cpzsemhxaOaWPp81wQZbWWXT1iI.S9CLlN7u', 'student', 'Ava', NULL, 'Katindig', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(361, 'isabella.quinto@mcc.edu.ph', '$2y$10$DiP9PerWajlEiBhoFe1cP.Kg1MZ1OkiT97/wNzi5FQ8wsv.S7q006', 'student', 'Isabella', NULL, 'Quinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(362, 'sofia.torres@mcc.edu.ph', '$2y$10$WELsZZ76m2uyGGtYw8w81OBSfEl9bHV8MLBYO31y5zybO1ywODzwq', 'student', 'Sofia', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(363, 'luis.sy@mcc.edu.ph', '$2y$10$pEhy3JhC2tQ7Raa2Y0786eKnhjTRuvZSXdojTcVNleWoQLFaITC5q', 'student', 'Luis', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(364, 'axel.tan@mcc.edu.ph', '$2y$10$VRQTBmgOwmWtNBMDBm0d2.hZqRm.WLSBQfkLCxEtxDuuSojdIUi.S', 'student', 'Axel', NULL, 'Tan', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-18 05:04:50', 0, NULL, NULL, 0, NULL),
+(365, 'ian.lim@mcc.edu.ph', '$2y$10$cjqg03G82xLDw.57K9dhPuTvIes9Lp/0quNAKfmohjJIqe5w82Nn2', 'student', 'Ian', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(366, 'valentina.delgado@mcc.edu.ph', '$2y$10$xlXyQ1QjpiCbsdJx5c.aHefji7DflyaGNV3oPa3101RauNBxaRsB.', 'student', 'Valentina', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(367, 'leo.torres@mcc.edu.ph', '$2y$10$rrn0hVO8iP.fpGidRQ8z7uzfp2SyPtfnvOFOZ7uqbSxFzPh2Vfgv6', 'student', 'Leo', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(368, 'dylan.castro@mcc.edu.ph', '$2y$10$a0I18g7zS6IZeknALrqBtOfzoLERwoV31QGe./9qo1k8BlRCYtGUO', 'student', 'Dylan', NULL, 'Castro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(369, 'zoe.navarro@mcc.edu.ph', '$2y$10$flFVWge79.wrX72ya9PBO.Tud934xoh3SKwwU7YpjMkFKvdj0kXDq', 'student', 'Zoe', NULL, 'Navarro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(370, 'victor.garcia@mcc.edu.ph', '$2y$10$8EK7EKPOe8ZmL5smL50fEOBls6G4cYN6iBFrWWvM7UcdOF5K.scFe', 'student', 'Victor', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(371, 'ellie.lim@mcc.edu.ph', '$2y$10$VhncG1eTw//O9ahGO7/D1uo5/K.LiyGFFLCOnaLkOMbYaNpqzRjFy', 'student', 'Ellie', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(372, 'diego.go@mcc.edu.ph', '$2y$10$w0abp2JbiKqJtVu6Il636Ojnxbc1AXpuaWBPp2DHzYePkQGj8eJIK', 'student', 'Diego', NULL, 'Go', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(373, 'cristina.sy@mcc.edu.ph', '$2y$10$rp2mQRkNtPM15Eta9u0OOeDg5scJnMZBb//JHKzC4M9GN1Mf3O/VO', 'student', 'Cristina', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(374, 'jorge.ramos@mcc.edu.ph', '$2y$10$1oxewx8Y1G4XhIsRareG9uAl3e1dvsChTOqxs/qJLO/3HYoySsRU6', 'student', 'Jorge', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(375, 'elena.cruz@mcc.edu.ph', '$2y$10$kwYleD6xg0Zm6IDQvbN2ROMcA20svoFeMX/EeaXsUYgMNoq1k19Oe', 'student', 'Elena', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
+(376, 'ana.mendoza@mcc.edu.ph', '$2y$10$/FbqAPtx3ZpQ/oTxOBVbX.QtIYQMXQfRpZ5bWES9wBXjrGGvpJpXm', 'student', 'Ana', NULL, 'Mendoza', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-26 02:44:59', 0, NULL, NULL, 0, NULL),
+(377, 'gabriela.gomez@mcc.edu.ph', '$2y$10$k7kWw2uZUHk5igYN.PkDKOlnqLikp2VYmFAFj/516kIksaMgwumBy', 'student', 'Gabriela', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:54', '2026-02-22 13:26:25', 0, '$2y$10$3mp8wM99n49RvuQpv54qNuzYYrcd2O8VaO/I10GpSnUrl0vc.gYCa', '2026-02-22 06:26:25', 0, NULL),
+(378, 'victor.cruz@mcc.edu.ph', '$2y$10$b77SW.YmHCfAlV0VaPDLluH69g3tFgEcNwsczKKvDjKt8Q8QlMi2O', 'student', 'Victor', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-10 19:30:54', 0, NULL, NULL, 0, NULL),
+(379, 'nina.tan@mcc.edu.ph', '$2y$10$PF7SvRWH5j0POPZ0a5U.5OZhNJtKJR2QfrQKCUgn9dBHN9t37aaRu', 'student', 'Nina', NULL, 'Tan', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-10 19:30:54', 0, NULL, NULL, 0, NULL),
+(380, 'lily.quinto@mcc.edu.ph', '$2y$10$A3YCPmKUEkKwcoKrMLXj/u2Ne7VWte/IF4MIKUlhfFK3oX8FsDkA6', 'student', 'Lily', NULL, 'Quinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:54', '2026-02-14 08:30:57', 0, '$2y$10$.K2i3l1vqQnzJb9CyBJDN.n6BAxXgl0SOkFytsJ4FE46O2qJAX7uC', '2026-02-14 01:30:57', 0, NULL),
+(381, 'sofia.garcia@mcc.edu.ph', '$2y$10$qUlzEY5fNgrOI616zmet0OnRnKJjb3NFjQuGfBnVby.jtOPwLTipG', 'student', 'Sofia', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:54', '2025-11-10 19:30:54', 0, NULL, NULL, 0, NULL),
+(382, 'quinn.garcia@mcc.edu.ph', '$2y$10$.enIC7rOQI7guq8c1o2br.hB9QpuKFylpDvpQF1eNvOzgQ9RknVJC', 'teacher', 'Garcia', NULL, 'Quinn', '', NULL, NULL, 'active', 0, '2025-11-11 05:42:14', '2025-11-17 23:55:14', 0, NULL, NULL, 0, NULL),
+(398, 'jeizi.zamora@gmail.com', '$2y$10$HFVy9f7i7ar5qM.VNvNgSOxYEST5JzbOJ6wdTW9nnIHpX1SACAB0q', 'student', 'JOHN', NULL, 'ZAMORA', '', NULL, NULL, 'active', 0, '2025-11-13 17:28:17', '2026-02-22 10:00:35', 0, '$2y$10$OyIBhCuKfTnU0urZ0Qsg0Ogr5hgkQuyWFLdxTJ7N91hUfore4KKoa', '2026-02-14 04:50:46', 0, NULL),
+(405, 'iamchris.japan@gmail.com', '$2y$10$rVAv6OZyR5rs2wofK..GXOudFji4TpDuQ0ZoCjjWsvq89OVm3MaGm', 'student', 'JC', NULL, 'Zamora', '', NULL, NULL, 'active', 0, '2025-11-13 19:16:01', '2025-11-13 19:16:01', 0, NULL, NULL, 0, NULL),
+(406, 'adelina.santos@mcc.edu.ph', '$2y$10$dqseGdJNJLMcEJX5GGooMO2tx0bRXQF6J1JW/JLF0/QCZZkamt12W', 'teacher', 'Adelina', NULL, 'Santos', '', '/uploads/profile-photos/test5_20260308025332_69ac742c7030a.png', NULL, 'active', 0, '2025-11-18 14:58:37', '2026-03-07 18:53:37', 0, NULL, NULL, 0, NULL),
+(407, 'ramon.magsaysay@mcc.edu.ph', '$2y$10$sw9/W5brfU4mTM1zhTQa4O/k2abixtgMxYbHIFwklvcVVZ7RSyrC.', 'teacher', 'Ramon', NULL, 'Magsaysay', '', NULL, NULL, 'active', 0, '2025-11-18 15:15:48', '2025-11-18 15:15:48', 0, NULL, NULL, 0, NULL),
+(408, 'lourdes.cruz@mcc.edu.ph', '$2y$10$3StPBBTRzzx12rNvAM.oIO7COWJ8IQ.a69ImJf4RibS8amFD22yoC', 'teacher', 'Lourdes', NULL, 'Cruz', '', NULL, NULL, 'active', 0, '2025-11-18 15:16:06', '2025-11-18 15:16:06', 0, NULL, NULL, 0, NULL),
+(409, 'benito.delrosario@mcc.edu.ph', '$2y$10$NMJFBlpTArzOx1zhkXeacO2gT4QxT8E1LZWhDw4naH8/DZECCttZW', 'teacher', 'Benito', NULL, 'Del Rosario', '', NULL, NULL, 'active', 0, '2025-11-18 15:17:15', '2025-11-24 01:31:44', 0, NULL, NULL, 0, NULL),
+(410, 'felicidad.reyes@mcc.edu.ph', '$2y$10$w7vSFXrHBVVs.1Ofy3l0BOJoNq7Gf1U3k14JJp/WkPAcQ2IjcOdDe', 'teacher', 'Felicidad', NULL, 'Reyes', '', NULL, NULL, 'active', 0, '2025-11-18 15:17:29', '2025-11-24 01:31:25', 0, NULL, NULL, 0, NULL),
+(411, 'armando.tan@mcc.edu.ph', '$2y$10$U/vuD1FpTKjNakklMt.i0e/GFtcg1S0R1KgHvrJVPP52XknOYWa0i', 'teacher', 'Armando', NULL, 'Tan', '', NULL, NULL, 'active', 0, '2025-11-18 15:18:13', '2025-11-24 01:32:40', 0, NULL, NULL, 0, NULL),
+(412, 'consuelo.bautista@mcc.edu.ph', '$2y$10$rGn68TM1SDjlTMPY5pBucOdyAzbfOUB37nivNHrIAxxQyJM121ee2', 'teacher', 'Consuelo', NULL, 'Bautista', '', NULL, NULL, 'active', 0, '2025-11-18 15:18:28', '2025-11-24 01:32:20', 0, NULL, NULL, 0, NULL),
+(413, 'emilio.quirino@mcc.edu.ph', '$2y$10$qcKyodRXIxiKuD0Svpywk.hrJgvtrjxMcRiQ4nmDHA46pneHcDSbi', 'teacher', 'Emilio', NULL, 'Quirino', '', NULL, NULL, 'active', 0, '2025-11-18 15:18:47', '2025-11-18 15:18:47', 0, NULL, NULL, 0, NULL),
+(414, 'teresita.lim@mcc.edu.ph', '$2y$10$ilEgX5U7eH4NKn1f81BN9eAH2QJOsOM9NFkNpeYHGPECeHQWBRvJO', 'teacher', 'Teresita', NULL, 'Lim', '', NULL, NULL, 'active', 0, '2025-11-18 15:19:01', '2025-11-18 15:19:01', 0, NULL, NULL, 0, NULL),
+(415, 'josefa.villanueva@mcc.edu.ph', '$2y$10$oX5uFnmSSkb/64rO1MiJYOJ3OZe7BwOv.DGktp4uqCnw2e/mgBZAO', 'teacher', 'Josefa', NULL, 'Villanueva', '', NULL, NULL, 'active', 0, '2025-11-18 15:19:17', '2026-03-02 18:40:23', 0, NULL, NULL, 0, NULL),
+(429, 'kairi@gmail.com', '$2y$10$0POMgGARytBr0BnpPkN/6uQ2SWKdYxU/5wN8hoqW.qi7n9XN3P0RC', 'student', 'Kairi', NULL, 'Dela Cruz', '', NULL, NULL, 'active', 0, '2026-01-19 13:54:35', '2026-02-13 05:12:14', 0, NULL, NULL, 0, NULL),
+(430, 'jeizi.jczamora@gmail.com', '$2y$10$5eYtQ5jXLBmZA6JWm.gmOOT2kppWfUgPAN6cbcObYDtgMP80f4iDm', 'student', 'John Christopher King', 'Visaya', 'Zamora', '', NULL, NULL, 'active', 0, '2026-01-20 15:07:02', '2026-03-05 12:34:31', 0, NULL, NULL, 0, NULL),
+(431, 'juandelacruz99@gmail.com', '$2y$10$2czTBfblWFLkWS042EjXE.pEBsuSIOK4QNRGTYPO/VFQeAv1z3izi', 'student', 'Juan', NULL, 'Dela Cruz', '', NULL, NULL, 'active', 0, '2026-02-07 21:48:30', '2026-02-22 11:00:45', 0, '$2y$10$euQ540jXsVyiSVqS156xnez8f9Y3PuW093N/lApcqyfrOV/Al.5Dm', '2026-02-15 02:17:07', 0, NULL),
+(432, 'jordanclarkson@gmail.com', '$2y$10$9aLaE/ELzywl/MIVw9iqRufkz5uHC07qi0M.F2gFxeHdLg1Fjvv9.', 'student', 'Jordan', NULL, 'Clarkson', '', NULL, NULL, 'active', 0, '2026-02-10 12:03:15', '2026-02-22 06:25:50', 0, '$2y$10$bJzqmwnP0zPF.H7C5oon1ecr80gFARBr2Xp5Cll7AUPyCRlHvVqqu', '2026-02-14 08:07:50', 0, NULL),
+(441, 'mcaflebronjames@gmail.com', '$2y$10$sZCkibdO86R3ST.n4MjbuuFyRJ4acGvPFZLfg4.4J3OOcXpSTDity', 'student', 'Lebron', NULL, 'James', '', NULL, NULL, 'active', 0, '2026-02-15 09:04:06', '2026-02-15 09:04:06', 0, NULL, NULL, 0, NULL),
+(442, 'karlmcaf@gmail.com', '$2y$10$o3DFLZr0L2rH/qiiTUMvre7CZQpVRmktY.vouH1BjLA/n5DYteiWS', 'enrollee', 'karl', NULL, 'nepomuceno', '', NULL, NULL, 'active', 0, '2026-02-15 09:18:09', '2026-02-15 02:18:57', 0, NULL, NULL, 0, NULL),
+(443, 'michaeljordanmcaf@gamil.com', '$2y$10$IplfFfH1cNRf3or0sSNAgeoyedmDOzeUx2EJ6JWmI3zBXDUfx/nCK', 'student', 'Michael', NULL, 'Jordan', '', NULL, NULL, 'active', 0, '2026-02-15 09:28:02', '2026-02-22 13:55:10', 0, '$2y$10$kNn5KqsK/5xIb.GnTqyOcOweIEbst2OujAm4BVtaTzfOpTYUKwEQy', '2026-02-22 06:13:45', 0, NULL),
+(446, 'johnchristopherkingzamora@gmail.com', '$2y$10$XFDfDEADQUXfLGIBJGM.U.vCntZYXDeXmezqAlOz9xqL4cLgt6aYG', 'enrollee', 'Jeizi', 'Production', 'Inc', '09123798273', NULL, NULL, 'active', 1, '2026-02-19 01:21:05', '2026-02-18 18:22:08', 0, NULL, NULL, 0, NULL),
+(449, 'studentg444@gmail.com', NULL, 'enrollee', 'JOHN', 'CHISTOPHER KING', 'ZAMORA', '09123798273', NULL, NULL, 'active', 1, '2026-02-19 09:01:13', '2026-02-19 09:01:13', 0, NULL, NULL, 0, NULL),
+(450, 'james9238@gmail.com', '$2y$10$PURkDjDnZipJ4LxF6Mvco.7P1/54yipMnCUdyevxJ4.oV1iPpcOda', 'student', 'James', 'Regata', 'Solaire', '', NULL, NULL, 'active', 0, '2026-02-22 12:00:32', '2026-02-22 05:01:55', 0, NULL, NULL, 0, NULL),
+(451, 'james1234@gmail.com', '$2y$10$CmzZ3PVqBG6MJZKIWv4B0eP43LAwykJDy30/j895IO73hd2OkZdI.', 'enrollee', 'Joamsd', 'Regate', 'asmom', '', NULL, NULL, 'active', 0, '2026-02-22 12:02:35', '2026-02-22 05:37:13', 0, '$2y$10$iQ43Lc67KF8JK//i8okZbOOm9JYPd7ljLun6a4B9I5MnlPRYVEGt.', '2026-02-22 05:30:54', 0, NULL),
+(452, 'juanmanzano@gmail.com', '$2y$10$ACZMd/nTeFRNggcYfWEBrO1BFJ5esz9T2Y3qqYlo9DIe5fCLhxKWC', 'enrollee', 'Juan', 'Manzano', 'Torres', '', NULL, NULL, 'active', 0, '2026-02-24 16:27:04', '2026-02-24 16:29:10', 0, '$2y$10$Fx560as5MjyFX..cDf.tX.iE6lofHD9.B5BdYFBxX0eHQpgASlU6a', '2026-02-24 09:29:10', 0, NULL),
+(453, 'nikmanzano@gmail.com', '$2y$10$yCQFac0OtQXrbJEzYj3FTOmXWK59FpfJ85GyMiZDcSnOuP7DMUXwe', 'enrollee', 'Nik', 'Manzano', 'Santos', '', NULL, NULL, 'active', 0, '2026-02-24 16:41:22', '2026-02-24 17:12:56', 0, '$2y$10$QEoNk1iBR1XgiXps4CkVVue.AIxFipWBWiebVL3F.Inqd7k.ICrKW', '2026-02-24 10:12:56', 0, NULL),
+(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'student', 'Luna', 'Mendoza', 'Santos', '', NULL, NULL, 'active', 0, '2026-02-24 17:36:11', '2026-03-02 14:13:05', 0, '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
+(455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', NULL, NULL, 'active', 0, '2026-03-01 17:22:08', '2026-03-05 16:36:49', 0, NULL, NULL, 0, NULL),
+(456, 'kiel1@gmail.com', '$2y$10$VHcOuEsOihaQlWQhNOpgqu47m8DtSdv16Ok3eJTA5EYxB3HvhmIfa', 'enrollee', 'Kiel', 'Santos', 'Sarmiento', '', NULL, NULL, 'active', 0, '2026-03-04 13:51:23', '2026-03-04 13:51:57', 0, NULL, NULL, 0, NULL),
+(457, 'joanasantos@gmail.com', '$2y$10$hpZZuedUas9glWD/GHC.8OULQXnYUGFO8DI1yO0HggRts0mR9.tum', 'enrollee', 'Joana', 'Miller', 'Santos', '', NULL, NULL, 'active', 0, '2026-03-05 16:55:18', '2026-03-05 20:42:36', 0, '$2y$10$no8bnw2v8PiS5pjlOM.U0.s0Vd6a1bZBcAVVOMgRDggxzyK6Uvm/i', '2026-03-05 20:42:36', 0, NULL),
+(458, 'joserizal2@gmail.com', '$2y$10$rS106vcGA0up96KWVUZphOGopzGTFvKesB7yTa4HW8toGXvfTK.lO', 'enrollee', 'Jose', '', 'Rizal', '', NULL, NULL, 'active', 0, '2026-03-07 12:00:25', '2026-03-07 19:12:35', 0, '$2y$10$o4KgzMKbvgBvuUMFVSWLb.oI3wr9Js79bPAyIxYWSB.FQwuIr215e', '2026-03-07 18:52:06', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -4450,13 +4417,19 @@ ALTER TABLE `discount_templates`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `document_catalog`
+--
+ALTER TABLE `document_catalog`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_document_catalog_name` (`name`),
+  ADD UNIQUE KEY `code` (`code`);
+
+--
 -- Indexes for table `document_requirements`
 --
 ALTER TABLE `document_requirements`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_requirement` (`grade_level`,`enrollment_type`,`document_name`),
-  ADD KEY `idx_grade_type` (`grade_level`,`enrollment_type`),
-  ADD KEY `idx_active` (`is_active`);
+  ADD UNIQUE KEY `uq_rule_scope` (`document_id`,`grade_level`,`enrollment_type`);
 
 --
 -- Indexes for table `enrollments`
@@ -5038,7 +5011,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `broadcasts`
@@ -5071,22 +5044,28 @@ ALTER TABLE `discount_templates`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT for table `document_catalog`
+--
+ALTER TABLE `document_catalog`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
 -- AUTO_INCREMENT for table `document_requirements`
 --
 ALTER TABLE `document_requirements`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `enrollments`
 --
 ALTER TABLE `enrollments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT for table `enrollment_addresses`
 --
 ALTER TABLE `enrollment_addresses`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT for table `enrollment_discounts`
@@ -5110,19 +5089,19 @@ ALTER TABLE `enrollment_fee_items`
 -- AUTO_INCREMENT for table `enrollment_flags`
 --
 ALTER TABLE `enrollment_flags`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `enrollment_learners`
 --
 ALTER TABLE `enrollment_learners`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `enrollment_parent_contacts`
 --
 ALTER TABLE `enrollment_parent_contacts`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- AUTO_INCREMENT for table `enrollment_periods`
@@ -5164,7 +5143,7 @@ ALTER TABLE `grading_input_scores`
 -- AUTO_INCREMENT for table `installments`
 --
 ALTER TABLE `installments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=253;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=283;
 
 --
 -- AUTO_INCREMENT for table `late_payment_explanations`
@@ -5188,13 +5167,13 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT for table `notification_outbox`
 --
 ALTER TABLE `notification_outbox`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT for table `notification_preferences`
@@ -5218,7 +5197,7 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
 
 --
 -- AUTO_INCREMENT for table `payment_installment_penalties`
@@ -5230,7 +5209,7 @@ ALTER TABLE `payment_installment_penalties`
 -- AUTO_INCREMENT for table `payment_plans`
 --
 ALTER TABLE `payment_plans`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT for table `payment_proof_sessions`
@@ -5278,7 +5257,7 @@ ALTER TABLE `rfid_sessions`
 -- AUTO_INCREMENT for table `school_fees`
 --
 ALTER TABLE `school_fees`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `sections`
@@ -5302,7 +5281,7 @@ ALTER TABLE `student_enrollment_history`
 -- AUTO_INCREMENT for table `student_uniform_orders`
 --
 ALTER TABLE `student_uniform_orders`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `subjects`
@@ -5356,19 +5335,19 @@ ALTER TABLE `tuition_package_levels`
 -- AUTO_INCREMENT for table `uniform_items`
 --
 ALTER TABLE `uniform_items`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `uniform_prices`
 --
 ALTER TABLE `uniform_prices`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=458;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=459;
 
 --
 -- AUTO_INCREMENT for table `user_fcm_tokens`
@@ -5460,6 +5439,12 @@ ALTER TABLE `attendance`
 --
 ALTER TABLE `audit_logs`
   ADD CONSTRAINT `fk_audit_logs_actor_user` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `document_requirements`
+--
+ALTER TABLE `document_requirements`
+  ADD CONSTRAINT `fk_drr_doc` FOREIGN KEY (`document_id`) REFERENCES `document_catalog` (`id`);
 
 --
 -- Constraints for table `enrollments`

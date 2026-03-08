@@ -4,7 +4,7 @@
  * EnrollmentPeriodController.php - Enrollment Period Management
  * 
  * This controller handles enrollment period operations matching the actual database schema:
- * Fields: enrollment_name, enrollment_type, current_enrollees, allowed_grade_levels
+ * Fields: enrollment_name, enrollment_type, allowed_grade_levels
  * Status: Upcoming, Open, Closed, Cancelled
  * Enrollment Types: Regular, Mid-Year, Transferee
  */
@@ -14,6 +14,20 @@ class EnrollmentPeriodController extends Controller
     public function __construct()
     {
         parent::__construct();
+    }
+
+    /**
+     * Get live enrollee count for an enrollment period.
+     */
+    private function get_current_enrollees_count($enrollmentPeriodId)
+    {
+        $stmt = $this->db->raw(
+            "SELECT COUNT(*) AS cnt FROM enrollments WHERE enrollment_period_id = ?",
+            [(int)$enrollmentPeriodId]
+        );
+
+        $row = $stmt ? $stmt->fetch() : null;
+        return $row && isset($row['cnt']) ? (int)$row['cnt'] : 0;
     }
 
     /**
@@ -28,6 +42,11 @@ class EnrollmentPeriodController extends Controller
             $query = "
                 SELECT 
                     ep.*,
+                    (
+                        SELECT COUNT(*)
+                        FROM enrollments e
+                        WHERE e.enrollment_period_id = ep.id
+                    ) AS current_enrollees,
                     ap.school_year,
                     ap.quarter,
                     ap.status as academic_period_status
@@ -71,6 +90,11 @@ class EnrollmentPeriodController extends Controller
             $query = "
                 SELECT 
                     ep.*,
+                    (
+                        SELECT COUNT(*)
+                        FROM enrollments e
+                        WHERE e.enrollment_period_id = ep.id
+                    ) AS current_enrollees,
                     ap.school_year,
                     ap.quarter,
                     ap.status as academic_period_status
@@ -113,6 +137,11 @@ class EnrollmentPeriodController extends Controller
             $query = "
                 SELECT 
                     ep.*,
+                    (
+                        SELECT COUNT(*)
+                        FROM enrollments e
+                        WHERE e.enrollment_period_id = ep.id
+                    ) AS current_enrollees,
                     ap.school_year,
                     ap.quarter,
                     ap.status as academic_period_status
@@ -200,7 +229,6 @@ class EnrollmentPeriodController extends Controller
             // Capacity Validation
             if (isset($input['max_slots']) && !empty($input['max_slots'])) {
                 $maxSlots = (int)$input['max_slots'];
-                $currentEnrollees = isset($input['current_enrollees']) ? (int)$input['current_enrollees'] : 0;
                 
                 if ($maxSlots < 0) {
                     http_response_code(400);
@@ -211,14 +239,6 @@ class EnrollmentPeriodController extends Controller
                     return;
                 }
                 
-                if ($currentEnrollees > $maxSlots) {
-                    http_response_code(400);
-                    echo json_encode([
-                        'success' => false,
-                        'message' => "Current enrollees ($currentEnrollees) cannot exceed max slots ($maxSlots)"
-                    ]);
-                    return;
-                }
             }
             
             // Convert allowed_grade_levels to JSON if array
@@ -239,7 +259,6 @@ class EnrollmentPeriodController extends Controller
                 'end_date' => $input['end_date'],
                 'status' => $input['status'] ?? 'Upcoming',
                 'max_slots' => isset($input['max_slots']) && !empty($input['max_slots']) ? (int)$input['max_slots'] : null,
-                'current_enrollees' => 0,
                 'allowed_grade_levels' => $allowedGradeLevels,
                 'description' => $input['description'] ?? null
             ];
@@ -252,7 +271,6 @@ class EnrollmentPeriodController extends Controller
                 'end_date' => $data['end_date'],
                 'status' => $data['status'],
                 'max_slots' => $data['max_slots'],
-                'current_enrollees' => $data['current_enrollees'],
                 'allowed_grade_levels' => $data['allowed_grade_levels'],
                 'description' => $data['description']
             ]);
@@ -329,11 +347,10 @@ class EnrollmentPeriodController extends Controller
                 }
             }
             
-            // Capacity Validation (if max_slots or current_enrollees are being updated)
-            if (isset($input['max_slots']) || isset($input['current_enrollees'])) {
-                $maxSlots = isset($input['max_slots']) ? (!empty($input['max_slots']) ? (int)$input['max_slots'] : null) : $existing['max_slots'];
-                $currentEnrollees = isset($input['current_enrollees']) ? (int)$input['current_enrollees'] : (int)$existing['current_enrollees'];
-                
+            // Capacity Validation (if max_slots is being updated)
+            if (array_key_exists('max_slots', $input)) {
+                $maxSlots = !empty($input['max_slots']) ? (int)$input['max_slots'] : null;
+
                 // Validate max_slots is not negative
                 if ($maxSlots !== null && $maxSlots < 0) {
                     http_response_code(400);
@@ -343,18 +360,10 @@ class EnrollmentPeriodController extends Controller
                     ]);
                     return;
                 }
-                
-                // Validate current_enrollees is not negative
-                if ($currentEnrollees < 0) {
-                    http_response_code(400);
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Current enrollees cannot be negative'
-                    ]);
-                    return;
-                }
-                
-                // Validate current_enrollees doesn't exceed max_slots
+
+                $currentEnrollees = $this->get_current_enrollees_count((int)$id);
+
+                // Validate live enrollee count doesn't exceed max_slots
                 if ($maxSlots !== null && $currentEnrollees > $maxSlots) {
                     http_response_code(400);
                     echo json_encode([
@@ -494,6 +503,16 @@ class EnrollmentPeriodController extends Controller
                 echo json_encode([
                     'success' => false,
                     'message' => 'Cannot delete an open enrollment period. Please close it first.'
+                ]);
+                return;
+            }
+
+            $enrolleeCount = $this->get_current_enrollees_count((int)$id);
+            if ($enrolleeCount > 0) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Cannot delete enrollment period with existing enrollments ($enrolleeCount)."
                 ]);
                 return;
             }

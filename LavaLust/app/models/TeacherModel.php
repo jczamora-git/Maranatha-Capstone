@@ -16,7 +16,7 @@ class TeacherModel extends Model
     {
       $query = $this->db->table($this->table)
           ->join('users', 'teachers.user_id = users.id')
-                  ->select('teachers.id, teachers.user_id, teachers.employee_id, teachers.status, teachers.status_updated_at, teachers.created_at, teachers.updated_at, users.email, users.first_name, users.last_name, users.phone, users.status as user_status');
+                  ->select('teachers.id, teachers.user_id, teachers.employee_id, teachers.status, teachers.status_updated_at, teachers.created_at, teachers.updated_at, users.email, users.first_name, users.last_name, users.phone, users.profile_photo_path, users.status as user_status');
 
         // Status filter
         if (!empty($filters['status'])) {
@@ -50,7 +50,7 @@ class TeacherModel extends Model
     {
     $result = $this->db->table($this->table)
            ->join('users', 'teachers.user_id = users.id')
-               ->select('teachers.*, users.email, users.first_name, users.last_name, users.phone, users.status as user_status')
+               ->select('teachers.*, users.email, users.first_name, users.last_name, users.phone, users.profile_photo_path, users.status as user_status')
                ->where('teachers.id', $id)
                ->get();
         
@@ -166,7 +166,7 @@ class TeacherModel extends Model
         }
 
         // User-specific fields
-        $user_fields = ['first_name', 'last_name', 'email', 'phone', 'status'];
+        $user_fields = ['first_name', 'last_name', 'email', 'phone', 'profile_photo_path', 'status'];
         foreach ($data as $key => $value) {
             if (in_array($key, $user_fields)) {
                 $userData[$key] = $value;

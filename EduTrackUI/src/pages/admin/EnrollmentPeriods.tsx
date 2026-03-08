@@ -10,9 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
-import { CalendarClock, Plus, Edit, Trash2, CheckCircle, Clock, Users, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { CalendarClock, Plus, Edit, Trash2, CheckCircle, Clock, Users, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useConfirm } from "@/components/Confirm";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -61,7 +60,6 @@ const EnrollmentPeriods = ({ embedded = false }: EnrollmentPeriodsProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<EnrollmentPeriod | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   // Form state
   const [formData, setFormData] = useState({
@@ -307,18 +305,6 @@ const EnrollmentPeriods = ({ embedded = false }: EnrollmentPeriodsProps) => {
     }));
   };
 
-  const toggleSection = (academicPeriod: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(academicPeriod)) {
-        newSet.delete(academicPeriod);
-      } else {
-        newSet.add(academicPeriod);
-      }
-      return newSet;
-    });
-  };
-
   const filteredPeriods = periods.filter(period => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -328,16 +314,6 @@ const EnrollmentPeriods = ({ embedded = false }: EnrollmentPeriodsProps) => {
       period.enrollment_type.toLowerCase().includes(query)
     );
   });
-
-  // Group periods by academic period
-  const groupedPeriods = filteredPeriods.reduce((acc, period) => {
-    const key = `${period.school_year} - ${period.quarter}`;
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(period);
-    return acc;
-  }, {} as Record<string, EnrollmentPeriod[]>);
 
   const totalPeriods = filteredPeriods.length;
 
@@ -371,34 +347,11 @@ const EnrollmentPeriods = ({ embedded = false }: EnrollmentPeriodsProps) => {
               Manage enrollment windows and capacity for each academic period
             </p>
           </div>
-          <Button 
-            onClick={() => {
-              resetForm();
-              setIsCreateDialogOpen(true);
-            }}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:shadow-xl"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Enrollment Period
-          </Button>
         </div>
       )}
 
-      {/* Create Period Button (for embedded mode) */}
-      {embedded && (
-        <div className="flex justify-end">
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <Button 
-              onClick={() => {
-                resetForm();
-                setIsCreateDialogOpen(true);
-              }}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:shadow-xl"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Period
-            </Button>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Enrollment Period</DialogTitle>
                 <DialogDescription>
@@ -548,9 +501,7 @@ const EnrollmentPeriods = ({ embedded = false }: EnrollmentPeriodsProps) => {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
-        </div>
-      )}
+      </Dialog>
 
       {/* Periods Count and Search */}
       <Card className="shadow-lg border-0">
@@ -560,6 +511,16 @@ const EnrollmentPeriods = ({ embedded = false }: EnrollmentPeriodsProps) => {
               <CardTitle className="text-2xl font-bold">Enrollment Periods ({totalPeriods})</CardTitle>
               <CardDescription className="text-base mt-1">Create and manage enrollment windows for each academic year</CardDescription>
             </div>
+            <Button
+              onClick={() => {
+                resetForm();
+                setIsCreateDialogOpen(true);
+              }}
+              className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:shadow-xl"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Period
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-6">
@@ -644,162 +605,110 @@ const EnrollmentPeriods = ({ embedded = false }: EnrollmentPeriodsProps) => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {Object.entries(groupedPeriods).map(([academicPeriod, periodsList]) => {
-              const isExpanded = expandedSections.has(academicPeriod);
-              return (
-                <Collapsible key={academicPeriod} open={isExpanded} onOpenChange={() => toggleSection(academicPeriod)}>
-                  <Card className="shadow-lg border-0 overflow-hidden">
-                    <CollapsibleTrigger className="w-full">
-                      <CardHeader className="bg-gradient-to-r from-blue-500 to-cyan-600 border-b hover:from-blue-600 hover:to-cyan-700 transition-all cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white/20 rounded-lg">
-                              <CalendarClock className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="text-left">
-                              <CardTitle className="text-white text-xl">{academicPeriod}</CardTitle>
-                              <CardDescription className="text-blue-100 mt-1">
-                                {periodsList.length} period{periodsList.length !== 1 ? 's' : ''}
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isExpanded ? (
-                              <ChevronUp className="h-5 w-5 text-white" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5 text-white" />
+          <Card className="shadow-lg border-0 overflow-hidden">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1100px]">
+                  <thead className="bg-muted/50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Period Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Academic Period</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Start Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">End Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Allowed Grades</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Enrollees</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {filteredPeriods
+                      .slice()
+                      .sort((a, b) => {
+                        if (a.status === 'Open' && b.status !== 'Open') return -1;
+                        if (a.status !== 'Open' && b.status === 'Open') return 1;
+                        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                      })
+                      .map((period) => (
+                        <tr key={period.id} className={period.status === 'Open' ? 'bg-green-50/40 hover:bg-green-50/60' : 'hover:bg-muted/30'}>
+                          <td className="px-4 py-3 align-top">
+                            <div className="font-semibold text-sm">{period.enrollment_name}</div>
+                            {period.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{period.description}</p>
                             )}
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <CardContent className="p-6 bg-gradient-to-b from-gray-50/50 to-white">
-                        <div className="space-y-3">
-                          {periodsList.map((period) => (
-                            <Card 
-                              key={period.id} 
-                              className={`border-2 transition-all shadow-sm hover:shadow-md ${
-                                period.status === 'Open' 
-                                  ? 'border-green-300 bg-green-50/30 hover:border-green-400' 
-                                  : 'border-gray-200 bg-white hover:border-blue-300'
-                              }`}
-                            >
-                              <CardHeader className="pb-3">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <CardTitle className="text-lg font-semibold">{period.enrollment_name}</CardTitle>
-                                      {getStatusBadge(period.status)}
-                                      <Badge variant="outline" className="font-medium">{period.enrollment_type}</Badge>
-                                    </div>
-                                    {period.description && (
-                                      <CardDescription className="mt-2 text-sm">{period.description}</CardDescription>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEdit(period);
-                                      }}
-                                      className="h-8 w-8 hover:bg-blue-100"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDelete(period);
-                                      }}
-                                      disabled={period.status === 'Open' || deleteMutation.isPending}
-                                      className="h-8 w-8 hover:bg-red-100"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="pt-4">
-                                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      variant={period.status === 'Open' ? 'destructive' : 'default'}
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleSetActive(period);
-                                      }}
-                                      disabled={setActiveMutation.isPending}
-                                      className="w-full"
-                                    >
-                                      {period.status === 'Open' ? (
-                                        <>
-                                          <Clock className="h-4 w-4 mr-2" />
-                                          Close Period
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle className="h-4 w-4 mr-2" />
-                                          Open Period
-                                        </>
-                                      )}
-                                    </Button>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-semibold text-lg">
-                                      {period.current_enrollees}
-                                      {period.max_slots && <span className="text-muted-foreground"> / {period.max_slots}</span>}
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">enrollees</span>
-                                  </div>
-                                </div>
-                                <div className="grid md:grid-cols-3 gap-4 pt-4 border-t">
-                                  <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Start Date</p>
-                                    <p className="font-semibold">{new Date(period.start_date).toLocaleDateString()}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">End Date</p>
-                                    <p className="font-semibold">{new Date(period.end_date).toLocaleDateString()}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Allowed Grades</p>
-                                    {period.allowed_grade_levels && period.allowed_grade_levels.length > 0 ? (
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {period.allowed_grade_levels.slice(0, 3).map((grade) => (
-                                          <Badge key={grade} variant="secondary" className="text-xs">
-                                            {grade}
-                                          </Badge>
-                                        ))}
-                                        {period.allowed_grade_levels.length > 3 && (
-                                          <Badge variant="secondary" className="text-xs">
-                                            +{period.allowed_grade_levels.length - 3}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <Badge variant="outline" className="text-xs">All Grades</Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
-              );
-            })}
-          </div>
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm">
+                            <div className="font-medium">{period.school_year}</div>
+                            <div className="text-xs text-muted-foreground">{period.quarter}</div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <Badge variant="outline" className="font-medium">{period.enrollment_type}</Badge>
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm whitespace-nowrap">{new Date(period.start_date).toLocaleDateString()}</td>
+                          <td className="px-4 py-3 align-top text-sm whitespace-nowrap">{new Date(period.end_date).toLocaleDateString()}</td>
+                          <td className="px-4 py-3 align-top">
+                            {period.allowed_grade_levels && period.allowed_grade_levels.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {period.allowed_grade_levels.slice(0, 2).map((grade) => (
+                                  <Badge key={grade} variant="secondary" className="text-xs">{grade}</Badge>
+                                ))}
+                                {period.allowed_grade_levels.length > 2 && (
+                                  <Badge variant="secondary" className="text-xs">+{period.allowed_grade_levels.length - 2}</Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">All Grades</Badge>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="font-semibold">
+                                {period.current_enrollees}
+                                {period.max_slots && <span className="text-muted-foreground"> / {period.max_slots}</span>}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">{getStatusBadge(period.status)}</td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant={period.status === 'Open' ? 'destructive' : 'default'}
+                                size="sm"
+                                onClick={() => handleSetActive(period)}
+                                disabled={setActiveMutation.isPending}
+                              >
+                                {period.status === 'Open' ? 'Close' : 'Open'}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(period)}
+                                className="h-8 w-8 hover:bg-blue-100"
+                                title="Edit"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(period)}
+                                disabled={period.status === 'Open' || deleteMutation.isPending}
+                                className="h-8 w-8 hover:bg-red-100"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Edit Dialog */}

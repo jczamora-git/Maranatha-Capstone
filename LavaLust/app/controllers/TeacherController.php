@@ -446,6 +446,7 @@ class TeacherController extends Controller
             $email = $json_data['email'] ?? '';
             $employee_id = $json_data['employeeId'] ?? '';
             $phone = $json_data['phone'] ?? '';
+            $profile_photo_path = $json_data['profile_photo_path'] ?? ($json_data['profilePhotoPath'] ?? null);
             $status = $json_data['status'] ?? '';
             $year_level = $json_data['yearLevel'] ?? $json_data['year_level'] ?? '';
             
@@ -495,7 +496,8 @@ class TeacherController extends Controller
                 'last_name' => $last_name,
                 'email' => $email,
                 'employee_id' => $employee_id,
-                'phone' => $phone
+                'phone' => $phone,
+                'profile_photo_path' => !empty($profile_photo_path) ? $profile_photo_path : null
             ];
             
             // Only update status if provided and valid

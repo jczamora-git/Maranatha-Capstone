@@ -13,16 +13,18 @@ import { Plus, Search, Edit, Trash2, GraduationCap, BookOpen, Grid3x3, List, Loa
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useConfirm } from "@/components/Confirm";
-import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
+import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete, apiUploadFile } from "@/lib/api";
 import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 
 type Teacher = {
   id: string;
+  userId?: string;
   firstName: string;
   lastName: string;
   email: string;
   employeeId: string;
+  profilePhotoPath?: string | null;
   phone?: string;
   status: "active" | "inactive";
   assignedYearLevel?: string;
@@ -60,6 +62,7 @@ const Teachers = () => {
     lastName: "",
     email: "",
     employeeId: "",
+    profilePhotoPath: "",
     phone: "",
     status: "active",
     assignedCourses: [],
@@ -69,6 +72,21 @@ const Teachers = () => {
 
   const showAlert = (type: "success" | "error" | "info", message: string) => {
     setAlert({ type, message });
+  };
+
+  const handleProfilePhotoUpload = async (file?: File | null) => {
+    if (!file) return;
+    try {
+      const upload = await apiUploadFile(API_ENDPOINTS.UPLOAD_FILE, file, 'file', { folder: 'profile-photos' });
+      if (!upload?.success || !upload?.relative_path) {
+        toast.error(upload?.message || 'Failed to upload profile photo');
+        return;
+      }
+      setForm((f) => ({ ...f, profilePhotoPath: upload.relative_path }));
+      toast.success('Profile photo uploaded');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to upload profile photo');
+    }
   };
 
   const confirm = useConfirm();
@@ -159,10 +177,12 @@ const Teachers = () => {
         // Transform API response to match component structure
         let transformedTeachers = response.teachers.map((t: any) => ({
           id: t.id.toString(),
+          userId: t.user_id ? String(t.user_id) : undefined,
           firstName: t.first_name,
           lastName: t.last_name,
           email: t.email,
           employeeId: t.employee_id,
+          profilePhotoPath: t.profile_photo_path || t.profilePhotoPath || null,
           phone: t.phone || '',
           status: t.status,
           assignedCourses: t.assigned_courses || t.assignedCourses || []
@@ -434,6 +454,7 @@ const Teachers = () => {
       lastName: "",
       email: "",
       employeeId: "",
+      profilePhotoPath: "",
       phone: "",
       status: "active",
       assignedCourses: [],
@@ -457,6 +478,7 @@ const Teachers = () => {
         email: form.email.trim(),
         role: 'teacher',
         phone: form.phone?.trim() || "",
+        profilePhotoPath: form.profilePhotoPath || null,
         password: 'demo123'
       });
 
@@ -512,10 +534,12 @@ const Teachers = () => {
   const handleOpenEdit = (t: Teacher) => {
     setSelectedTeacherId(t.id);
     setForm({
+      userId: t.userId,
       firstName: t.firstName,
       lastName: t.lastName,
       email: t.email,
       employeeId: t.employeeId,
+      profilePhotoPath: t.profilePhotoPath || "",
       phone: t.phone,
       status: t.status,
       assignedCourses: t.assignedCourses,
@@ -540,6 +564,7 @@ const Teachers = () => {
         employeeId: form.employeeId.trim(),
         phone: form.phone?.trim() || "",
         status: form.status,
+        profilePhotoPath: form.profilePhotoPath || null,
         assignedCourses: form.assignedCourses
       }).then(response => {
         if (response.success) {
@@ -675,7 +700,15 @@ const Teachers = () => {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
-                            <GraduationCap className="h-6 w-6 text-white" />
+                            {teacher.profilePhotoPath ? (
+                              <img
+                                src={teacher.profilePhotoPath}
+                                alt={`${teacher.firstName} ${teacher.lastName}`}
+                                className="w-12 h-12 rounded-xl object-cover"
+                              />
+                            ) : (
+                              <GraduationCap className="h-6 w-6 text-white" />
+                            )}
                           </div>
                           <div>
                             <p className="font-bold text-lg">{teacher.firstName} {teacher.lastName}</p>
@@ -798,7 +831,15 @@ const Teachers = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-4 flex-1">
                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
-                          <GraduationCap className="h-7 w-7 text-white" />
+                          {teacher.profilePhotoPath ? (
+                            <img
+                              src={teacher.profilePhotoPath}
+                              alt={`${teacher.firstName} ${teacher.lastName}`}
+                              className="w-14 h-14 rounded-xl object-cover"
+                            />
+                          ) : (
+                            <GraduationCap className="h-7 w-7 text-white" />
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-1">
@@ -995,6 +1036,19 @@ const Teachers = () => {
                   />
                 </div>
               </div>
+              <div>
+                <Label htmlFor="teacher-profilePhoto" className="font-semibold">Profile Photo</Label>
+                <Input
+                  id="teacher-profilePhoto"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleProfilePhotoUpload(e.target.files?.[0])}
+                  className="mt-1"
+                />
+                {form.profilePhotoPath && (
+                  <img src={form.profilePhotoPath} alt="Teacher profile" className="mt-2 h-16 w-16 rounded-lg object-cover" />
+                )}
+              </div>
                 <div>
                   <Label htmlFor="status" className="font-semibold">Status</Label>
                   <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as any }))}>
@@ -1071,6 +1125,19 @@ const Teachers = () => {
                   />
                 </div>
               </div>
+                <div>
+                  <Label htmlFor="edit-teacher-profilePhoto" className="font-semibold">Profile Photo</Label>
+                  <Input
+                    id="edit-teacher-profilePhoto"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleProfilePhotoUpload(e.target.files?.[0])}
+                    className="mt-1"
+                  />
+                  {form.profilePhotoPath && (
+                    <img src={form.profilePhotoPath} alt="Teacher profile" className="mt-2 h-16 w-16 rounded-lg object-cover" />
+                  )}
+                </div>
                 <div>
                   <Label htmlFor="edit-status" className="font-semibold">Status</Label>
                   <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as any }))}>

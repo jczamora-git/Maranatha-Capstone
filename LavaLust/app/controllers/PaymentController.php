@@ -544,8 +544,9 @@ class PaymentController extends Controller
                     $formattedAmount = number_format($payment_amount, 2);
                     $actor_name = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
                     $actor_role = $currentUser['role'] ?? 'admin';
+                    $isStudentActor = in_array($actor_role, ['student', 'enrollee'], true);
 
-                    if ($actor_role === 'student') {
+                    if ($isStudentActor) {
                         // Student submitted their own payment → notify all admins
                         $recipients = $this->NotificationService->getRecipientsByRole('admin');
                         $notif_title = 'New Payment Received';
@@ -568,7 +569,7 @@ class PaymentController extends Controller
                         'icon' => 'dollar-sign',
                         'action_url' => $notif_action_url,
                         'push_data' => [
-                            'screen' => $actor_role === 'student' ? 'PaymentDetails' : 'PaymentHistory',
+                            'screen' => $isStudentActor ? 'PaymentDetails' : 'PaymentHistory',
                             'payment_id' => $paymentId
                         ],
                         'metadata' => [

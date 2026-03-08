@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { NotificationBell } from "./NotificationBell";
+import { CompactLanguageSelector } from "./LanguageSelector";
 import { useFCMNotificationListener } from "@/hooks/useNotifications";
 
 interface DashboardLayoutProps {
@@ -16,8 +17,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      {/* Fixed notification bell for desktop (hidden on mobile  Sidebar handles it there) */}
-      <div className="hidden md:flex fixed top-4 right-4 z-50">
+      {/* Fixed notification bell and language selector for desktop (hidden on mobile - Sidebar handles it there) */}
+      <div className="hidden md:flex fixed top-4 right-4 z-50 gap-2 items-center">
+        <CompactLanguageSelector />
         <NotificationBell />
       </div>
       <main className="flex-1 px-2 py-4 sm:px-4 sm:py-6 md:px-6 lg:px-8 overflow-y-auto pt-16">

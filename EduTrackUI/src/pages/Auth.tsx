@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { API_ENDPOINTS } from "@/lib/api";
 import EmailLoadingModal from "@/components/EmailLoadingModal";
+import { CompactLanguageSelector } from "@/components/LanguageSelector";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -109,6 +110,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-accent/5 to-success/5">
+      {/* Language Selector - Fixed Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <CompactLanguageSelector />
+      </div>
+
       {/* Show loading modal while submitting */}
       {isLoading && !showVerificationMessage && (
         <EmailLoadingModal 

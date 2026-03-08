@@ -1000,6 +1000,7 @@ class UserController extends Controller
                             'middle_name' => $user['middle_name'] ?? null,
                             'last_name' => $user['last_name'],
                             'status' => $user['status'],
+                            'profile_photo_path' => $user['profile_photo_path'] ?? null,
                             'payment_pin_set' => !empty($user['payment_pin_hash'])
                         ];
                     }
@@ -1175,6 +1176,7 @@ class UserController extends Controller
             $last_name = $json_data['lastName'] ?? '';
             $role = $json_data['role'] ?? 'student';
             $phone = $json_data['phone'] ?? '';
+            $profile_photo_path = $json_data['profile_photo_path'] ?? ($json_data['profilePhotoPath'] ?? null);
             $password = $json_data['password'] ?? 'password123'; // Default password
             
             // Validation
@@ -1225,6 +1227,7 @@ class UserController extends Controller
                 'middle_name' => $middle_name,
                 'last_name' => $last_name,
                 'phone' => $phone,
+                'profile_photo_path' => !empty($profile_photo_path) ? $profile_photo_path : null,
                 'role' => $role,
                 'status' => 'active'
             ];
@@ -1302,6 +1305,7 @@ class UserController extends Controller
             $role = $json_data['role'] ?? '';
             $status = $json_data['status'] ?? '';
             $phone = $json_data['phone'] ?? '';
+            $profile_photo_path = $json_data['profile_photo_path'] ?? ($json_data['profilePhotoPath'] ?? null);
             
             // Validation
             if (empty($email) || empty($first_name) || empty($last_name)) {
@@ -1339,7 +1343,8 @@ class UserController extends Controller
                 'first_name' => $first_name,
                 'middle_name' => $middle_name,
                 'last_name' => $last_name,
-                'phone' => $phone
+                'phone' => $phone,
+                'profile_photo_path' => !empty($profile_photo_path) ? $profile_photo_path : null
             ];
             
             // Only update role if provided and valid

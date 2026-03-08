@@ -195,8 +195,10 @@ class PaymentPlanController extends Controller
                 $formattedTotal = number_format((float)$input['total_tuition'], 2);
                 $scheduleType = $template['schedule_type'] ?? 'Installment';
                 $installmentCount = (int)($template['number_of_installments'] ?? 0);
+                $actorRole = $currentUser['role'] ?? 'student';
+                $isStudentActor = in_array($actorRole, ['student', 'enrollee'], true);
 
-                if (($currentUser['role'] ?? 'student') === 'student') {
+                if ($isStudentActor) {
                     // Student created installment plan -> notify admins
                     $recipients = $this->NotificationService->getRecipientsByRole('admin');
                     $notifTitle = 'New Installment Plan Created';
@@ -238,7 +240,7 @@ class PaymentPlanController extends Controller
                     'entity_type' => 'payment_plan',
                     'entity_id' => $plan_id,
                     'actor_user_id' => $currentUser['user_id'] ?? null,
-                    'actor_role' => $currentUser['role'] ?? 'student',
+                    'actor_role' => $actorRole,
                     'actor_name' => $actor_name,
                     'description' => $description,
                     'recipients' => $recipients
@@ -717,13 +719,32 @@ class PaymentPlanController extends Controller
         $year_parts = explode('-', $school_year);
         $start_year = (int)$year_parts[0];
         
-        // Calculate amount per installment
+        // Calculate amount per installment based on schedule type
         $num_installments = count($template_installments);
-        $amount_per_installment = round($total_amount / $num_installments, 2);
+        $schedule_type = $template['schedule_type'] ?? '';
         
-        // Adjust last installment for rounding differences
-        $total_allocated = $amount_per_installment * ($num_installments - 1);
-        $last_installment_amount = $total_amount - $total_allocated;
+        // Monthly & Quarterly: First payment is 5000, remaining amount divided equally
+        if ($schedule_type === 'Monthly' || $schedule_type === 'Quarterly') {
+            $first_payment = 5000;
+            $remaining_amount = $total_amount - $first_payment;
+            $remaining_installments = $num_installments - 1;
+            
+            if ($remaining_installments > 0) {
+                $amount_per_remaining = round($remaining_amount / $remaining_installments, 2);
+                // Adjust last installment for rounding
+                $total_allocated = $first_payment + ($amount_per_remaining * ($remaining_installments - 1));
+                $last_installment_amount = $total_amount - $total_allocated;
+            } else {
+                // Edge case: only 1 installment
+                $amount_per_remaining = 0;
+                $last_installment_amount = $first_payment;
+            }
+        } else {
+            // Semestral & Tri Semestral: Equal division as before
+            $amount_per_installment = round($total_amount / $num_installments, 2);
+            $total_allocated = $amount_per_installment * ($num_installments - 1);
+            $last_installment_amount = $total_amount - $total_allocated;
+        }
         
         foreach ($template_installments as $index => $template_inst) {
             $due_date = $this->calculate_due_date_from_template(
@@ -732,13 +753,26 @@ class PaymentPlanController extends Controller
                 $start_date
             );
             
+            // Determine amount for this installment
+            if ($schedule_type === 'Monthly' || $schedule_type === 'Quarterly') {
+                if ($index === 0) {
+                    $installment_amount = $first_payment;
+                } elseif ($index === $num_installments - 1) {
+                    $installment_amount = $last_installment_amount;
+                } else {
+                    $installment_amount = $amount_per_remaining;
+                }
+            } else {
+                $installment_amount = ($index === $num_installments - 1) ? $last_installment_amount : $amount_per_installment;
+            }
+            
             // Create installment data
             $installment_data = [
                 'payment_plan_id' => $plan_id,
                 'installment_number' => $template_inst['installment_number'],
-                'amount_due' => ($index === $num_installments - 1) ? $last_installment_amount : $amount_per_installment,
+                'amount_due' => $installment_amount,
                 'amount_paid' => 0,
-                'balance' => ($index === $num_installments - 1) ? $last_installment_amount : $amount_per_installment,
+                'balance' => $installment_amount,
                 'status' => 'Pending',
                 'late_fee' => 0,
                 'days_overdue' => 0
@@ -813,6 +847,93 @@ class PaymentPlanController extends Controller
                 return max(1, $last_day - 1);
             default:
                 return 15; // Default to mid-month
+        }
+    }
+
+    /**
+     * Mark payment-plan related notifications as read for current admin user by plan ID.
+     * POST /api/payment-plans/{id}/mark-notifications-read
+     */
+    public function mark_plan_notifications_as_read($id)
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            return;
+        }
+
+        $role = (string)$this->session->userdata('role');
+        if (strtolower($role) !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden: admin only']);
+            return;
+        }
+
+        try {
+            $user_id = (int)$this->session->userdata('user_id');
+            $plan_id = (int)$id;
+
+            $rows = $this->db->table('notifications')
+                ->select('id, entity_type, action_url')
+                ->where('user_id', $user_id)
+                ->where('entity_id', $plan_id)
+                ->where('is_read', 0)
+                ->where('is_archived', 0)
+                ->get_all();
+
+            $candidateIds = [];
+            foreach ($rows as $row) {
+                $entityType = strtolower((string)($row['entity_type'] ?? ''));
+                $actionUrl = strtolower((string)($row['action_url'] ?? ''));
+
+                $isPlanNotification =
+                    in_array($entityType, ['payment_plan', 'payment_plans', 'installment'], true) &&
+                    strpos($actionUrl, '/admin/payment-plans') !== false;
+
+                if ($isPlanNotification && !empty($row['id'])) {
+                    $candidateIds[] = (int)$row['id'];
+                }
+            }
+
+            if (empty($candidateIds)) {
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'No matching unread payment-plan notifications for current user',
+                    'marked_count' => 0,
+                    'candidate_notification_ids' => []
+                ]);
+                return;
+            }
+
+            $markedCount = 0;
+            foreach ($candidateIds as $notificationId) {
+                $updated = $this->db->table('notifications')
+                    ->where('id', $notificationId)
+                    ->where('user_id', $user_id)
+                    ->where('is_read', 0)
+                    ->update([
+                        'is_read' => 1,
+                        'read_at' => date('Y-m-d H:i:s')
+                    ]);
+
+                if ($updated) {
+                    $markedCount++;
+                }
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Notifications marked as read',
+                'marked_count' => $markedCount,
+                'candidate_notification_ids' => $candidateIds
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
         }
     }
 }

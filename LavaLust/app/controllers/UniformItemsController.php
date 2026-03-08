@@ -167,7 +167,7 @@ class UniformItemsController extends Controller
                 return;
             }
 
-            $valid_groups = ['Dress', 'Blouse', 'Skirt', 'Polo', 'PE'];
+            $valid_groups = ['Dress', 'Blouse', 'Skirt', 'Polo', 'PE', 'Others'];
             if (!in_array($item_group, $valid_groups)) {
                 http_response_code(400);
                 echo json_encode([
@@ -261,7 +261,7 @@ class UniformItemsController extends Controller
             }
 
             $item_group = isset($input['item_group']) ? trim($input['item_group']) : $existing['item_group'];
-            $valid_groups = ['Dress', 'Blouse', 'Skirt', 'Polo', 'PE'];
+            $valid_groups = ['Dress', 'Blouse', 'Skirt', 'Polo', 'PE', 'Others'];
             if (!in_array($item_group, $valid_groups)) {
                 $item_group = $existing['item_group'];
             }
@@ -403,11 +403,21 @@ class UniformItemsController extends Controller
 
     private function insert_prices($item_id, array $prices)
     {
+        // Get item group to determine if size is required
+        $itemStmt = $this->db->raw("SELECT item_group FROM uniform_items WHERE id = ? LIMIT 1", [$item_id]);
+        $item = $itemStmt->fetch(PDO::FETCH_ASSOC);
+        $isOthersCategory = $item && $item['item_group'] === 'Others';
+
         foreach ($prices as $price_row) {
             $size = isset($price_row['size']) ? trim($price_row['size']) : '';
             $price = isset($price_row['price']) ? floatval($price_row['price']) : null;
 
-            if ($size === '' || $price === null || $price < 0) {
+            // For "Others" category, size can be empty/null; for other categories, size is required
+            if (!$isOthersCategory && $size === '') {
+                continue;
+            }
+
+            if ($price === null || $price < 0) {
                 continue;
             }
 
@@ -421,7 +431,7 @@ class UniformItemsController extends Controller
 
             $this->db->table('uniform_prices')->insert([
                 'uniform_item_id' => $item_id,
-                'size'            => $size,
+                'size'            => $size !== '' ? $size : null,
                 'price'           => $price,
                 'half_price'      => $half_price,
                 'is_active'       => 1,

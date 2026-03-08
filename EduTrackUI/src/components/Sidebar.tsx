@@ -7,9 +7,10 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "next-themes";
 import { NotificationBell } from "./NotificationBell";
+import { CompactLanguageSelector } from "./LanguageSelector";
 import { FEATURES } from "@/config/features";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
-import { usePaymentNotificationCount, useEnrollmentNotificationCount } from "@/hooks/useNotifications";
+import { usePaymentNotificationCount, useEnrollmentNotificationCount, usePaymentPlanNotificationCount } from "@/hooks/useNotifications";
 import {
   LayoutDashboard,
   Users,
@@ -150,6 +151,12 @@ export const Sidebar = () => {
     enabled: user?.role === 'admin'
   });
   const enrollmentBadgeCount = enrollmentNotifCount?.count ?? 0;
+
+  // Fetch payment plan notification count for admin
+  const { data: paymentPlanNotifCount } = usePaymentPlanNotificationCount({
+    enabled: user?.role === 'admin'
+  });
+  const paymentPlanBadgeCount = paymentPlanNotifCount?.count ?? 0;
 
   // Check if any admin submenu is active (includes the main users page)
   const isAdminSubmenuActive = location.pathname.startsWith('/admin/users');
@@ -375,6 +382,7 @@ export const Sidebar = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <CompactLanguageSelector />
           <NotificationBell />
           <Button
             variant="ghost"
@@ -485,6 +493,12 @@ export const Sidebar = () => {
                                 {link.to === '/admin/enrollments' && enrollmentBadgeCount > 0 && (
                                   <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[16px] h-[16px] text-[9px] flex items-center justify-center font-bold shadow-sm border border-background">
                                     {enrollmentBadgeCount > 9 ? '9' : enrollmentBadgeCount}
+                                  </span>
+                                )}
+                                {/* Badge on icon for payment plan notifications */}
+                                {link.to === '/admin/payment-plans' && paymentPlanBadgeCount > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[16px] h-[16px] text-[9px] flex items-center justify-center font-bold shadow-sm border border-background">
+                                    {paymentPlanBadgeCount > 9 ? '9' : paymentPlanBadgeCount}
                                   </span>
                                 )}
                               </div>
@@ -731,6 +745,7 @@ export const Sidebar = () => {
                               badgeCount={
                                 link.to === '/admin/payments' ? paymentBadgeCount : 
                                 link.to === '/admin/enrollments' ? enrollmentBadgeCount : 
+                                link.to === '/admin/payment-plans' ? paymentPlanBadgeCount : 
                                 undefined
                               }
                             />

@@ -71,8 +71,87 @@ export function EnrollmentStep2({
   // const [rejectionReason, setRejectionReason] = useState('');
   // const [rejectionNotes, setRejectionNotes] = useState('');
   // const [requestResubmission, setRequestResubmission] = useState(true);
-  const [lastFetchKey, setLastFetchKey] = useState<string>('');
   const [manuallyCheckedDocs, setManuallyCheckedDocs] = useState<Set<string>>(new Set());
+
+  const normalizeEnrollmentType = (): 'New Student' | 'Returning Student' | 'Transferee' => {
+    const rawType = String(enrollment.enrollment_type || '').trim().toLowerCase();
+
+    if (rawType.includes('transf')) return 'Transferee';
+    if (rawType.includes('return') || rawType.includes('continu')) return 'Returning Student';
+    if (rawType.includes('new')) return 'New Student';
+
+    if (enrollment.is_returning_student === true || enrollment.is_returning_student === 1 || enrollment.is_returning_student === '1') {
+      return 'Returning Student';
+    }
+
+    return 'New Student';
+  };
+
+  const filterRequirementsForEnrollment = (
+    requirements: DocumentRequirement[],
+    gradeLevel: string,
+    enrollmentType: 'New Student' | 'Returning Student' | 'Transferee'
+  ) => {
+    const targetGrade = String(gradeLevel || '').trim().toLowerCase();
+    const targetType = String(enrollmentType || '').trim().toLowerCase();
+    const targetTypeShort = targetType.split(' ')[0] || '';
+
+    const matched = requirements.filter((req) => {
+      if (!req?.is_active) return false;
+
+      const rowGrade = String(req.grade_level || '').trim().toLowerCase();
+      if (rowGrade !== targetGrade) return false;
+
+      const rowTypeRaw = req.enrollment_type === null ? '' : String(req.enrollment_type).trim();
+      const rowType = rowTypeRaw.toLowerCase();
+      const rowTypeShort = rowType.split(' ')[0] || '';
+
+      return (
+        rowType === '' ||
+        rowType === 'all types' ||
+        rowType === targetType ||
+        rowTypeShort === targetTypeShort
+      );
+    });
+
+    const bestByDocument = new Map<string, DocumentRequirement>();
+
+    matched.forEach((req) => {
+      const key = String(req.document_name || '').trim().toLowerCase();
+      if (!key) return;
+
+      const rowType = req.enrollment_type ? String(req.enrollment_type).trim().toLowerCase() : '';
+      const rowTypeShort = rowType.split(' ')[0] || '';
+      const specific = rowType === targetType || rowTypeShort === targetTypeShort;
+      const score = specific ? 2 : 1;
+
+      const current = bestByDocument.get(key) as (DocumentRequirement & { _score?: number }) | undefined;
+      if (!current) {
+        bestByDocument.set(key, { ...req, _score: score } as DocumentRequirement);
+        return;
+      }
+
+      const currentScore = (current as any)._score || 0;
+      if (score > currentScore) {
+        bestByDocument.set(key, { ...req, _score: score } as DocumentRequirement);
+        return;
+      }
+
+      if (score === currentScore && (Number(req.display_order) || 0) < (Number(current.display_order) || 0)) {
+        bestByDocument.set(key, { ...req, _score: score } as DocumentRequirement);
+      }
+    });
+
+    return Array.from(bestByDocument.values())
+      .map((req: any) => {
+        if ('_score' in req) {
+          const { _score, ...rest } = req;
+          return rest as DocumentRequirement;
+        }
+        return req as DocumentRequirement;
+      })
+      .sort((a, b) => (Number(a.display_order) || 0) - (Number(b.display_order) || 0));
+  };
 
   // Helper function to get document status
   const getDocumentStatus = (docName: string) => {
@@ -236,26 +315,20 @@ export function EnrollmentStep2({
   useEffect(() => {
     const fetchDocumentRequirements = async () => {
       const gradeLevel = enrollment.grade_level || '';
-      
-      // Derive enrollment type from is_returning_student field
-      // If not explicitly set, default to "New Student"
-      let enrollmentType = 'New Student';
-      if (enrollment.enrollment_type) {
-        enrollmentType = enrollment.enrollment_type;
-      } else if (enrollment.is_returning_student === true) {
-        enrollmentType = 'Returning Student';
-      } else if (enrollment.is_returning_student === false) {
-        enrollmentType = 'New Student';
-      }
-      
-      // Create a unique key to prevent duplicate fetches
-      const fetchKey = `${gradeLevel}|${enrollmentType}`;
-      
-      // Skip if we already fetched for this combination
-      if (fetchKey === lastFetchKey || !gradeLevel) {
+
+      if (enrollment.enrollment_type === 'Continuing Student') {
+        setRequiredDocs([]);
         setLoading(false);
         return;
       }
+
+      if (!gradeLevel) {
+        setRequiredDocs([]);
+        setLoading(false);
+        return;
+      }
+
+      const enrollmentType = normalizeEnrollmentType();
       
       try {
         setLoading(true);
@@ -263,7 +336,7 @@ export function EnrollmentStep2({
         console.log('Fetching requirements for:', { gradeLevel, enrollmentType });
         
         const response = await fetch(
-          API_ENDPOINTS.DOCUMENT_REQUIREMENTS_BY_GRADE(gradeLevel, enrollmentType),
+          API_ENDPOINTS.DOCUMENT_REQUIREMENTS_FOR_ENROLLMENT(gradeLevel, enrollmentType),
           { credentials: 'include' }
         );
         
@@ -278,15 +351,45 @@ export function EnrollmentStep2({
             console.log('API Response data:', result);
             
             // The API returns { success: true, data: [...] }
-            const requirements = result.data || result.requirements || [];
+            const requirements = Array.isArray(result?.data)
+              ? result.data
+              : (Array.isArray(result?.requirements) ? result.requirements : []);
             console.log('Requirements found:', requirements.length);
             
-            // Sort by display_order and filter only active requirements
-            const sorted = requirements
-              .filter((req: DocumentRequirement) => req.is_active)
+            // Filter active, dedupe by document + enrollment type, then sort
+            const dedupeMap = new Map<string, DocumentRequirement>();
+
+            requirements
+              .filter((req: DocumentRequirement) => Boolean(req?.is_active))
+              .forEach((req: DocumentRequirement) => {
+                const key = `${String(req.document_name || '').trim().toLowerCase()}|${req.enrollment_type ?? 'ALL'}`;
+                if (!dedupeMap.has(key)) {
+                  dedupeMap.set(key, req);
+                }
+              });
+
+            const sorted = Array.from(dedupeMap.values())
               .sort((a: DocumentRequirement, b: DocumentRequirement) => a.display_order - b.display_order);
+
+            if (sorted.length === 0) {
+              const fallbackResponse = await fetch(API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS, {
+                credentials: 'include'
+              });
+
+              if (fallbackResponse.ok) {
+                const fallbackJson = await fallbackResponse.json();
+                const fallbackRows = Array.isArray(fallbackJson?.data)
+                  ? fallbackJson.data
+                  : (Array.isArray(fallbackJson?.requirements) ? fallbackJson.requirements : []);
+
+                const fallbackFiltered = filterRequirementsForEnrollment(fallbackRows, gradeLevel, enrollmentType);
+                console.log('Fallback requirements found:', fallbackFiltered.length);
+                setRequiredDocs(fallbackFiltered);
+                return;
+              }
+            }
+
             setRequiredDocs(sorted);
-            setLastFetchKey(fetchKey);
           } catch (parseError) {
             console.error('Failed to parse response as JSON. Response:', responseText);
             setRequiredDocs([]);
@@ -305,7 +408,7 @@ export function EnrollmentStep2({
     };
 
     fetchDocumentRequirements();
-  }, [enrollment.grade_level, enrollment.enrollment_type, enrollment.is_returning_student, lastFetchKey]);
+  }, [enrollment.id, enrollment.grade_level, enrollment.enrollment_type, enrollment.is_returning_student]);
 
   return (
     <div className="space-y-6">

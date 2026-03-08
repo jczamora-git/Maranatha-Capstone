@@ -99,12 +99,15 @@ export const NotificationBell = () => {
 
   const handleItemClick = (item: any) => {
     if (item.source === 'notification') {
-      // Mark system notification as read
-      if (!item.is_read) {
+      const targetUrl = resolveNotificationTargetUrl(item);
+
+      // For installment/payment-plan notifications, keep unread until user clicks View action on highlighted row.
+      const category = getNotificationCategory(item);
+      const canDeferInstallmentRead = category === 'installment' && !!item?.entity_id;
+      if (!canDeferInstallmentRead && !item.is_read) {
         markAsReadMutation.mutate(item.id);
       }
 
-      const targetUrl = resolveNotificationTargetUrl(item);
       if (targetUrl) {
         setIsOpen(false);
         navigate(targetUrl);
@@ -217,8 +220,9 @@ export const NotificationBell = () => {
     if (!actionUrl) return null;
 
     // Keep row highlight behavior where implemented
-    if (item?.entity_id && (category === 'payment' || category === 'enrollment')) {
-      return `${actionUrl}${actionUrl.includes('?') ? '&' : '?'}highlight=${item.entity_id}`;
+    if (item?.entity_id && (category === 'payment' || category === 'enrollment' || category === 'installment')) {
+      const separator = actionUrl.includes('?') ? '&' : '?';
+      return `${actionUrl}${separator}highlight=${item.entity_id}&notification_id=${item.id}`;
     }
 
     return actionUrl;

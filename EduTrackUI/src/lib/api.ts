@@ -115,6 +115,7 @@ export const API_ENDPOINTS = {
   PAYMENT_PLANS: `${API_BASE_URL}/api/payment-plans`,
   PAYMENT_PLAN_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-plans/${id}`,
   PAYMENT_PLAN_INSTALLMENTS: (plan_id: string | number) => `${API_BASE_URL}/api/payment-plans/${plan_id}/installments`,
+  PAYMENT_PLAN_MARK_NOTIFICATIONS_READ: (plan_id: string | number) => `${API_BASE_URL}/api/payment-plans/${plan_id}/mark-notifications-read`,
   RFID_VERIFY_PASSKEY: `${API_BASE_URL}/api/rfid/verify-passkey`,
   
   // Payment Schedule Templates
@@ -207,6 +208,11 @@ export const API_ENDPOINTS = {
   
   // Document Requirements
   ADMIN_DOCUMENT_REQUIREMENTS: `${API_BASE_URL}/api/admin/document-requirements`,
+  ADMIN_DOCUMENT_CATALOG: `${API_BASE_URL}/api/admin/document-catalog`,
+  ADMIN_DOCUMENT_CATALOG_BY_ID: (id: string | number) => `${API_BASE_URL}/api/admin/document-catalog/${id}`,
+  ADMIN_DOCUMENT_CATALOG_TOGGLE: (id: string | number) => `${API_BASE_URL}/api/admin/document-catalog/${id}/toggle`,
+  DOCUMENT_REQUIREMENTS_FOR_ENROLLMENT: (gradeLevel: string, enrollmentType?: string) =>
+    `${API_BASE_URL}/api/document-requirements-enrollment/${encodeURIComponent(gradeLevel)}${enrollmentType ? '/' + encodeURIComponent(enrollmentType) : ''}`,
   DOCUMENT_REQUIREMENTS_BY_GRADE: (gradeLevel: string, enrollmentType?: string) => 
     `${API_BASE_URL}/api/document-requirements/${encodeURIComponent(gradeLevel)}${enrollmentType ? '/' + encodeURIComponent(enrollmentType) : ''}`,
   
@@ -340,7 +346,6 @@ export async function apiGet(url: string) {
     });
 
     const text = await response.text();
-    console.log(`[apiGet] ${url} - Status: ${response.status}, Text length: ${text.length}, Text:`, text.substring(0, 200));
     return { response, text };
   };
 

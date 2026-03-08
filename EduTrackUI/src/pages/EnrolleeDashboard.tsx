@@ -11,10 +11,11 @@ import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import TourHelpButton from "@/components/TourHelpButton";
+import { useTranslatedTexts } from "@/context/TranslationContext";
 
 interface EnrollmentData {
   id: number;
-  status: "pending" | "incomplete" | "under_review" | "approved" | "rejected";
+  status: "pending" | "incomplete" | "under_review" | "verified" | "approved" | "rejected";
   created_at: string;
   updated_at: string;
   grade_level?: string;
@@ -38,6 +39,144 @@ const EnrolleeDashboard = () => {
   const [runEnrollmentRecordsTour, setRunEnrollmentRecordsTour] = useState(false);
 
   const isEmailVerified = user?.status !== 'pending';
+
+  // Translation strings - all user-facing text
+  const textStrings = [
+    "Welcome",
+    "Enrollee Account Dashboard",
+    "Go to Enrollment",
+    "Email Verification Required",
+    "Verify your email address",
+    "to unlock enrollment and payment features. Click the button below to send a verification link to your email.",
+    "Send Verification Email",
+    "Sending...",
+    "Enrollment Period",
+    "Open",
+    "Upcoming",
+    "Closed",
+    "Start Date",
+    "End Date",
+    "slots filled",
+    "Allowed Grade Levels",
+    "Start Enrollment Application",
+    "Enrollment will open on",
+    "This enrollment period has closed",
+    "Welcome to Maranatha Christian Academy Foundation Enrollee Dashboard!",
+    "Start your enrollment journey by filling out the application form.",
+    "Email verified",
+    "Enrollment Status",
+    "Application Status",
+    "No Admission",
+    "Pending Review",
+    "Incomplete",
+    "Under Review",
+    "Verified",
+    "Approved",
+    "Rejected",
+    "Enrollment Submitted",
+    "Last updated:",
+    "Grade Level:",
+    "School Year:",
+    "No active enrollment found",
+    "Account Information",
+    "Email",
+    "Role",
+    "Quick Actions",
+    "View Enrollment",
+    "Payment Status",
+    "Please verify your email first",
+    "Enrollment Workflow",
+    "Track your progress through the enrollment process",
+    "Create Account & Verify Email",
+    "Register and verify your email address.",
+    "Submit Enrollment Application",
+    "Fill out and submit your enrollment form with required documents.",
+    "Application Under Review",
+    "Our admissions team is reviewing your application. This typically takes 2-3 business days.",
+    "Approval & Payment",
+    "Once approved, proceed with tuition payment to complete enrollment.",
+    "Access Your Classes",
+    "Gain full access to your courses and student resources.",
+    "Completed",
+    "In Progress",
+    "Waiting for Submission",
+    "Pending",
+    "Need Help?",
+    "If you have any questions about your enrollment status or need assistance, please don't hesitate to contact our admissions team.",
+    "Contact Support",
+    "Loading your dashboard",
+    "Fetching your enrollment and account information...",
+  ];
+
+  const translatedTexts = useTranslatedTexts(textStrings);
+  
+  // Create translation object for easy access
+  const t = useMemo(() => ({
+    welcome: translatedTexts[0],
+    enrolleeAccountDashboard: translatedTexts[1],
+    goToEnrollment: translatedTexts[2],
+    emailVerificationRequired: translatedTexts[3],
+    verifyEmailAddress: translatedTexts[4],
+    toUnlockEnrollment: translatedTexts[5],
+    sendVerificationEmail: translatedTexts[6],
+    sending: translatedTexts[7],
+    enrollmentPeriod: translatedTexts[8],
+    open: translatedTexts[9],
+    upcoming: translatedTexts[10],
+    closed: translatedTexts[11],
+    startDate: translatedTexts[12],
+    endDate: translatedTexts[13],
+    slotsFilled: translatedTexts[14],
+    allowedGradeLevels: translatedTexts[15],
+    startEnrollmentApplication: translatedTexts[16],
+    enrollmentWillOpenOn: translatedTexts[17],
+    enrollmentPeriodClosed: translatedTexts[18],
+    welcomeToMaranatha: translatedTexts[19],
+    startYourJourney: translatedTexts[20],
+    emailVerified: translatedTexts[21],
+    enrollmentStatus: translatedTexts[22],
+    applicationStatus: translatedTexts[23],
+    noAdmission: translatedTexts[24],
+    pendingReview: translatedTexts[25],
+    incomplete: translatedTexts[26],
+    underReview: translatedTexts[27],
+    verified: translatedTexts[28],
+    approved: translatedTexts[29],
+    rejected: translatedTexts[30],
+    enrollmentSubmitted: translatedTexts[31],
+    lastUpdated: translatedTexts[32],
+    gradeLevel: translatedTexts[33],
+    schoolYear: translatedTexts[34],
+    noActiveEnrollment: translatedTexts[35],
+    accountInformation: translatedTexts[36],
+    email: translatedTexts[37],
+    role: translatedTexts[38],
+    quickActions: translatedTexts[39],
+    viewEnrollment: translatedTexts[40],
+    paymentStatus: translatedTexts[41],
+    pleaseVerifyEmail: translatedTexts[42],
+    enrollmentWorkflow: translatedTexts[43],
+    trackYourProgress: translatedTexts[44],
+    createAccountVerifyEmail: translatedTexts[45],
+    registerAndVerify: translatedTexts[46],
+    submitEnrollmentApplication: translatedTexts[47],
+    fillOutAndSubmit: translatedTexts[48],
+    applicationUnderReview: translatedTexts[49],
+    admissionsReviewing: translatedTexts[50],
+    approvalAndPayment: translatedTexts[51],
+    onceApprovedProceed: translatedTexts[52],
+    accessYourClasses: translatedTexts[53],
+    gainFullAccess: translatedTexts[54],
+    completed: translatedTexts[55],
+    inProgress: translatedTexts[56],
+    waitingForSubmission: translatedTexts[57],
+    pending: translatedTexts[58],
+    needHelp: translatedTexts[59],
+    needHelpDescription: translatedTexts[60],
+    contactSupport: translatedTexts[61],
+    loadingDashboard: translatedTexts[62],
+    fetchingInformation: translatedTexts[63],
+  }), [translatedTexts]);
 
   const unverifiedTourSteps: Step[] = [
     {
@@ -560,40 +699,40 @@ const EnrolleeDashboard = () => {
     const baseSteps = [
       {
         id: 1,
-        title: "Create Account & Verify Email",
-        description: "Register and verify your email address.",
+        title: t.createAccountVerifyEmail,
+        description: t.registerAndVerify,
         status: "completed",
         icon: "✓",
         locked: false
       },
       {
         id: 2,
-        title: "Submit Enrollment Application",
-        description: "Fill out and submit your enrollment form with required documents.",
+        title: t.submitEnrollmentApplication,
+        description: t.fillOutAndSubmit,
         status: enrollmentData ? "completed" : "waiting",
         icon: enrollmentData ? "✓" : "2",
         locked: false
       },
       {
         id: 3,
-        title: "Application Under Review",
-        description: "Our admissions team is reviewing your application. This typically takes 2-3 business days.",
+        title: t.applicationUnderReview,
+        description: t.admissionsReviewing,
         status: enrollmentData?.status === "under_review" ? "in-progress" : (enrollmentData?.status === "verified" || enrollmentData?.status === "approved" ? "completed" : (enrollmentData ? "pending" : "pending")),
         icon: enrollmentData?.status === "under_review" ? "⏳" : (enrollmentData?.status === "verified" || enrollmentData?.status === "approved" ? "✓" : "3"),
         locked: !enrollmentData
       },
       {
         id: 4,
-        title: "Approval & Payment",
-        description: "Once approved, proceed with tuition payment to complete enrollment.",
+        title: t.approvalAndPayment,
+        description: t.onceApprovedProceed,
         status: enrollmentData?.status === "verified" || enrollmentData?.status === "approved" ? "in-progress" : (enrollmentData?.status === "rejected" ? "rejected" : "pending"),
         icon: enrollmentData?.status === "verified" || enrollmentData?.status === "approved" ? "💳" : "4",
         locked: !enrollmentData || (enrollmentData?.status !== "verified" && enrollmentData?.status !== "approved")
       },
       {
         id: 5,
-        title: "Access Your Classes",
-        description: "Gain full access to your courses and student resources.",
+        title: t.accessYourClasses,
+        description: t.gainFullAccess,
         status: enrollmentData?.status === "approved" ? "pending" : "pending",
         icon: "5",
         locked: !enrollmentData || enrollmentData?.status !== "approved"
@@ -605,13 +744,13 @@ const EnrolleeDashboard = () => {
 
   const steps = getWorkflowSteps();
   const statusColors: Record<string, { badge: string; text: string }> = {
-    pending: { badge: "bg-yellow-100 text-yellow-800", text: "Pending Review" },
-    incomplete: { badge: "bg-red-100 text-red-800", text: "Incomplete" },
-    under_review: { badge: "bg-blue-100 text-blue-800", text: "Under Review" },
-    verified: { badge: "bg-blue-100 text-blue-800", text: "Verified" },
-    approved: { badge: "bg-green-100 text-green-800", text: "Approved" },
-    rejected: { badge: "bg-red-100 text-red-800", text: "Rejected" },
-    "no-admission": { badge: "bg-gray-100 text-gray-800", text: "No Admission" }
+    pending: { badge: "bg-yellow-100 text-yellow-800", text: t.pendingReview },
+    incomplete: { badge: "bg-red-100 text-red-800", text: t.incomplete },
+    under_review: { badge: "bg-blue-100 text-blue-800", text: t.underReview },
+    verified: { badge: "bg-blue-100 text-blue-800", text: t.verified },
+    approved: { badge: "bg-green-100 text-green-800", text: t.approved },
+    rejected: { badge: "bg-red-100 text-red-800", text: t.rejected },
+    "no-admission": { badge: "bg-gray-100 text-gray-800", text: t.noAdmission }
   };
 
   // Determine current status for the card
@@ -627,8 +766,8 @@ const EnrolleeDashboard = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">Loading your dashboard</h2>
-              <p className="text-sm text-muted-foreground">Fetching your enrollment and account information...</p>
+              <h2 className="text-xl font-semibold text-foreground mb-2">{t.loadingDashboard}</h2>
+              <p className="text-sm text-muted-foreground">{t.fetchingInformation}</p>
             </div>
           </div>
         </div>
@@ -640,9 +779,9 @@ const EnrolleeDashboard = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-4 sm:mb-6">
             <div className="w-full">
               <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-1 sm:mb-2">
-                Welcome, {user?.first_name || user?.name}!
+                {t.welcome}, {user?.first_name || user?.name}!
               </h1>
-              <p className="text-xs sm:text-base text-muted-foreground">Enrollee Account Dashboard</p>
+              <p className="text-xs sm:text-base text-muted-foreground">{t.enrolleeAccountDashboard}</p>
             </div>
             <Button
               onClick={() => navigate(isEmailVerified ? "/enrollee/enrollment" : "#")}
@@ -650,7 +789,7 @@ const EnrolleeDashboard = () => {
               className="bg-gradient-to-r from-blue-600 to-blue-700 text-white w-full sm:w-auto text-sm sm:text-base h-9 sm:h-10"
             >
               <FileText className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
-              Go to Enrollment
+              {t.goToEnrollment}
             </Button>
           </div>
         </div>
@@ -661,14 +800,13 @@ const EnrolleeDashboard = () => {
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-amber-900">
                 <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                Email Verification Required
+                {t.emailVerificationRequired}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-amber-900 break-words">
-                  Verify your email address <span className="font-semibold break-all">{user?.email}</span> to unlock enrollment and payment features. 
-                  Click the button below to send a verification link to your email.
+                  {t.verifyEmailAddress} <span className="font-semibold break-all">{user?.email}</span> {t.toUnlockEnrollment}
                 </p>
                 <Button
                   onClick={handleResendVerification}
@@ -677,7 +815,7 @@ const EnrolleeDashboard = () => {
                   className="gap-2 w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
                 >
                   <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
-                  {isResending ? "Sending..." : "Send Verification Email"}
+                  {isResending ? t.sending : t.sendVerificationEmail}
                 </Button>
               </div>
             </CardContent>
@@ -696,7 +834,7 @@ const EnrolleeDashboard = () => {
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2 flex-wrap">
                 <CalendarClock className="h-4 w-4 sm:h-5 sm:w-5" />
-                Enrollment Period
+                {t.enrollmentPeriod}
                 <Badge 
                   variant={
                     activeEnrollmentPeriod.status === 'Open' ? 'default' :
@@ -730,11 +868,11 @@ const EnrolleeDashboard = () => {
 
               <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-2">
                 <div>
-                  <p className="text-xs text-muted-foreground">Start Date</p>
+                  <p className="text-xs text-muted-foreground">{t.startDate}</p>
                   <p className="font-medium text-xs sm:text-sm">{new Date(activeEnrollmentPeriod.start_date).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">End Date</p>
+                  <p className="text-xs text-muted-foreground">{t.endDate}</p>
                   <p className="font-medium text-xs sm:text-sm">{new Date(activeEnrollmentPeriod.end_date).toLocaleDateString()}</p>
                 </div>
               </div>
@@ -746,14 +884,14 @@ const EnrolleeDashboard = () => {
                     <span className="font-semibold">{activeEnrollmentPeriod.current_enrollees || 0}</span>
                     <span className="text-muted-foreground"> / </span>
                     <span className="font-semibold">{activeEnrollmentPeriod.max_slots}</span>
-                    <span className="text-muted-foreground"> slots filled</span>
+                    <span className="text-muted-foreground"> {t.slotsFilled}</span>
                   </span>
                 </div>
               )}
 
               {activeEnrollmentPeriod.allowed_grade_levels && activeEnrollmentPeriod.allowed_grade_levels.length > 0 && (
                 <div className="pt-2">
-                  <p className="text-xs text-muted-foreground mb-2">Allowed Grade Levels</p>
+                  <p className="text-xs text-muted-foreground mb-2">{t.allowedGradeLevels}</p>
                   <div className="flex flex-wrap gap-1">
                     {(typeof activeEnrollmentPeriod.allowed_grade_levels === 'string' 
                       ? JSON.parse(activeEnrollmentPeriod.allowed_grade_levels) 
@@ -773,14 +911,14 @@ const EnrolleeDashboard = () => {
                   className="w-full mt-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs sm:text-sm h-9 sm:h-10"
                 >
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  Start Enrollment Application
+                  {t.startEnrollmentApplication}
                 </Button>
               )}
 
               {activeEnrollmentPeriod.status === 'Upcoming' && (
                 <div className="mt-4 p-3 bg-blue-100 rounded-lg">
                   <p className="text-xs sm:text-sm text-blue-900 text-center">
-                    Enrollment will open on {new Date(activeEnrollmentPeriod.start_date).toLocaleDateString()}
+                    {t.enrollmentWillOpenOn} {new Date(activeEnrollmentPeriod.start_date).toLocaleDateString()}
                   </p>
                 </div>
               )}
@@ -788,7 +926,7 @@ const EnrolleeDashboard = () => {
               {activeEnrollmentPeriod.status === 'Closed' && (
                 <div className="mt-4 p-3 bg-gray-100 rounded-lg">
                   <p className="text-xs sm:text-sm text-gray-900 text-center">
-                    This enrollment period has closed
+                    {t.enrollmentPeriodClosed}
                   </p>
                 </div>
               )}
@@ -801,17 +939,17 @@ const EnrolleeDashboard = () => {
         <Card className="mb-4 sm:mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-lg border-0">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-lg sm:text-2xl text-blue-900">
-              Welcome to Maranatha Christian Academy Foundation Enrollee Dashboard!
+              {t.welcomeToMaranatha}
             </CardTitle>
             <CardDescription className="text-blue-700 text-xs sm:text-sm">
-              Start your enrollment journey by filling out the application form.
+              {t.startYourJourney}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                <span className="text-xs sm:text-sm font-medium">Email verified</span>
+                <span className="text-xs sm:text-sm font-medium">{t.emailVerified}</span>
               </div>
             </div>
           </CardContent>
@@ -825,33 +963,33 @@ const EnrolleeDashboard = () => {
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600" />
-                Enrollment Status
+                {t.enrollmentStatus}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">Application Status</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">{t.applicationStatus}</p>
                   <Badge className={`${statusColors[currentStatus].badge} text-xs sm:text-sm px-2 sm:px-3 py-1`}>
-                    {!enrollmentData ? "No Admission" : statusColors[currentStatus].text}
+                    {!enrollmentData ? t.noAdmission : statusColors[currentStatus].text}
                   </Badge>
                 </div>
                 {enrollmentData && (
                   <div className="space-y-2">
                     <div>
-                      <p className="text-xs sm:text-sm font-medium text-foreground">Enrollment Submitted</p>
-                      <p className="text-xs text-muted-foreground mt-1">Last updated: {new Date(enrollmentData.updated_at).toLocaleDateString()}</p>
+                      <p className="text-xs sm:text-sm font-medium text-foreground">{t.enrollmentSubmitted}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t.lastUpdated} {new Date(enrollmentData.updated_at).toLocaleDateString()}</p>
                     </div>
                     {enrollmentData.grade_level && (
-                      <p className="text-xs text-muted-foreground">Grade Level: {enrollmentData.grade_level}</p>
+                      <p className="text-xs text-muted-foreground">{t.gradeLevel} {enrollmentData.grade_level}</p>
                     )}
                     {enrollmentData.school_year && (
-                      <p className="text-xs text-muted-foreground">School Year: {enrollmentData.school_year}</p>
+                      <p className="text-xs text-muted-foreground">{t.schoolYear} {enrollmentData.school_year}</p>
                     )}
                   </div>
                 )}
                 {!enrollmentData && (
-                  <p className="text-xs text-muted-foreground">No active enrollment found</p>
+                  <p className="text-xs text-muted-foreground">{t.noActiveEnrollment}</p>
                 )}
               </div>
             </CardContent>
@@ -862,22 +1000,22 @@ const EnrolleeDashboard = () => {
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <User className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                Account Information
+                {t.accountInformation}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Email</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t.email}</p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
                     <p className="font-medium text-xs sm:text-sm break-all text-foreground">{user?.email}</p>
                     <Badge variant={isEmailVerified ? "default" : "secondary"} className="flex-shrink-0 w-fit text-xs">
-                      {isEmailVerified ? "✓ Verified" : "⚠ Unverified"}
+                      {isEmailVerified ? `✓ ${t.verified}` : "⚠ Unverified"}
                     </Badge>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Role</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t.role}</p>
                   <p className="font-medium text-xs sm:text-sm text-foreground capitalize mt-1">{user?.role}</p>
                 </div>
               </div>
@@ -887,7 +1025,7 @@ const EnrolleeDashboard = () => {
           {/* Quick Actions */}
           <Card id="quick-actions-card" className="shadow-lg border-0">
             <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
+              <CardTitle className="text-base sm:text-lg">{t.quickActions}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <div className="space-y-2">
@@ -896,9 +1034,9 @@ const EnrolleeDashboard = () => {
                   disabled={!isEmailVerified}
                   variant="outline"
                   className="w-full justify-between text-xs sm:text-sm h-8 sm:h-9"
-                  title={!isEmailVerified ? "Please verify your email first" : ""}
+                  title={!isEmailVerified ? t.pleaseVerifyEmail : ""}
                 >
-                  <span>View Enrollment</span>
+                  <span>{t.viewEnrollment}</span>
                   <ArrowRight className="h-3 sm:h-4 w-3 sm:w-4" />
                 </Button>
                 <Button 
@@ -906,9 +1044,9 @@ const EnrolleeDashboard = () => {
                   disabled={!isEmailVerified}
                   variant="outline"
                   className="w-full justify-between text-xs sm:text-sm h-8 sm:h-9"
-                  title={!isEmailVerified ? "Please verify your email first" : ""}
+                  title={!isEmailVerified ? t.pleaseVerifyEmail : ""}
                 >
-                  <span>Payment Status</span>
+                  <span>{t.paymentStatus}</span>
                   <CreditCard className="h-3 sm:h-4 w-3 sm:w-4" />
                 </Button>
               </div>
@@ -921,10 +1059,10 @@ const EnrolleeDashboard = () => {
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
-              Enrollment Workflow
+              {t.enrollmentWorkflow}
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Track your progress through the enrollment process
+              {t.trackYourProgress}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
@@ -957,7 +1095,7 @@ const EnrolleeDashboard = () => {
                       <h4 className={`font-semibold text-xs sm:text-base ${step.locked ? "text-gray-500" : "text-foreground"}`}>{step.title}</h4>
                       <p className={`text-xs sm:text-sm mt-1 break-words ${step.locked ? "text-gray-400" : "text-muted-foreground"}`}>{step.description}</p>
                       <Badge className="mt-2 text-xs" variant={step.status === "completed" ? "default" : step.status === "in-progress" ? "secondary" : "outline"}>
-                        {step.status === "completed" ? "Completed" : step.status === "in-progress" ? "In Progress" : step.status === "rejected" ? "Rejected" : step.status === "waiting" ? "Waiting for Submission" : "Pending"}
+                        {step.status === "completed" ? t.completed : step.status === "in-progress" ? t.inProgress : step.status === "rejected" ? t.rejected : step.status === "waiting" ? t.waitingForSubmission : t.pending}
                       </Badge>
                     </div>
                   </div>
@@ -970,15 +1108,14 @@ const EnrolleeDashboard = () => {
         {/* Help Section */}
         <Card className="mt-4 sm:mt-8 shadow-lg border-0">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg">Need Help?</CardTitle>
+            <CardTitle className="text-base sm:text-lg">{t.needHelp}</CardTitle>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">
             <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-              If you have any questions about your enrollment status or need assistance, 
-              please don't hesitate to contact our admissions team.
+              {t.needHelpDescription}
             </p>
             <Button variant="outline" className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10">
-              Contact Support
+              {t.contactSupport}
             </Button>
           </CardContent>
         </Card>

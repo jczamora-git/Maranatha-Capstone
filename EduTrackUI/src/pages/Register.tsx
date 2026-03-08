@@ -4,16 +4,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ChevronRight, ChevronLeft, UserPlus } from "lucide-react";
+import { AlertCircle, ChevronRight, ChevronLeft, UserPlus, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { API_ENDPOINTS, apiGet } from "@/lib/api";
+import { CompactLanguageSelector } from "@/components/LanguageSelector";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface RegisterFormData {
   childFirstName: string;
   childMiddleName: string;
   childLastName: string;
   parentEmail: string;
+  phoneNumber: string;
   password: string;
   confirmPassword: string;
 }
@@ -28,10 +39,15 @@ const Register = () => {
     childMiddleName: "",
     childLastName: "",
     parentEmail: "",
+    phoneNumber: "",
     password: "",
     confirmPassword: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState<'allow' | 'deny' | null>(null);
+  const [activeSchoolYear, setActiveSchoolYear] = useState<string>('2023-2024');
 
   // Redirect if already logged in
   useEffect(() => {
@@ -39,6 +55,22 @@ const Register = () => {
       navigate("/enrollee/dashboard", { replace: true });
     }
   }, [user, navigate]);
+
+  // Fetch active academic period for dynamic school year
+  useEffect(() => {
+    const fetchActiveSchoolYear = async () => {
+      try {
+        const response = await apiGet(API_ENDPOINTS.ACADEMIC_PERIODS_ACTIVE);
+        if (response?.success && response?.data?.school_year) {
+          setActiveSchoolYear(response.data.school_year);
+        }
+      } catch (error) {
+        console.error('Error fetching active school year:', error);
+        // Keep default 2023-2024 if fetch fails
+      }
+    };
+    fetchActiveSchoolYear();
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -57,6 +89,12 @@ const Register = () => {
       newErrors.parentEmail = "Please enter a valid email address";
     }
 
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else if (!/^[0-9]{10,11}$/.test(formData.phoneNumber.replace(/[\s-]/g, ''))) {
+      newErrors.phoneNumber = "Please enter a valid 10-11 digit phone number";
+    }
+
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
@@ -73,6 +111,11 @@ const Register = () => {
     const domainAllowed = allowedDomains.some((d) => emailToCheck.endsWith(d));
     if (formData.parentEmail && !domainAllowed) {
       newErrors.parentEmail = "Please use @gmail.com or @yahoo.com email address";
+    }
+
+    if (!hasAcceptedPrivacy) {
+      toast.error("Please read and accept the Data Privacy terms");
+      return false;
     }
 
     setErrors(newErrors);
@@ -110,7 +153,8 @@ const Register = () => {
         formData.childFirstName,
         formData.childMiddleName,
         formData.childLastName,
-        "enrollee"
+        "enrollee",
+        formData.phoneNumber
       );
 
       if (result && result.success) {
@@ -137,6 +181,11 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-4">
+      {/* Language Selector - Fixed Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <CompactLanguageSelector />
+      </div>
+
       <div className="max-w-3xl mx-auto">
         {/* Header Section - Logo */}
         <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 rounded-3xl p-10 mb-8 shadow-xl">
@@ -297,6 +346,25 @@ const Register = () => {
                 </p>
               </div>
 
+              {/* Phone Number */}
+              <div className="space-y-3">
+                <Label htmlFor="phoneNumber" className="text-base font-bold text-gray-800">Contact Phone Number *</Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  placeholder="09XXXXXXXXX"
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                  className={`h-12 text-base ${errors.phoneNumber ? "border-red-500 border-2" : "border-gray-200"}`}
+                  disabled={isLoading}
+                  maxLength={11}
+                />
+                {errors.phoneNumber && (
+                  <p className="text-sm text-red-600 font-medium">{errors.phoneNumber}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-2">📱 Enter 10-11 digit mobile number (e.g., 09171234567)</p>
+              </div>
+
               {/* Account Password */}
               <div className="space-y-3">
                 <Label htmlFor="password" className="text-base font-bold text-gray-800">Create Account Password *</Label>
@@ -332,19 +400,38 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Terms and Conditions */}
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 my-7">
-                <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    required
-                    className="mt-1 h-5 w-5 rounded border border-blue-300 bg-white cursor-pointer accent-blue-600"
+              {/* Data Privacy Consent */}
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 my-7">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <h4 className="font-bold text-gray-800">Data Privacy Act Compliance</h4>
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    As per Republic Act No. 10173 (Data Privacy Act of 2012), we need your consent for data collection and media posting.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    className="w-full border-blue-300 hover:bg-blue-100"
                     disabled={isLoading}
-                  />
-                  <Label htmlFor="terms" className="text-sm font-normal leading-relaxed cursor-pointer text-gray-700">
-                    I agree to the <span className="font-semibold text-blue-600">Terms of Service</span> and <span className="font-semibold text-blue-600">Privacy Policy</span> of Maranatha Christian Academy
-                  </Label>
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Read Data Privacy Terms & Consent Form
+                  </Button>
+                  {hasAcceptedPrivacy && (
+                    <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
+                        <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-green-800">
+                        Privacy terms accepted {privacyConsent === 'allow' ? '(Photos/Videos: Allowed)' : '(Photos/Videos: Not Allowed)'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -385,6 +472,135 @@ const Register = () => {
           </p>
         </div>
       </div>
+
+      {/* Data Privacy Modal */}
+      <Dialog open={isPrivacyModalOpen} onOpenChange={setIsPrivacyModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-blue-700 flex items-center gap-2">
+              <FileText className="h-6 w-6" />
+              Data Privacy Act of 2012 - Consent Form
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              Maranatha Christian Academy Foundation Calapan City Inc.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Header Section */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <strong>Dear MCAFCAL Parents,</strong>
+              </p>
+              <p className="text-sm text-gray-700 mt-2 leading-relaxed">
+                Blessings! Maranatha Christian Foundation Calapan City, Inc. would like to thank you for your endless support and participation in MCAFCAL activities.
+              </p>
+            </div>
+
+            {/* Privacy Act Notice */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-gray-800 text-lg">Republic Act No. 10173 (Data Privacy Act of 2012)</h3>
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <p className="text-sm text-gray-700 leading-relaxed italic">
+                  "The school is not allowed to post pictures and videos online without the parents' consent."
+                </p>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                As a compliant with the aforementioned Law, we would like to ask permission during our school programs and activities in the MCA Foundation Calapan City, Inc Social Media Accounts – Facebook and Instagram for the Academic Year {activeSchoolYear}.
+              </p>
+            </div>
+
+            {/* Consent Section */}
+            <div className="space-y-4">
+              <h3 className="font-bold text-gray-800 text-lg">Your Consent/Decision</h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Kindly check your preferred statement below that signifies your <strong>consent/decision</strong> and complete this form. Be rest assured that, without your consent, the pictures/videos of your child/ren will not be posted online.
+              </p>
+
+              {/* Radio Options */}
+              <div className="space-y-3 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <label className="flex items-start space-x-3 cursor-pointer hover:bg-white p-3 rounded-lg transition-colors">
+                  <input
+                    type="radio"
+                    name="privacy-consent"
+                    value="allow"
+                    checked={privacyConsent === 'allow'}
+                    onChange={(e) => setPrivacyConsent(e.target.value as 'allow')}
+                    className="mt-1 h-4 w-4 accent-blue-600"
+                  />
+                  <span className="text-sm text-gray-700 leading-relaxed">
+                    <strong>✓ Yes,</strong> I allow MCA Foundation Calapan City, Inc. to post my child's pictures/videos online.
+                  </span>
+                </label>
+
+                <label className="flex items-start space-x-3 cursor-pointer hover:bg-white p-3 rounded-lg transition-colors">
+                  <input
+                    type="radio"
+                    name="privacy-consent"
+                    value="deny"
+                    checked={privacyConsent === 'deny'}
+                    onChange={(e) => setPrivacyConsent(e.target.value as 'deny')}
+                    className="mt-1 h-4 w-4 accent-blue-600"
+                  />
+                  <span className="text-sm text-gray-700 leading-relaxed">
+                    <strong>✗ No,</strong> I don't allow MCA Foundation Calapan City, Inc. to post my child's pictures/videos online.
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Thank you very much for your continuous support in all our undertakings. God bless you and your whole family.
+              </p>
+              <p className="text-sm text-gray-700 mt-3 italic">
+                <strong>For your kid's sake,</strong>
+              </p>
+            </div>
+
+            {/* Terms of Service */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-gray-800 text-lg">Terms of Service & Privacy Policy</h3>
+              <div className="text-sm text-gray-700 space-y-2 leading-relaxed">
+                <p>By creating an account, you agree to:</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>Provide accurate and complete information</li>
+                  <li>Maintain the security of your account credentials</li>
+                  <li>Accept responsibility for all activities under your account</li>
+                  <li>Allow the school to collect and process necessary personal data for enrollment purposes</li>
+                  <li>Receive important communications regarding your child's education</li>
+                  <li>Comply with school policies and procedures</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-col gap-3">
+            <Button
+              onClick={() => {
+                if (privacyConsent) {
+                  setHasAcceptedPrivacy(true);
+                  setIsPrivacyModalOpen(false);
+                  toast.success("Privacy terms accepted");
+                } else {
+                  toast.error("Please select your consent preference");
+                }
+              }}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              Accept & Continue
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsPrivacyModalOpen(false)}
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

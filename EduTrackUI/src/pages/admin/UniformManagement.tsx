@@ -31,7 +31,7 @@ import { FeatureGate } from "@/components/FeatureGate";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type ItemGroup = "Dress" | "Blouse" | "Skirt" | "Polo" | "PE";
+type ItemGroup = "Dress" | "Blouse" | "Skirt" | "Polo" | "PE" | "Others";
 type Gender = "Male" | "Female" | "All";
 
 type UniformPrice = {
@@ -73,7 +73,7 @@ type EditableItem = {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const ITEM_GROUPS: ItemGroup[] = ["Dress", "Blouse", "Skirt", "Polo", "PE"];
+const ITEM_GROUPS: ItemGroup[] = ["Dress", "Blouse", "Skirt", "Polo", "PE", "Others"];
 const GENDERS: Gender[] = ["All", "Male", "Female"];
 const YEAR_LEVELS = [
   "Nursery 1",
@@ -114,12 +114,13 @@ const GROUP_COLORS: Record<ItemGroup, { card: string; badge: string; icon: strin
   Skirt:  { card: "border-rose-200 bg-gradient-to-br from-rose-50 to-rose-100/60",     badge: "bg-rose-100 text-rose-700 border-rose-300",     icon: "text-rose-500" },
   Polo:   { card: "border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/60",     badge: "bg-blue-100 text-blue-700 border-blue-300",     icon: "text-blue-500" },
   PE:     { card: "border-teal-200 bg-gradient-to-br from-teal-50 to-teal-100/60",     badge: "bg-teal-100 text-teal-700 border-teal-300",     icon: "text-teal-500" },
+  Others: { card: "border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100/60",     badge: "bg-gray-100 text-gray-700 border-gray-300",     icon: "text-gray-500" },
 };
 
 const getDefaultGenderByCategory = (category: ItemGroup): Gender => {
   if (category === "Dress" || category === "Blouse" || category === "Skirt") return "Female";
   if (category === "Polo") return "Male";
-  return "All";
+  return "All"; // PE and Others default to All
 };
 
 function emptyEditable(): EditableItem {
@@ -342,15 +343,38 @@ const UniformManagement = () => {
       return;
     }
 
-    const validPrices = editable.prices.filter((p) => p.size.trim() !== "" && p.price !== "");
-    if (validPrices.length === 0) {
-      showAlert("error", "Add at least one size/price entry");
-      return;
+    // Filter valid prices based on category
+    let validPrices: UniformPrice[] = [];
+    
+    if (editable.item_group === "Others") {
+      // For "Others": use the direct price input (batchPrice) and store as One Size
+      const sourcePrice = batchPrice.trim() !== ""
+        ? batchPrice.trim()
+        : (editable.prices[0]?.price ?? "").trim();
+
+      if (sourcePrice === "") {
+        showAlert("error", "Please enter a price for this item");
+        return;
+      }
+
+      validPrices = [{
+        size: "One Size",
+        price: sourcePrice,
+        half_price: editable.allow_half_price ? batchHalfPrice : "",
+      }];
+    } else {
+      // For other categories: require both size and price
+      validPrices = editable.prices.filter((p) => p.size.trim() !== "" && p.price !== "");
+      
+      if (validPrices.length === 0) {
+        showAlert("error", "Add at least one size/price entry");
+        return;
+      }
     }
 
     const badPrice = validPrices.find((p) => isNaN(Number(p.price)) || Number(p.price) < 0);
     if (badPrice) {
-      showAlert("error", `Invalid price for size "${badPrice.size}"`);
+      showAlert("error", `Invalid price for ${editable.item_group === "Others" ? "this item" : `size "${badPrice.size}"`}`);
       return;
     }
 
@@ -791,31 +815,35 @@ const UniformManagement = () => {
 
               {/* Sizes & Prices */}
               <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wide">Sizes &amp; Prices *</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wide">
+                  {editable.item_group === "Others" ? "Price *" : "Sizes & Prices *"}
+                </Label>
 
                 <div className="space-y-3 rounded-xl border border-slate-200 p-3">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-2">Select Sizes</p>
-                    <div className="flex flex-wrap gap-2">
-                      {SIZE_OPTIONS.map((size) => {
-                        const selected = selectedSizes.includes(size);
-                        return (
-                          <button
-                            key={size}
-                            type="button"
-                            onClick={() => toggleSizeSelection(size)}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold border-2 transition-all ${
-                              selected
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"
-                            }`}
-                          >
-                            {size}
-                          </button>
-                        );
-                      })}
+                  {editable.item_group !== "Others" && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-2">Select Sizes</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SIZE_OPTIONS.map((size) => {
+                          const selected = selectedSizes.includes(size);
+                          return (
+                            <button
+                              key={size}
+                              type="button"
+                              onClick={() => toggleSizeSelection(size)}
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold border-2 transition-all ${
+                                selected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-white text-slate-600 border-slate-200 hover:border-primary/50"
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className={`grid gap-3 ${editable.allow_half_price ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"}`}>
                     <div>
@@ -826,7 +854,7 @@ const UniformManagement = () => {
                         step="0.01"
                         value={batchPrice}
                         onChange={(e) => setBatchPrice(e.target.value)}
-                        placeholder="0.00"
+                        placeholder={editable.item_group === "Others" ? "Enter price (e.g., 50.00)" : "0.00"}
                         className="h-8 text-sm mt-1"
                       />
                     </div>
@@ -846,18 +874,29 @@ const UniformManagement = () => {
                       </div>
                     )}
 
-                    <div className="flex items-end">
-                      <p className="text-xs text-slate-500 w-full text-right">
-                        Selected sizes auto-update with this price
-                      </p>
-                    </div>
+                    {editable.item_group !== "Others" && (
+                      <div className="flex items-end">
+                        <p className="text-xs text-slate-500 w-full text-right">
+                          Selected sizes auto-update with this price
+                        </p>
+                      </div>
+                    )}
+                    
+                    {editable.item_group === "Others" && (
+                      <div className="flex items-end">
+                        <p className="text-xs text-slate-500 w-full text-left">
+                          No sizes needed for this category
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-2">Configured Sizes</p>
-                    {editable.prices.length === 0 ? (
-                      <p className="text-sm text-slate-400 italic">No sizes added yet</p>
-                    ) : (
+                  {editable.item_group !== "Others" && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-2">Configured Sizes</p>
+                      {editable.prices.length === 0 ? (
+                        <p className="text-sm text-slate-400 italic">No sizes added yet</p>
+                      ) : (
                       <div className="flex flex-wrap gap-2">
                         {editable.prices
                           .slice()
@@ -884,7 +923,8 @@ const UniformManagement = () => {
                           ))}
                       </div>
                     )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

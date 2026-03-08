@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -112,11 +113,27 @@ type SchoolFee = {
   is_active: boolean;
 };
 
+type NotificationRow = {
+  id: number | string;
+  title?: string;
+  body?: string;
+  entity_type?: string;
+  entity_id?: number | string;
+  action_url?: string;
+  created_at?: string;
+};
+
 export default function PaymentPlans() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const confirmFn = useConfirm();
+  const queryClient = useQueryClient();
+  const highlightedPlanRef = useRef<HTMLTableRowElement | null>(null);
+  const highlightedPlanId = searchParams.get("highlight");
+  const highlightedNotificationId = searchParams.get("notification_id");
+  const [pendingHighlightedPlanId, setPendingHighlightedPlanId] = useState<string | null>(highlightedPlanId);
+  const [pendingNotificationId, setPendingNotificationId] = useState<string | null>(highlightedNotificationId);
 
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -127,6 +144,7 @@ export default function PaymentPlans() {
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [scheduleTemplates, setScheduleTemplates] = useState<ScheduleTemplate[]>([]);
   const [totalPenalties, setTotalPenalties] = useState<number>(0);
+  const [unreadPlanNotifications, setUnreadPlanNotifications] = useState<NotificationRow[]>([]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -534,6 +552,181 @@ export default function PaymentPlans() {
     return matchesSearch && matchesStatus;
   });
 
+  const unreadPlanNotificationsByPlanId = unreadPlanNotifications.reduce((acc, notif) => {
+    const key = String(notif.entity_id || "");
+    if (!key) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(notif);
+    return acc;
+  }, {} as Record<string, NotificationRow[]>);
+
+  const unreadHighlightedPlanIds = new Set(Object.keys(unreadPlanNotificationsByPlanId));
+
+  const refreshUnreadPlanNotifications = async () => {
+    try {
+      const res = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?unread_only=true&limit=100`);
+      const rows = Array.isArray(res?.data) ? res.data : [];
+      const filtered = rows.filter((row: any) => {
+        const entityType = String(row?.entity_type || "").toLowerCase();
+        const actionUrl = String(row?.action_url || "").toLowerCase();
+        return (
+          (entityType === "payment_plan" || entityType === "payment_plans" || entityType === "installment") &&
+          actionUrl.includes("/admin/payment-plans")
+        );
+      });
+      setUnreadPlanNotifications(filtered);
+    } catch (err) {
+      console.error("Failed to load unread payment-plan notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshUnreadPlanNotifications();
+  }, []);
+
+  useEffect(() => {
+    if (highlightedPlanId) {
+      setPendingHighlightedPlanId(highlightedPlanId);
+    }
+    if (highlightedNotificationId) {
+      setPendingNotificationId(highlightedNotificationId);
+    }
+  }, [highlightedPlanId, highlightedNotificationId]);
+
+  useEffect(() => {
+    if (!pendingHighlightedPlanId || !highlightedPlanRef.current) return;
+
+    const scrollTimer = setTimeout(() => {
+      highlightedPlanRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 250);
+
+    return () => {
+      clearTimeout(scrollTimer);
+    };
+  }, [pendingHighlightedPlanId]);
+
+  const handleViewAction = async (plan: PaymentPlan) => {
+    const mappedUnreadForPlan = unreadPlanNotificationsByPlanId[String(plan.id)] || [];
+    const mappedNotificationId = mappedUnreadForPlan.length > 0 ? String(mappedUnreadForPlan[0].id) : null;
+    const notificationIdToMark = pendingNotificationId || highlightedNotificationId || mappedNotificationId;
+    const hasNotificationContext = Boolean(
+      notificationIdToMark || pendingHighlightedPlanId || highlightedPlanId
+    );
+
+    if (!hasNotificationContext) {
+      navigate(`/admin/payment-plans/${plan.id}`);
+      return;
+    }
+
+    const markResult = await markPlanNotificationsAsRead(String(plan.id), notificationIdToMark ? [String(notificationIdToMark)] : []);
+
+    if (markResult.successCount > 0) {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "sidebar-unread-snapshot"] });
+      refreshUnreadPlanNotifications();
+      setPendingNotificationId(null);
+      setPendingHighlightedPlanId(null);
+      setSearchParams((params) => {
+        const nextParams = new URLSearchParams(params);
+        nextParams.delete("highlight");
+        nextParams.delete("notification_id");
+        return nextParams;
+      });
+    } else if (markResult.candidateIds.length > 0) {
+      setError(
+        markResult.lastErrorMessage
+          ? `Failed to mark as read (${markResult.lastErrorMessage})`
+          : "Failed to mark notification as read"
+      );
+      return;
+    } else {
+      setError("No matching notification found to mark as read");
+      return;
+    }
+
+    navigate(`/admin/payment-plans/${plan.id}`);
+  };
+
+  const markPlanNotificationsAsRead = async (planId: string, preferredIds: string[] = []) => {
+    let backendMessage = "";
+
+    try {
+      const byPlanRes = await apiPost(API_ENDPOINTS.PAYMENT_PLAN_MARK_NOTIFICATIONS_READ(planId), {});
+      if (byPlanRes?.success) {
+        const serverCandidates = Array.isArray(byPlanRes?.candidate_notification_ids)
+          ? byPlanRes.candidate_notification_ids.map((id: any) => String(id)).filter(Boolean)
+          : [];
+        const markedCount = Number(byPlanRes?.marked_count || 0);
+
+        if (markedCount > 0) {
+          return {
+            candidateIds: serverCandidates,
+            successCount: markedCount,
+            lastErrorMessage: "",
+          };
+        }
+
+        backendMessage = String(byPlanRes?.message || "");
+      }
+    } catch (err: any) {
+      backendMessage = err?.message || "request failed";
+    }
+
+    const mappedUnreadForPlan = unreadPlanNotificationsByPlanId[String(planId)] || [];
+    const candidateIds = Array.from(
+      new Set([
+        ...preferredIds,
+        ...mappedUnreadForPlan.map((row) => String(row.id)).filter(Boolean),
+      ])
+    );
+
+    if (candidateIds.length === 0) {
+      try {
+        const unreadRes = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?unread_only=true&limit=100`);
+        const unreadRows = Array.isArray(unreadRes?.data) ? unreadRes.data : [];
+        unreadRows.forEach((row: any) => {
+          const entityType = String(row?.entity_type || "").toLowerCase();
+          const rowEntityId = String(row?.entity_id || "");
+          const actionUrl = String(row?.action_url || "").toLowerCase();
+          const isPlanNotif =
+            (entityType === "payment_plan" || entityType === "payment_plans" || entityType === "installment") &&
+            rowEntityId === String(planId) &&
+            actionUrl.includes("/admin/payment-plans");
+
+          if (isPlanNotif && row?.id) {
+            candidateIds.push(String(row.id));
+          }
+        });
+      } catch {
+        // fallback lookup failed, return with current candidates
+      }
+    }
+
+    const uniqueIds = Array.from(new Set(candidateIds));
+    let successCount = 0;
+    let lastErrorMessage = "";
+
+    for (const notifId of uniqueIds) {
+      try {
+        const markReadRes = await apiPost(API_ENDPOINTS.NOTIFICATION_MARK_AS_READ(notifId), {});
+        if (markReadRes?.success) {
+          successCount += 1;
+        } else if (markReadRes?.message) {
+          lastErrorMessage = String(markReadRes.message);
+        }
+      } catch (err: any) {
+        lastErrorMessage = err?.message || "request failed";
+      }
+    }
+
+    return {
+      candidateIds: uniqueIds,
+      successCount,
+      lastErrorMessage: lastErrorMessage || backendMessage,
+    };
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       Active: "bg-blue-100 text-blue-800",
@@ -714,12 +907,29 @@ export default function PaymentPlans() {
                 </thead>
                 <tbody>
                   {filteredPlans.map((plan) => (
-                    <tr key={plan.id} className="border-b hover:bg-muted/50">
+                    <tr
+                      key={plan.id}
+                      ref={pendingHighlightedPlanId === String(plan.id) ? highlightedPlanRef : null}
+                      className={
+                        pendingHighlightedPlanId === String(plan.id)
+                          ? "border-b bg-yellow-50/80 ring-1 ring-yellow-300 hover:bg-yellow-50"
+                          : unreadHighlightedPlanIds.has(String(plan.id))
+                            ? "border-b bg-amber-50/70 hover:bg-amber-100/60"
+                          : "border-b hover:bg-muted/50"
+                      }
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <p className="font-medium">{plan.student_name}</p>
+                            <p className="font-medium flex items-center gap-2">
+                              {plan.student_name}
+                              {unreadHighlightedPlanIds.has(String(plan.id)) && (
+                                <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] px-1.5 py-0 h-5">
+                                  New
+                                </Badge>
+                              )}
+                            </p>
                             <p className="text-xs text-muted-foreground">{plan.student_number}</p>
                           </div>
                         </div>
@@ -744,14 +954,16 @@ export default function PaymentPlans() {
                         <Badge className={getStatusBadge(plan.status)}>{plan.status}</Badge>
                       </td>
                       <td className="px-6 py-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/admin/payment-plans/${plan.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewAction(plan)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -155,6 +155,16 @@ type DiscountTemplate = {
   is_active: boolean;
 };
 
+type NotificationRow = {
+  id: number | string;
+  title?: string;
+  body?: string;
+  entity_type?: string;
+  entity_id?: number | string;
+  action_url?: string;
+  created_at?: string;
+};
+
 // Payment types for creating NEW payments (Tuition Installment removed - created via Payment Plans)
 const PAYMENT_TYPES = [
   "Tuition Full Payment",
@@ -388,6 +398,7 @@ const Payments = () => {
   const [gcashToken, setGcashToken] = useState<string | null>(null);
   const [gcashSessionLoading, setGcashSessionLoading] = useState(false);
   const [gcashProofReceived, setGcashProofReceived] = useState(false);
+  const [unreadPaymentNotifications, setUnreadPaymentNotifications] = useState<NotificationRow[]>([]);
 
   const showAlert = (type: "success" | "error" | "info", message: string) => {
     setAlert({ type, message });
@@ -528,7 +539,6 @@ const Payments = () => {
       // Fetch payments from API
       try {
         const paymentsRes = await apiGet(API_ENDPOINTS.PAYMENTS);
-        console.log('Payments API Response:', paymentsRes);
         if (paymentsRes && paymentsRes.success) {
           setPayments(paymentsRes.data || []);
         } else {
@@ -553,9 +563,7 @@ const Payments = () => {
       // Fetch students and enrollees (for discount assignment)
       try {
         const studentsRes = await apiGet(`${API_ENDPOINTS.STUDENTS_ENROLLEES}`);
-        console.log('Students & Enrollees API Response:', studentsRes);
         const studentRows = studentsRes?.data || studentsRes?.students || [];
-        console.log('Student Rows:', studentRows, 'Length:', studentRows.length);
         setStudents(studentRows);
       } catch (err) {
         console.error('Error fetching students and enrollees:', err);
@@ -566,9 +574,7 @@ const Payments = () => {
       // Fetch enrollments (for tuition payments)
       try {
         const enrollmentsRes = await apiGet(API_ENDPOINTS.ADMIN_ENROLLMENTS);
-        console.log('Enrollments API Response:', enrollmentsRes);
         const enrollmentRows = enrollmentsRes?.data || enrollmentsRes?.enrollments || [];
-        console.log('Enrollment Rows:', enrollmentRows, 'Length:', enrollmentRows.length);
         setEnrollments(enrollmentRows);
       } catch (err) {
         console.error('Error fetching enrollments:', err);
@@ -587,10 +593,9 @@ const Payments = () => {
           // Filter out inactive fees - DO NOT group for payment form to work correctly
           const activeFees = feesRes.data.filter((fee: SchoolFee) => fee.is_active);
           setSchoolFees(activeFees);
-          console.log('School fees fetched:', activeFees.length, 'records');
         }
       } catch (err) {
-        console.log('Error fetching school fees:', err);
+        console.error('Error fetching school fees:', err);
         setSchoolFees([]);
       }
 
@@ -599,7 +604,6 @@ const Payments = () => {
         const discountsRes = await apiGet(API_ENDPOINTS.DISCOUNT_TEMPLATES);
         if (discountsRes && discountsRes.success) {
           setDiscountTemplates(discountsRes.data || []);
-          console.log('Discount templates fetched:', discountsRes.data?.length || 0, 'records');
         }
       } catch (err) {
         console.error('Error fetching discount templates:', err);
@@ -1090,98 +1094,16 @@ const Payments = () => {
       };
 
       if (isEditingFee && selectedFee) {
-        // EDIT MODE: Update fee records
-        const originalYearLevels = selectedFee.year_levels || (selectedFee.year_level ? [selectedFee.year_level] : []);
-        const newYearLevels = feeForm.year_levels;
-        
-        // Fetch all individual fee records for this grouped fee
-        let individualFees: any[] = [];
-        if (selectedFee.grouped_ids && selectedFee.grouped_ids.length > 0) {
-          for (const groupedId of selectedFee.grouped_ids) {
-            try {
-              const feeRes = await apiGet(API_ENDPOINTS.SCHOOL_FEE_BY_ID(groupedId));
-              if (feeRes && feeRes.success && feeRes.data) {
-                individualFees.push(feeRes.data);
-              }
-            } catch (err) {
-              console.error('Error fetching individual fee:', err);
-            }
-          }
+        // EDIT MODE: Simple update - let backend handle the logic
+        const res = await apiPut(API_ENDPOINTS.SCHOOL_FEE_BY_ID(selectedFee.id), payload);
+
+        if (res && res.success) {
+          showAlert("success", "Fee updated successfully");
+          fetchData();
+          resetFeeForm();
         } else {
-          individualFees = [selectedFee];
+          showAlert("error", res?.message || "Failed to update fee");
         }
-
-        // Find all fees with same properties to handle deactivations
-        const allFeesRes = await apiGet(`${API_ENDPOINTS.SCHOOL_FEES}`);
-        if (allFeesRes && allFeesRes.success && allFeesRes.data) {
-          const matchingFees = allFeesRes.data.filter((f: any) => 
-            f.fee_type === feeForm.fee_type &&
-            f.fee_name === feeForm.fee_name &&
-            f.amount === parseFloat(feeForm.amount) &&
-            (f.description || '') === (feeForm.description || '')
-          );
-          
-          matchingFees.forEach((mf: any) => {
-            if (!individualFees.some(inf => inf.id === mf.id)) {
-              individualFees.push(mf);
-            }
-          });
-        }
-
-        // Determine which year levels were unchecked (deactivate)
-        const uncheckedLevels = originalYearLevels.filter(level => !newYearLevels.includes(level));
-        
-        // Determine which year levels were newly checked
-        const checkedLevels = newYearLevels.filter(level => level !== 'All Grades');
-        
-        // Deactivate unchecked levels
-        for (const level of uncheckedLevels) {
-          const matchingFee = individualFees.find(f => f.year_level === level);
-          if (matchingFee) {
-            await apiPut(API_ENDPOINTS.SCHOOL_FEE_BY_ID(matchingFee.id), {
-              is_active: 0
-            });
-          }
-        }
-
-        // Process checked levels
-        for (const level of checkedLevels) {
-          const matchingFee = individualFees.find(f => f.year_level === level);
-          
-          if (matchingFee) {
-            // Fee exists - update with new values
-            const updatePayload = {
-              fee_type: payload.fee_type,
-              fee_name: payload.fee_name,
-              year_level: level,
-              amount: payload.amount,
-              is_required: payload.is_required,
-              is_active: 1,
-              is_recurring: payload.is_recurring,
-              due_date: payload.due_date,
-              description: payload.description
-            };
-            await apiPut(API_ENDPOINTS.SCHOOL_FEE_BY_ID(matchingFee.id), updatePayload);
-          } else {
-            // Fee doesn't exist - insert new
-            const insertPayload = {
-              fee_type: payload.fee_type,
-              fee_name: payload.fee_name,
-              year_levels: [level],
-              amount: payload.amount,
-              is_required: payload.is_required,
-              is_active: 1,
-              is_recurring: payload.is_recurring,
-              due_date: payload.due_date,
-              description: payload.description
-            };
-            await apiPost(API_ENDPOINTS.SCHOOL_FEES, insertPayload);
-          }
-        }
-
-        showAlert("success", "Fee updated successfully");
-        fetchData();
-        resetFeeForm();
       } else {
         // CREATE MODE
         const res = await apiPost(API_ENDPOINTS.SCHOOL_FEES, payload);
@@ -1368,6 +1290,28 @@ const Payments = () => {
     }
   };
 
+  const refreshUnreadPaymentNotifications = async () => {
+    try {
+      const res = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?unread_only=true&limit=100`);
+      const rows = Array.isArray(res?.data) ? res.data : [];
+      const filtered = rows.filter((row: any) => {
+        const entityType = String(row?.entity_type || "").toLowerCase();
+        const actionUrl = String(row?.action_url || "").toLowerCase();
+        return (
+          (entityType === "payment" || entityType === "payments") &&
+          actionUrl.includes("/admin/payments")
+        );
+      });
+      setUnreadPaymentNotifications(filtered);
+    } catch {
+      setUnreadPaymentNotifications([]);
+    }
+  };
+
+  useEffect(() => {
+    refreshUnreadPaymentNotifications();
+  }, []);
+
   const filteredPayments = payments.filter((p) => {
     const matchesSearch = searchQuery === "" ||
       p.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1385,6 +1329,16 @@ const Payments = () => {
 
     return matchesSearch && matchesType && matchesStatus && matchesDate && matchesViewMode;
   });
+
+  const unreadPaymentNotificationsByPaymentId = unreadPaymentNotifications.reduce((acc, notif) => {
+    const key = String(notif.entity_id || "");
+    if (!key) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(notif);
+    return acc;
+  }, {} as Record<string, NotificationRow[]>);
+
+  const unreadHighlightedPaymentIds = new Set(Object.keys(unreadPaymentNotificationsByPaymentId));
 
   const totalItems = filteredPayments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
@@ -1527,20 +1481,11 @@ const filteredDiscounts = discountTemplates.filter((d) => {
   // Filter school fees for payment form based on selected payment type and student year level
   const paymentFormSchoolFees = (() => {
     if (!form.payment_type) {
-      console.log('Missing payment_type');
       return [];
     }
 
     const feeType = getPaymentTypeToFeeType(form.payment_type);
     const selectedYearLevel = getSelectedStudentYearLevel();
-
-    console.log('Filtering school fees:', {
-      payment_type: form.payment_type,
-      feeType: feeType,
-      selectedYearLevel: selectedYearLevel,
-      schoolFees_count: schoolFees.length,
-      schoolFees_sample: schoolFees.slice(0, 3)
-    });
 
     const filtered = schoolFees.filter(fee => {
       const typeMatch = fee.fee_type === feeType;
@@ -1568,7 +1513,6 @@ const filteredDiscounts = discountTemplates.filter((d) => {
       return true;
     });
 
-    console.log('Filtered result count:', filtered.length, 'fees');
     return filtered;
   })();
 
@@ -1995,6 +1939,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {pagedPayments.map((payment) => {
                     const isHighlighted = highlightedPaymentId === String(payment.id);
+                    const isUnreadFromNotification = unreadHighlightedPaymentIds.has(String(payment.id));
 
                     return (
                     <tr
@@ -2003,6 +1948,8 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                       className={`transition-colors duration-500 ${
                         isHighlighted
                           ? "bg-primary/5 dark:bg-primary/10 border-l-2 border-l-primary"
+                          : isUnreadFromNotification
+                            ? "bg-amber-50/70 hover:bg-amber-100/60"
                           : "hover:bg-muted/50"
                       }`}
                     >
@@ -2016,7 +1963,14 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{payment.student_name}</p>
+                            <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                              {payment.student_name}
+                              {isUnreadFromNotification && (
+                                <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] px-1.5 py-0 h-5">
+                                  New
+                                </Badge>
+                              )}
+                            </p>
                             <p className="text-xs text-gray-500">{payment.student_number}</p>
                             {isHighlighted && (
                               <p className="text-xs font-medium text-primary mt-1">Selected from notification</p>
@@ -3058,7 +3012,7 @@ const filteredDiscounts = discountTemplates.filter((d) => {
                                       Inactive
                                     </Badge>
                                   )}
-                                  {fee.is_required && (
+                                  {Boolean(fee.is_required) && (
                                     <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
                                       Required
                                     </Badge>

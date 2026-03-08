@@ -154,7 +154,7 @@ class UserModel extends Model
     public function get_all($filters = [])
     {
         $query = $this->db->table($this->table)
-                  ->select('id, email, role, first_name, middle_name, last_name, phone, status, created_at, updated_at');
+                  ->select('id, email, role, first_name, middle_name, last_name, phone, profile_photo_path, status, created_at, updated_at');
         
         // Apply filters
         if (isset($filters['role']) && $filters['role'] !== 'all') {

@@ -63,10 +63,11 @@ export function useNotifications(options?: {
       const response = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?${params.toString()}`);
       return response;
     },
-    // No aggressive polling — FCM foreground listener handles instant updates.
-    // 5-minute fallback catches any missed pushes (e.g. background tab, FCM delivery failure).
-    refetchInterval: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    // Push-first behavior: initial fetch, then refresh only via FCM invalidation/events
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled
   });
 }
@@ -74,8 +75,8 @@ export function useNotifications(options?: {
 /**
  * Hook to fetch unread notification count
  */
-export function useUnreadCount(options?: { enabled?: boolean; refetchInterval?: number }) {
-  const { enabled = true, refetchInterval = 5 * 60 * 1000 } = options || {};
+export function useUnreadCount(options?: { enabled?: boolean }) {
+  const { enabled = true } = options || {};
 
   return useQuery<UnreadCountResponse>({
     queryKey: ['notifications', 'unread-count'],
@@ -83,8 +84,11 @@ export function useUnreadCount(options?: { enabled?: boolean; refetchInterval?: 
       const response = await apiGet(API_ENDPOINTS.NOTIFICATIONS_UNREAD_COUNT);
       return response;
     },
-    refetchInterval, // 5-minute fallback; FCM listener handles real-time updates
-    refetchOnWindowFocus: true,
+    // Push-first behavior: initial fetch, then refresh only via FCM invalidation/events
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled
   });
 }
@@ -165,7 +169,10 @@ export function useNotificationStats(enabled = true) {
       const response = await apiGet(API_ENDPOINTS.NOTIFICATIONS_STATS);
       return response;
     },
-    refetchInterval: 5 * 60 * 1000, // 5-minute fallback
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled
   });
 }
@@ -181,114 +188,101 @@ export function useAnnouncements(options?: { enabled?: boolean }) {
       const response = await apiGet(API_ENDPOINTS.ANNOUNCEMENTS);
       return response;
     },
-    refetchInterval: 5 * 60 * 1000, // 5-minute fallback; push handles real-time
-    refetchOnWindowFocus: true,
+    // Push-first behavior: initial fetch, then refresh only via FCM invalidation/events
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled
   });
 }
 
 /**
  * Hook to fetch unread payment notification count (admin only)
- * Counts all unread payment-related notifications
- * Uses aggressive 3-second polling when on payments page for real-time sync across admins
+ * Counts all unread payment-related notifications from a shared unread snapshot.
  */
 export function usePaymentNotificationCount(options?: { enabled?: boolean }) {
   const { enabled = true } = options || {};
-  const location = useLocation();
-  
-  // Aggressive polling (3s) when on payments page for multi-admin synchronization
-  // Standard polling (30s) on other pages
-  const isOnPaymentsPage = location.pathname.includes('/payments');
-  const refreshInterval = isOnPaymentsPage ? 3 * 1000 : 30 * 1000;
-
-  return useQuery<{ success: boolean; count: number }>({
-    queryKey: ['notifications', 'payment-count'],
+  return useQuery<{ success: boolean; data: Notification[] }, Error, { success: boolean; count: number }>({
+    queryKey: ['notifications', 'sidebar-unread-snapshot'],
     queryFn: async () => {
-      // Fetch all unread notifications and filter payment-related ones
       const params = new URLSearchParams();
       params.append('unread_only', 'true');
-      params.append('limit', '100'); // Get enough to count
+      params.append('limit', '100');
 
       const response = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?${params.toString()}`);
-      
-      if (response.success && response.data) {
-        // Filter for payment-related notifications by checking action_url or entity_type
-        const paymentNotifications = response.data.filter((notif: any) => {
-          const actionUrl = notif.action_url || '';
-          const entityType = notif.entity_type || '';
-          const type = notif.type || '';
-          
-          // Check if notification is payment-related
-          return (
-            actionUrl.includes('/admin/payments') || 
-            entityType === 'payment' ||
-            type.includes('payment')
-          );
-        });
-        
-        return {
-          success: true,
-          count: paymentNotifications.length
-        };
-      }
-      
-      return { success: false, count: 0 };
+      return {
+        success: !!response?.success,
+        data: Array.isArray(response?.data) ? response.data : [],
+      };
     },
-    refetchInterval: refreshInterval,
-    refetchOnWindowFocus: true,
+    select: (response) => {
+      const paymentNotifications = response.data.filter((notif: any) => {
+        const actionUrl = (notif.action_url || '').toLowerCase();
+        const entityType = (notif.entity_type || '').toLowerCase();
+        const type = (notif.type || '').toLowerCase();
+
+        return (
+          actionUrl.includes('/admin/payments') ||
+          entityType === 'payment' ||
+          type.includes('payment')
+        );
+      });
+
+      return {
+        success: true,
+        count: paymentNotifications.length,
+      };
+    },
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled
   });
 }
 
 /**
  * Hook to fetch unread enrollment notification count (admin only)
- * Counts all unread enrollment-related notifications
- * Uses aggressive 3-second polling when on enrollments page for real-time sync across admins
+ * Counts all unread enrollment-related notifications from a shared unread snapshot.
  */
 export function useEnrollmentNotificationCount(options?: { enabled?: boolean }) {
   const { enabled = true } = options || {};
-  const location = useLocation();
-  
-  // Aggressive polling (3s) when on enrollments page for multi-admin synchronization
-  // Standard polling (30s) on other pages
-  const isOnEnrollmentsPage = location.pathname.includes('/enrollments');
-  const refreshInterval = isOnEnrollmentsPage ? 3 * 1000 : 30 * 1000;
-
-  return useQuery<{ success: boolean; count: number }>({
-    queryKey: ['notifications', 'enrollment-count'],
+  return useQuery<{ success: boolean; data: Notification[] }, Error, { success: boolean; count: number }>({
+    queryKey: ['notifications', 'sidebar-unread-snapshot'],
     queryFn: async () => {
-      // Fetch all unread notifications and filter enrollment-related ones
       const params = new URLSearchParams();
       params.append('unread_only', 'true');
-      params.append('limit', '100'); // Get enough to count
+      params.append('limit', '100');
 
       const response = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?${params.toString()}`);
-      
-      if (response.success && response.data) {
-        // Filter for enrollment-related notifications by checking action_url or entity_type
-        const enrollmentNotifications = response.data.filter((notif: any) => {
-          const actionUrl = notif.action_url || '';
-          const entityType = notif.entity_type || '';
-          const type = notif.type || '';
-          
-          // Check if notification is enrollment-related
-          return (
-            actionUrl.includes('/admin/enrollments') || 
-            entityType === 'enrollment' ||
-            type.includes('enrollment')
-          );
-        });
-        
-        return {
-          success: true,
-          count: enrollmentNotifications.length
-        };
-      }
-      
-      return { success: false, count: 0 };
+      return {
+        success: !!response?.success,
+        data: Array.isArray(response?.data) ? response.data : [],
+      };
     },
-    refetchInterval: refreshInterval,
-    refetchOnWindowFocus: true,
+    select: (response) => {
+      const enrollmentNotifications = response.data.filter((notif: any) => {
+        const actionUrl = (notif.action_url || '').toLowerCase();
+        const entityType = (notif.entity_type || '').toLowerCase();
+        const type = (notif.type || '').toLowerCase();
+
+        return (
+          actionUrl.includes('/admin/enrollments') ||
+          entityType === 'enrollment' ||
+          type.includes('enrollment')
+        );
+      });
+
+      return {
+        success: true,
+        count: enrollmentNotifications.length,
+      };
+    },
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled
   });
 }
@@ -370,8 +364,59 @@ export function useInfiniteNotifications(options?: {
       }
       return undefined;
     },
-    refetchInterval: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    // Push-first behavior: initial fetch, then refresh only via FCM invalidation/events
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled,
+  });
+}
+
+/**
+ * Hook to fetch unread payment plan notification count (admin only)
+ * Counts unread payment-plan related notifications from a shared unread snapshot.
+ */
+export function usePaymentPlanNotificationCount(options?: { enabled?: boolean }) {
+  const { enabled = true } = options || {};
+  return useQuery<{ success: boolean; data: Notification[] }, Error, { success: boolean; count: number }>({
+    queryKey: ['notifications', 'sidebar-unread-snapshot'],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('unread_only', 'true');
+      params.append('limit', '100');
+
+      const response = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?${params.toString()}`);
+      return {
+        success: !!response?.success,
+        data: Array.isArray(response?.data) ? response.data : [],
+      };
+    },
+    select: (response) => {
+      const paymentPlanNotifications = response.data.filter((notif: any) => {
+        const actionUrl = (notif.action_url || '').toLowerCase();
+        const entityType = (notif.entity_type || '').toLowerCase();
+        const type = (notif.type || '').toLowerCase();
+        const action = (notif.data?.action || notif.action || '').toLowerCase();
+
+        return (
+          actionUrl.includes('/admin/payment-plans') ||
+          entityType === 'payment_plans' ||
+          entityType === 'payment_plan' ||
+          action.includes('payment_plan') ||
+          type.includes('installment')
+        );
+      });
+
+      return {
+        success: true,
+        count: paymentPlanNotifications.length,
+      };
+    },
+    staleTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    enabled
   });
 }

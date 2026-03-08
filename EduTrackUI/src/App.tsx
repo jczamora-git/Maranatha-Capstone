@@ -15,6 +15,7 @@ import { ConfirmProvider } from "@/components/Confirm";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { FeaturesProvider } from "@/context/FeaturesContext";
+import { TranslationProvider } from "@/context/TranslationContext";
 import { NotificationContainer } from "@/components/NotificationContainer";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import ChatbotWidget from "@/components/ChatbotWidget";
@@ -380,22 +381,24 @@ const App = () => (
       enableSystem
       disableTransitionOnChange
     >
-      <FeaturesProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <PWAInstallPrompt />
-          <NotificationProvider>
-            <BrowserRouter basename={routerBase}>
-              <AuthProvider>
-                <ConfirmProvider>
-                  <AppContent />
-                </ConfirmProvider>
-              </AuthProvider>
+      <TranslationProvider>
+        <FeaturesProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <PWAInstallPrompt />
+            <NotificationProvider>
+              <BrowserRouter basename={routerBase}>
+                <AuthProvider>
+                  <ConfirmProvider>
+                    <AppContent />
+                  </ConfirmProvider>
+                </AuthProvider>
               </BrowserRouter>
-          </NotificationProvider>
-        </TooltipProvider>
-      </FeaturesProvider>
+            </NotificationProvider>
+          </TooltipProvider>
+        </FeaturesProvider>
+      </TranslationProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

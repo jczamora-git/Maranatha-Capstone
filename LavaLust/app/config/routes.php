@@ -303,6 +303,7 @@ $router->delete('/api/uniform-items/{id}', 'UniformItemsController::api_delete_i
 // API Routes - Uniform Orders
 $router->get('/api/uniform-orders', 'UniformOrdersController::api_get_orders');
 $router->post('/api/uniform-orders', 'UniformOrdersController::api_create_order');
+$router->post('/api/uniform-orders/batch', 'UniformOrdersController::api_create_order_batch');
 
 // API Routes - School Services (Monthly Service Fee, etc.)
 $router->get('/api/school-services/service-fee-amount', 'SchoolServiceController::get_service_fee_amount');
@@ -372,6 +373,7 @@ $router->post('/api/payment-discounts', 'PaymentDiscountController::create_disco
 $router->get('/api/payment-plans', 'PaymentPlanController::get_plans');
 $router->get('/api/payment-plans/{id}', 'PaymentPlanController::get_plan')->where_number('id');
 $router->get('/api/payment-plans/{id}/installments', 'PaymentPlanController::get_installments')->where_number('id');
+$router->post('/api/payment-plans/{id}/mark-notifications-read', 'PaymentPlanController::mark_plan_notifications_as_read')->where_number('id');
 $router->post('/api/payment-plans', 'PaymentPlanController::create_plan');
 $router->put('/api/payment-plans/{id}', 'PaymentPlanController::update_plan')->where_number('id');
 $router->put('/api/payment-plans/{id}/set-enrollment-date', 'PaymentPlanController::set_enrollment_date')->where_number('id');
@@ -397,6 +399,11 @@ $router->delete('/api/enrollment-periods/{id}', 'EnrollmentPeriodController::api
 
 // API Routes - Document Requirements (Admin)
 $router->get('/api/admin/document-requirements', 'DocumentRequirementController::api_get_all');
+$router->get('/api/admin/document-catalog', 'DocumentRequirementController::api_get_catalog');
+$router->post('/api/admin/document-catalog', 'DocumentRequirementController::api_create_catalog');
+$router->put('/api/admin/document-catalog/{id}', 'DocumentRequirementController::api_update_catalog')->where_number('id');
+$router->patch('/api/admin/document-catalog/{id}/toggle', 'DocumentRequirementController::api_toggle_catalog')->where_number('id');
+$router->get('/api/document-requirements-enrollment/{gradeLevel}/{enrollmentType?}', 'DocumentRequirementController::api_get_for_enrollment');
 $router->get('/api/document-requirements/{gradeLevel}/{enrollmentType?}', 'DocumentRequirementController::api_get_by_criteria');
 $router->post('/api/admin/document-requirements', 'DocumentRequirementController::api_create');
 $router->put('/api/admin/document-requirements/{id}', 'DocumentRequirementController::api_update')->where_number('id');

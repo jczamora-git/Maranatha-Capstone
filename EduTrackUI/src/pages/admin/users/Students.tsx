@@ -32,11 +32,13 @@ type Section = {
 
 type Student = {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   studentId: string;
   yearLevel: string;
   section: string;
+  profilePhotoPath?: string | null;
   phone?: string;
   parentContact?: {
     name: string;
@@ -73,6 +75,8 @@ const Students = () => {
     // section removed from add modal; keep empty by default
     section: "",
     phone: "",
+    profilePhotoPath: "",
+    userId: "",
     parentContact: undefined,
     status: "active",
     assignedCourses: [] as AssignedCourse[],
@@ -97,6 +101,33 @@ const Students = () => {
   const toTitleCase = (s: string) => {
     if (!s) return s;
     return s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  };
+
+  const parseStudentDisplayName = (displayName: string) => {
+    const normalized = (displayName || '').trim();
+    if (!normalized) return { firstName: '', lastName: '' };
+    if (normalized.includes(',')) {
+      const [last, first] = normalized.split(',', 2);
+      return { firstName: (first || '').trim(), lastName: (last || '').trim() };
+    }
+    const parts = normalized.split(/\s+/);
+    if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+    return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] };
+  };
+
+  const handleProfilePhotoUpload = async (file?: File | null) => {
+    if (!file) return;
+    try {
+      const upload = await apiUploadFile(API_ENDPOINTS.UPLOAD_FILE, file, 'file', { folder: 'profile-photos' });
+      if (!upload?.success || !upload?.relative_path) {
+        showAlert('error', upload?.message || 'Failed to upload profile photo');
+        return;
+      }
+      setForm((f: any) => ({ ...f, profilePhotoPath: upload.relative_path }));
+      showAlert('success', 'Profile photo uploaded');
+    } catch (err: any) {
+      showAlert('error', err?.message || 'Failed to upload profile photo');
+    }
   };
 
   const confirm = useConfirm();
@@ -282,6 +313,7 @@ const Students = () => {
           const section = r.section_name ?? r.section ?? (r.section_id ? String(r.section_id) : "");
           return {
           id: String(r.id ?? r.user_id ?? Date.now()),
+          userId: r.user_id ? String(r.user_id) : undefined,
           // Display as "Lastname, Firstname"
           name: (() => {
             const first = r.first_name || r.firstName || '';
@@ -292,6 +324,7 @@ const Students = () => {
           studentId: r.student_id || r.studentId || '',
           yearLevel: r.year_level || '',
           section: section,
+          profilePhotoPath: r.profile_photo_path || r.profilePhotoPath || null,
           phone: r.phone || '',
           parentContact: undefined,
           status: r.status || r.user_status || 'active',
@@ -503,6 +536,8 @@ const Students = () => {
       // section removed from add modal; keep empty by default
       section: "",
       phone: "",
+      profilePhotoPath: "",
+      userId: "",
       parentContact: undefined,
       status: "active",
       assignedCourses: [],
@@ -537,6 +572,7 @@ const Students = () => {
         email: form.email.trim(),
         role: 'student',
         phone: form.phone?.trim() || '',
+        profilePhotoPath: form.profilePhotoPath || null,
         password: 'demo123'
       });
 
@@ -620,11 +656,13 @@ const Students = () => {
         const displayName = `${lastName}${firstName ? ', ' + firstName : ''}`;
         const newStudent: Student = {
           id: created.id?.toString() || String(createdUserId),
+          userId: created.user_id ? String(created.user_id) : String(createdUserId),
           name: displayName,
           email: created.email ?? form.email,
           studentId: created.student_id ?? studentIdInput ?? "",
           yearLevel: created.year_level ?? yearLevelName,
           section: created.section_id ? String(created.section_id) : '',
+          profilePhotoPath: form.profilePhotoPath || null,
           phone: created.phone ?? form.phone,
           parentContact: form.parentContact,
           status: created.status ?? form.status,
@@ -637,7 +675,7 @@ const Students = () => {
           const resetYearLevelId = getDefaultYearLevelId();
           setShowEmailModal(false);
           setIsCreateOpen(false);
-          setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", parentContact: undefined, status: "active", assignedCourses: [] });
+          setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", profilePhotoPath: "", userId: "", parentContact: undefined, status: "active", assignedCourses: [] });
         }, 3000);
         
         showAlert('success', `Student ${newStudent.name} created. Welcome email ${emailData.success ? 'sent' : 'send attempted'}!`);
@@ -646,14 +684,14 @@ const Students = () => {
 
       // fallback: local add
       const displayName = `${lastName}${firstName ? ', ' + firstName : ''}`;
-      const newStudent: Student = { id: String(createdUserId ?? Date.now()), name: displayName, email: form.email, studentId: studentIdInput || "", yearLevel: yearLevelName, section: '', phone: form.phone, parentContact: form.parentContact, status: form.status, assignedCourses: form.assignedCourses };
+      const newStudent: Student = { id: String(createdUserId ?? Date.now()), userId: String(createdUserId ?? ''), name: displayName, email: form.email, studentId: studentIdInput || "", yearLevel: yearLevelName, section: '', profilePhotoPath: form.profilePhotoPath || null, phone: form.phone, parentContact: form.parentContact, status: form.status, assignedCourses: form.assignedCourses };
       setStudents((s) => [newStudent, ...s]);
       
       setTimeout(() => {
         const resetYearLevelId = getDefaultYearLevelId();
         setShowEmailModal(false);
         setIsCreateOpen(false);
-        setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", parentContact: undefined, status: "active", assignedCourses: [] });
+        setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", profilePhotoPath: "", userId: "", parentContact: undefined, status: "active", assignedCourses: [] });
       }, 3000);
       
       showAlert('success', `Student ${displayName} created. Welcome email ${emailData.success ? 'sent' : 'send attempted'}!`);
@@ -681,11 +719,13 @@ const Students = () => {
     
     setForm({
       name: s.name,
+      userId: s.userId || "",
       email: s.email,
       studentId: s.studentId,
       yearLevel: yearLevelId,
       section: s.section,
       phone: s.phone,
+      profilePhotoPath: s.profilePhotoPath || "",
       parentContact: s.parentContact,
       status: s.status,
       assignedCourses: s.assignedCourses,
@@ -710,6 +750,20 @@ const Students = () => {
     if (form.status !== undefined) payload.status = form.status;
 
     try {
+      if (form.userId) {
+        const parsed = parseStudentDisplayName(form.name || '');
+        await apiPut(API_ENDPOINTS.USER_BY_ID(String(form.userId)), {
+          email: form.email || '',
+          firstName: toTitleCase((parsed.firstName || '').trim()),
+          lastName: toTitleCase((parsed.lastName || '').trim()),
+          middleName: '',
+          phone: form.phone || '',
+          role: 'student',
+          status: form.status || 'active',
+          profilePhotoPath: form.profilePhotoPath || null,
+        });
+      }
+
       const res = await apiPut(`/api/students/${selectedStudentId}`, payload);
       if (res && res.success) {
         const updated = res.data || res.student || null;
@@ -717,6 +771,7 @@ const Students = () => {
           // map server response to local Student shape
           const mapped: Student = {
             id: String(updated.id ?? updated.user_id ?? selectedStudentId),
+            userId: updated.user_id ? String(updated.user_id) : (form.userId || ''),
             name: (() => {
               const first = updated.first_name || updated.firstName || '';
               const last = updated.last_name || updated.lastName || '';
@@ -726,6 +781,7 @@ const Students = () => {
             studentId: updated.student_id ?? form.studentId ?? '',
             yearLevel: updated.year_level || yearLevelToEnum(form.yearLevel) || form.yearLevel || '',
             section: updated.section_id ? String(updated.section_id) : (updated.section_name || form.section || ''),
+            profilePhotoPath: updated.profile_photo_path ?? form.profilePhotoPath ?? null,
             phone: updated.phone ?? form.phone ?? '',
             parentContact: form.parentContact,
             status: updated.status ?? form.status ?? 'active',
@@ -941,7 +997,15 @@ const Students = () => {
                         <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ${
                           student.status === "active" ? "bg-gradient-to-br from-primary to-accent" : "bg-slate-300"
                         }`}>
-                          <User className="h-7 w-7 text-white" />
+                          {student.profilePhotoPath ? (
+                            <img
+                              src={student.profilePhotoPath}
+                              alt={student.name}
+                              className="w-14 h-14 rounded-xl object-cover"
+                            />
+                          ) : (
+                            <User className="h-7 w-7 text-white" />
+                          )}
                         </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-lg">{student.name}</p>
@@ -1030,7 +1094,15 @@ const Students = () => {
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ${
                         student.status === "active" ? "bg-gradient-to-br from-primary to-accent" : "bg-slate-200"
                       }`}>
-                        <User className="h-6 w-6 text-white" />
+                        {student.profilePhotoPath ? (
+                          <img
+                            src={student.profilePhotoPath}
+                            alt={student.name}
+                            className="w-12 h-12 rounded-xl object-cover"
+                          />
+                        ) : (
+                          <User className="h-6 w-6 text-white" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -1166,6 +1238,18 @@ const Students = () => {
                   />
                 </div>
               </div>
+              <div>
+                <Label htmlFor="profilePhoto">Profile Photo</Label>
+                <Input
+                  id="profilePhoto"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleProfilePhotoUpload(e.target.files?.[0])}
+                />
+                {form.profilePhotoPath && (
+                  <img src={form.profilePhotoPath} alt="Student profile" className="mt-2 h-16 w-16 rounded-lg object-cover" />
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="yearLevel">Grade Level</Label>
@@ -1282,6 +1366,18 @@ const Students = () => {
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                   />
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-profilePhoto">Profile Photo</Label>
+                <Input
+                  id="edit-profilePhoto"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleProfilePhotoUpload(e.target.files?.[0])}
+                />
+                {form.profilePhotoPath && (
+                  <img src={form.profilePhotoPath} alt="Student profile" className="mt-2 h-16 w-16 rounded-lg object-cover" />
+                )}
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>

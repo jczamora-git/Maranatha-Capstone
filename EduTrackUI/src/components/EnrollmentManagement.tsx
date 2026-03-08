@@ -572,10 +572,7 @@ export const EnrollmentManagement = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{enrollment.school_year}</p>
-                              <p className="text-xs text-gray-500">{enrollment.quarter}</p>
-                            </div>
+                            <p className="text-sm font-medium text-gray-900">SY {enrollment.school_year}</p>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
@@ -584,19 +581,26 @@ export const EnrollmentManagement = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <FileCheck className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <p className="text-sm font-bold">
-                                  {enrollment.documents_verified}/{enrollment.documents_count}
-                                </p>
-                                {enrollment.documents_rejected > 0 && (
-                                  <p className="text-xs text-red-600 font-semibold">
-                                    {enrollment.documents_rejected} rejected
-                                  </p>
-                                )}
+                            {enrollment.enrollment_type === 'Continuing Student' ? (
+                              <div className="flex items-center gap-2">
+                                <FileCheck className="h-4 w-4 text-muted-foreground" />
+                                <p className="text-sm font-semibold text-gray-600">Exempt</p>
                               </div>
-                            </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <FileCheck className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <p className="text-sm font-bold">
+                                    {enrollment.documents_verified}/{enrollment.documents_count}
+                                  </p>
+                                  {enrollment.documents_rejected > 0 && (
+                                    <p className="text-xs text-red-600 font-semibold">
+                                      {enrollment.documents_rejected} rejected
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge className={`${status.bgLight} ${status.text} font-semibold flex items-center gap-1 w-fit`}>
@@ -661,7 +665,7 @@ export const EnrollmentManagement = () => {
               className="space-y-3"
             >
               {manualEntryOptions.includes('New Student') && (
-                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
+                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer" onClick={() => setSelectedEnrollmentType('New Student')}>
                   <RadioGroupItem value="New Student" id="new-student" className="mt-1" />
                   <div className="flex-1">
                     <Label htmlFor="new-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
@@ -674,7 +678,7 @@ export const EnrollmentManagement = () => {
               )}
 
               {manualEntryOptions.includes('Transferee') && (
-                <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-colors cursor-pointer">
+                <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-colors cursor-pointer" onClick={() => setSelectedEnrollmentType('Transferee')}>
                   <RadioGroupItem value="Transferee" id="transferee" className="mt-1" />
                   <div className="flex-1">
                     <Label htmlFor="transferee" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
@@ -687,27 +691,27 @@ export const EnrollmentManagement = () => {
               )}
 
               {manualEntryOptions.includes('Returning Student') && (
-                <div className="flex items-start space-x-3 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer">
+                <div className="flex items-start space-x-3 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-200 hover:border-indigo-400 transition-colors cursor-pointer" onClick={() => setSelectedEnrollmentType('Returning Student')}>
                   <RadioGroupItem value="Returning Student" id="returning-student" className="mt-1" />
                   <div className="flex-1">
                     <Label htmlFor="returning-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                       <Users className="w-5 h-5 text-indigo-600" />
                       Returning Student
                     </Label>
-                    <p className="text-sm text-gray-600 mt-1">Student re-enrolling with previous enrollment history</p>
+                    <p className="text-sm text-gray-600 mt-1">Former student resuming studies after a period of absence</p>
                   </div>
                 </div>
               )}
 
               {manualEntryOptions.includes('Continuing Student') && (
-                <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg border-2 border-green-200 hover:border-green-400 transition-colors cursor-pointer">
+                <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg border-2 border-green-200 hover:border-green-400 transition-colors cursor-pointer" onClick={() => setSelectedEnrollmentType('Continuing Student')}>
                   <RadioGroupItem value="Continuing Student" id="continuing-student" className="mt-1" />
                   <div className="flex-1">
                     <Label htmlFor="continuing-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                       <Users className="w-5 h-5 text-green-600" />
-                      Continuing Student
+                      Continuing / Old Students
                     </Label>
-                    <p className="text-sm text-gray-600 mt-1">Legacy student with existing enrollment record</p>
+                    <p className="text-sm text-gray-600 mt-1">Currently enrolled student proceeding to the next grade level</p>
                   </div>
                 </div>
               )}

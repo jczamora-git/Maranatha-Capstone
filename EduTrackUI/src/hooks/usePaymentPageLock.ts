@@ -150,12 +150,6 @@ export function usePaymentPageLock() {
           (enrollment: any) => enrollment.submitted_date || enrollment.id
         );
 
-        console.log('🔐 [usePaymentPageLock] Enrollment check result:', {
-          enrollmentsCount: enrollmentsArray.length,
-          hasSubmittedAnyEnrollment,
-          enrollmentStatuses: enrollmentsArray.map((e: any) => e.status)
-        });
-
         setHasSubmittedEnrollment(hasSubmittedAnyEnrollment);
       } catch (error) {
         console.error('🔐 [usePaymentPageLock] Error fetching enrollment:', error);
@@ -176,24 +170,8 @@ export function usePaymentPageLock() {
     const isLeavingPaymentSection = wasOnPaymentSection() && !isCurrentPageInPaymentSection;
     const hasPinSet = user?.payment_pin_set === true;
 
-    console.log('🔐 [usePaymentPageLock] ===== START CHECK =====', {
-      currentPath: location.pathname,
-      previousPath: previousPathRef.current,
-      sessionStorageUnlocked: isCurrentlyUnlocked,
-      isPaymentSection: isCurrentPageInPaymentSection,
-      isLeavingPaymentSection,
-      userExists: !!user,
-      userId: user?.id,
-      userRole: user?.role,
-      userHasPinSet: hasPinSet,
-      userPaymentPinSetValue: user?.payment_pin_set,
-      hasSubmittedEnrollment,
-      enrollmentCheckComplete: enrollmentCheckRef.current,
-    });
-
     // If leaving payment section (was on payment, now on different section), reset the lock
     if (isLeavingPaymentSection) {
-      console.log('🔐 [usePaymentPageLock] Left payment section - resetting lock');
       lockPaymentSection();
       previousPathRef.current = location.pathname;
       return;
@@ -204,7 +182,6 @@ export function usePaymentPageLock() {
     if (user?.role === 'enrollee' && isCurrentPageInPaymentSection) {
       // Wait for enrollment check to complete
       if (hasSubmittedEnrollment === null) {
-        console.log('🔐 [usePaymentPageLock] ⏳ Waiting for enrollment check...');
         setIsPaymentSectionUnlocked(null); // Keep loading state
         previousPathRef.current = location.pathname;
         return;
@@ -213,13 +190,10 @@ export function usePaymentPageLock() {
       // If enrollee has no submitted enrollment, bypass PIN checks completely
       // Let them access payment page where AccessLockedCard will be shown
       if (!hasSubmittedEnrollment) {
-        console.log('🔐 [usePaymentPageLock] ℹ️ Enrollee without enrollment - bypassing PIN check, Payment.tsx will show locked card');
         setIsPaymentSectionUnlocked(true); // Allow access to payment page
         previousPathRef.current = location.pathname;
         return;
       }
-
-      console.log('🔐 [usePaymentPageLock] ✅ Enrollee has submitted enrollment - proceeding to normal PIN check');
     }
 
     // If trying to access payment section but not unlocked
@@ -227,35 +201,29 @@ export function usePaymentPageLock() {
     if (isCurrentPageInPaymentSection && !isCurrentlyUnlocked) {
       // Double-check: if enrollee without enrollment, don't redirect
       if (user?.role === 'enrollee' && hasSubmittedEnrollment === false) {
-        console.log('🔐 [usePaymentPageLock] ℹ️ Enrollee without enrollment - skipping PIN redirect');
         setIsPaymentSectionUnlocked(true);
         previousPathRef.current = location.pathname;
         return;
       }
-      console.log('🔐 [usePaymentPageLock] Payment section locked - user needs verification');
       
       // User has no PIN set - send to setup-pin
       if (!hasPinSet) {
-        console.log('🔐 [usePaymentPageLock] ⚠️ NO PIN SET - navigating to setup-pin');
         navigateToSetupPin();
         previousPathRef.current = location.pathname;
         return;
       }
       
       // User has PIN set but not unlocked - send to verify-pin
-      console.log('🔐 [usePaymentPageLock] ✅ PIN exists - navigating to verify-pin');
       navigateToVerifyPin();
       previousPathRef.current = location.pathname;
       return;
     }
 
     // Update state based on current unlock status
-    console.log('🔐 [usePaymentPageLock] Updating state: isPaymentSectionUnlocked =', isCurrentlyUnlocked);
     setIsPaymentSectionUnlocked(isCurrentlyUnlocked);
     
     // Update previous path ref for next check
     previousPathRef.current = location.pathname;
-    console.log('🔐 [usePaymentPageLock] ===== END CHECK =====');
   }, [location.pathname, navigate, user?.payment_pin_set, user?.role, hasSubmittedEnrollment]);
 
   return {

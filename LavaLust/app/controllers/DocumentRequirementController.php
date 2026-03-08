@@ -37,17 +37,15 @@ class DocumentRequirementController extends Controller {
      */
     public function api_get_by_criteria($gradeLevel = null, $enrollmentType = null) {
         header('Content-Type: application/json');
-        
-        // Parse URL directly to preserve spaces
-        $uri = $_SERVER['REQUEST_URI'];
-        $parts = explode('/', trim($uri, '/'));
-        // Parts: [0]=api, [1]=document-requirements, [2]=gradeLevel, [3]=enrollmentType
-        
-        $gradeLevel = isset($parts[2]) ? urldecode($parts[2]) : null;
-        $enrollmentType = isset($parts[3]) ? urldecode($parts[3]) : null;
-        
-        // Debug logging
-        error_log("Controller received - gradeLevel: '$gradeLevel', enrollmentType: '$enrollmentType'");
+
+        $gradeLevel = $gradeLevel !== null ? urldecode($gradeLevel) : null;
+        $enrollmentType = $enrollmentType !== null ? urldecode($enrollmentType) : null;
+
+        if ($enrollmentType === null && $gradeLevel !== null && strpos($gradeLevel, '/') !== false) {
+            $parts = explode('/', $gradeLevel, 2);
+            $gradeLevel = urldecode($parts[0]);
+            $enrollmentType = isset($parts[1]) ? urldecode($parts[1]) : null;
+        }
         
         if (!$gradeLevel) {
             http_response_code(400);
@@ -59,25 +57,212 @@ class DocumentRequirementController extends Controller {
         }
 
         try {
-            error_log("Calling model with - grade: '$gradeLevel', type: '$enrollmentType'");
-            
             $requirements = $this->DocumentRequirement_model->get_requirements_by_criteria(
                 $gradeLevel,
                 $enrollmentType
             );
-            
-            error_log("Model returned " . count($requirements) . " records");
-            
+
             echo json_encode([
                 'success' => true,
                 'data' => $requirements
             ]);
         } catch (Exception $e) {
-            error_log("Error in api_get_by_criteria: " . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Failed to fetch requirements: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get requirements for enrollment step using resilient matching
+     * GET /api/document-requirements-enrollment/:gradeLevel/:enrollmentType
+     */
+    public function api_get_for_enrollment($gradeLevel = null, $enrollmentType = null) {
+        header('Content-Type: application/json');
+
+        $gradeLevel = $gradeLevel !== null ? urldecode($gradeLevel) : null;
+        $enrollmentType = $enrollmentType !== null ? urldecode($enrollmentType) : null;
+
+        if ($enrollmentType === null && $gradeLevel !== null && strpos($gradeLevel, '/') !== false) {
+            $parts = explode('/', $gradeLevel, 2);
+            $gradeLevel = urldecode($parts[0]);
+            $enrollmentType = isset($parts[1]) ? urldecode($parts[1]) : null;
+        }
+
+        if (!$gradeLevel) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Grade level is required'
+            ]);
+            return;
+        }
+
+        try {
+            $result = $this->DocumentRequirement_model->get_requirements_for_enrollment($gradeLevel, $enrollmentType);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $result
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch enrollment requirements: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Create reusable document in catalog only
+     * POST /api/admin/document-catalog
+     */
+    public function api_create_catalog() {
+        header('Content-Type: application/json');
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (empty($input['document_name'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Document name is required'
+            ]);
+            return;
+        }
+
+        try {
+            $id = $this->DocumentRequirement_model->create_catalog_document([
+                'document_name' => $input['document_name'],
+                'description' => $input['description'] ?? null,
+                'is_active' => $input['is_active'] ?? true
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Document created in catalog successfully',
+                'data' => ['id' => $id]
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to create document: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get reusable documents in catalog
+     * GET /api/admin/document-catalog
+     */
+    public function api_get_catalog() {
+        header('Content-Type: application/json');
+
+        try {
+            $activeOnly = isset($_GET['active_only'])
+                ? ($_GET['active_only'] === '1' || strtolower($_GET['active_only']) === 'true')
+                : false;
+
+            $documents = $this->DocumentRequirement_model->get_catalog_documents($activeOnly);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $documents
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch document catalog: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Update reusable document in catalog
+     * PUT /api/admin/document-catalog/:id
+     */
+    public function api_update_catalog($id) {
+        header('Content-Type: application/json');
+
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Document ID is required'
+            ]);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        try {
+            $updated = $this->DocumentRequirement_model->update_catalog_document($id, [
+                'name' => $input['name'] ?? null,
+                'description' => array_key_exists('description', $input ?? []) ? $input['description'] : null,
+                'is_active' => $input['is_active'] ?? null
+            ]);
+
+            if ($updated) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Document updated successfully'
+                ]);
+            } else {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Document not found'
+                ]);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to update document: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Toggle active status for catalog document
+     * PATCH /api/admin/document-catalog/:id/toggle
+     */
+    public function api_toggle_catalog($id) {
+        header('Content-Type: application/json');
+
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Document ID is required'
+            ]);
+            return;
+        }
+
+        try {
+            $toggled = $this->DocumentRequirement_model->toggle_catalog_document($id);
+            if ($toggled) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Document status toggled successfully'
+                ]);
+            } else {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Document not found'
+                ]);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to toggle document: ' . $e->getMessage()
             ]);
         }
     }

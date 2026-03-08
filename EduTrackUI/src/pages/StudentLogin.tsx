@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { API_ENDPOINTS } from "@/lib/api";
 import EmailLoadingModal from "@/components/EmailLoadingModal";
 import { toast } from "sonner";
+import { CompactLanguageSelector } from "@/components/LanguageSelector";
 
 const StudentLogin = () => {
   const [studentEmail, setStudentEmail] = useState("");
@@ -330,6 +331,11 @@ const StudentLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-accent/5 to-success/5">
+      {/* Language Selector - Fixed Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <CompactLanguageSelector />
+      </div>
+
       {/* Show loading modal while submitting */}
       {isLoading && (
         <EmailLoadingModal 

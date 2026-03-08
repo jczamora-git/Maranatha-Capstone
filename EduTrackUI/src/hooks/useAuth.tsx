@@ -12,6 +12,7 @@ interface User {
   role: 'student' | 'teacher' | 'admin' | 'enrollee';
   status?: 'active' | 'inactive' | 'pending' | 'pending_verification';
   payment_pin_set?: boolean;
+  profile_photo_path?: string | null;
 }
 
 interface RegistrationResponse {
@@ -28,7 +29,7 @@ interface RegistrationResponse {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, firstName: string, middleName: string, lastName: string, role: string) => Promise<RegistrationResponse>;
+  register: (email: string, password: string, firstName: string, middleName: string, lastName: string, role: string, phone?: string) => Promise<RegistrationResponse>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   authReady: boolean;
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
             status: response.user.status as 'active' | 'inactive' | 'pending' | 'pending_verification',
             payment_pin_set: response.user.payment_pin_set || false,
+            profile_photo_path: response.user.profile_photo_path || null,
           };
 
           setUser(userData);
@@ -122,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
           status: response.user.status as 'active' | 'inactive' | 'pending' | 'pending_verification',
           payment_pin_set: response.user.payment_pin_set || false,
+          profile_photo_path: response.user.profile_photo_path || null,
         };
         
         setUser(userData);
@@ -159,7 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     firstName: string, 
     middleName: string,
     lastName: string, 
-    role: string
+    role: string,
+    phone?: string
   ): Promise<RegistrationResponse> => {
     try {
       const response = await apiPost(API_ENDPOINTS.REGISTER, {
@@ -169,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         middle_name: middleName,
         last_name: lastName,
         role,
+        phone,
       });
 
       // Return the full response so callers can inspect email_result
@@ -215,6 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: response.user.role as 'student' | 'teacher' | 'admin' | 'enrollee',
           status: response.user.status as 'active' | 'inactive' | 'pending' | 'pending_verification',
           payment_pin_set: response.user.payment_pin_set || false,
+          profile_photo_path: response.user.profile_photo_path || null,
         };
         
         setUser(userData);

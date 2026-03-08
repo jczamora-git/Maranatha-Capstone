@@ -162,7 +162,7 @@ const InstallmentPlans = () => {
     if (status === 'running' || status === 'waiting') {
       setTimeout(() => {
         const step = demoInstallmentTourSteps[index];
-        if (step && step.target) {
+        if (step && typeof step.target === 'string') {
           const element = document.querySelector(step.target);
           if (element) {
             console.log('Scrolling to target:', step.target);
@@ -273,9 +273,53 @@ const InstallmentPlans = () => {
     setSelectedTemplate(template);
   };
 
-  const perInstallmentAmount = selectedTemplate 
-    ? Number(tuitionFee.amount) / selectedTemplate.number_of_installments
-    : 0;
+  const calculateInstallmentAmounts = (template: ScheduleTemplate, totalAmount: number): number[] => {
+    const installmentsCount = template.number_of_installments;
+    const safeTotal = Math.max(0, Number(totalAmount) || 0);
+    const roundTo2 = (value: number) => Math.round(value * 100) / 100;
+
+    if (installmentsCount <= 0) return [];
+
+    const isMonthlyOrQuarterly = template.schedule_type === "Monthly" || template.schedule_type === "Quarterly";
+
+    if (isMonthlyOrQuarterly) {
+      const firstPayment = Math.min(5000, safeTotal);
+      if (installmentsCount === 1) return [roundTo2(firstPayment)];
+
+      const remainingTotal = safeTotal - firstPayment;
+      const remainingInstallments = installmentsCount - 1;
+      const amountPerRemaining = remainingInstallments > 0 ? roundTo2(remainingTotal / remainingInstallments) : 0;
+
+      const amounts: number[] = [roundTo2(firstPayment)];
+      for (let i = 0; i < remainingInstallments; i++) {
+        if (i === remainingInstallments - 1) {
+          const allocatedBeforeLast = amountPerRemaining * (remainingInstallments - 1);
+          amounts.push(roundTo2(remainingTotal - allocatedBeforeLast));
+        } else {
+          amounts.push(amountPerRemaining);
+        }
+      }
+
+      return amounts;
+    }
+
+    const evenAmount = roundTo2(safeTotal / installmentsCount);
+    const amounts: number[] = [];
+    for (let i = 0; i < installmentsCount; i++) {
+      if (i === installmentsCount - 1) {
+        amounts.push(roundTo2(safeTotal - evenAmount * (installmentsCount - 1)));
+      } else {
+        amounts.push(evenAmount);
+      }
+    }
+    return amounts;
+  };
+
+  const selectedInstallmentAmounts = selectedTemplate
+    ? calculateInstallmentAmounts(selectedTemplate, Number(tuitionFee.amount))
+    : [];
+
+  const perInstallmentAmount = selectedInstallmentAmounts[0] || 0;
 
   // Calculate actual due dates from schedule template
   const calculateDueDatesFromTemplate = (template: ScheduleTemplate) => {
@@ -333,10 +377,16 @@ const InstallmentPlans = () => {
         start_date: new Date().toISOString().split('T')[0],
         installments: selectedTemplate.installments.map((inst, index) => ({
           installment_number: inst.installment_number,
-          amount_due: perInstallmentAmount,
+          amount_due: selectedInstallmentAmounts[index] || 0,
           due_date: dueDates[index],
           status: "Pending",
-          period_label: inst.label
+          period_label:
+            (selectedTemplate.schedule_type === "Monthly" || selectedTemplate.schedule_type === "Quarterly") && index === 0
+              ? "Upon Enrollment Payment"
+              : inst.label,
+          is_upon_enrollment:
+            ((selectedTemplate.schedule_type === "Monthly" || selectedTemplate.schedule_type === "Quarterly") && index === 0) ||
+            inst.week_of_month === "Upon Enrollment"
         }))
       };
 
@@ -388,10 +438,13 @@ const InstallmentPlans = () => {
             paymentType: 'Installment Payment',
             installmentPlan: selectedTemplate?.schedule_type,
             numberOfInstallments: selectedTemplate?.number_of_installments,
-            amountPerInstallment: perInstallmentAmount,
+            amountPerInstallment: selectedInstallmentAmounts[0] || 0,
             paymentPlanId: paymentPlanId,
             installmentNumber: 1,
-            periodLabel: selectedTemplate?.installments[0]?.label || "First Installment",
+            periodLabel:
+              (selectedTemplate?.schedule_type === "Monthly" || selectedTemplate?.schedule_type === "Quarterly")
+                ? "Upon Enrollment Payment"
+                : (selectedTemplate?.installments[0]?.label || "First Installment"),
             paymentPlan: res.data,
             installment: firstInstallment // Pass the first installment data
           }
@@ -497,7 +550,10 @@ const InstallmentPlans = () => {
                     <div className="grid gap-3">
                       {scheduleTemplates.map((template) => {
                         const isSelected = selectedTemplate?.id === template.id;
-                        const amountPerInstallment = Number(tuitionFee.amount) / template.number_of_installments;
+                        const installmentAmounts = calculateInstallmentAmounts(template, Number(tuitionFee.amount));
+                        const firstAmount = installmentAmounts[0] || 0;
+                        const followingAmount = installmentAmounts.length > 1 ? installmentAmounts[1] : firstAmount;
+                        const isMonthlyOrQuarterly = template.schedule_type === "Monthly" || template.schedule_type === "Quarterly";
                         
                         return (
                           <button
@@ -521,9 +577,20 @@ const InstallmentPlans = () => {
                                 <p className="text-xs text-muted-foreground">
                                   {template.number_of_installments} installments
                                 </p>
-                                <p className="text-sm font-bold text-green-600 mt-2">
-                                  ₱{amountPerInstallment.toLocaleString()} per installment
-                                </p>
+                                {isMonthlyOrQuarterly ? (
+                                  <div className="mt-2 space-y-1">
+                                    <p className="text-sm font-bold text-green-600">
+                                      Upon Enrollment: ₱{firstAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Following installments: ₱{followingAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm font-bold text-green-600 mt-2">
+                                    ₱{firstAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })} per installment
+                                  </p>
+                                )}
                               </div>
                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
                                 isSelected
@@ -608,10 +675,23 @@ const InstallmentPlans = () => {
                     <span className="text-xs text-muted-foreground">Tuition Fee:</span>
                     <span className="text-sm font-medium text-foreground">₱{Number(tuitionFee.amount).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground font-semibold">Per Installment:</span>
-                    <span className="text-lg font-bold text-blue-600">₱{perInstallmentAmount.toLocaleString()}</span>
-                  </div>
+                  {(selectedTemplate?.schedule_type === "Monthly" || selectedTemplate?.schedule_type === "Quarterly") ? (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground font-semibold">Upon Enrollment Payment:</span>
+                        <span className="text-lg font-bold text-blue-600">₱{(selectedInstallmentAmounts[0] || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Following Installment(s):</span>
+                        <span className="text-sm font-medium text-foreground">₱{(selectedInstallmentAmounts[1] || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground font-semibold">Per Installment:</span>
+                      <span className="text-lg font-bold text-blue-600">₱{(selectedInstallmentAmounts[0] || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground">
                       Total for {selectedTemplate?.number_of_installments || 0} installment(s):
@@ -683,8 +763,12 @@ const InstallmentPlans = () => {
                     <span className="font-semibold text-foreground">₱{Number(tuitionFee.amount).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-blue-200 dark:border-blue-700">
-                    <span className="text-sm font-semibold text-foreground">Per Installment:</span>
-                    <span className="text-lg font-bold text-blue-600">₱{perInstallmentAmount.toLocaleString()}</span>
+                    <span className="text-sm font-semibold text-foreground">
+                      {(selectedTemplate?.schedule_type === "Monthly" || selectedTemplate?.schedule_type === "Quarterly")
+                        ? "Upon Enrollment Payment:"
+                        : "Per Installment:"}
+                    </span>
+                    <span className="text-lg font-bold text-blue-600">₱{(selectedInstallmentAmounts[0] || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
@@ -700,10 +784,10 @@ const InstallmentPlans = () => {
                           #{inst.installment_number} - {inst.period_label}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          Due: {new Date(inst.due_date).toLocaleDateString()}
+                          Due: {inst.is_upon_enrollment ? "Upon Enrollment" : new Date(inst.due_date).toLocaleDateString()}
                         </span>
                       </div>
-                      <span className="font-medium">₱{inst.amount_due.toLocaleString()}</span>
+                      <span className="font-medium">₱{Number(inst.amount_due).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                     </div>
                   ))}
                   {pendingPlanData.installments.length > 4 && (

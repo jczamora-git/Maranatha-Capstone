@@ -32,6 +32,8 @@ interface PhysicalDocStatus {
 
 interface DocumentRequirement {
   id: number;
+  grade_level?: string;
+  enrollment_type?: 'New Student' | 'Returning Student' | 'Transferee' | null;
   document_name: string;
   description?: string | null;
   is_required: boolean;
@@ -51,6 +53,83 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
 
   // Tour State
   const [runTour, setRunTour] = useState(false);
+
+  const normalizeEnrollmentType = (): 'New Student' | 'Returning Student' | 'Transferee' => {
+    const rawType = String(formData.enrollment_type || '').trim().toLowerCase();
+
+    if (rawType.includes('transf')) return 'Transferee';
+    if (rawType.includes('return') || rawType.includes('continu')) return 'Returning Student';
+    if (rawType.includes('new')) return 'New Student';
+
+    return isReturningStudent ? 'Returning Student' : 'New Student';
+  };
+
+  const filterRequirementsForEnrollment = (
+    requirements: DocumentRequirement[],
+    gradeLevel: string,
+    enrollmentType: 'New Student' | 'Returning Student' | 'Transferee'
+  ) => {
+    const targetGrade = String(gradeLevel || '').trim().toLowerCase();
+    const targetType = String(enrollmentType || '').trim().toLowerCase();
+    const targetTypeShort = targetType.split(' ')[0] || '';
+
+    const matched = requirements.filter((req) => {
+      if (!req?.is_active) return false;
+
+      const rowGrade = String(req.grade_level || '').trim().toLowerCase();
+      if (rowGrade !== targetGrade) return false;
+
+      const rowTypeRaw = req.enrollment_type === null ? '' : String(req.enrollment_type || '').trim();
+      const rowType = rowTypeRaw.toLowerCase();
+      const rowTypeShort = rowType.split(' ')[0] || '';
+
+      return (
+        rowType === '' ||
+        rowType === 'all types' ||
+        rowType === targetType ||
+        rowTypeShort === targetTypeShort
+      );
+    });
+
+    const bestByDocument = new Map<string, DocumentRequirement>();
+
+    matched.forEach((req) => {
+      const key = String(req.document_name || '').trim().toLowerCase();
+      if (!key) return;
+
+      const rowType = req.enrollment_type ? String(req.enrollment_type).trim().toLowerCase() : '';
+      const rowTypeShort = rowType.split(' ')[0] || '';
+      const specific = rowType === targetType || rowTypeShort === targetTypeShort;
+      const score = specific ? 2 : 1;
+
+      const current = bestByDocument.get(key) as (DocumentRequirement & { _score?: number; display_order?: number }) | undefined;
+      if (!current) {
+        bestByDocument.set(key, { ...req, _score: score } as DocumentRequirement);
+        return;
+      }
+
+      const currentScore = (current as any)._score || 0;
+      if (score > currentScore) {
+        bestByDocument.set(key, { ...req, _score: score } as DocumentRequirement);
+        return;
+      }
+
+      const reqOrder = Number((req as any).display_order) || 0;
+      const currentOrder = Number((current as any).display_order) || 0;
+      if (score === currentScore && reqOrder < currentOrder) {
+        bestByDocument.set(key, { ...req, _score: score } as DocumentRequirement);
+      }
+    });
+
+    return Array.from(bestByDocument.values())
+      .map((req: any) => {
+        if ('_score' in req) {
+          const { _score, ...rest } = req;
+          return rest as DocumentRequirement;
+        }
+        return req as DocumentRequirement;
+      });
+  };
 
   const documentUploadTourSteps: Step[] = [
     {
@@ -145,14 +224,14 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
     }
 
     const controller = new AbortController();
-    const enrollmentType = formData.enrollment_type || undefined;
+    const enrollmentType = normalizeEnrollmentType();
 
     const loadRequirements = async () => {
       setDocumentsLoading(true);
       setDocumentsError(null);
 
       try {
-        const response = await fetch(API_ENDPOINTS.DOCUMENT_REQUIREMENTS_BY_GRADE(grade, enrollmentType), {
+        const response = await fetch(API_ENDPOINTS.DOCUMENT_REQUIREMENTS_FOR_ENROLLMENT(grade, enrollmentType), {
           credentials: "include",
           signal: controller.signal
         });
@@ -164,7 +243,26 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
         const payload = await response.json();
         const requirements = payload?.data || payload?.requirements || [];
         const activeRequirements = requirements.filter((req: DocumentRequirement) => Boolean(req.is_active));
-        setDocumentRequirements(activeRequirements);
+
+        if (activeRequirements.length > 0) {
+          setDocumentRequirements(activeRequirements);
+          return;
+        }
+
+        const fallbackResponse = await fetch(API_ENDPOINTS.ADMIN_DOCUMENT_REQUIREMENTS, {
+          credentials: "include",
+          signal: controller.signal
+        });
+
+        if (!fallbackResponse.ok) {
+          setDocumentRequirements([]);
+          return;
+        }
+
+        const fallbackPayload = await fallbackResponse.json();
+        const fallbackRows = fallbackPayload?.data || fallbackPayload?.requirements || [];
+        const fallbackFiltered = filterRequirementsForEnrollment(fallbackRows, grade, enrollmentType);
+        setDocumentRequirements(fallbackFiltered);
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error("Error fetching document requirements:", error);
@@ -180,7 +278,7 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
     loadRequirements();
 
     return () => controller.abort();
-  }, [formData.grade_level, formData.enrollment_type]);
+  }, [formData.grade_level, formData.enrollment_type, isReturningStudent]);
 
   useEffect(() => {
     // Auto start tour for step 6

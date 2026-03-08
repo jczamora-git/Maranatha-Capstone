@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
-import { Plus, Shirt, ShoppingBag, QrCode, Loader2, CheckCircle, Coins, Package, Clock } from "lucide-react";
+import { Plus, Shirt, ShoppingBag, QrCode, Loader2, CheckCircle, Coins, Package, Clock, Trash2 } from "lucide-react";
 import { FeatureGate } from "@/components/FeatureGate";
 
 type UniformPrice = {
@@ -87,6 +87,19 @@ type GroupedUniformItem = {
   prices: GroupedUniformPrice[];
 };
 
+type CartOrderItem = {
+  line_id: string;
+  uniform_item_id: number;
+  item_name: string;
+  item_group: string;
+  size: string;
+  quantity: number;
+  unit_price: number;
+  total_amount: number;
+  is_half_piece: boolean;
+  piece_type?: "Shirt" | "Pants";
+};
+
 const PAYMENT_METHODS = ["Cash", "GCash", "Bank Transfer", "Check", "PayMaya", "Others"];
 
 const UniformOrders = () => {
@@ -118,6 +131,7 @@ const UniformOrders = () => {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [isHalfPiece, setIsHalfPiece] = useState(false);
   const [pieceType, setPieceType] = useState<"Shirt" | "Pants">("Shirt");
+  const [cartItems, setCartItems] = useState<CartOrderItem[]>([]);
 
   const showAlert = (type: "success" | "error" | "info", message: string) => {
     setAlert({ type, message });
@@ -237,13 +251,23 @@ const UniformOrders = () => {
     return selectedItem.prices.find((price) => price.size === size);
   }, [selectedItem, size]);
 
-  const calculatedTotal = useMemo(() => {
+  const currentLineTotal = useMemo(() => {
     if (!selectedPrice) return 0;
     const unitPrice = isHalfPiece 
       ? (selectedPrice.half_price || selectedPrice.price)
       : selectedPrice.price;
     return Number(unitPrice) * Number(quantity);
   }, [selectedPrice, isHalfPiece, quantity]);
+
+  const transactionTotal = useMemo(
+    () => cartItems.reduce((sum, item) => sum + Number(item.total_amount), 0),
+    [cartItems]
+  );
+
+  const canAddCurrentItem = useMemo(() => {
+    const qty = Number(quantity);
+    return Boolean(studentId && uniformItemId && size && Number.isInteger(qty) && qty > 0);
+  }, [studentId, uniformItemId, size, quantity]);
 
   const resetForm = () => {
     setStudentId("");
@@ -255,9 +279,65 @@ const UniformOrders = () => {
     setPaymentMethod("Cash");
     setIsHalfPiece(false);
     setPieceType("Shirt");
+    setCartItems([]);
     setGcashToken(null);
     setGcashProofReceived(false);
     setReferenceNumber("");
+  };
+
+  const resetItemBuilder = () => {
+    setUniformItemId("");
+    setSize("");
+    setQuantity("1");
+    setIsHalfPiece(false);
+    setPieceType("Shirt");
+  };
+
+  const handleAddItemToCart = () => {
+    if (!studentId) {
+      showAlert("error", "Please select a student first");
+      return;
+    }
+
+    if (!uniformItemId || !size || !quantity) {
+      showAlert("error", "Please select item, size, and quantity before adding");
+      return;
+    }
+
+    if (!selectedItem || !selectedPrice) {
+      showAlert("error", "Selected uniform item or size is invalid");
+      return;
+    }
+
+    const qty = Number(quantity);
+    if (!Number.isInteger(qty) || qty <= 0) {
+      showAlert("error", "Quantity must be a whole number greater than 0");
+      return;
+    }
+
+    const unitPrice = isHalfPiece
+      ? Number(selectedPrice.half_price || selectedPrice.price)
+      : Number(selectedPrice.price);
+
+    const lineItem: CartOrderItem = {
+      line_id: `${selectedPrice.source_item_id}-${selectedPrice.size}-${Date.now()}`,
+      uniform_item_id: Number(selectedPrice.source_item_id),
+      item_name: selectedItem.item_name,
+      item_group: selectedItem.item_group,
+      size,
+      quantity: qty,
+      unit_price: unitPrice,
+      total_amount: unitPrice * qty,
+      is_half_piece: isHalfPiece,
+      piece_type: isHalfPiece ? pieceType : undefined,
+    };
+
+    setCartItems((prev) => [...prev, lineItem]);
+    resetItemBuilder();
+  };
+
+  const handleRemoveCartItem = (lineId: string) => {
+    setCartItems((prev) => prev.filter((item) => item.line_id !== lineId));
   };
 
   const handleOpenGcashQr = async () => {
@@ -266,24 +346,9 @@ const UniformOrders = () => {
       return;
     }
 
-    // If PE Uniform (or any item that allows half price), ask about half piece
-    if (selectedItem?.allow_half_price) {
-      const halfPieceConfirmed = await confirm({
-        title: "Half Piece Order?",
-        description: `Is this a half piece order for ${selectedItem.item_name}?\n\nSelect:\n• Yes - For half piece (Shirt or Pants only)\n• No - For full set`,
-        confirmText: "Yes (Half Piece)",
-        cancelText: "No (Full Set)"
-      });
-
-      if (halfPieceConfirmed) {
-        setIsHalfPiece(true);
-        // Default to Shirt if not already set
-        if (!pieceType) {
-          setPieceType("Shirt");
-        }
-      } else {
-        setIsHalfPiece(false);
-      }
+    if (cartItems.length === 0 || transactionTotal <= 0) {
+      showAlert("error", "Add at least one item before opening GCash QR uploader");
+      return;
     }
 
     setGcashSessionLoading(true);
@@ -291,8 +356,8 @@ const UniformOrders = () => {
     try {
       const res = await apiPost(API_ENDPOINTS.GCASH_SESSIONS, {
         user_id: studentId,
-        amount_due: calculatedTotal,
-        payment_description: `${selectedItem?.item_name || "Uniform"} - ${size || ""}`
+        amount_due: transactionTotal,
+        payment_description: `Uniform order (${cartItems.length} item${cartItems.length > 1 ? 's' : ''})`
       });
       if (res.success && res.token) {
         setGcashToken(res.token);
@@ -326,39 +391,38 @@ const UniformOrders = () => {
   }, [gcashToken]);
 
   const handleCreateOrder = async () => {
-    if (!studentId || !uniformItemId || !size || !quantity) {
-      showAlert("error", "Please complete all required fields");
+    if (!studentId) {
+      showAlert("error", "Please select a student");
       return;
     }
 
-    if (!selectedPrice) {
-      showAlert("error", "Selected size is invalid for the chosen uniform item");
+    if (cartItems.length === 0) {
+      showAlert("error", "Please add at least one uniform item");
       return;
     }
 
-    const qty = Number(quantity);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      showAlert("error", "Quantity must be greater than 0");
+    if (paymentMethod === "GCash" && !referenceNumber.trim()) {
+      showAlert("error", "GCash reference number is required for GCash payments");
       return;
     }
 
     // Show confirmation
     const studentName = selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}${selectedStudent.student_id ? ` (${selectedStudent.student_id})` : ""}` : "-";
-    const itemName = `${selectedItem?.item_name || "-"}${isHalfPiece && pieceType ? ` (${pieceType})` : ""}`;
+    const itemsSummary = cartItems
+      .map((item, index) => `${index + 1}. ${item.item_name}${item.is_half_piece && item.piece_type ? ` (${item.piece_type})` : ""} - ${item.size} x${item.quantity}`)
+      .join("\n");
     
     const confirmed = await confirm({
-      title: "Confirm Uniform Order",
+      title: "Confirm Uniform Order Transaction",
       description: (
-        `Create uniform order for:\n\n` +
+        `Create uniform order transaction for:\n\n` +
         `👤 Student: ${studentName}\n\n` +
-        `📦 Item: ${itemName}\n\n` +
-        `📏 Size: ${size}\n\n` +
-        `🔢 Quantity: ${quantity}\n\n` +
+        `📦 Items:\n${itemsSummary}\n\n` +
         `💳 Payment Method: ${paymentMethod}${paymentMethod === "GCash" && referenceNumber ? ` (Ref: ${referenceNumber})` : ""}\n\n` +
-        `💰 Total Amount: ₱${calculatedTotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })}\n\n` +
-        `✅ A payment record will be automatically created and marked as Approved.`
+        `💰 Total Amount: ₱${transactionTotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })}\n\n` +
+        `✅ One payment record will be created for all selected items.`
       ),
-      confirmText: "Create Order",
+      confirmText: "Create Transaction",
       cancelText: "Cancel"
     });
 
@@ -368,32 +432,31 @@ const UniformOrders = () => {
     try {
       const payload: Record<string, any> = {
         student_id: Number(studentId),
-        uniform_item_id: Number(selectedPrice.source_item_id),
-        size,
-        quantity: qty,
         payment_method: paymentMethod,
-        is_half_piece: isHalfPiece,
+        items: cartItems.map((item) => ({
+          uniform_item_id: item.uniform_item_id,
+          size: item.size,
+          quantity: item.quantity,
+          is_half_piece: item.is_half_piece,
+          piece_type: item.is_half_piece ? item.piece_type : undefined,
+        })),
       };
 
-      if (isHalfPiece) {
-        payload.piece_type = pieceType;
-      }
-
-      if (referenceNumber) {
+      if (paymentMethod === "GCash" && referenceNumber) {
         payload.reference_number = referenceNumber;
       }
 
-      const res = await apiPost(API_ENDPOINTS.UNIFORM_ORDERS, payload);
+      const res = await apiPost(`${API_ENDPOINTS.UNIFORM_ORDERS}/batch`, payload);
       if (!res?.success) {
-        throw new Error(res?.message || "Failed to create uniform order");
+        throw new Error(res?.message || "Failed to create uniform order transaction");
       }
 
-      showAlert("success", "Uniform order created and payment record generated");
+      showAlert("success", "Uniform transaction created and payment record generated");
       setIsCreateOpen(false);
       resetForm();
       await fetchData();
     } catch (error: any) {
-      showAlert("error", error?.message || "Failed to create uniform order");
+      showAlert("error", error?.message || "Failed to create uniform order transaction");
     } finally {
       setSaving(false);
     }
@@ -467,133 +530,267 @@ const UniformOrders = () => {
               Uniform Management
             </Button>
 
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <Dialog
+              open={isCreateOpen}
+              onOpenChange={(open) => {
+                setIsCreateOpen(open);
+                if (!open) {
+                  resetForm();
+                }
+              }}
+            >
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
                   New Uniform Order
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Uniform Order</DialogTitle>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative">
-                  <Label>Student *</Label>
-                  <Input
-                    className="mt-1"
-                    placeholder="Search student by ID or name..."
-                    value={studentSearchQuery}
-                    onChange={(e) => {
-                      setStudentSearchQuery(e.target.value);
-                      setShowStudentSuggestions(true);
-                      if (!e.target.value) {
-                        setStudentId("");
-                      }
-                    }}
-                    onFocus={() => setShowStudentSuggestions(true)}
-                    onBlur={() => {
-                      setTimeout(() => setShowStudentSuggestions(false), 200);
-                    }}
-                  />
-                  {showStudentSuggestions && filteredStudentSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {filteredStudentSuggestions.map((student) => (
-                        <button
-                          key={student.user_id}
-                          type="button"
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setStudentId(student.user_id);
-                            setStudentSearchQuery(
-                              `${student.first_name} ${student.last_name}${student.student_id ? ` (${student.student_id})` : ""}`
-                            );
-                            setShowStudentSuggestions(false);
-                          }}
-                        >
-                          <div className="font-medium">
-                            {student.first_name} {student.last_name}
+              <div className="space-y-5">
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold text-muted-foreground">1. Select Student</p>
+                    {cartItems.length > 0 && (
+                      <p className="text-xs text-amber-600 font-medium">🔒 Locked (items in cart)</p>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Label>Student *</Label>
+                    <Input
+                      className="mt-1"
+                      placeholder="Search student by ID or name..."
+                      value={studentSearchQuery}
+                      onChange={(e) => {
+                        setStudentSearchQuery(e.target.value);
+                        setShowStudentSuggestions(true);
+                        if (!e.target.value) {
+                          setStudentId("");
+                        }
+                      }}
+                      onFocus={() => setShowStudentSuggestions(true)}
+                      onBlur={() => {
+                        setTimeout(() => setShowStudentSuggestions(false), 200);
+                      }}
+                      disabled={cartItems.length > 0}
+                    />
+                    {showStudentSuggestions && filteredStudentSuggestions.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {filteredStudentSuggestions.map((student) => (
+                          <button
+                            key={student.user_id}
+                            type="button"
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setStudentId(student.user_id);
+                              setStudentSearchQuery(
+                                `${student.first_name} ${student.last_name}${student.student_id ? ` (${student.student_id})` : ""}`
+                              );
+                              setShowStudentSuggestions(false);
+                            }}
+                          >
+                            <div className="font-medium">
+                              {student.first_name} {student.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {student.student_id || "Enrollee"}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <p className="text-sm font-semibold text-muted-foreground mb-3">2. Add Uniform Items</p>
+                  {!studentId && (
+                    <p className="text-xs text-amber-600 mb-3">Select a student first to enable item selection.</p>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <Label>Uniform Item *</Label>
+                      <Select
+                        value={uniformItemId}
+                        onValueChange={(value) => {
+                          setUniformItemId(value);
+                          setSize("");
+                          setIsHalfPiece(false);
+                        }}
+                        disabled={!studentId}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select uniform item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {groupedUniformItems.map((item) => (
+                            <SelectItem key={item.key} value={item.key}>
+                              {item.item_name} ({item.item_group})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Size *</Label>
+                      <Select value={size} onValueChange={setSize} disabled={!uniformItemId || !studentId}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sizeOptions.map((price) => (
+                            <SelectItem key={price.id} value={price.size}>
+                              {price.size} - ₱{Number(price.price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                              {price.half_price ? ` (half: ₱${Number(price.half_price).toLocaleString("en-PH", { minimumFractionDigits: 2 })})` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>Quantity *</Label>
+                      <Input
+                        className="mt-1"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        disabled={!studentId}
+                      />
+                    </div>
+
+                    {selectedItem?.allow_half_price && (
+                      <>
+                        <div>
+                          <Label>Half Piece</Label>
+                          <Select
+                            value={isHalfPiece ? "yes" : "no"}
+                            onValueChange={(value) => setIsHalfPiece(value === "yes")}
+                            disabled={!studentId}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="no">No</SelectItem>
+                              <SelectItem value="yes">Yes</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {isHalfPiece && (
+                          <div>
+                            <Label>Piece Type</Label>
+                            <Select value={pieceType} onValueChange={(value: "Shirt" | "Pants") => setPieceType(value)}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Shirt">Shirt</SelectItem>
+                                <SelectItem value="Pants">Pants</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {student.student_id || "Enrollee"}
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="mt-4 rounded-lg border border-gray-200 p-3 bg-muted/20 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium">Current Item Total</p>
+                      <p className="text-sm text-muted-foreground">
+                        ₱{currentLineTotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={resetItemBuilder}
+                        disabled={!studentId}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleAddItemToCart}
+                        disabled={!canAddCurrentItem}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Another Item
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="px-4 py-3 bg-muted/40 border-b flex items-center justify-between">
+                    <p className="font-medium">Items in This Transaction ({cartItems.length})</p>
+                    <p className="font-semibold">₱{transactionTotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                  </div>
+
+                  {cartItems.length === 0 ? (
+                    <div className="p-4 text-sm text-muted-foreground">No items added yet.</div>
+                  ) : (
+                    <div className="divide-y">
+                      {cartItems.map((item) => (
+                        <div key={item.line_id} className="p-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-medium">
+                              {item.item_name}
+                              {item.is_half_piece && item.piece_type ? ` (${item.piece_type})` : ""}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {item.size} • Qty {item.quantity} • ₱{Number(item.unit_price).toLocaleString("en-PH", { minimumFractionDigits: 2 })} each
+                            </p>
                           </div>
-                        </button>
+                          <div className="flex items-center gap-3">
+                            <p className="font-semibold">₱{Number(item.total_amount).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveCartItem(item.line_id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <Label>Uniform Item *</Label>
-                  <Select
-                    value={uniformItemId}
-                    onValueChange={(value) => {
-                      setUniformItemId(value);
-                      setSize("");
-                      setIsHalfPiece(false);
-                    }}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select uniform item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groupedUniformItems.map((item) => (
-                        <SelectItem key={item.key} value={item.key}>
-                          {item.item_name} ({item.item_group})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+                  <p className="text-sm font-semibold text-muted-foreground">3. Checkout</p>
 
-                <div>
-                  <Label>Size *</Label>
-                  <Select value={size} onValueChange={setSize} disabled={!uniformItemId}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sizeOptions.map((price) => (
-                        <SelectItem key={price.id} value={price.size}>
-                          {price.size} - ₱{Number(price.price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                          {price.half_price ? ` (half: ₱${Number(price.half_price).toLocaleString("en-PH", { minimumFractionDigits: 2 })})` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div>
+                    <Label>Payment Method *</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                      <SelectTrigger className="mt-1 max-w-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_METHODS.map((method) => (
+                          <SelectItem key={method} value={method}>{method}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div>
-                  <Label>Quantity *</Label>
-                  <Input
-                    className="mt-1"
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label>Payment Method *</Label>
-                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_METHODS.map((method) => (
-                        <SelectItem key={method} value={method}>{method}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* GCash QR Uploader - Full width */}
+                  {/* GCash QR Uploader - Full width */}
                 {paymentMethod === "GCash" && (
-                  <div className="md:col-span-2 space-y-3">
+                    <div className="space-y-3">
                     <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                       <p className="text-sm text-blue-700 mb-3 font-medium">
                         📱 Let the student upload their GCash screenshot by scanning a QR code
@@ -604,15 +801,15 @@ const UniformOrders = () => {
                         size="sm"
                         className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
                         onClick={handleOpenGcashQr}
-                        disabled={gcashSessionLoading || !studentId || !calculatedTotal}
+                        disabled={gcashSessionLoading || !studentId || !transactionTotal || cartItems.length === 0}
                       >
                         {gcashSessionLoading
                           ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating session…</>
                           : <><QrCode className="h-4 w-4 mr-2" />Open GCash QR Uploader</>}
                       </Button>
-                      {(!studentId || !calculatedTotal) && (
+                      {(!studentId || !transactionTotal || cartItems.length === 0) && (
                         <p className="text-xs text-blue-600 mt-2 text-center">
-                          Select a student and uniform item to enable
+                          Select a student and add at least one item to enable
                         </p>
                       )}
                       {gcashProofReceived && (
@@ -633,49 +830,22 @@ const UniformOrders = () => {
                     </div>
                   </div>
                 )}
-
-                {selectedItem?.allow_half_price && (
-                  <>
-                    <div>
-                      <Label>Half Piece</Label>
-                      <Select
-                        value={isHalfPiece ? "yes" : "no"}
-                        onValueChange={(value) => setIsHalfPiece(value === "yes")}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="no">No</SelectItem>
-                          <SelectItem value="yes">Yes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {isHalfPiece && (
-                      <div>
-                        <Label>Piece Type</Label>
-                        <Select value={pieceType} onValueChange={(value: "Shirt" | "Pants") => setPieceType(value)}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Shirt">Shirt</SelectItem>
-                            <SelectItem value="Pants">Pants</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </>
-                )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)} disabled={saving}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    resetForm();
+                  }}
+                  disabled={saving}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleCreateOrder} disabled={saving}>
-                  {saving ? "Creating..." : "Create Order"}
+                <Button onClick={handleCreateOrder} disabled={saving || cartItems.length === 0}>
+                  {saving ? "Creating..." : "Create Transaction"}
                 </Button>
               </div>
             </DialogContent>
