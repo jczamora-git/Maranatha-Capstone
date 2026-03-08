@@ -159,8 +159,8 @@ const tourSteps: Step[] = [
     content: 'This bar shows the 7 steps of enrollment. The blue circle shows where you are now.',
   },
   {
-    target: '#enrollment-form-area',
-    content: 'Please type your information here. Take your time to ensure all details are correct.',
+    target: '#student-info-form-header',
+    content: 'This is the Student Information section where you will enter the learner\'s details.',
   },
   {
     target: '#firstName',
@@ -208,6 +208,7 @@ const EnrollmentForm = () => {
 
   // Tour State
   const [runTour, setRunTour] = useState(false);
+  const [tourScrollOffset, setTourScrollOffset] = useState(20);
 
   useEffect(() => {
     // Auto start tour for new users or if not seen before
@@ -215,6 +216,28 @@ const EnrollmentForm = () => {
     if (!hasSeenTour) {
       setRunTour(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const updateTourScrollOffset = () => {
+      const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
+      if (!isMobile) {
+        setTourScrollOffset(20);
+        return;
+      }
+
+      const mobileHeader = document.querySelector('[data-mobile-header="true"]') as HTMLElement | null;
+      const headerHeight = mobileHeader?.getBoundingClientRect().height ?? 56;
+      setTourScrollOffset(Math.ceil(headerHeight + 16));
+    };
+
+    updateTourScrollOffset();
+    window.addEventListener('resize', updateTourScrollOffset);
+
+    return () => {
+      window.removeEventListener('resize', updateTourScrollOffset);
+    };
   }, []);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
@@ -607,7 +630,7 @@ const EnrollmentForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
+    <div className="enrollment-readable min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
       <div className="max-w-5xl mx-auto">
         {/* Header Section */}
         <div id="enrollment-header" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-8 py-8 sm:py-14 rounded-b-3xl shadow-xl">
@@ -686,7 +709,7 @@ const EnrollmentForm = () => {
           <Card id="enrollment-form-area" className="shadow-xl border-0">
             <CardContent className="p-4 sm:p-8 lg:p-10">
               {/* Step Info */}
-              <div className="text-center bg-gradient-to-r from-orange-50 to-yellow-50 px-6 py-6 rounded-xl border border-orange-100 mb-8">
+              <div id="enrollment-step-info" className="text-center bg-gradient-to-r from-orange-50 to-yellow-50 px-6 py-6 rounded-xl border border-orange-100 mb-8">
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">{steps[currentStep - 1].title}</h2>
                 <p className="text-gray-600 text-lg">{steps[currentStep - 1].description}</p>
                 {isReturningStudent && !isFirstTimer && (
@@ -763,11 +786,13 @@ const EnrollmentForm = () => {
       <Joyride
         steps={tourSteps}
         run={runTour}
+        disableScrolling={false}
+        spotlightPadding={5}
         continuous
         showProgress
         showSkipButton
         callback={handleJoyrideCallback}
-        scrollOffset={100}
+        scrollOffset={tourScrollOffset}
         styles={{
           options: {
             primaryColor: '#2563eb',

@@ -13,8 +13,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { usePaymentPageLock } from "@/hooks/usePaymentPageLock";
 import { PinVerificationModal } from "@/components/PinVerificationModal";
-import { ArrowLeft, Building2, Smartphone, CheckCircle2, Receipt, AlertCircle, Play } from "lucide-react";
-import TourHelpButton from "@/components/TourHelpButton";
+import { ArrowLeft, Building2, Smartphone, CheckCircle2, Receipt, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { API_ENDPOINTS, apiPost, apiGet } from "@/lib/api";
 import gcashQR from "@/assets/images/Gcash-qr.jpg";
@@ -204,6 +203,23 @@ const PaymentProcess = () => {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  useEffect(() => {
+    const handleStartTourEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ tourId?: string }>;
+      if (customEvent.detail?.tourId !== 'payment-process') {
+        return;
+      }
+
+      setRunDemoPaymentTour(true);
+    };
+
+    window.addEventListener('campuscompanion:start-tour', handleStartTourEvent as EventListener);
+    return () => {
+      window.removeEventListener('campuscompanion:start-tour', handleStartTourEvent as EventListener);
+    };
+  }, []);
+
   const handleDemoPaymentTourCallback = (data: CallBackProps) => {
     const { status, index } = data;
     
@@ -783,85 +799,85 @@ const PaymentProcess = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-8 max-w-4xl mx-auto">
+      <div className="enrollment-readable p-3 sm:p-8 max-w-4xl mx-auto">
         {/* Back Button */}
         <Button
           variant="ghost"
           onClick={() => navigate("/enrollment/payment")}
-          className="mb-6"
+          className="mb-4 sm:mb-6 h-9 px-2 sm:px-3 text-xs sm:text-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Payments
         </Button>
 
         {/* Header */}
-        <div className="mb-8 payment-header">
+        <div className="mb-5 sm:mb-8 payment-header">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center shadow-lg flex-shrink-0">
-                <Receipt className="h-8 w-8 text-white" />
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center shadow-md sm:shadow-lg flex-shrink-0">
+                <Receipt className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
+                <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-1 sm:mb-2 leading-tight">
                   Payment Process
                 </h1>
-                <p className="text-muted-foreground">Complete your tuition payment</p>
+                <p className="text-xs sm:text-base text-muted-foreground">Complete your tuition payment</p>
               </div>
             </div>
             {/* Tour trigger moved to floating TourHelpButton component */}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Payment Summary - Left Side */}
           <div className="lg:col-span-2 space-y-6">
             {/* Payment Method Selection */}
-            <Card className="shadow-lg border-0 payment-method-selection">
-              <CardHeader>
-                <CardTitle className="text-xl">Select Payment Method</CardTitle>
-                <CardDescription>Choose how you want to pay</CardDescription>
+            <Card className="shadow-md sm:shadow-lg border-0 payment-method-selection">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-xl">Select Payment Method</CardTitle>
+                <CardDescription className="text-sm sm:text-base">Choose how you want to pay</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                   <div className="space-y-3">
                     {/* Cash */}
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition cursor-pointer cash-payment-option">
+                    <div className="flex items-center space-x-3 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition cursor-pointer cash-payment-option">
                       <RadioGroupItem value="Cash" id="cash" />
                       <Label htmlFor="cash" className="flex-1 cursor-pointer flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                          <span className="text-xl">💵</span>
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <span className="text-lg sm:text-xl">💵</span>
                         </div>
                         <div>
-                          <p className="font-semibold">Cash Payment</p>
-                          <p className="text-xs text-muted-foreground">Pay at the cashier's office</p>
+                          <p className="font-semibold !text-[13px] sm:!text-sm">Cash Payment</p>
+                          <p className="!text-[11px] sm:!text-xs text-muted-foreground">Pay at the cashier's office</p>
                         </div>
                       </Label>
                     </div>
 
                     {/* GCash */}
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition cursor-pointer gcash-payment-option">
+                    <div className="flex items-center space-x-3 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition cursor-pointer gcash-payment-option">
                       <RadioGroupItem value="GCash" id="gcash" />
                       <Label htmlFor="gcash" className="flex-1 cursor-pointer flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <Smartphone className="w-5 h-5 text-blue-600" />
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                         </div>
                         <div>
-                          <p className="font-semibold">GCash</p>
-                          <p className="text-xs text-muted-foreground">Mobile payment via GCash</p>
+                          <p className="font-semibold !text-[13px] sm:!text-sm">GCash</p>
+                          <p className="!text-[11px] sm:!text-xs text-muted-foreground">Mobile payment via GCash</p>
                         </div>
                       </Label>
                     </div>
 
                     {/* Bank Transfer */}
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg bg-gray-50 opacity-60 cursor-not-allowed">
+                    <div className="flex items-center space-x-3 p-3 sm:p-4 border rounded-lg bg-gray-50 opacity-60 cursor-not-allowed">
                       <RadioGroupItem value="Bank Transfer" id="bank" disabled />
                       <Label htmlFor="bank" className="flex-1 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <Building2 className="w-5 h-5 text-gray-400" />
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-500">Bank Transfer</p>
-                          <p className="text-xs text-gray-400">Temporarily unavailable</p>
+                          <p className="font-semibold !text-[13px] sm:!text-sm text-gray-500">Bank Transfer</p>
+                          <p className="!text-[11px] sm:!text-xs text-gray-400">Temporarily unavailable</p>
                         </div>
                       </Label>
                     </div>
@@ -870,7 +886,7 @@ const PaymentProcess = () => {
 
                 {/* Reference Number (for non-cash payments) */}
                 {paymentMethod !== "Cash" && (
-                  <div className="space-y-2 pt-4 border-t reference-number">
+                  <div className="space-y-2 pt-3 sm:pt-4 border-t reference-number">
                     <Label htmlFor="reference" className={validationErrors.reference ? "text-red-600 font-semibold" : ""}>
                       Reference/Transaction Number *
                     </Label>
@@ -892,14 +908,14 @@ const PaymentProcess = () => {
 
                 {/* GCash QR Code */}
                 {paymentMethod === "GCash" && (
-                  <div className="space-y-3 pt-4 border-t bg-blue-50 p-4 rounded-lg gcash-qr-section">
-                    <Label className="text-base font-semibold text-blue-900">GCash QR Code</Label>
+                  <div className="space-y-3 pt-3 sm:pt-4 border-t bg-blue-50 p-3 sm:p-4 rounded-lg gcash-qr-section">
+                    <Label className="text-xs sm:text-base font-semibold text-blue-900">GCash QR Code</Label>
                     <div className="flex justify-center">
-                      <div className="bg-white p-4 rounded-lg border-2 border-gray-300 shadow-lg">
+                      <div className="bg-white p-3 sm:p-4 rounded-lg border-2 border-gray-300 shadow-md sm:shadow-lg">
                         <img
                           src={runDemoPaymentTour ? demoGcash : gcashQR}
                           alt="GCash QR Code"
-                          className="w-56 h-56 object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                          className="w-44 h-44 sm:w-56 sm:h-56 object-contain cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={() => handleQRModalOpen()}
                           onError={(e) => {
                             console.error('Failed to load GCash QR code');
@@ -908,19 +924,19 @@ const PaymentProcess = () => {
                         />
                       </div>
                     </div>
-                    <p className="text-sm text-blue-900 text-center font-medium">
+                    <p className="text-[11px] sm:text-sm text-blue-900 text-center font-medium">
                       Click to view full size • Scan with your GCash app to pay
                     </p>
                     
                     {/* Receiver Details */}
-                    <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-2">
+                    <div className="bg-white p-3 sm:p-4 rounded-lg border border-gray-200 space-y-2">
                       <div>
                         <p className="text-xs text-gray-500 font-medium">Receiver Name</p>
-                        <p className="text-sm font-semibold text-gray-800">JO*N CH********R KI*G Z.</p>
+                        <p className="text-xs sm:text-sm font-semibold text-gray-800">JO*N CH********R KI*G Z.</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 font-medium">Mobile Number</p>
-                        <p className="text-sm font-semibold text-gray-800">+63 994 909 8150</p>
+                        <p className="text-xs sm:text-sm font-semibold text-gray-800">+63 994 909 8150</p>
                       </div>
                     </div>
                   </div>
@@ -935,6 +951,7 @@ const PaymentProcess = () => {
                     value={remarks}
                     onChange={(e) => setRemarks(e.target.value)}
                     rows={3}
+                    className="text-sm"
                   />
                 </div>
 
@@ -945,14 +962,14 @@ const PaymentProcess = () => {
                       Proof of Payment *
                       {proofOfPayment && <span className="text-green-600 ml-2">✓ Uploaded</span>}
                     </Label>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                       <label
                         htmlFor="proof"
-                        className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm cursor-pointer hover:bg-gray-50"
+                        className="inline-flex w-full sm:w-auto justify-center items-center px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm cursor-pointer hover:bg-gray-50"
                       >
                         Choose File
                       </label>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground break-all">
                         {proofOfPayment ? proofOfPayment.name : (runDemoPaymentTour ? demoUploadFilename : 'No file chosen')}
                       </span>
                       <Input
@@ -974,27 +991,27 @@ const PaymentProcess = () => {
 
           {/* Payment Summary - Right Side */}
           <div className="space-y-6">
-            <Card className="shadow-lg border-0 sticky top-4 payment-summary">
-              <CardHeader>
-                <CardTitle className="text-lg">Payment Summary</CardTitle>
+            <Card className="shadow-md sm:shadow-lg border-0 lg:sticky lg:top-4 payment-summary">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-sm sm:text-lg">Payment Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
                 {/* Student Info */}
                 <div className="pb-4 border-b">
-                  <p className="text-sm text-muted-foreground mb-1">Student</p>
-                  <p className="font-semibold">{displayStudentName}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-1">Student</p>
+                  <p className="text-sm sm:text-base font-semibold">{displayStudentName}</p>
                   <p className="text-xs text-muted-foreground">{displayEmail}</p>
                 </div>
 
                 {/* Enrollment Info */}
                 <div className="pb-4 border-b">
-                  <p className="text-sm text-muted-foreground mb-2">Enrollment Details</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-2">Enrollment Details</p>
                   <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-muted-foreground">School Year:</span>
                       <span className="font-medium">{displaySchoolYear}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-muted-foreground">Grade Level:</span>
                       <span className="font-medium">{displayGradeLevel}</span>
                     </div>
@@ -1004,27 +1021,27 @@ const PaymentProcess = () => {
                 {/* Payment Details - Only show for tuition payments */}
                 {!isSchoolFeePayment && (
                   <div className="pb-4 border-b">
-                    <p className="text-sm text-muted-foreground mb-2">Payment Type</p>
-                    <p className="font-semibold text-blue-600">{displayPaymentType}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-2">Payment Type</p>
+                    <p className="text-sm sm:text-base font-semibold text-blue-600">{displayPaymentType}</p>
                   </div>
                 )}
 
                 {/* Amount Breakdown */}
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">{displayPaymentType === "Installment Payment" ? "Original Amount:" : `${displayFeeName}:`}</span>
                     <span className="font-medium">₱{displayTuitionAmount.toLocaleString()}</span>
                   </div>
 
                   {displayDiscountAmount > 0 && (
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-green-600">{displayDiscountName}:</span>
                       <span className="text-green-600 font-medium">-₱{displayDiscountAmount.toLocaleString()}</span>
                     </div>
                   )}
 
                   {penaltyAmount > 0 && (
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-orange-600">Charge Fee (Late Payment):</span>
                       <span className="text-orange-600 font-medium">+₱{penaltyAmount.toLocaleString()}</span>
                     </div>
@@ -1032,11 +1049,11 @@ const PaymentProcess = () => {
 
                   <div className="pt-2 border-t">
                     <div className="flex justify-between">
-                      <span className="font-semibold">Total Amount:</span>
-                      <span className="text-xl font-bold text-blue-600">₱{(runDemoPaymentTour ? displayFinalAmount : totalWithPenalty).toLocaleString()}</span>
+                      <span className="text-sm sm:text-base font-semibold">Total Amount:</span>
+                      <span className="text-base sm:text-xl font-bold text-blue-600">₱{(runDemoPaymentTour ? displayFinalAmount : totalWithPenalty).toLocaleString()}</span>
                     </div>
                     {!runDemoPaymentTour && paymentType === "Installment Payment" && state.numberOfInstallments && (
-                      <div className="mt-1 text-sm text-muted-foreground">
+                      <div className="mt-1 text-xs sm:text-sm text-muted-foreground">
                         <span>Payment plan for {state.numberOfInstallments} installment(s)</span>
                       </div>
                     )}
@@ -1047,8 +1064,8 @@ const PaymentProcess = () => {
                 <Button
                   onClick={handleSubmitPayment}
                   disabled={loading || !paymentMethod}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 submit-payment-btn"
-                  size="lg"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 submit-payment-btn h-10 sm:h-11"
+                  size="default"
                 >
                   {loading ? (
                     <>
@@ -1068,9 +1085,9 @@ const PaymentProcess = () => {
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                     <div className="flex items-start gap-2">
                       <AlertCircle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-xs text-orange-800">
+                      <div className="text-[11px] sm:text-xs text-orange-800">
                         <p className="font-semibold">Late Payment Penalty Applied</p>
-                        <p className="mt-1">This installment is {daysOverdue} day(s) overdue. A 5% late fee of ₱{penaltyAmount.toLocaleString()} has been added to your payment.</p>
+                        <p className="mt-1 leading-relaxed">This installment is {daysOverdue} day(s) overdue. A 5% late fee of ₱{penaltyAmount.toLocaleString()} has been added to your payment.</p>
                       </div>
                     </div>
                   </div>
@@ -1080,7 +1097,7 @@ const PaymentProcess = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-xs text-blue-800">
+                    <div className="text-[11px] sm:text-xs text-blue-800">
                       <p className="font-semibold mb-1">Payment Verification Process</p>
                       <ul className="space-y-0.5 ml-3">
                         <li>• Your payment will be verified by the admin</li>
@@ -1098,9 +1115,9 @@ const PaymentProcess = () => {
 
         {/* QR Code Full Screen Modal */}
         <Dialog open={showQRModal} onOpenChange={handleQRModalClose}>
-          <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[90vh] p-4 sm:p-6 flex flex-col">
             <DialogHeader>
-              <DialogTitle>GCash QR Code - Double click to zoom, Drag to move</DialogTitle>
+              <DialogTitle className="text-sm sm:text-base">GCash QR Code - Double click to zoom, Drag to move</DialogTitle>
             </DialogHeader>
             <div 
               className="flex-1 flex items-center justify-center overflow-hidden bg-gray-100 rounded-lg touch-none"
@@ -1126,7 +1143,6 @@ const PaymentProcess = () => {
                   transition: isDragging ? 'none' : 'transform 0.2s ease-out',
                   maxWidth: '100%',
                   maxHeight: '100%',
-                  WebkitUserDrag: 'none',
                 }}
               />
             </div>
@@ -1148,7 +1164,7 @@ const PaymentProcess = () => {
 
         {/* Cash Payment Confirmation Modal */}
         <Dialog open={showCashConfirmModal} onOpenChange={setShowCashConfirmModal}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-md p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Confirm Cash Payment</DialogTitle>
             </DialogHeader>
@@ -1233,10 +1249,6 @@ const PaymentProcess = () => {
               arrowColor: '#ffffff',
               zIndex: 10000,
             },
-            beacon: {
-              offsetY: 10,
-              offsetX: 10,
-            },
             tooltip: {
               borderRadius: 8,
               fontSize: 14,
@@ -1275,18 +1287,6 @@ const PaymentProcess = () => {
         />,
         document.body
       )}
-      {/* Floating tour help button (same component used elsewhere) */}
-      <TourHelpButton
-        tourOptions={[
-          {
-            id: 'demo-payment',
-            title: 'Payment Demo',
-            description: 'Guided demo of the payment process (GCash, upload, submit).',
-            icon: <Play className="h-5 w-5 text-blue-600" />, 
-            onStart: () => setRunDemoPaymentTour(true),
-          },
-        ]}
-      />
     </DashboardLayout>
   );
 };

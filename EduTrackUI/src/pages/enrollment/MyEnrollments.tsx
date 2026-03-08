@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,14 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { AlertCircle, Plus, CheckCircle2, Clock, XCircle, Eye, ArrowRight, ClipboardList, Calendar, Search, LayoutGrid, List, UserPlus, Users, FileText } from "lucide-react";
+import { AlertCircle, Plus, CheckCircle2, Clock, XCircle, Eye, ArrowRight, ClipboardList, Calendar, Search, LayoutGrid, List, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatures } from "@/context/FeaturesContext";
 import { apiGet, API_ENDPOINTS } from "@/lib/api";
 import AccessLockedCard from "@/components/AccessLockedCard";
 import Joyride, { CallBackProps, STATUS, EVENTS } from "react-joyride";
-import TourHelpButton from "@/components/TourHelpButton";
+import { useTranslatedTexts } from "@/context/TranslationContext";
 
 interface EnrollmentItem {
   id: number;
@@ -57,6 +57,102 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.React
   },
 };
 
+const MY_ENROLLMENTS_TEXT_STRINGS = [
+  "Loading your enrollments...",
+  "Enrollment Access Locked",
+  "You need to verify your email address before you can access the enrollment system.",
+  "Secure your account and prevent unauthorized access",
+  "Receive important enrollment updates and notifications",
+  "Start your enrollment application and submission process",
+  "Previous",
+  "Close",
+  "Finish",
+  "Next",
+  "Open the dialog",
+  "Skip tour",
+  "My Enrollments",
+  "Track and manage your enrollment applications",
+  "You already have an active enrollment in the current period",
+  "Enrollment period is closed",
+  "New Enrollment",
+  "You have an active enrollment. Complete it before creating a new one.",
+  "Enrollment period is closed. Check back later.",
+  "No Enrollments Yet",
+  "You haven't submitted any enrollment applications yet. Start your enrollment process now to get access to courses and classes.",
+  "Start Your First Enrollment",
+  "Total Applications",
+  "Under Review",
+  "Approved",
+  "Latest Update",
+  "N/A",
+  "Search",
+  "Search...",
+  "Status",
+  "All Status",
+  "Pending",
+  "Incomplete",
+  "Rejected",
+  "View Mode",
+  "List",
+  "Grid",
+  "Application ID",
+  "School Year",
+  "Grade Level",
+  "Submitted Date",
+  "Actions",
+  "View",
+  "SY:",
+  "Grade:",
+  "Submitted:",
+  "View Details",
+  "Enrollment Information",
+  "Click on any enrollment to view detailed status and timeline",
+  "You will be notified via email when your application is reviewed",
+  "Document uploads may be requested at any time",
+  "Contact us at mca.calapan@gmail.com for support",
+  "Choose Re-Enrollment Type",
+  "Choose Student Type",
+  "Choose the option that matches your status.",
+  "Choose the option that matches this student.",
+  "Continuing Student (Old Student)",
+  "Currently enrolled here and moving to the next grade.",
+  "Returning Student",
+  "Previously enrolled here, then stopped, and now returning.",
+  "New Student",
+  "First time enrolling at Maranatha Christian Academy.",
+  "Previously enrolled at Maranatha and continuing this school year.",
+  "Transferee",
+  "Coming from another school.",
+  "Cancel",
+  "Continue",
+  "Enrollment Confirmation",
+  "You are now enrolling for",
+  "Student Information",
+  "Name:",
+  "Current Grade:",
+  "Enrolled Grade:",
+  "Gender:",
+  "Parent/Guardian",
+  "Residential Address",
+  "Current Address",
+  "ℹ️ Important Information",
+  "• All information is from your previous enrollment",
+  "• Your enrollment will be automatically submitted",
+  "• You will be notified once admin approves your enrollment",
+  "• Typical approval takes 2-3 business days",
+  "Submitting...",
+  "Submit Enrollment",
+  "Please verify your email before creating an enrollment",
+  "Enrollment period is currently closed. Please wait for the next enrollment period to open.",
+  "You already have an active enrollment in the current period. Complete or cancel the existing enrollment before creating a new one.",
+  "Please select an enrollment type",
+  "User information not available",
+  "Missing required data for auto-enrollment",
+  "Please verify your email before viewing enrollments",
+  "School Year",
+  "Failed to load enrollments",
+] as const;
+
 const MyEnrollments = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -80,8 +176,126 @@ const MyEnrollments = () => {
   // Tour states
   const [runTour, setRunTour] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
+  const [tourScrollOffset, setTourScrollOffset] = useState(20);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [mobileHeaderHeight, setMobileHeaderHeight] = useState(56);
 
   const isEmailVerified = user?.status !== 'pending';
+
+  const translatedTexts = useTranslatedTexts([...MY_ENROLLMENTS_TEXT_STRINGS]);
+  const t = useMemo(() => ({
+    loadingEnrollments: translatedTexts[0],
+    enrollmentAccessLocked: translatedTexts[1],
+    verifyEmailLockDescription: translatedTexts[2],
+    lockBenefitSecurity: translatedTexts[3],
+    lockBenefitUpdates: translatedTexts[4],
+    lockBenefitStart: translatedTexts[5],
+    joyrideBack: translatedTexts[6],
+    joyrideClose: translatedTexts[7],
+    joyrideFinish: translatedTexts[8],
+    joyrideNext: translatedTexts[9],
+    joyrideOpen: translatedTexts[10],
+    joyrideSkip: translatedTexts[11],
+    pageTitle: translatedTexts[12],
+    pageSubtitle: translatedTexts[13],
+    activeEnrollmentTitle: translatedTexts[14],
+    enrollmentPeriodClosedTitle: translatedTexts[15],
+    newEnrollment: translatedTexts[16],
+    activeEnrollmentWarning: translatedTexts[17],
+    periodClosedWarning: translatedTexts[18],
+    noEnrollmentsYet: translatedTexts[19],
+    noEnrollmentsDescription: translatedTexts[20],
+    startFirstEnrollment: translatedTexts[21],
+    totalApplications: translatedTexts[22],
+    underReview: translatedTexts[23],
+    approved: translatedTexts[24],
+    latestUpdate: translatedTexts[25],
+    na: translatedTexts[26],
+    search: translatedTexts[27],
+    searchPlaceholder: translatedTexts[28],
+    status: translatedTexts[29],
+    allStatus: translatedTexts[30],
+    pending: translatedTexts[31],
+    incomplete: translatedTexts[32],
+    rejected: translatedTexts[33],
+    viewMode: translatedTexts[34],
+    list: translatedTexts[35],
+    grid: translatedTexts[36],
+    applicationId: translatedTexts[37],
+    schoolYear: translatedTexts[38],
+    gradeLevel: translatedTexts[39],
+    submittedDate: translatedTexts[40],
+    actions: translatedTexts[41],
+    view: translatedTexts[42],
+    sy: translatedTexts[43],
+    grade: translatedTexts[44],
+    submitted: translatedTexts[45],
+    viewDetails: translatedTexts[46],
+    enrollmentInformation: translatedTexts[47],
+    infoLine1: translatedTexts[48],
+    infoLine2: translatedTexts[49],
+    infoLine3: translatedTexts[50],
+    infoLine4: translatedTexts[51],
+    selectReEnrollmentType: translatedTexts[52],
+    selectEnrollmentType: translatedTexts[53],
+    reEnrollmentDescription: translatedTexts[54],
+    enrollmentTypeDescription: translatedTexts[55],
+    continuingOldStudent: translatedTexts[56],
+    continuingDescription: translatedTexts[57],
+    returningStudent: translatedTexts[58],
+    returningDescription: translatedTexts[59],
+    newStudent: translatedTexts[60],
+    newStudentDescription: translatedTexts[61],
+    continuingAtMaranathaDescription: translatedTexts[62],
+    transferee: translatedTexts[63],
+    transfereeDescription: translatedTexts[64],
+    cancel: translatedTexts[65],
+    continue: translatedTexts[66],
+    enrollmentConfirmation: translatedTexts[67],
+    nowEnrollingFor: translatedTexts[68],
+    studentInformation: translatedTexts[69],
+    name: translatedTexts[70],
+    currentGrade: translatedTexts[71],
+    enrolledGrade: translatedTexts[72],
+    gender: translatedTexts[73],
+    parentGuardian: translatedTexts[74],
+    residentialAddress: translatedTexts[75],
+    currentAddress: translatedTexts[76],
+    importantInfo: translatedTexts[77],
+    importantLine1: translatedTexts[78],
+    importantLine2: translatedTexts[79],
+    importantLine3: translatedTexts[80],
+    importantLine4: translatedTexts[81],
+    submitting: translatedTexts[82],
+    submitEnrollment: translatedTexts[83],
+    errVerifyBeforeCreate: translatedTexts[84],
+    errPeriodClosed: translatedTexts[85],
+    errActiveEnrollment: translatedTexts[86],
+    errSelectType: translatedTexts[87],
+    errNoUserInfo: translatedTexts[88],
+    errMissingAutoData: translatedTexts[89],
+    errVerifyBeforeView: translatedTexts[90],
+    schoolYearPrefix: translatedTexts[91],
+    failedLoadEnrollments: translatedTexts[92],
+  }), [translatedTexts]);
+
+  const getLocalizedStatus = useCallback((status: EnrollmentItem["status"]) => {
+    const statusMap: Record<EnrollmentItem["status"], string> = {
+      Pending: t.pending,
+      Incomplete: t.incomplete,
+      "Under Review": t.underReview,
+      Approved: t.approved,
+      Rejected: t.rejected,
+    };
+
+    return statusMap[status] ?? status;
+  }, [t.approved, t.incomplete, t.pending, t.rejected, t.underReview]);
+
+  const continuingOldStudentLabel = useMemo(() => {
+    return t.continuingOldStudent
+      .replace(/Matandang\s+Mag-?aaral/gi, "Dati pang Mag-aaral")
+      .replace(/Matandang\s+Mag-aaral/gi, "Dati pang Mag-aaral");
+  }, [t.continuingOldStudent]);
 
   // Tour steps - conditional based on whether user has enrollments
   const tourSteps = useMemo(() => {
@@ -170,6 +384,22 @@ const MyEnrollments = () => {
     return baseSteps;
   }, [enrollments.length]);
 
+  const normalizedTourSteps = useMemo(() => {
+    if (!isSmallScreen) return tourSteps;
+
+    return (tourSteps || []).map((step: any) => {
+      if (!step?.placement) return step;
+      if (step.placement === 'left' || step.placement === 'right') {
+        return { ...step, placement: 'top' as const };
+      }
+      return step;
+    });
+  }, [tourSteps, isSmallScreen]);
+
+  const mobileTourContentTopSpaceClass = isSmallScreen && runTour
+    ? (mobileHeaderHeight >= 72 ? 'pt-24' : mobileHeaderHeight >= 64 ? 'pt-20' : 'pt-16')
+    : '';
+
   // Tour callback
   const handleTourCallback = (data: CallBackProps) => {
     const { status, type, index } = data;
@@ -183,19 +413,47 @@ const MyEnrollments = () => {
     }
   };
 
-  // Start tour function
-  const tourOptions = [
-    {
-      id: 'my-enrollments',
-      title: 'My Enrollments Guide',
-      description: 'Learn how to view and manage your enrollment records.',
-      icon: <FileText className="h-5 w-5 text-blue-600" />,
-      onStart: () => {
-        setTourStepIndex(0);
-        setRunTour(true);
-      },
-    },
-  ];
+  useEffect(() => {
+    const handleStartTourEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ tourId?: string }>;
+      const tourId = customEvent.detail?.tourId;
+      if (tourId !== "my-enrollments") {
+        return;
+      }
+
+      setTourStepIndex(0);
+      setRunTour(true);
+    };
+
+    window.addEventListener("campuscompanion:start-tour", handleStartTourEvent as EventListener);
+    return () => {
+      window.removeEventListener("campuscompanion:start-tour", handleStartTourEvent as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateTourViewportSettings = () => {
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      setIsSmallScreen(mobile);
+
+      if (!mobile) {
+        setTourScrollOffset(20);
+        return;
+      }
+
+      const mobileHeader = document.querySelector('[data-mobile-header="true"]') as HTMLElement | null;
+      const headerHeight = mobileHeader?.getBoundingClientRect().height ?? 56;
+      setMobileHeaderHeight(Math.ceil(headerHeight));
+      setTourScrollOffset(Math.ceil(headerHeight + 16));
+    };
+
+    updateTourViewportSettings();
+    window.addEventListener('resize', updateTourViewportSettings);
+
+    return () => {
+      window.removeEventListener('resize', updateTourViewportSettings);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -286,7 +544,7 @@ const MyEnrollments = () => {
         setEnrollments(enrollmentsArray);
       } catch (error) {
         console.error("Error fetching enrollments:", error);
-        toast.error(error instanceof Error ? error.message : "Failed to load enrollments");
+        toast.error(error instanceof Error ? error.message : t.failedLoadEnrollments);
       } finally {
         setLoading(false);
       }
@@ -308,16 +566,16 @@ const MyEnrollments = () => {
         setRunTour(true);
       }, 1000);
     }
-  }, [user, navigate, isEmailVerified]);
+  }, [user, navigate, isEmailVerified, t.failedLoadEnrollments]);
 
   const handleStartNewEnrollment = () => {
     if (!isEmailVerified) {
-      toast.error("Please verify your email before creating an enrollment");
+      toast.error(t.errVerifyBeforeCreate);
       return;
     }
 
     if (!hasOpenEnrollmentPeriod) {
-      toast.error("Enrollment period is currently closed. Please wait for the next enrollment period to open.");
+      toast.error(t.errPeriodClosed);
       return;
     }
 
@@ -328,7 +586,7 @@ const MyEnrollments = () => {
     );
     
     if (hasActiveEnrollmentInCurrentPeriod) {
-      toast.error("You already have an active enrollment in the current period. Complete or cancel the existing enrollment before creating a new one.");
+      toast.error(t.errActiveEnrollment);
       return;
     }
     
@@ -339,12 +597,12 @@ const MyEnrollments = () => {
 
   const handleEnrollmentTypeConfirm = async () => {
     if (!selectedEnrollmentType) {
-      toast.error("Please select an enrollment type");
+      toast.error(t.errSelectType);
       return;
     }
 
     if (!user?.id) {
-      toast.error("User information not available");
+      toast.error(t.errNoUserInfo);
       return;
     }
 
@@ -423,7 +681,7 @@ const MyEnrollments = () => {
 
   const handleAutoCreateContinuingEnrollment = async () => {
     if (!pastEnrollmentId || !continuingPreviewData || !activeEnrollmentPeriodId) {
-      toast.error("Missing required data for auto-enrollment");
+      toast.error(t.errMissingAutoData);
       return;
     }
 
@@ -490,7 +748,7 @@ const MyEnrollments = () => {
 
   const handleViewEnrollment = (enrollmentId: number) => {
     if (!isEmailVerified) {
-      toast.error("Please verify your email before viewing enrollments");
+      toast.error(t.errVerifyBeforeView);
       return;
     }
     navigate(`/enrollment/status/${enrollmentId}`);
@@ -521,7 +779,7 @@ const MyEnrollments = () => {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your enrollments...</p>
+            <p className="text-gray-600">{t.loadingEnrollments}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -533,12 +791,12 @@ const MyEnrollments = () => {
     return (
       <DashboardLayout>
         <AccessLockedCard 
-          title="Enrollment Access Locked"
-          description="You need to verify your email address before you can access the enrollment system."
+          title={t.enrollmentAccessLocked}
+          description={t.verifyEmailLockDescription}
           benefits={[
-            "Secure your account and prevent unauthorized access",
-            "Receive important enrollment updates and notifications",
-            "Start your enrollment application and submission process"
+            t.lockBenefitSecurity,
+            t.lockBenefitUpdates,
+            t.lockBenefitStart,
           ]}
         />
       </DashboardLayout>
@@ -547,11 +805,13 @@ const MyEnrollments = () => {
 
   return (
     <DashboardLayout>
+      <div className="enrollment-readable overflow-x-hidden">
       {/* Tour Component */}
       <Joyride
-        steps={tourSteps}
+        steps={normalizedTourSteps}
         run={runTour}
         stepIndex={tourStepIndex}
+        scrollOffset={tourScrollOffset}
         callback={handleTourCallback}
         continuous={true}
         showProgress={true}
@@ -585,45 +845,41 @@ const MyEnrollments = () => {
           },
         }}
         locale={{
-          back: 'Previous',
-          close: 'Close',
-          last: 'Finish',
-          next: 'Next',
-          open: 'Open the dialog',
-          skip: 'Skip tour',
+          back: t.joyrideBack,
+          close: t.joyrideClose,
+          last: t.joyrideFinish,
+          next: t.joyrideNext,
+          open: t.joyrideOpen,
+          skip: t.joyrideSkip,
         }}
       />
 
-      <div className="p-4 sm:p-8">
+      <div className={`p-3 sm:p-8 overflow-x-hidden ${mobileTourContentTopSpaceClass}`}>
+        <div className="max-w-7xl mx-auto space-y-3 sm:space-y-6">
         {/* Header */}
-        <div id="my-enrollments-header" className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div id="my-enrollments-header" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold mb-1 sm:mb-2 bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">My Enrollments</h1>
-            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">Track and manage your enrollment applications</p>
+            <h1 className="text-2xl sm:text-5xl font-bold mb-1 sm:mb-2 bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">{t.pageTitle}</h1>
+            <p className="text-[13px] sm:text-sm md:text-base text-muted-foreground/90">{t.pageSubtitle}</p>
           </div>
           <div className="flex flex-col gap-2 w-full sm:w-auto">
             <Button 
               id="new-enrollment-button"
               onClick={handleStartNewEnrollment}
               disabled={!canCreateNewEnrollment || !hasOpenEnrollmentPeriod}
-              className={`text-white shadow-lg hover:shadow-xl transition-all w-full sm:w-auto text-sm sm:text-base h-9 sm:h-10 ${
+              className={`text-white shadow-md hover:shadow-lg transition-all w-full sm:w-auto text-xs sm:text-base h-9 sm:h-10 px-4 sm:px-5 rounded-xl ${
                 canCreateNewEnrollment && hasOpenEnrollmentPeriod
                   ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                   : "bg-gray-400 cursor-not-allowed opacity-60"
               }`}
-              title={hasActiveEnrollmentInCurrentPeriod ? "You already have an active enrollment in the current period" : !hasOpenEnrollmentPeriod ? "Enrollment period is closed" : ""}
+              title={hasActiveEnrollmentInCurrentPeriod ? t.activeEnrollmentTitle : !hasOpenEnrollmentPeriod ? t.enrollmentPeriodClosedTitle : ""}
             >
               <Plus className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
-              New Enrollment
+              {t.newEnrollment}
             </Button>
-            {hasActiveEnrollmentInCurrentPeriod && (
-              <p className="text-xs sm:text-sm text-amber-600 font-medium">
-                You have an active enrollment. Complete it before creating a new one.
-              </p>
-            )}
             {!hasOpenEnrollmentPeriod && (
               <p className="text-xs sm:text-sm text-red-600 font-medium">
-                Enrollment period is closed. Check back later.
+                {t.periodClosedWarning}
               </p>
             )}
           </div>
@@ -638,83 +894,83 @@ const MyEnrollments = () => {
                   <ClipboardList className="w-6 sm:w-8 h-6 sm:h-8 text-gray-400" />
                 </div>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No Enrollments Yet</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{t.noEnrollmentsYet}</h2>
               <p className="text-xs sm:text-sm text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto">
-                You haven't submitted any enrollment applications yet. Start your enrollment process now to get access to courses and classes.
+                {t.noEnrollmentsDescription}
               </p>
               <Button
                 onClick={handleStartNewEnrollment}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white w-full sm:w-auto text-sm sm:text-base h-9 sm:h-10"
               >
-                Start Your First Enrollment
+                {t.startFirstEnrollment}
                 <ArrowRight className="w-3 sm:w-4 h-3 sm:h-4 ml-1 sm:ml-2" />
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-3 sm:space-y-6">
             {/* Summary Stats */}
-            <div id="summary-stats-section" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <Card className="bg-white border-0 shadow-sm">
-                <CardContent className="p-4 sm:p-6">
+            <div id="summary-stats-section" className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+              <Card className="border border-slate-200/70 bg-slate-50 shadow-sm rounded-xl sm:rounded-2xl">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-600">Total Applications</p>
-                      <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{enrollments.length}</p>
+                      <p className="text-[11px] sm:text-sm font-medium text-slate-600">{t.totalApplications}</p>
+                      <p className="text-lg sm:text-3xl font-bold text-slate-900 mt-1">{enrollments.length}</p>
                     </div>
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 sm:w-11 sm:h-11 bg-blue-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
                       <ClipboardList className="w-4 sm:w-5 h-4 sm:h-5 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-white border-0 shadow-sm">
-                <CardContent className="p-4 sm:p-6">
+              <Card className="border border-amber-200/70 bg-amber-50 shadow-sm rounded-xl sm:rounded-2xl">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-600">Under Review</p>
-                      <p className="text-xl sm:text-2xl font-bold text-purple-600 mt-1">
+                      <p className="text-[11px] sm:text-sm font-medium text-amber-700">{t.underReview}</p>
+                      <p className="text-lg sm:text-3xl font-bold text-amber-700 mt-1">
                         {enrollments.filter(e => e.status === "Under Review").length}
                       </p>
                     </div>
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Clock className="w-4 sm:w-5 h-4 sm:h-5 text-purple-600" />
+                    <div className="w-8 h-8 sm:w-11 sm:h-11 bg-amber-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                      <Clock className="w-4 sm:w-5 h-4 sm:h-5 text-amber-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border-0 shadow-sm">
-                <CardContent className="p-4 sm:p-6">
+              <Card className="border border-emerald-200/70 bg-emerald-50 shadow-sm rounded-xl sm:rounded-2xl">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-600">Approved</p>
-                      <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1">
+                      <p className="text-[11px] sm:text-sm font-medium text-emerald-700">{t.approved}</p>
+                      <p className="text-lg sm:text-3xl font-bold text-emerald-700 mt-1">
                         {enrollments.filter(e => e.status === "Approved").length}
                       </p>
                     </div>
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <CheckCircle2 className="w-4 sm:w-5 h-4 sm:h-5 text-green-600" />
+                    <div className="w-8 h-8 sm:w-11 sm:h-11 bg-emerald-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                      <CheckCircle2 className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border-0 shadow-sm">
-                <CardContent className="p-6">
+              <Card className="border border-slate-200/70 bg-slate-50 shadow-sm rounded-xl sm:rounded-2xl">
+                <CardContent className="p-3 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Latest Update</p>
-                      <p className="text-lg font-bold text-gray-900 mt-1">
+                      <p className="text-[11px] sm:text-sm font-medium text-slate-600">{t.latestUpdate}</p>
+                      <p className="text-lg sm:text-3xl font-bold text-slate-900 mt-1 leading-tight">
                         {enrollments.length > 0 
                           ? new Date(enrollments[0].submitted_date).toLocaleDateString()
-                          : "N/A"
+                          : t.na
                         }
                       </p>
                     </div>
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-gray-600" />
+                    <div className="w-8 h-8 sm:w-11 sm:h-11 bg-slate-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                      <Calendar className="w-4 sm:w-5 h-4 sm:h-5 text-slate-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -722,63 +978,63 @@ const MyEnrollments = () => {
             </div>
 
             {/* Filters and View Mode */}
-            <Card id="filters-section" className="bg-white border-0 shadow-sm">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-row gap-2 sm:gap-4">
+            <Card id="filters-section" className="bg-white border border-slate-200/70 shadow-sm rounded-xl sm:rounded-2xl">
+              <CardContent className="p-3 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-end">
                   {/* Search */}
                   <div className="flex-1 min-w-0">
-                    <Label htmlFor="search" className="hidden sm:block text-sm font-medium mb-2">Search</Label>
+                    <Label htmlFor="search" className="hidden sm:block text-sm font-medium mb-2 text-slate-700">{t.search}</Label>
                     <div className="relative">
                       <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="search"
-                        placeholder="Search..."
+                        placeholder={t.searchPlaceholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-7 sm:pl-10 h-9 sm:h-10 text-sm"
+                        className="pl-7 sm:pl-10 h-9 sm:h-10 text-sm rounded-xl border-slate-300"
                       />
                     </div>
                   </div>
 
                   {/* Status Filter */}
-                  <div className="w-28 sm:w-48">
-                    <Label htmlFor="status-filter" className="hidden sm:block text-sm font-medium mb-2">Status</Label>
+                  <div className="w-full sm:w-48">
+                    <Label htmlFor="status-filter" className="hidden sm:block text-sm font-medium mb-2 text-slate-700">{t.status}</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger id="status-filter" className="h-9 sm:h-10 text-sm">
+                      <SelectTrigger id="status-filter" className="h-9 sm:h-10 text-sm rounded-xl border-slate-300">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="Incomplete">Incomplete</SelectItem>
-                        <SelectItem value="Under Review">Under Review</SelectItem>
-                        <SelectItem value="Approved">Approved</SelectItem>
-                        <SelectItem value="Rejected">Rejected</SelectItem>
+                        <SelectItem value="all">{t.allStatus}</SelectItem>
+                        <SelectItem value="Pending">{t.pending}</SelectItem>
+                        <SelectItem value="Incomplete">{t.incomplete}</SelectItem>
+                        <SelectItem value="Under Review">{t.underReview}</SelectItem>
+                        <SelectItem value="Approved">{t.approved}</SelectItem>
+                        <SelectItem value="Rejected">{t.rejected}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* View Mode */}
-                  <div className="flex items-end gap-1 sm:gap-2">
-                    <Label className="hidden sm:block text-sm font-medium mb-2 w-full">View Mode</Label>
-                    <div className="flex gap-1 sm:gap-2">
+                  <div className="flex items-end gap-1 sm:gap-2 w-full sm:w-auto">
+                    <Label className="hidden sm:block text-sm font-medium mb-2 w-full text-slate-700">{t.viewMode}</Label>
+                    <div className="flex gap-1 sm:gap-2 w-full sm:w-auto bg-slate-100 p-0.5 sm:p-1 rounded-lg sm:rounded-xl">
                       <Button
                         variant={viewMode === "list" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setViewMode("list")}
-                        className="h-9 sm:h-10 px-2 sm:px-4"
+                        className="h-7 sm:h-9 px-2 sm:px-4 flex-1 sm:flex-none rounded-md sm:rounded-lg"
                       >
                         <List className="h-4 w-4" />
-                        <span className="hidden sm:inline sm:ml-2">List</span>
+                        <span className="hidden sm:inline sm:ml-2">{t.list}</span>
                       </Button>
                       <Button
                         variant={viewMode === "grid" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setViewMode("grid")}
-                        className="h-9 sm:h-10 px-2 sm:px-4"
+                        className="h-7 sm:h-9 px-2 sm:px-4 flex-1 sm:flex-none rounded-md sm:rounded-lg"
                       >
                         <LayoutGrid className="h-4 w-4" />
-                        <span className="hidden sm:inline sm:ml-2">Grid</span>
+                        <span className="hidden sm:inline sm:ml-2">{t.grid}</span>
                       </Button>
                     </div>
                   </div>
@@ -789,49 +1045,54 @@ const MyEnrollments = () => {
             {/* Enrollments List/Grid */}
             {viewMode === "list" ? (
               // Table View
-              <Card id="enrollments-list-section" className="bg-white border-0 shadow-sm overflow-hidden">
+              <Card id="enrollments-list-section" className="bg-white border border-slate-200/70 shadow-sm rounded-xl sm:rounded-2xl overflow-hidden">
+                <CardHeader className="pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+                  <CardTitle className="text-lg sm:text-xl font-bold text-slate-900">
+                    Enrollment Records ({filteredEnrollments.length})
+                  </CardTitle>
+                </CardHeader>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-full text-xs sm:text-sm">
+                  <table className="w-full min-w-full text-[11px] sm:text-sm">
                     <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">Application ID</th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden sm:table-cell">School Year</th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden sm:table-cell">Grade Level</th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">Status</th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell">Submitted Date</th>
-                        <th className="px-3 sm:px-6 py-3 text-left text-xs sm:text-sm font-semibold text-gray-900">Actions</th>
+                      <tr className="border-b bg-slate-50/80">
+                        <th className="px-2 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-sm font-semibold text-gray-900">{t.applicationId}</th>
+                        <th className="px-2 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-sm font-semibold text-gray-900 hidden sm:table-cell">{t.schoolYear}</th>
+                        <th className="px-2 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-sm font-semibold text-gray-900 hidden sm:table-cell">{t.gradeLevel}</th>
+                        <th className="px-2 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-sm font-semibold text-gray-900">{t.status}</th>
+                        <th className="px-2 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-sm font-semibold text-gray-900 hidden md:table-cell">{t.submittedDate}</th>
+                        <th className="px-2 sm:px-6 py-2.5 sm:py-3 text-left text-[11px] sm:text-sm font-semibold text-gray-900">{t.actions}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredEnrollments.map((enrollment) => {
                         const config = statusConfig[enrollment.status] || statusConfig.Pending;
                         return (
-                          <tr key={enrollment.id} className="border-b hover:bg-gray-50 transition">
-                            <td className="px-3 sm:px-6 py-4">
-                              <span className="font-semibold text-gray-900 text-xs sm:text-sm">
+                          <tr key={enrollment.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition">
+                            <td className="px-2 sm:px-6 py-3 sm:py-4">
+                              <span className="font-semibold text-gray-900 text-[11px] sm:text-sm">
                                 APP-{enrollment.school_year ? enrollment.school_year.replace(/\D/g, '').substring(0, 4) : '0000'}{String(enrollment.id).padStart(3, '0')}
                               </span>
                             </td>
-                            <td className="px-3 sm:px-6 py-4 text-gray-600 hidden sm:table-cell text-xs sm:text-sm">{enrollment.school_year || "N/A"}</td>
-                            <td className="px-3 sm:px-6 py-4 text-gray-600 hidden sm:table-cell text-xs sm:text-sm">{enrollment.grade_level || "N/A"}</td>
-                            <td className="px-3 sm:px-6 py-4">
-                              <Badge className={`${config.bg} text-xs sm:text-sm`}>
-                                <span className={config.text}>{enrollment.status}</span>
+                            <td className="px-2 sm:px-6 py-3 sm:py-4 text-gray-600 hidden sm:table-cell text-[11px] sm:text-sm">{enrollment.school_year || t.na}</td>
+                            <td className="px-2 sm:px-6 py-3 sm:py-4 text-gray-600 hidden sm:table-cell text-[11px] sm:text-sm">{enrollment.grade_level || t.na}</td>
+                            <td className="px-2 sm:px-6 py-3 sm:py-4">
+                              <Badge className={`${config.bg} text-[11px] sm:text-sm`}>
+                                <span className={config.text}>{getLocalizedStatus(enrollment.status)}</span>
                               </Badge>
                             </td>
-                            <td className="px-3 sm:px-6 py-4 text-gray-600 hidden md:table-cell text-xs sm:text-sm">
+                            <td className="px-2 sm:px-6 py-3 sm:py-4 text-gray-600 hidden md:table-cell text-[11px] sm:text-sm">
                               {new Date(enrollment.submitted_date).toLocaleDateString()}
                             </td>
-                            <td className="px-3 sm:px-6 py-4">
+                            <td className="px-2 sm:px-6 py-3 sm:py-4">
                               <Button
                                 id={enrollment.id === filteredEnrollments[0]?.id ? "view-enrollment-button" : undefined}
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleViewEnrollment(enrollment.id)}
-                                className="text-primary hover:bg-primary/10 text-xs sm:text-sm h-8 sm:h-auto px-2 sm:px-3"
+                                className="text-primary hover:bg-primary/10 text-[11px] sm:text-sm h-7 sm:h-auto px-2 sm:px-3 rounded-lg"
                               >
                                 <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                                <span className="hidden sm:inline">View</span>
+                                <span className="hidden sm:inline">{t.view}</span>
                               </Button>
                             </td>
                           </tr>
@@ -849,7 +1110,7 @@ const MyEnrollments = () => {
                   return (
                     <Card
                       key={enrollment.id}
-                      className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      className="bg-white border border-slate-200/70 shadow-sm hover:shadow-md transition-shadow cursor-pointer rounded-2xl"
                       onClick={() => handleViewEnrollment(enrollment.id)}
                     >
                       <CardContent className="p-6">
@@ -858,16 +1119,16 @@ const MyEnrollments = () => {
                             {config.icon}
                           </div>
                           <Badge className={config.bg}>
-                            <span className={config.text}>{enrollment.status}</span>
+                            <span className={config.text}>{getLocalizedStatus(enrollment.status)}</span>
                           </Badge>
                         </div>
                         <h3 className="font-semibold text-gray-900 mb-2">
                           APP-{enrollment.school_year ? enrollment.school_year.replace(/\D/g, '').substring(0, 4) : '0000'}{String(enrollment.id).padStart(3, '0')}
                         </h3>
-                        <p className="text-sm text-gray-600 mb-1">SY: {enrollment.school_year || "N/A"}</p>
-                        <p className="text-sm text-gray-600 mb-3">Grade: {enrollment.grade_level}</p>
+                        <p className="text-sm text-gray-600 mb-1">{t.sy} {enrollment.school_year || t.na}</p>
+                        <p className="text-sm text-gray-600 mb-3">{t.grade} {enrollment.grade_level || t.na}</p>
                         <p className="text-sm text-gray-600 mb-4">
-                          Submitted: {new Date(enrollment.submitted_date).toLocaleDateString()}
+                          {t.submitted} {new Date(enrollment.submitted_date).toLocaleDateString()}
                         </p>
                         <Button
                           id={enrollment.id === filteredEnrollments[0]?.id ? "view-enrollment-button" : undefined}
@@ -877,7 +1138,7 @@ const MyEnrollments = () => {
                           onClick={() => handleViewEnrollment(enrollment.id)}
                         >
                           <Eye className="w-4 h-4 mr-2" />
-                          View Details
+                          {t.viewDetails}
                         </Button>
                       </CardContent>
                     </Card>
@@ -887,36 +1148,37 @@ const MyEnrollments = () => {
             )}
 
             {/* Info Section */}
-            <Card id="enrollment-info-section" className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <Card id="enrollment-info-section" className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-blue-200 rounded-xl sm:rounded-2xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-900">
-                  <AlertCircle className="w-5 h-5" />
-                  Enrollment Information
+                <CardTitle className="flex items-center gap-2 text-blue-900 text-lg sm:text-xl">
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {t.enrollmentInformation}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-sm text-blue-800">
+                <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-blue-800">
                   <li className="flex items-start gap-3">
                     <span className="font-bold">•</span>
-                    <span>Click on any enrollment to view detailed status and timeline</span>
+                    <span>{t.infoLine1}</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="font-bold">•</span>
-                    <span>You will be notified via email when your application is reviewed</span>
+                    <span>{t.infoLine2}</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="font-bold">•</span>
-                    <span>Document uploads may be requested at any time</span>
+                    <span>{t.infoLine3}</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="font-bold">•</span>
-                    <span>Contact us at enrollment@maranatha-school.edu for support</span>
+                    <span>{t.infoLine4}</span>
                   </li>
                 </ul>
               </CardContent>
             </Card>
           </div>
         )}
+        </div>
       </div>
 
       {/* Enrollment Type Selection Modal */}
@@ -924,12 +1186,12 @@ const MyEnrollments = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
-              {user?.role === 'student' ? 'Select Re-Enrollment Type' : 'Select Enrollment Type'}
+              {user?.role === 'student' ? t.selectReEnrollmentType : t.selectEnrollmentType}
             </DialogTitle>
             <DialogDescription>
               {user?.role === 'student' 
-                ? 'Please select the type of re-enrollment for this school year.'
-                : 'Please select the type of enrollment for this student.'}
+                ? t.reEnrollmentDescription
+                : t.enrollmentTypeDescription}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -947,9 +1209,9 @@ const MyEnrollments = () => {
                     <div className="flex-1">
                       <Label htmlFor="continuing-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                         <Users className="w-5 h-5 text-green-600" />
-                        Continuing / Old Student
+                        {continuingOldStudentLabel}
                       </Label>
-                      <p className="text-sm text-gray-600 mt-1">Currently enrolled, progressing to next grade level</p>
+                      <p className="text-sm text-gray-600 mt-1">{t.continuingDescription}</p>
                     </div>
                   </div>
                 )}
@@ -960,9 +1222,9 @@ const MyEnrollments = () => {
                     <div className="flex-1">
                       <Label htmlFor="returning-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                         <Users className="w-5 h-5 text-blue-600" />
-                        Returning Student
+                        {t.returningStudent}
                       </Label>
-                      <p className="text-sm text-gray-600 mt-1">Previously enrolled, returning after a gap</p>
+                      <p className="text-sm text-gray-600 mt-1">{t.returningDescription}</p>
                     </div>
                   </div>
                 )}
@@ -980,9 +1242,9 @@ const MyEnrollments = () => {
                     <div className="flex-1">
                       <Label htmlFor="new-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                         <UserPlus className="w-5 h-5 text-blue-600" />
-                        New Student
+                        {t.newStudent}
                       </Label>
-                      <p className="text-sm text-gray-600 mt-1">First time enrolling at Maranatha Christian Academy</p>
+                      <p className="text-sm text-gray-600 mt-1">{t.newStudentDescription}</p>
                     </div>
                   </div>
                 )}
@@ -993,9 +1255,9 @@ const MyEnrollments = () => {
                     <div className="flex-1">
                       <Label htmlFor="continuing-student-enrollee" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                         <Users className="w-5 h-5 text-green-600" />
-                        Continuing / Old Student
+                        {continuingOldStudentLabel}
                       </Label>
-                      <p className="text-sm text-gray-600 mt-1">Previously enrolled at Maranatha, continuing education</p>
+                      <p className="text-sm text-gray-600 mt-1">{t.continuingAtMaranathaDescription}</p>
                     </div>
                   </div>
                 )}
@@ -1006,9 +1268,9 @@ const MyEnrollments = () => {
                     <div className="flex-1">
                       <Label htmlFor="transferee" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                         <Users className="w-5 h-5 text-purple-600" />
-                        Transferee
+                        {t.transferee}
                       </Label>
-                      <p className="text-sm text-gray-600 mt-1">Transferring from another school</p>
+                      <p className="text-sm text-gray-600 mt-1">{t.transfereeDescription}</p>
                     </div>
                   </div>
                 )}
@@ -1019,9 +1281,9 @@ const MyEnrollments = () => {
                     <div className="flex-1">
                       <Label htmlFor="returning-student" className="text-base font-semibold text-gray-900 cursor-pointer flex items-center gap-2">
                         <Users className="w-5 h-5 text-blue-600" />
-                        Returning Student
+                        {t.returningStudent}
                       </Label>
-                      <p className="text-sm text-gray-600 mt-1">Previously enrolled, returning after a gap</p>
+                      <p className="text-sm text-gray-600 mt-1">{t.returningDescription}</p>
                     </div>
                   </div>
                 )}
@@ -1033,14 +1295,14 @@ const MyEnrollments = () => {
               variant="outline"
               onClick={() => setShowEnrollmentTypeModal(false)}
             >
-              Cancel
+              {t.cancel}
             </Button>
             <Button
               onClick={handleEnrollmentTypeConfirm}
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
               disabled={!selectedEnrollmentType}
             >
-              Continue
+              {t.continue}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -1052,7 +1314,7 @@ const MyEnrollments = () => {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center py-2">
-              Enrollment Confirmation
+              {t.enrollmentConfirmation}
             </DialogTitle>
           </DialogHeader>
 
@@ -1060,33 +1322,33 @@ const MyEnrollments = () => {
             <div className="space-y-6 py-4">
               {/* Main Confirmation Message */}
               <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-lg p-6 text-center">
-                <p className="text-sm text-gray-600 mb-2">You are now enrolling for</p>
+                <p className="text-sm text-gray-600 mb-2">{t.nowEnrollingFor}</p>
                 <p className="text-3xl font-bold text-green-600 mb-1">{continuingPreviewData.next_grade}</p>
                 <p className="text-lg font-semibold text-gray-800">
-                  School Year {continuingPreviewData.enrolling_school_year || '2026-2027'}
+                  {t.schoolYearPrefix} {continuingPreviewData.enrolling_school_year || '2026-2027'}
                 </p>
               </div>
 
               {/* Student Info */}
               <div className="border rounded-lg p-4 bg-gray-50">
-                <h3 className="font-semibold text-gray-900 mb-3">Student Information</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">{t.studentInformation}</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Name:</span>
+                    <span className="text-gray-600">{t.name}</span>
                     <span className="font-medium">
                       {continuingPreviewData.learner?.first_name} {continuingPreviewData.learner?.last_name}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Current Grade:</span>
+                    <span className="text-gray-600">{t.currentGrade}</span>
                     <span className="font-medium text-blue-600">{continuingPreviewData.current_grade}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Enrolled Grade:</span>
+                    <span className="text-gray-600">{t.enrolledGrade}</span>
                     <span className="font-medium text-green-600">{continuingPreviewData.next_grade}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Gender:</span>
+                    <span className="text-gray-600">{t.gender}</span>
                     <span className="font-medium">{continuingPreviewData.learner?.gender}</span>
                   </div>
                 </div>
@@ -1095,7 +1357,7 @@ const MyEnrollments = () => {
               {/* Parent/Guardian Contact */}
               {continuingPreviewData.contacts && continuingPreviewData.contacts.length > 0 && (
                 <div className="border rounded-lg p-4 bg-gray-50">
-                  <h3 className="font-semibold text-gray-900 mb-3">Parent/Guardian</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">{t.parentGuardian}</h3>
                   <div className="space-y-2 text-sm">
                     {continuingPreviewData.contacts.slice(0, 2).map((contact: any, idx: number) => (
                       <div key={idx} className="p-2 bg-white rounded border border-gray-200">
@@ -1110,11 +1372,11 @@ const MyEnrollments = () => {
               {/* Address Info */}
               {continuingPreviewData.addresses && continuingPreviewData.addresses.length > 0 && (
                 <div className="border rounded-lg p-4 bg-gray-50">
-                  <h3 className="font-semibold text-gray-900 mb-3">Residential Address</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">{t.residentialAddress}</h3>
                   <div className="text-sm">
                     {continuingPreviewData.addresses.find((a: any) => a.address_type === 'Current') && (
                       <div className="p-2 bg-white rounded border border-gray-200">
-                        <p className="font-medium text-gray-900">Current Address</p>
+                        <p className="font-medium text-gray-900">{t.currentAddress}</p>
                         <p className="text-gray-600 text-xs">
                           {continuingPreviewData.addresses.find((a: any) => a.address_type === 'Current')?.address},
                           {' '}{continuingPreviewData.addresses.find((a: any) => a.address_type === 'Current')?.municipality}
@@ -1127,12 +1389,12 @@ const MyEnrollments = () => {
 
               {/* Confirmation Notice */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-900 font-medium mb-2">ℹ️ Important Information</p>
+                <p className="text-sm text-blue-900 font-medium mb-2">{t.importantInfo}</p>
                 <ul className="text-xs text-blue-800 space-y-1">
-                  <li>• All information is from your previous enrollment</li>
-                  <li>• Your enrollment will be automatically submitted</li>
-                  <li>• You will be notified once admin approves your enrollment</li>
-                  <li>• Typical approval takes 2-3 business days</li>
+                  <li>{t.importantLine1}</li>
+                  <li>{t.importantLine2}</li>
+                  <li>{t.importantLine3}</li>
+                  <li>{t.importantLine4}</li>
                 </ul>
               </div>
             </div>
@@ -1144,22 +1406,21 @@ const MyEnrollments = () => {
               onClick={handleCancelContinuingPreview}
               disabled={isAutoCreating}
             >
-              Cancel
+              {t.cancel}
             </Button>
             <Button
               onClick={handleAutoCreateContinuingEnrollment}
               disabled={isAutoCreating}
               className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
             >
-              {isAutoCreating ? 'Submitting...' : 'Submit Enrollment'}
+              {isAutoCreating ? t.submitting : t.submitEnrollment}
               <CheckCircle2 className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Tour Help Button */}
-      <TourHelpButton tourOptions={tourOptions} />
+      </div>
     </DashboardLayout>
   );
 };

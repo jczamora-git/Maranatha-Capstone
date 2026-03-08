@@ -74,7 +74,7 @@ export default defineConfig(({ mode }) => {
         target: 'http://localhost:3000',
         changeOrigin: false,  // Keep origin as localhost:5174 for cookie domain
         secure: false,
-        cookieDomainRewrite: 'localhost',  // Rewrite cookie domain to localhost
+        cookieDomainRewrite: '',  // Remove Domain so cookie binds to current host (e.g., LAN IP)
         configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq, req) => {
             // Forward cookies from the original request

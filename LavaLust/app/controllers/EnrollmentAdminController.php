@@ -19,6 +19,7 @@ class EnrollmentAdminController extends Controller
     {
         parent::__construct();
         $this->enrollmentModel = new EnrollmentModel();
+        $this->call->model('DocumentRequirement_model');
     }
 
     private function get_adviser_scope()
@@ -132,6 +133,117 @@ class EnrollmentAdminController extends Controller
         ];
 
         return $map[$level] ?? null;
+    }
+
+    private function normalize_enrollment_type_for_requirements($enrollmentType)
+    {
+        $rawType = strtolower(trim((string)($enrollmentType ?? '')));
+
+        if ($rawType === '') {
+            return '';
+        }
+
+        if (strpos($rawType, 'transf') !== false) {
+            return 'transferee';
+        }
+
+        if (strpos($rawType, 'return') !== false || strpos($rawType, 'continu') !== false) {
+            return 'returning student';
+        }
+
+        if (strpos($rawType, 'new') !== false) {
+            return 'new student';
+        }
+
+        return $rawType;
+    }
+
+    private function get_required_document_count_for_enrollment($requirements, $gradeLevel, $enrollmentType)
+    {
+        $targetGrade = strtolower(trim((string)($gradeLevel ?? '')));
+        if ($targetGrade === '') {
+            return 0;
+        }
+
+        $normalizedTargetType = $this->normalize_enrollment_type_for_requirements($enrollmentType);
+        if ($normalizedTargetType === '') {
+            $normalizedTargetType = 'new student';
+        }
+
+        if ($normalizedTargetType === 'continuing student') {
+            $normalizedTargetType = 'returning student';
+        }
+
+        $bestByDocument = [];
+
+        foreach ($requirements as $req) {
+            if (empty($req['is_active'])) {
+                continue;
+            }
+
+            $rowGrade = strtolower(trim((string)($req['grade_level'] ?? '')));
+            if ($rowGrade !== $targetGrade) {
+                continue;
+            }
+
+            $rowTypeRaw = trim((string)($req['enrollment_type'] ?? ''));
+            $rowTypeLower = strtolower($rowTypeRaw);
+            $rowTypeNormalized = $this->normalize_enrollment_type_for_requirements($rowTypeRaw);
+
+            $isGeneric = ($rowTypeRaw === '' || $rowTypeLower === 'all types');
+            $isSpecificMatch = ($rowTypeNormalized !== '' && $rowTypeNormalized === $normalizedTargetType);
+
+            if (!$isGeneric && !$isSpecificMatch) {
+                continue;
+            }
+
+            $docKey = strtolower(trim((string)($req['document_name'] ?? '')));
+            if ($docKey === '') {
+                continue;
+            }
+
+            $score = $isSpecificMatch ? 2 : 1;
+
+            if (!isset($bestByDocument[$docKey]) || $score > $bestByDocument[$docKey]['score']) {
+                $bestByDocument[$docKey] = [
+                    'score' => $score,
+                ];
+            }
+        }
+
+        return count($bestByDocument);
+    }
+
+    private function apply_required_document_counts(array $rows)
+    {
+        if (empty($rows)) {
+            return $rows;
+        }
+
+        $requirements = $this->DocumentRequirement_model->get_active_requirements();
+
+        if (!is_array($requirements)) {
+            $requirements = [];
+        }
+
+        foreach ($rows as &$row) {
+            $requiredCount = $this->get_required_document_count_for_enrollment(
+                $requirements,
+                $row['grade_level'] ?? '',
+                $row['enrollment_type'] ?? ''
+            );
+
+            $verifiedCount = (int)($row['documents_verified'] ?? 0);
+            if ($requiredCount > 0 && $verifiedCount > $requiredCount) {
+                $verifiedCount = $requiredCount;
+            }
+
+            $row['documents_count'] = $requiredCount;
+            $row['documents_verified'] = $verifiedCount;
+        }
+        unset($row);
+
+        return $rows;
     }
 
     private function validate_enrollment_input($input)
@@ -297,6 +409,7 @@ class EnrollmentAdminController extends Controller
             ";
             
             $result = $this->db->raw($query, $params)->fetchAll();
+            $result = $this->apply_required_document_counts($result);
             
             http_response_code(200);
             echo json_encode([
@@ -398,6 +511,7 @@ class EnrollmentAdminController extends Controller
             ";
 
             $result = $this->db->raw($query, [$level, $schoolYear])->fetchAll();
+            $result = $this->apply_required_document_counts($result);
 
             http_response_code(200);
             echo json_encode([

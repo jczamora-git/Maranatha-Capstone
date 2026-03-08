@@ -372,7 +372,11 @@ export const Sidebar = () => {
   return (
     <>
       {/* Mobile Header with Hamburger */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-30 px-4 py-3 flex items-center justify-between">
+      <div
+        id="mobile-top-navbar"
+        data-mobile-header="true"
+        className="md:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-30 px-4 py-3 flex items-center justify-between"
+      >
         <div className="flex items-center gap-2">
           <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="Maranatha Christian Academy Foundation" className="h-8 w-8" />
           <div className="leading-tight">

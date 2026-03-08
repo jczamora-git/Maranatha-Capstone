@@ -12,8 +12,7 @@ import { usePaymentPageLock } from "@/hooks/usePaymentPageLock";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Calendar, AlertCircle, PhilippinePeso, CheckCircle2, Play } from "lucide-react";
-import TourHelpButton from "@/components/TourHelpButton";
+import { ArrowLeft, Calendar, AlertCircle, PhilippinePeso, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
 
@@ -259,6 +258,23 @@ const InstallmentPlans = () => {
     });
   }, [runDemoInstallmentTour, showConfirmationModal]);
 
+  useEffect(() => {
+    const handleStartTourEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ tourId?: string }>;
+      if (customEvent.detail?.tourId !== 'installment-plans') {
+        return;
+      }
+
+      setCurrentTourIndex(0);
+      setRunDemoInstallmentTour(true);
+    };
+
+    window.addEventListener('campuscompanion:start-tour', handleStartTourEvent as EventListener);
+    return () => {
+      window.removeEventListener('campuscompanion:start-tour', handleStartTourEvent as EventListener);
+    };
+  }, []);
+
   if (!state || !state.enrollment || !state.tuitionFee) {
     return null;
   }
@@ -462,14 +478,14 @@ const InstallmentPlans = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-8 max-w-4xl mx-auto font-sans antialiased">
+      <div className="enrollment-readable p-3 sm:p-8 max-w-4xl mx-auto font-sans antialiased">
         {/* Back Button */}
-          <div className="mb-6 sm:mb-8 installment-header">
+          <div className="mb-4 sm:mb-8 installment-header">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/enrollment/payment')}
-            className="mb-4 text-muted-foreground hover:text-foreground"
+            className="mb-3 sm:mb-4 h-9 px-2 sm:px-3 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Payment
@@ -478,71 +494,71 @@ const InstallmentPlans = () => {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r from-green-600 to-green-700 flex items-center justify-center shadow-lg flex-shrink-0">
+              <div className="w-11 h-11 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-r from-green-600 to-green-700 flex items-center justify-center shadow-md sm:shadow-lg flex-shrink-0">
                 <Calendar className="h-6 sm:h-8 w-6 sm:w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-1 sm:mb-2">
+                <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-1 sm:mb-2 leading-tight">
                   Installment Payment Plan
                 </h1>
-                <p className="text-muted-foreground text-xs sm:text-base">Flexible payment options for your tuition</p>
+                <p className="text-muted-foreground text-sm sm:text-base">Flexible payment options for your tuition</p>
               </div>
             </div>
-            <Badge variant="default" className="bg-gradient-to-r from-green-600 to-green-700 text-white text-xs sm:text-sm">
+            <Badge variant="default" className="hidden sm:inline-flex w-fit bg-gradient-to-r from-green-600 to-green-700 text-white text-xs sm:text-sm px-2.5 py-0.5">
               Installment
             </Badge>
           </div>
         </div>
 
         {/* Enrollment Info */}
-        <Card className="shadow-lg border-0 mb-6 enrollment-info">
-          <CardHeader>
-            <CardTitle className="text-lg">Enrollment Information</CardTitle>
+        <Card className="hidden sm:block shadow-md sm:shadow-lg border-0 mb-4 sm:mb-6 enrollment-info">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Enrollment Information</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <p className="text-xs text-muted-foreground font-medium mb-1">School Year</p>
-                <p className="text-base font-semibold text-foreground">{displaySchoolYear}</p>
+                <p className="text-sm sm:text-base font-semibold text-foreground">{displaySchoolYear}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-medium mb-1">Grade Level</p>
-                <p className="text-base font-semibold text-foreground">{displayGradeLevel}</p>
+                <p className="text-sm sm:text-base font-semibold text-foreground">{displayGradeLevel}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-medium mb-1">Student Name</p>
-                <p className="text-base font-semibold text-foreground">{displayStudentName}</p>
+                <p className="text-sm sm:text-base font-semibold text-foreground">{displayStudentName}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-medium mb-1">Email</p>
-                <p className="text-base font-semibold text-foreground">{displayEmail}</p>
+                <p className="text-sm sm:text-base font-semibold text-foreground break-all">{displayEmail}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Left Column - Plan Selection */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Plan Selection Card */}
-            <Card className="shadow-lg border-0">
-              <CardHeader>
-                <CardTitle className="text-xl">Select Payment Schedule</CardTitle>
+            <Card className="shadow-md sm:shadow-lg border-0">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Select Payment Schedule</CardTitle>
                 <CardDescription>Choose how you would like to distribute your tuition payments</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-5 sm:space-y-6 p-4 pt-0 sm:p-6 sm:pt-0">
                 {/* Payment Schedule Selection */}
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-sm text-muted-foreground">Payment Frequency:</h4>
+                  <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground">Payment Frequency:</h4>
                   
                   {loadingTemplates ? (
-                    <div className="text-center py-8">
+                    <div className="text-center py-6 sm:py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
                       <p className="text-sm text-muted-foreground mt-2">Loading payment schedules...</p>
                     </div>
                   ) : scheduleTemplates.length === 0 ? (
-                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                    <div className="text-center py-6 sm:py-8 border-2 border-dashed rounded-lg">
                       <p className="text-sm text-muted-foreground">No payment schedules available</p>
                       <p className="text-xs text-muted-foreground mt-1">Please contact the admin</p>
                     </div>
@@ -559,7 +575,7 @@ const InstallmentPlans = () => {
                           <button
                             key={template.id}
                             onClick={() => handleTemplateChange(template)}
-                            className={`p-4 border-2 rounded-lg transition-all text-left ${
+                            className={`p-3 border-2 rounded-lg transition-all text-left ${
                               isSelected
                                 ? "border-green-500 bg-green-50 dark:bg-green-950/20"
                                 : "border-border hover:border-green-300"
@@ -567,38 +583,38 @@ const InstallmentPlans = () => {
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <h5 className="font-semibold text-foreground mb-1">
+                                <h5 className="font-semibold text-foreground mb-1 !text-[15px] sm:!text-lg leading-tight">
                                   {template.name}
                                   {template.schedule_type === "Quarterly" && " (Recommended)"}
                                 </h5>
-                                <p className="text-xs text-muted-foreground mb-1">
+                                <p className="!text-[12px] sm:!text-sm text-muted-foreground mb-1 leading-relaxed">
                                   {template.description}
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="!text-[12px] sm:!text-sm text-muted-foreground">
                                   {template.number_of_installments} installments
                                 </p>
                                 {isMonthlyOrQuarterly ? (
                                   <div className="mt-2 space-y-1">
-                                    <p className="text-sm font-bold text-green-600">
+                                    <p className="!text-[13px] sm:!text-base font-bold text-green-600">
                                       Upon Enrollment: ₱{firstAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                     </p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="!text-[12px] sm:!text-sm text-muted-foreground">
                                       Following installments: ₱{followingAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                     </p>
                                   </div>
                                 ) : (
-                                  <p className="text-sm font-bold text-green-600 mt-2">
+                                  <p className="!text-[13px] sm:!text-base font-bold text-green-600 mt-2">
                                     ₱{firstAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })} per installment
                                   </p>
                                 )}
                               </div>
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
+                              <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
                                 isSelected
                                   ? "border-green-500 bg-green-500"
                                   : "border-muted-foreground"
                               }`}>
                                 {isSelected && (
-                                  <div className="w-2 h-2 bg-white rounded-full" />
+                                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
                                 )}
                               </div>
                             </div>
@@ -610,13 +626,13 @@ const InstallmentPlans = () => {
                 </div>
 
                 {/* Important Notice */}
-                <div className="border-t pt-6">
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="border-t pt-4 sm:pt-6">
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
                     <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                       <div className="space-y-2">
                         <h5 className="font-semibold text-sm text-blue-900 dark:text-blue-100">Payment Information</h5>
-                        <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                        <ul className="text-[11px] sm:text-xs text-blue-800 dark:text-blue-200 space-y-1">
                           <li>• Each installment payment must be submitted on schedule</li>
                           <li>• Proof of payment is required for each transaction</li>
                           <li>• Late payments may affect your enrollment status</li>
@@ -631,13 +647,13 @@ const InstallmentPlans = () => {
           </div>
 
           {/* Right Column - Payment Summary */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Plan Summary Card */}
-            <Card className="shadow-lg border-0 sticky top-8 payment-summary">
-              <CardHeader>
-                <CardTitle className="text-lg">Payment Summary</CardTitle>
+            <Card className="shadow-md sm:shadow-lg border-0 lg:sticky lg:top-8 payment-summary">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Payment Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-5">
+              <CardContent className="space-y-4 sm:space-y-5 p-4 pt-0 sm:p-6 sm:pt-0">
                 {/* Student Section */}
                 <div className="space-y-1 pb-4 border-b border-border">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Student</p>
@@ -704,7 +720,7 @@ const InstallmentPlans = () => {
                 <Button
                   onClick={handleProceedToPayment}
                   disabled={isCreatingPlan || !selectedTemplate || loadingTemplates}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 text-sm rounded-lg proceed-to-pay-btn"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 sm:h-11 px-4 text-sm rounded-lg proceed-to-pay-btn"
                 >
                   {isCreatingPlan ? (
                     <>
@@ -734,9 +750,9 @@ const InstallmentPlans = () => {
 
       {/* Confirmation Modal */}
       <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
-        <DialogContent className="sm:max-w-md confirm-payment-modal">
+        <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-md max-h-[88vh] overflow-y-auto p-4 sm:p-6 confirm-payment-modal">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <CheckCircle2 className="w-5 h-5 text-blue-600" />
               Confirm Payment Plan
             </DialogTitle>
@@ -746,29 +762,29 @@ const InstallmentPlans = () => {
           </DialogHeader>
 
           {pendingPlanData && (
-            <div className="space-y-4 py-4">
+            <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
               {/* Plan Summary */}
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg space-y-3 border border-blue-200 dark:border-blue-800">
+              <div className="bg-blue-50 dark:bg-blue-950/20 p-3 sm:p-4 rounded-lg space-y-3 border border-blue-200 dark:border-blue-800">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Plan Type:</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Plan Type:</span>
                     <span className="font-semibold text-foreground">{selectedTemplate?.name}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Number of Installments:</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Number of Installments:</span>
                     <span className="font-semibold text-foreground">{selectedTemplate?.number_of_installments}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total Tuition:</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Total Tuition:</span>
                     <span className="font-semibold text-foreground">₱{Number(tuitionFee.amount).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-blue-200 dark:border-blue-700">
-                    <span className="text-sm font-semibold text-foreground">
+                    <span className="text-xs sm:text-sm font-semibold text-foreground">
                       {(selectedTemplate?.schedule_type === "Monthly" || selectedTemplate?.schedule_type === "Quarterly")
                         ? "Upon Enrollment Payment:"
                         : "Per Installment:"}
                     </span>
-                    <span className="text-lg font-bold text-blue-600">₱{(selectedInstallmentAmounts[0] || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-base sm:text-lg font-bold text-blue-600">₱{(selectedInstallmentAmounts[0] || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
@@ -778,7 +794,7 @@ const InstallmentPlans = () => {
                 <h4 className="text-sm font-semibold text-foreground">Installment Schedule:</h4>
                 <div className="max-h-48 overflow-y-auto space-y-2 installment-schedule">
                   {pendingPlanData.installments.slice(0, 4).map((inst: any, index: number) => (
-                    <div key={index} className="flex justify-between items-center text-sm p-2 bg-muted/30 rounded">
+                    <div key={index} className="flex justify-between items-center text-xs sm:text-sm p-2 bg-muted/30 rounded">
                       <div className="flex-1">
                         <span className="text-muted-foreground font-medium block">
                           #{inst.installment_number} - {inst.period_label}
@@ -815,18 +831,19 @@ const InstallmentPlans = () => {
             </div>
           )}
 
-            <DialogFooter className="flex gap-2 justify-end">
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:justify-end">
             <Button
               variant="outline"
               onClick={() => setShowConfirmationModal(false)}
               disabled={isCreatingPlan}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               onClick={handleConfirmPaymentPlan}
               disabled={isCreatingPlan}
-              className="bg-blue-600 hover:bg-blue-700 confirm-payment-btn"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 confirm-payment-btn"
             >
               {isCreatingPlan ? (
                 <>
@@ -877,17 +894,6 @@ const InstallmentPlans = () => {
         document.body
       )}
 
-      <TourHelpButton
-        tourOptions={[
-          {
-            id: 'demo-installment',
-            title: 'Installment Demo',
-            description: 'Guided demo for creating an installment payment plan.',
-            icon: <Play className="h-5 w-5 text-green-600" />,
-            onStart: () => setRunDemoInstallmentTour(true),
-          },
-        ]}
-      />
     </DashboardLayout>
   );
 };

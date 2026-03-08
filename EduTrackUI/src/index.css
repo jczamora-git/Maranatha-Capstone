@@ -382,3 +382,14 @@ input[type="number"] {
 }
 
 /* Scrollbars are provided by the `tailwind-scrollbar` plugin. */
+
+@layer utilities {
+  .enrollment-readable :is(p, li, label, td, th, small, .readable-text) {
+    font-size: 1.04em;
+    line-height: 1.55;
+  }
+
+  .enrollment-readable :is(input, textarea, select) {
+    font-size: 1rem;
+  }
+}

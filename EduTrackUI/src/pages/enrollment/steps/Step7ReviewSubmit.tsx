@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertCircle, Info, ScrollText, CheckCircle2 } from "lucide-react";
 import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
 import { EnrollmentFormData } from "../EnrollmentForm";
 
@@ -18,6 +18,9 @@ interface Step7Props {
 const Step7ReviewSubmit = ({ formData, updateFormData, errors, isReturningStudent = false }: Step7Props) => {
   // Tour State
   const [runTour, setRunTour] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [tourScrollOffset, setTourScrollOffset] = useState(20);
+  const hasCheckedReloadReset = useRef(false);
 
   const reviewSubmitTourSteps: Step[] = [
     {
@@ -59,8 +62,8 @@ const Step7ReviewSubmit = ({ formData, updateFormData, errors, isReturningStuden
       content: 'Please read and agree to the terms and conditions before submitting.',
     },
     {
-      target: 'input[type="checkbox"]',
-      content: 'Check this box to confirm you agree to all terms and conditions.',
+      target: '.terms-trigger-button',
+      content: 'Open the terms modal, then click "I Have Read and Agree" to confirm your agreement.',
     },
     {
       target: '.bg-blue-50',
@@ -75,6 +78,42 @@ const Step7ReviewSubmit = ({ formData, updateFormData, errors, isReturningStuden
       setRunTour(true);
     }
   }, []);
+
+  useEffect(() => {
+    const updateTourScrollOffset = () => {
+      const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
+      if (!isMobile) {
+        setTourScrollOffset(20);
+        return;
+      }
+
+      const mobileHeader = document.querySelector('[data-mobile-header="true"]') as HTMLElement | null;
+      const headerHeight = mobileHeader?.getBoundingClientRect().height ?? 56;
+      setTourScrollOffset(Math.ceil(headerHeight + 16));
+    };
+
+    updateTourScrollOffset();
+    window.addEventListener('resize', updateTourScrollOffset);
+
+    return () => {
+      window.removeEventListener('resize', updateTourScrollOffset);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hasCheckedReloadReset.current) {
+      return;
+    }
+
+    hasCheckedReloadReset.current = true;
+    const navEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    const isReload = navEntry?.type === 'reload';
+
+    if (isReload && formData.agreed_to_terms) {
+      updateFormData({ agreed_to_terms: false });
+    }
+  }, [formData.agreed_to_terms, updateFormData]);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;
@@ -259,57 +298,88 @@ const Step7ReviewSubmit = ({ formData, updateFormData, errors, isReturningStuden
       )}
 
       {/* Terms and Conditions */}
-      <Card className="bg-amber-50 border-amber-200">
-        <CardHeader>
-          <CardTitle className="text-base text-amber-900">Terms and Conditions</CardTitle>
+      <Card className="bg-amber-50 bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-amber-900 flex items-center gap-2">
+            <ScrollText className="h-4 w-4" />
+            Terms and Conditions
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-white p-4 rounded border border-amber-200 text-sm text-gray-700 max-h-48 overflow-y-auto">
-            <p className="mb-4">
-              By submitting this enrollment application, you agree to the following:
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-gray-600">
-              <li>
-                All information provided is accurate and truthful to the best of your knowledge.
-              </li>
-              <li>
-                You grant Maranatha Preschool & Elementary School permission to contact you using the phone numbers and email addresses provided.
-              </li>
-              <li>
-                You agree to the school's policies and procedures as outlined in the Parent-Student Handbook.
-              </li>
-              <li>
-                You understand that enrollment is subject to approval by the school administration.
-              </li>
-              <li>
-                All documents submitted will be kept confidential and used only for school purposes.
-              </li>
-              <li>
-                The school may request additional documents or information to complete the enrollment process.
-              </li>
-              <li>
-                You understand the school's fee structure and payment terms for the school year.
-              </li>
-              <li>
-                You agree to comply with the school's attendance and academic performance standards.
-              </li>
-            </ul>
-          </div>
+          <p className="text-sm text-amber-900 leading-relaxed">Please read the full terms and conditions before agreeing.</p>
 
-          <div className="flex items-start space-x-3">
-            <Checkbox
-              id="agreeTerms"
-              checked={formData.agreed_to_terms}
-              onCheckedChange={(checked) => updateFormData({ agreed_to_terms: checked as boolean })}
-            />
-            <Label htmlFor="agreeTerms" className="text-gray-800 cursor-pointer font-semibold">
-              I agree to all terms and conditions above and certify that all information provided is accurate.
-            </Label>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto terms-trigger-button"
+            onClick={() => setShowTermsModal(true)}
+          >
+            View Terms and Conditions
+          </Button>
 
           {errors.agreed_to_terms && <p className="text-red-600 text-sm">{errors.agreed_to_terms}</p>}
         </CardContent>
       </Card>
+
+      <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="px-5 py-4 border-b bg-gradient-to-r from-amber-50 to-yellow-50">
+            <DialogTitle className="flex items-center gap-2 text-amber-900">
+              <ScrollText className="h-5 w-5" />
+              Terms and Conditions
+            </DialogTitle>
+            <DialogDescription className="text-amber-900/80">
+              By submitting this enrollment application, you agree to the following:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-5 py-4 overflow-y-auto max-h-[52vh]">
+          <ul className="list-decimal list-inside space-y-3 text-sm text-gray-700 leading-relaxed">
+            <li>
+              All information provided is accurate and truthful to the best of your knowledge.
+            </li>
+            <li>
+              You grant Maranatha Preschool & Elementary School permission to contact you using the phone numbers and email addresses provided.
+            </li>
+            <li>
+              You agree to the school's policies and procedures as outlined in the Parent-Student Handbook.
+            </li>
+            <li>
+              You understand that enrollment is subject to approval by the school administration.
+            </li>
+            <li>
+              All documents submitted will be kept confidential and used only for school purposes.
+            </li>
+            <li>
+              The school may request additional documents or information to complete the enrollment process.
+            </li>
+            <li>
+              You understand the school's fee structure and payment terms for the school year.
+            </li>
+            <li>
+              You agree to comply with the school's attendance and academic performance standards.
+            </li>
+          </ul>
+          </div>
+
+          <div className="px-5 py-4 border-t bg-muted/30 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setShowTermsModal(false)}>
+              Close
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                updateFormData({ agreed_to_terms: true });
+                setShowTermsModal(false);
+              }}
+              className="gap-2"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              I Have Read and Agree
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Final Review Alert */}
       <Alert>
@@ -322,6 +392,9 @@ const Step7ReviewSubmit = ({ formData, updateFormData, errors, isReturningStuden
       <Joyride
         steps={reviewSubmitTourSteps}
         run={runTour}
+        scrollOffset={tourScrollOffset}
+        disableScrolling={false}
+        spotlightPadding={5}
         continuous
         showProgress
         showSkipButton

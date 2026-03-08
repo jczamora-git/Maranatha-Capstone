@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Joyride, { CallBackProps, STATUS, EVENTS } from 'react-joyride';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Clock, AlertCircle, CheckCircle2, BookOpen, Gift, Users, Calendar, Shirt, Zap, HelpCircle, Download, ClipboardList, Eye, ChevronRight, Package, FileText, CalendarClock } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, BookOpen, Gift, Users, Calendar, Shirt, Zap, Download, ClipboardList, Eye, ChevronRight, Package, FileText, CalendarClock } from 'lucide-react';
 import { PaymentItem, SchoolFee, Enrollment } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -56,7 +55,6 @@ interface PaymentMobileProps {
   runTour?: boolean;
   setRunTour?: (run: boolean) => void;
   setTourStepIndex?: (index: number) => void;
-  tourOptions?: any[];
   tourSteps?: any[];
   tourStepIndex?: number;
   handleTourCallback?: (data: any) => void;
@@ -130,7 +128,6 @@ export const PaymentMobileView = ({
   runTour,
   setRunTour,
   setTourStepIndex,
-  tourOptions,
   tourSteps = [],
   tourStepIndex = 0,
   handleTourCallback,
@@ -138,27 +135,28 @@ export const PaymentMobileView = ({
   const [showEmptyFeeTypes, setShowEmptyFeeTypes] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [activeDockTab, setActiveDockTab] = useState<'installments' | 'payments' | 'help'>('payments');
+  const [activeDockTab, setActiveDockTab] = useState<'installments' | 'payments'>('payments');
+  const [tourScrollOffset, setTourScrollOffset] = useState(20);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [mobileHeaderHeight, setMobileHeaderHeight] = useState(56);
   const hasInstallments = paymentPlans.length > 0;
-  const hasHelp = Boolean(tourOptions && tourOptions.length > 0);
   const dockTabs = [
     ...(hasInstallments ? (['installments'] as const) : []),
     'payments' as const,
-    ...(hasHelp ? (['help'] as const) : []),
   ];
   const activeIndex = Math.max(0, dockTabs.indexOf(activeDockTab));
-  const indicatorWidth = activeDockTab === 'installments' ? '90px' : activeDockTab === 'help' ? '60px' : '70px';
-  const indicatorLeft = `${20 + activeIndex * 84}px`;
+  const dockHorizontalPadding = 16;
+  const dockTabWidth = 72;
+  const dockTabGap = 4;
+  const indicatorWidthPx = activeDockTab === 'installments' ? 80 : 62;
+  const indicatorWidth = `${indicatorWidthPx}px`;
+  const indicatorLeft = `${dockHorizontalPadding + activeIndex * (dockTabWidth + dockTabGap) + (dockTabWidth - indicatorWidthPx) / 2}px`;
 
   useEffect(() => {
     if (!hasInstallments && activeDockTab === 'installments') {
       setActiveDockTab('payments');
-      return;
     }
-    if (!hasHelp && activeDockTab === 'help') {
-      setActiveDockTab('payments');
-    }
-  }, [activeDockTab, hasHelp, hasInstallments]);
+  }, [activeDockTab, hasInstallments]);
 
   const handleTooltipShow = () => {
     setShowTooltip(true);
@@ -213,6 +211,63 @@ export const PaymentMobileView = ({
   // Determine display mode: text for 2-4 fees, icons for 5+
   const useTextDisplay = availableFeeTypes.length >= 2 && availableFeeTypes.length <= 4;
 
+  useEffect(() => {
+    const updateTourViewportSettings = () => {
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      setIsSmallScreen(mobile);
+
+      if (!mobile) {
+        setTourScrollOffset(20);
+        return;
+      }
+
+      const mobileHeader = document.querySelector('[data-mobile-header="true"]') as HTMLElement | null;
+      const headerHeight = mobileHeader?.getBoundingClientRect().height ?? 56;
+      setMobileHeaderHeight(Math.ceil(headerHeight));
+      setTourScrollOffset(Math.ceil(headerHeight + 16));
+    };
+
+    updateTourViewportSettings();
+    window.addEventListener('resize', updateTourViewportSettings);
+
+    return () => {
+      window.removeEventListener('resize', updateTourViewportSettings);
+    };
+  }, []);
+
+  const normalizedTourSteps = useMemo(() => {
+    if (!isSmallScreen) return tourSteps;
+
+    return (tourSteps || []).map((step: any) => {
+      if (!step?.placement) return step;
+      if (step.placement === 'left' || step.placement === 'right') {
+        return { ...step, placement: 'top' as const };
+      }
+      return step;
+    });
+  }, [tourSteps, isSmallScreen]);
+
+  const mobileTourContentTopSpaceClass = isSmallScreen && (runTour || false)
+    ? (mobileHeaderHeight >= 72 ? 'pt-24' : mobileHeaderHeight >= 64 ? 'pt-20' : 'pt-16')
+    : '';
+
+  useEffect(() => {
+    if (!isSmallScreen || !runTour) return;
+
+    const currentStep = (normalizedTourSteps as any[])?.[tourStepIndex || 0];
+    const targetSelector = typeof currentStep?.target === 'string' ? currentStep.target : '';
+
+    if (!targetSelector || targetSelector === 'body') return;
+
+    const targetElement = document.querySelector(targetSelector) as HTMLElement | null;
+    if (!targetElement) return;
+
+    const rect = targetElement.getBoundingClientRect();
+    const absoluteTop = window.scrollY + rect.top;
+    const safeTop = Math.max(0, absoluteTop - (mobileHeaderHeight + 24));
+    window.scrollTo({ top: safeTop, behavior: 'auto' });
+  }, [runTour, tourStepIndex, normalizedTourSteps, isSmallScreen, mobileHeaderHeight]);
+
   // Joyride styling configuration
   const joyrideStyling = {
     options: {
@@ -253,7 +308,7 @@ export const PaymentMobileView = ({
   return (
     <>
       <Joyride
-        steps={tourSteps}
+        steps={normalizedTourSteps}
         run={runTour || false}
         stepIndex={tourStepIndex || 0}
         callback={handleTourCallback}
@@ -262,6 +317,9 @@ export const PaymentMobileView = ({
         showSkipButton
         disableOverlayClose
         spotlightClicks
+        disableScrolling={false}
+        scrollOffset={tourScrollOffset}
+        spotlightPadding={5}
         styles={joyrideStyling}
         locale={{
           back: 'Previous',
@@ -282,7 +340,9 @@ export const PaymentMobileView = ({
           onPayInstallment={onPayInstallment}
         />
       ) : (
-        <div className="p-3 space-y-3 pb-24">
+        <div
+          className={`p-3 space-y-3 ${hasInstallments ? 'pb-24' : 'pb-3'} ${mobileTourContentTopSpaceClass}`}
+        >
       {/* Greeting Header */}
       <div id="payment-header" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-3 space-y-1">
         <p className="text-xs opacity-90">{greeting}</p>
@@ -302,7 +362,7 @@ export const PaymentMobileView = ({
       </Card>
 
       {/* Amount Paid */}
-      <div className="grid grid-cols-2 gap-2">
+      <div id="payment-summary-section" className="grid grid-cols-2 gap-2">
         <Card className="shadow-lg border-0 bg-green-50">
           <CardContent className="pt-3">
             <p className="text-xs text-green-600 mb-1">Amount Paid</p>
@@ -557,23 +617,23 @@ export const PaymentMobileView = ({
       </div>
       )}
 
-      {/* Floating Dock - Always visible */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-        <div className="bg-white/95 dark:bg-gray-900/95 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 px-6 py-3 flex items-center gap-1 backdrop-blur-xl relative">
-          {/* Animated indicator line */}
-          <div 
-            className="absolute bottom-1 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full transition-all duration-500 ease-in-out"
-            style={{
-              width: indicatorWidth,
-              left: indicatorLeft,
-            }}
-          />
-          
-          {/* Installments Tab */}
-          {hasInstallments && (
+      {/* Floating Dock */}
+      {hasInstallments && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+          <div className="bg-white/95 dark:bg-gray-900/95 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 px-4 py-2 flex items-center gap-1 backdrop-blur-xl relative">
+            {/* Animated indicator line */}
+            <div 
+              className="absolute bottom-1 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full transition-all duration-500 ease-in-out"
+              style={{
+                width: indicatorWidth,
+                left: indicatorLeft,
+              }}
+            />
+            
+            {/* Installments Tab */}
             <button
               onClick={() => setActiveDockTab('installments')}
-              className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
+              className="w-[72px] h-12 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
             >
               <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
                 activeDockTab === 'installments' 
@@ -592,108 +652,33 @@ export const PaymentMobileView = ({
                 </span>
               </div>
             </button>
-          )}
 
-          {/* Payments Tab */}
-          <button
-            onClick={() => setActiveDockTab('payments')}
-            className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
-          >
-            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
-              activeDockTab === 'payments' 
-                ? '-translate-y-full' 
-                : 'translate-y-0'
-            }`}>
-              <FileText className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-            </div>
-            <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
-              activeDockTab === 'payments' 
-                ? 'translate-y-0' 
-                : 'translate-y-full'
-            }`}>
-              <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
-                Payments
-              </span>
-            </div>
-          </button>
+            {/* Payments Tab */}
+            <button
+              onClick={() => setActiveDockTab('payments')}
+              className="w-[72px] h-12 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
+            >
+              <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+                activeDockTab === 'payments' 
+                  ? '-translate-y-full' 
+                  : 'translate-y-0'
+              }`}>
+                <FileText className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
+                activeDockTab === 'payments' 
+                  ? 'translate-y-0' 
+                  : 'translate-y-full'
+              }`}>
+                <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
+                  Payments
+                </span>
+              </div>
+            </button>
 
-          {/* Help Tab */}
-          {hasHelp && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  onClick={() => setActiveDockTab('help')}
-                  className="w-20 h-14 flex items-center justify-center rounded-xl transition-all duration-500 ease-in-out overflow-hidden relative"
-                >
-                  <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
-                    activeDockTab === 'help' 
-                      ? '-translate-y-full' 
-                      : 'translate-y-0'
-                  }`}>
-                    <HelpCircle className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                  </div>
-                  <div className={`absolute inset-0 flex flex-col items-center justify-center transition-transform duration-500 ease-in-out ${
-                    activeDockTab === 'help' 
-                      ? 'translate-y-0' 
-                      : 'translate-y-full'
-                  }`}>
-                    <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400">
-                      Help
-                    </span>
-                  </div>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0 border-0 shadow-lg mb-2" side="top" align="center" sideOffset={8}>
-                <div className="p-4 space-y-4">
-                  {/* Header */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-5 h-5 rounded bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                        <HelpCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <h3 className="font-semibold text-foreground">Choose a Tour</h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Select which guided tour you'd like to take to learn about different features.
-                    </p>
-                  </div>
-
-                  {/* Tour Options */}
-                  <div className="space-y-2">
-                    {tourOptions.map((option: any) => (
-                      <button
-                        key={option.id}
-                        onClick={() => {
-                          // Execute the tour's onStart callback
-                          if (option.onStart) {
-                            option.onStart();
-                          }
-                        }}
-                        className="w-full p-3 rounded-lg border border-border hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all text-left group flex items-center justify-between gap-3"
-                      >
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <div className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5">
-                            {option.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm text-foreground group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
-                              {option.title}
-                            </h4>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {option.description}
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 flex-shrink-0 transition-colors" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 };

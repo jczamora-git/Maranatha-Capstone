@@ -10,6 +10,7 @@
  */
 
 export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'ru' | 'zh' | 'ja' | 'ko' | 'ar' | 'tl';
+export type SourceLanguageCode = LanguageCode | 'auto';
 
 export interface Language {
   code: LanguageCode;
@@ -33,8 +34,176 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
 ];
 
-// Translation cache to avoid redundant API calls
-const translationCache = new Map<string, string>();
+interface CacheEntry {
+  value: string;
+  timestamp: number;
+}
+
+const CACHE_STORAGE_KEY = 'campuscompanion_translation_cache_v1';
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+const MAX_CACHE_ENTRIES = 2000;
+
+// Translation cache layers
+const translationCache = new Map<string, CacheEntry>();
+const inFlightTranslations = new Map<string, Promise<string>>();
+
+let cacheLoaded = false;
+let persistTimer: number | null = null;
+
+function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+}
+
+function pruneCache(): void {
+  const now = Date.now();
+
+  for (const [key, entry] of translationCache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+      translationCache.delete(key);
+    }
+  }
+
+  if (translationCache.size <= MAX_CACHE_ENTRIES) {
+    return;
+  }
+
+  const sortedByAge = Array.from(translationCache.entries()).sort(
+    (a, b) => a[1].timestamp - b[1].timestamp
+  );
+
+  const removeCount = translationCache.size - MAX_CACHE_ENTRIES;
+  for (let index = 0; index < removeCount; index++) {
+    translationCache.delete(sortedByAge[index][0]);
+  }
+}
+
+function persistCacheToStorage(): void {
+  if (!isBrowser()) {
+    return;
+  }
+
+  pruneCache();
+
+  try {
+    const serialized = JSON.stringify(Array.from(translationCache.entries()));
+    localStorage.setItem(CACHE_STORAGE_KEY, serialized);
+  } catch (error) {
+    console.warn('Failed to persist translation cache:', error);
+  }
+}
+
+function schedulePersistCache(): void {
+  if (!isBrowser()) {
+    return;
+  }
+
+  if (persistTimer !== null) {
+    return;
+  }
+
+  persistTimer = window.setTimeout(() => {
+    persistTimer = null;
+    persistCacheToStorage();
+  }, 250);
+}
+
+function loadCacheFromStorage(): void {
+  if (cacheLoaded || !isBrowser()) {
+    return;
+  }
+
+  cacheLoaded = true;
+
+  try {
+    const raw = localStorage.getItem(CACHE_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const parsed = JSON.parse(raw) as [string, CacheEntry][];
+    if (!Array.isArray(parsed)) {
+      return;
+    }
+
+    for (const item of parsed) {
+      if (!Array.isArray(item) || item.length !== 2) {
+        continue;
+      }
+
+      const [key, entry] = item;
+      if (
+        typeof key === 'string' &&
+        entry &&
+        typeof entry.value === 'string' &&
+        typeof entry.timestamp === 'number'
+      ) {
+        translationCache.set(key, entry);
+      }
+    }
+
+    pruneCache();
+  } catch (error) {
+    console.warn('Failed to load translation cache:', error);
+  }
+}
+
+function getCachedValue(key: string): string | null {
+  const entry = translationCache.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    translationCache.delete(key);
+    return null;
+  }
+
+  return entry.value;
+}
+
+function setCachedValue(key: string, value: string): void {
+  translationCache.set(key, {
+    value,
+    timestamp: Date.now(),
+  });
+
+  pruneCache();
+  schedulePersistCache();
+}
+
+function shouldSkipGoogleTranslation(text: string): boolean {
+  const trimmed = text.trim();
+
+  if (!trimmed) {
+    return true;
+  }
+
+  const patterns = [
+    /^https?:\/\//i, // URL
+    /^[\w.%+-]+@[\w.-]+\.[a-z]{2,}$/i, // email
+    /^\d{4}-\d{2}-\d{2}(?:[t\s]\d{2}:\d{2}(?::\d{2})?)?/i, // ISO date/datetime
+    /^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/, // common date format
+    /^\d+(?:[.,]\d+)?$/, // pure numeric
+    /^[A-Fa-f0-9]{16,}$/, // long hash/id
+  ];
+
+  if (patterns.some((regex) => regex.test(trimmed))) {
+    return true;
+  }
+
+  // Skip likely backend identifiers, filenames, and code-like values
+  if (/[_/\\]/.test(trimmed) && !/\s/.test(trimmed)) {
+    return true;
+  }
+
+  // Skip if mostly symbols/digits and not natural sentence-like text
+  const alphaCount = (trimmed.match(/[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/g) || []).length;
+  if (alphaCount > 0 && alphaCount / trimmed.length < 0.35) {
+    return true;
+  }
+
+  return false;
+}
 
 /**
  * Generate cache key for translation
@@ -139,8 +308,10 @@ async function translateWithGoogleChrome(
 export async function translateText(
   text: string,
   targetLang: LanguageCode,
-  sourceLang: LanguageCode = 'en'
+  sourceLang: SourceLanguageCode = 'auto'
 ): Promise<string> {
+  loadCacheFromStorage();
+
   // If target is same as source, return original
   if (targetLang === sourceLang) {
     return text;
@@ -151,35 +322,55 @@ export async function translateText(
     return text;
   }
 
+  // Ignore likely backend/dynamic values to avoid unnecessary Google Translate requests
+  if (shouldSkipGoogleTranslation(text)) {
+    return text;
+  }
+
   // Check cache first
   const cacheKey = getCacheKey(text, sourceLang, targetLang);
-  const cached = translationCache.get(cacheKey);
+  const cached = getCachedValue(cacheKey);
   if (cached) {
     return cached;
   }
 
-  // Try Google GTX first (primary method)
-  console.log(`🌐 Translating "${text.substring(0, 50)}..." from ${sourceLang} to ${targetLang}`);
-  
-  let translated = await translateWithGoogleGTX(text, sourceLang, targetLang);
-  if (translated) {
-    console.log(`✅ Success with Google GTX: ${translated.substring(0, 50)}...`);
-    translationCache.set(cacheKey, translated);
-    return translated;
+  const existingPromise = inFlightTranslations.get(cacheKey);
+  if (existingPromise) {
+    return existingPromise;
   }
 
-  // Fallback to Google Chrome Extension API
-  console.log('🔄 Trying Google Chrome Extension API...');
-  translated = await translateWithGoogleChrome(text, sourceLang, targetLang);
-  if (translated) {
-    console.log(`✅ Success with Google Chrome API: ${translated.substring(0, 50)}...`);
-    translationCache.set(cacheKey, translated);
-    return translated;
-  }
+  const translationPromise = (async () => {
+    // Try Google GTX first (primary method)
+    console.log(`🌐 Translating "${text.substring(0, 50)}..." from ${sourceLang} to ${targetLang}`);
+    
+    let translated = await translateWithGoogleGTX(text, sourceLang, targetLang);
+    if (translated) {
+      console.log(`✅ Success with Google GTX: ${translated.substring(0, 50)}...`);
+      setCachedValue(cacheKey, translated);
+      return translated;
+    }
 
-  // If all methods fail, return original text
-  console.warn('⚠️ All translation methods failed, returning original text');
-  return text;
+    // Fallback to Google Chrome Extension API
+    console.log('🔄 Trying Google Chrome Extension API...');
+    translated = await translateWithGoogleChrome(text, sourceLang, targetLang);
+    if (translated) {
+      console.log(`✅ Success with Google Chrome API: ${translated.substring(0, 50)}...`);
+      setCachedValue(cacheKey, translated);
+      return translated;
+    }
+
+    // If all methods fail, return original text
+    console.warn('⚠️ All translation methods failed, returning original text');
+    return text;
+  })();
+
+  inFlightTranslations.set(cacheKey, translationPromise);
+
+  try {
+    return await translationPromise;
+  } finally {
+    inFlightTranslations.delete(cacheKey);
+  }
 }
 
 /**
@@ -200,6 +391,12 @@ export async function translateBatch(
  */
 export function clearTranslationCache(): void {
   translationCache.clear();
+  inFlightTranslations.clear();
+
+  if (isBrowser()) {
+    localStorage.removeItem(CACHE_STORAGE_KEY);
+  }
+
   console.log('🗑️ Translation cache cleared');
 }
 
@@ -207,6 +404,9 @@ export function clearTranslationCache(): void {
  * Get cache statistics
  */
 export function getCacheStats(): { size: number; keys: string[] } {
+  loadCacheFromStorage();
+  pruneCache();
+
   return {
     size: translationCache.size,
     keys: Array.from(translationCache.keys()).slice(0, 10), // First 10 keys

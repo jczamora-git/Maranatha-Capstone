@@ -119,7 +119,7 @@ export default function VerifyPin() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen flex items-center justify-center py-4 px-2 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="enrollment-readable min-h-screen flex items-center justify-center py-4 px-2 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-4">

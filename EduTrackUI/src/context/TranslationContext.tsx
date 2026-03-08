@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { LanguageCode, SUPPORTED_LANGUAGES, translateText, Language } from '@/services/translateService';
 
 interface TranslationContextType {
@@ -20,7 +20,7 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     return (saved as LanguageCode) || 'en';
   });
   
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslating] = useState(false);
 
   // Save language preference to localStorage
   useEffect(() => {
@@ -32,37 +32,37 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     console.log(`🌍 Language changed to: ${currentLanguage}`);
   }, [currentLanguage]);
 
-  const setLanguage = (lang: LanguageCode) => {
-    setCurrentLanguage(lang);
-  };
+  const setLanguage = useCallback((lang: LanguageCode) => {
+    setCurrentLanguage((prev) => (prev === lang ? prev : lang));
+  }, []);
 
-  const translate = async (text: string): Promise<string> => {
+  const translate = useCallback(async (text: string): Promise<string> => {
     if (currentLanguage === 'en') {
       return text; // No translation needed for English
     }
 
-    setIsTranslating(true);
     try {
-      const translated = await translateText(text, currentLanguage, 'en');
+      const translated = await translateText(text, currentLanguage, 'auto');
       return translated;
     } catch (error) {
       console.error('Translation error:', error);
       return text; // Return original on error
-    } finally {
-      setIsTranslating(false);
     }
-  };
+  }, [currentLanguage]);
+
+  const value = useMemo(
+    () => ({
+      currentLanguage,
+      setLanguage,
+      translate,
+      isTranslating,
+      languages: SUPPORTED_LANGUAGES,
+    }),
+    [currentLanguage, setLanguage, translate, isTranslating]
+  );
 
   return (
-    <TranslationContext.Provider
-      value={{
-        currentLanguage,
-        setLanguage,
-        translate,
-        isTranslating,
-        languages: SUPPORTED_LANGUAGES,
-      }}
-    >
+    <TranslationContext.Provider value={value}>
       {children}
     </TranslationContext.Provider>
   );
@@ -114,6 +114,7 @@ export function useTranslatedText(text: string): string {
 export function useTranslatedTexts(texts: string[]): string[] {
   const { currentLanguage, translate } = useTranslation();
   const [translatedTexts, setTranslatedTexts] = useState<string[]>(texts);
+  const textsKey = useMemo(() => texts.join('\u0001'), [texts]);
 
   useEffect(() => {
     if (currentLanguage === 'en') {
@@ -132,7 +133,7 @@ export function useTranslatedTexts(texts: string[]): string[] {
     return () => {
       isMounted = false;
     };
-  }, [texts, currentLanguage, translate]);
+  }, [textsKey, currentLanguage, translate]);
 
   return translatedTexts;
 }

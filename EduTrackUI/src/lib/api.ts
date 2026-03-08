@@ -1,6 +1,12 @@
 // API Configuration for LavaLust Backend
 // Use empty string for development (Vite proxy), or full URL for production
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const configuredApiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const isLocalhostApiBase = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(configuredApiBaseUrl);
+const shouldUseProxyBaseInDev = import.meta.env.DEV && (!configuredApiBaseUrl || isLocalhostApiBase);
+
+export const API_BASE_URL = shouldUseProxyBaseInDev
+  ? ''
+  : configuredApiBaseUrl.replace(/\/+$/, '');
 
 export const API_ENDPOINTS = {
   // Authentication

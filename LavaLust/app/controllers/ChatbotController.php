@@ -192,6 +192,8 @@ class ChatbotController extends Controller
             $instructions = trim($data['instructions'] ?? '');
             $role = $this->session->userdata('role') ?? 'student';
             $knowledgeOnly = (bool) config_item('chat_knowledge_only');
+            $requestKnowledgeOnly = !empty($data['knowledge_only']);
+            $knowledgeOnly = $knowledgeOnly || $requestKnowledgeOnly;
 
             if ($message === '') {
                 http_response_code(400);
@@ -250,40 +252,28 @@ class ChatbotController extends Controller
             }
 
             $normalizedMessage = $this->normalizeMessage($message);
-            // Factual questions (fees, balances, enrollment status) must always
-            // hit the DB + LLM for live data — never serve from cache.
-            $allowedCacheSources = $knowledgeOnly ? ['knowledge', 'guard'] : null;
-            $cached = $this->isFactualQuestion($message)
+            $knowledge = $this->ChatbotKnowledgeModel->get_active_for_query($message, 5);
+            $knowledge = $this->filterKnowledgeByRole($knowledge, $role);
+            // PIN questions always get a structured canned reply — skip shortcut/LLM
+            $pinReply = $this->buildPinReply($message);
+            // Skip shortcuts for factual/data questions — they must go to DB context + LLM
+            $shortcut = ($pinReply === null && $this->isFactualQuestion($message))
                 ? null
-                : $this->ChatbotConversationModel->find_cached_reply($normalizedMessage, $role, $allowedCacheSources);
-
-            if (!empty($cached) && !empty($cached['reply'])) {
-                $response = $cached['reply'];
-                $source = 'cache';
+                : ($pinReply ?? $this->buildShortcutReply($message, $knowledge));
+            if ($shortcut) {
+                $response = $shortcut;
+                $source = 'knowledge';
+            } elseif ($knowledgeOnly) {
+                $response = 'I do not have that information yet. Please contact an administrator or add it to the knowledge base.';
+                $source = 'knowledge';
             } else {
-                $knowledge = $this->ChatbotKnowledgeModel->get_active_for_query($message, 5);
-                $knowledge = $this->filterKnowledgeByRole($knowledge, $role);
-                // PIN questions always get a structured canned reply — skip shortcut/LLM
-                $pinReply = $this->buildPinReply($message);
-                // Skip shortcuts for factual/data questions — they must go to DB context + LLM
-                $shortcut = ($pinReply === null && $this->isFactualQuestion($message))
-                    ? null
-                    : ($pinReply ?? $this->buildShortcutReply($message, $knowledge));
-                if ($shortcut) {
-                    $response = $shortcut;
-                    $source = 'knowledge';
-                } elseif ($knowledgeOnly) {
-                    $response = 'I do not have that information yet. Please contact an administrator or add it to the knowledge base.';
-                    $source = 'knowledge';
-                } else {
-                    $dbContext = $this->ChatbotDbContextService->build(
-                        $message,
-                        $role,
-                        $this->session->userdata('user_id') ?? null
-                    );
-                    $response = $this->callChatModel($message, $knowledge, $instructions, $dbContext);
-                    $source = 'llm';
-                }
+                $dbContext = $this->ChatbotDbContextService->build(
+                    $message,
+                    $role,
+                    $this->session->userdata('user_id') ?? null
+                );
+                $response = $this->callChatModel($message, $knowledge, $instructions, $dbContext);
+                $source = 'llm';
             }
 
             $this->ChatbotConversationModel->create_entry([

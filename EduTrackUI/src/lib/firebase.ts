@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, isSupported, onMessage, type Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,17 +13,73 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Cloud Messaging
-export const messaging = getMessaging(app);
+const isBrowser = typeof window !== 'undefined';
+
+const isSecureOriginForPush = () => {
+  if (!isBrowser) return false;
+  const host = window.location.hostname;
+  const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+  return window.isSecureContext || isLocalhost;
+};
+
+let messagingInstance: Messaging | null = null;
+let hasCheckedMessagingSupport = false;
+let messagingSupported = false;
+
+const getMessagingIfSupported = async (): Promise<Messaging | null> => {
+  if (!isBrowser) return null;
+
+  if (!isSecureOriginForPush()) {
+    console.warn('[FCM] Disabled: Firebase Messaging requires HTTPS (or localhost).');
+    return null;
+  }
+
+  if (!hasCheckedMessagingSupport) {
+    try {
+      messagingSupported = await isSupported();
+    } catch {
+      messagingSupported = false;
+    }
+    hasCheckedMessagingSupport = true;
+  }
+
+  if (!messagingSupported) {
+    console.warn('[FCM] Disabled: Browser does not support Firebase Messaging APIs.');
+    return null;
+  }
+
+  if (!messagingInstance) {
+    messagingInstance = getMessaging(app);
+  }
+
+  return messagingInstance;
+};
 
 // Request permission and get token
 export const requestPermission = async () => {
   try {
+    if (!isBrowser || !('Notification' in window)) {
+      console.warn('[FCM] Notification API is not available in this environment.');
+      return;
+    }
+
+    const messaging = await getMessagingIfSupported();
+    if (!messaging) {
+      return;
+    }
+
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       console.log('Notification permission granted.');
+
+      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      if (!vapidKey) {
+        console.warn('[FCM] Missing VITE_FIREBASE_VAPID_KEY, skipping token request.');
+        return;
+      }
+
       const token = await getToken(messaging, {
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+        vapidKey,
       });
       if (token) {
         console.log('FCM Token:', token);
@@ -64,10 +120,18 @@ const registerFCMToken = async (token: string) => {
 // Handle incoming messages when app is in foreground (one-shot, kept for legacy use)
 export const onMessageListener = () =>
   new Promise((resolve) => {
-    onMessage(messaging, (payload) => {
-      console.log('Message received. ', payload);
-      resolve(payload);
-    });
+    void (async () => {
+      const messaging = await getMessagingIfSupported();
+      if (!messaging) {
+        resolve(null);
+        return;
+      }
+
+      onMessage(messaging, (payload) => {
+        console.log('Message received. ', payload);
+        resolve(payload);
+      });
+    })();
   });
 
 /**
@@ -77,8 +141,19 @@ export const onMessageListener = () =>
  * @param callback - called every time a foreground push arrives
  */
 export const subscribeFCMMessages = (callback: (payload: any) => void) => {
-  return onMessage(messaging, (payload) => {
-    console.log('[FCM] Foreground message received:', payload);
-    callback(payload);
-  });
+  let unsubscribe = () => {};
+
+  void (async () => {
+    const messaging = await getMessagingIfSupported();
+    if (!messaging) return;
+
+    unsubscribe = onMessage(messaging, (payload) => {
+      console.log('[FCM] Foreground message received:', payload);
+      callback(payload);
+    });
+  })();
+
+  return () => {
+    unsubscribe();
+  };
 };

@@ -248,15 +248,15 @@ export const InstallmentMobileView = ({
                                     {installment.installment_number}
                                   </span>
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                                    <span className="text-[11px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                                       Installment #{installment.installment_number}
                                     </span>
                                     {isLocked && <Lock className="w-3 h-3 text-gray-400" />}
                                   </div>
                                   {isLocked && (
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    <p className="!text-[10px] sm:!text-[11px] leading-tight text-gray-500 dark:text-gray-400 mt-0.5">
                                       Pay previous installments first
                                     </p>
                                   )}
@@ -272,14 +272,14 @@ export const InstallmentMobileView = ({
                                   isSubmitted 
                                     ? 'text-blue-700 dark:text-blue-400' 
                                     : config.text
-                                } text-xs font-medium`}>
+                                } text-[11px] sm:text-xs font-medium`}>
                                   {isSubmitted ? 'Submitted' : config.label}
                                 </span>
                               </Badge>
                             </div>
 
                             {/* Due Date */}
-                            <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center justify-between text-[11px] sm:text-xs">
                               <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                                 <Calendar className="w-3.5 h-3.5" />
                                 <span>Due: {new Date(installment.due_date).toLocaleDateString('en-US', { 
@@ -290,7 +290,7 @@ export const InstallmentMobileView = ({
                               </div>
                               {/* Days overdue indicator */}
                               {status === 'overdue' && installment.days_overdue > 0 && (
-                                <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                                <span className="text-[11px] sm:text-xs font-medium text-red-600 dark:text-red-400">
                                   {installment.days_overdue} {installment.days_overdue === 1 ? 'day' : 'days'} late
                                 </span>
                               )}
@@ -301,9 +301,9 @@ export const InstallmentMobileView = ({
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
                                   <Coins className="w-3.5 h-3.5 text-gray-400" />
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">Amount Due</span>
+                                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">Amount Due</span>
                                 </div>
-                                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                                <span className="text-[13px] sm:text-sm font-bold text-gray-900 dark:text-gray-100">
                                   ₱{(installment.amount_due && !isNaN(Number(installment.amount_due))) 
                                     ? Number(installment.amount_due).toLocaleString() 
                                     : '0'}
@@ -313,8 +313,8 @@ export const InstallmentMobileView = ({
                               {/* Amount Paid (if any) */}
                               {installment.amount_paid > 0 && (
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">Amount Paid</span>
-                                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">Amount Paid</span>
+                                  <span className="text-[11px] sm:text-xs font-medium text-green-600 dark:text-green-400">
                                     ₱{Number(installment.amount_paid).toLocaleString()}
                                   </span>
                                 </div>
@@ -323,8 +323,8 @@ export const InstallmentMobileView = ({
                               {/* Balance (if partial payment) */}
                               {installment.balance > 0 && status === 'partial' && (
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">Balance</span>
-                                  <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">Balance</span>
+                                  <span className="text-[11px] sm:text-xs font-medium text-orange-600 dark:text-orange-400">
                                     ₱{Number(installment.balance).toLocaleString()}
                                   </span>
                                 </div>
@@ -333,8 +333,8 @@ export const InstallmentMobileView = ({
                               {/* Late Fee (if overdue) */}
                               {installment.late_fee > 0 && (
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs text-red-500 dark:text-red-400">Late Fee</span>
-                                  <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                                  <span className="text-[11px] sm:text-xs text-red-500 dark:text-red-400">Late Fee</span>
+                                  <span className="text-[11px] sm:text-xs font-medium text-red-600 dark:text-red-400">
                                     +₱{Number(installment.late_fee).toLocaleString()}
                                   </span>
                                 </div>
@@ -345,10 +345,10 @@ export const InstallmentMobileView = ({
                             {(status === 'paid' || isSubmitted) && installment.paid_date && (
                               <div className="pt-1 border-t border-gray-200 dark:border-gray-700">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                                     {isSubmitted ? 'Submitted on' : 'Paid on'}
                                   </span>
-                                  <span className={`text-xs font-medium ${
+                                  <span className={`text-[11px] sm:text-xs font-medium ${
                                     isSubmitted 
                                       ? 'text-blue-600 dark:text-blue-400' 
                                       : 'text-green-600 dark:text-green-400'
@@ -364,7 +364,7 @@ export const InstallmentMobileView = ({
                             )}
 
                             {/* Pay Button */}
-                            {!isLocked && !relatedPayment && status === 'pending' && onPayInstallment && (
+                            {!isLocked && !isPaid && !isSubmitted && onPayInstallment && (
                               <div className="pt-2">
                                 <Button
                                   size="sm"

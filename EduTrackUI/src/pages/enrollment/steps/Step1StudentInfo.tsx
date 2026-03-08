@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -53,7 +54,7 @@ const Step1StudentInfo = ({ formData, updateFormData, errors, isReturningStudent
 
   return (
     <Card className="border-0 shadow-md">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+      <CardHeader id="student-info-form-header" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
         <div className="flex items-center gap-3">
           <User className="h-6 w-6" />
           <div>
@@ -153,15 +154,21 @@ const Step1StudentInfo = ({ formData, updateFormData, errors, isReturningStudent
         <Label htmlFor="gender" className="text-gray-700 font-semibold">
           Gender *
         </Label>
-        <Select value={formData.gender} onValueChange={(value) => updateFormData({ gender: value as "Male" | "Female" })}>
-          <SelectTrigger id="gender-select" className={`mt-2 ${errors.gender ? "border-red-500" : ""}`}>
-            <SelectValue placeholder="Select gender" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Male">Male</SelectItem>
-            <SelectItem value="Female">Female</SelectItem>
-          </SelectContent>
-        </Select>
+        <RadioGroup
+          id="gender-select"
+          value={formData.gender}
+          onValueChange={(value) => updateFormData({ gender: value as "Male" | "Female" })}
+          className={`mt-3 flex flex-col sm:flex-row gap-3 sm:gap-6 rounded-md border p-3 ${errors.gender ? "border-red-500" : "border-input"}`}
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="Male" id="gender-male" />
+            <Label htmlFor="gender-male" className="font-normal cursor-pointer">Male</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="Female" id="gender-female" />
+            <Label htmlFor="gender-female" className="font-normal cursor-pointer">Female</Label>
+          </div>
+        </RadioGroup>
         {errors.gender && <p className="text-red-600 text-sm mt-1">{errors.gender}</p>}
       </div>
 

@@ -53,6 +53,7 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
 
   // Tour State
   const [runTour, setRunTour] = useState(false);
+  const [tourScrollOffset, setTourScrollOffset] = useState(20);
 
   const normalizeEnrollmentType = (): 'New Student' | 'Returning Student' | 'Transferee' => {
     const rawType = String(formData.enrollment_type || '').trim().toLowerCase();
@@ -145,13 +146,15 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
     },
     ...(formData.enrollment_type === 'Continuing Student' ? [
       {
-        target: '.bg-green-50',
+        target: '#continuing-docs-alert',
         content: 'As a continuing student, your documents are already on file. No submission required!',
+        placement: 'top' as const,
       },
     ] : [
       {
-        target: '.bg-blue-50',
+        target: '#document-guidance-alert',
         content: 'Review the information about document requirements for your enrollment type.',
+        placement: 'top' as const,
       },
       /* Commented out - was used when file uploads were enabled
       {
@@ -168,12 +171,14 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
       },
       */
       {
-        target: '.space-y-3',
+        target: '#required-doc-first-item',
         content: 'Review the documents you need to bring in person during enrollment.',
+        placement: 'top' as const,
       },
       {
-        target: 'input[type="checkbox"]',
+        target: '#required-doc-first-checkbox',
         content: 'Check this box to confirm you will bring each document physically.',
+        placement: 'top' as const,
       },
     ]),
   ];
@@ -288,6 +293,28 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
     }
   }, []);
 
+  useEffect(() => {
+    const updateTourScrollOffset = () => {
+      const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
+      if (!isMobile) {
+        setTourScrollOffset(20);
+        return;
+      }
+
+      const mobileHeader = document.querySelector('[data-mobile-header="true"]') as HTMLElement | null;
+      const headerHeight = mobileHeader?.getBoundingClientRect().height ?? 56;
+      setTourScrollOffset(Math.ceil(headerHeight + 16));
+    };
+
+    updateTourScrollOffset();
+    window.addEventListener('resize', updateTourScrollOffset);
+
+    return () => {
+      window.removeEventListener('resize', updateTourScrollOffset);
+    };
+  }, []);
+
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;
 
@@ -389,7 +416,7 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
       <div className="space-y-6">
       {formData.enrollment_type === 'Continuing Student' && !isFirstTimer ? (
         <>
-          <Alert className="bg-green-50 border-green-200">
+          <Alert id="continuing-docs-alert" className="bg-green-50 border-green-200">
             <Info className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               As a continuing student, your academic documents are already on file. <strong>No document upload is required.</strong> You can proceed directly to review and submit your enrollment.
@@ -398,7 +425,7 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
         </>
       ) : formData.enrollment_type === 'Continuing Student' ? (
         <>
-          <Alert className="bg-green-50 border-green-200">
+          <Alert id="continuing-docs-alert" className="bg-green-50 border-green-200">
             <Info className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               As a continuing student, your academic documents from previous years are on file. <strong>No document upload is required.</strong> You can proceed directly to review and submit your enrollment.
@@ -407,7 +434,7 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
         </>
       ) : (
         <>
-          <Alert className="bg-blue-50 border-blue-200">
+          <Alert id="document-guidance-alert" className="bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
               {isFirstTimer 
@@ -440,7 +467,7 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
 
       {/* Documents Checklist - Physical Submission Only */}
       {formData.enrollment_type !== 'Continuing Student' && (
-      <Card>
+      <Card id="required-docs-card">
         <CardHeader>
           <CardTitle className="text-base">Required Documents for Physical Submission</CardTitle>
           <p className="text-sm text-gray-600 mt-1">Check the box to confirm you'll bring each document in person during enrollment</p>
@@ -453,27 +480,28 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
               No required documents configured for {formData.grade_level || "this grade"}. You can upload anything you already have.
             </p>
           ) : (
-            requiredDocumentList.map((doc) => {
+            requiredDocumentList.map((doc, index) => {
               const docKey = doc.id.toString();
               return (
-                <div key={doc.id} className={`p-4 rounded-lg border-2 transition-all ${
+                <div id={index === 0 ? "required-doc-first-item" : undefined} key={doc.id} className={`p-4 rounded-lg border-2 transition-all ${
                   physicalDocs[docKey] ? 'border-purple-300 bg-purple-50' : 'border-gray-200 bg-gray-50'
                 }`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{doc.document_name}</p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 break-words">{doc.document_name}</p>
                       {doc.description && (
-                        <p className="text-sm text-gray-600">{doc.description}</p>
+                        <p className="text-sm text-gray-600 break-words">{doc.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full sm:w-auto items-start sm:items-center gap-2 justify-start sm:justify-end">
                       <Checkbox
-                        id={`physical-${docKey}`}
+                        id={index === 0 ? "required-doc-first-checkbox" : `physical-${docKey}`}
                         checked={physicalDocs[docKey] || false}
                         onCheckedChange={() => togglePhysicalDoc(docKey)}
+                        className="mt-1 sm:mt-0"
                       />
-                      <Label htmlFor={`physical-${docKey}`} className="text-sm font-medium cursor-pointer whitespace-nowrap flex items-center gap-1">
-                        <Package className="w-4 h-4" />
+                      <Label htmlFor={index === 0 ? "required-doc-first-checkbox" : `physical-${docKey}`} className="text-sm font-medium cursor-pointer flex items-center gap-1 leading-snug break-words">
+                        <Package className="w-4 h-4 shrink-0" />
                         Submit Physically
                       </Label>
                     </div>
@@ -537,6 +565,9 @@ const Step6DocumentUpload = ({ formData, updateFormData, errors, isReturningStud
       <Joyride
         steps={documentUploadTourSteps}
         run={runTour}
+        scrollOffset={tourScrollOffset}
+        disableScrolling={false}
+        spotlightPadding={5}
         continuous
         showProgress
         showSkipButton

@@ -14,6 +14,7 @@ class EnrollmentController extends Controller
         $this->call->model('EnrollmentModel');
         $this->call->model('StudentModel');
         $this->call->model('UserModel');
+        $this->call->model('DocumentRequirement_model');
     }
 
     /**
@@ -377,6 +378,27 @@ class EnrollmentController extends Controller
                 return;
             }
 
+            $requiredDocumentsCount = $this->get_required_document_count_for_enrollment(
+                $enrollment['grade_level'] ?? '',
+                $enrollment['enrollment_type'] ?? ''
+            );
+
+            $verifiedDocumentsCount = 0;
+            if (!empty($enrollment['documents']) && is_array($enrollment['documents'])) {
+                foreach ($enrollment['documents'] as $doc) {
+                    $isVerified = (($doc['verification_status'] ?? null) === 'Verified');
+                    $isCurrentVersion = !isset($doc['is_current_version']) || (int)$doc['is_current_version'] === 1;
+
+                    if ($isVerified && $isCurrentVersion) {
+                        $verifiedDocumentsCount++;
+                    }
+                }
+            }
+
+            if ($requiredDocumentsCount > 0 && $verifiedDocumentsCount > $requiredDocumentsCount) {
+                $verifiedDocumentsCount = $requiredDocumentsCount;
+            }
+
             http_response_code(200);
             echo json_encode(['success' => true, 'data' => $enrollment]);
         } catch (Exception $e) {
@@ -450,6 +472,59 @@ class EnrollmentController extends Controller
                 return;
             }
 
+            $requiredDocumentsCount = $this->get_required_document_count_for_enrollment(
+                $enrollment['grade_level'] ?? '',
+                $enrollment['enrollment_type'] ?? ''
+            );
+
+            $verifiedDocumentsCount = 0;
+            if (!empty($enrollment['documents']) && is_array($enrollment['documents'])) {
+                foreach ($enrollment['documents'] as $doc) {
+                    $isVerified = (($doc['verification_status'] ?? null) === 'Verified');
+                    $isCurrentVersion = !isset($doc['is_current_version']) || (int)$doc['is_current_version'] === 1;
+
+                    if ($isVerified && $isCurrentVersion) {
+                        $verifiedDocumentsCount++;
+                    }
+                }
+            }
+
+            if ($requiredDocumentsCount > 0 && $verifiedDocumentsCount > $requiredDocumentsCount) {
+                $verifiedDocumentsCount = $requiredDocumentsCount;
+            }
+
+            // Determine latest document verification timestamp for this enrollment
+            $latestDocumentVerifiedDate = null;
+            if (!empty($enrollment['documents']) && is_array($enrollment['documents'])) {
+                foreach ($enrollment['documents'] as $doc) {
+                    $docStatus = $doc['verification_status'] ?? null;
+                    if ($docStatus !== 'Verified') {
+                        continue;
+                    }
+
+                    $candidateDate = $doc['verified_date'] ?? $doc['updated_at'] ?? null;
+                    if (empty($candidateDate)) {
+                        continue;
+                    }
+
+                    if (
+                        $latestDocumentVerifiedDate === null ||
+                        strtotime($candidateDate) > strtotime($latestDocumentVerifiedDate)
+                    ) {
+                        $latestDocumentVerifiedDate = $candidateDate;
+                    }
+                }
+            }
+
+            // Fallback for records marked as Verified with no per-document verified_date available
+            if (
+                $latestDocumentVerifiedDate === null &&
+                ($enrollment['status'] ?? null) === 'Verified' &&
+                !empty($enrollment['updated_at'])
+            ) {
+                $latestDocumentVerifiedDate = $enrollment['updated_at'];
+            }
+
             // Build timeline based on enrollment status
             $timeline = [];
             if (!empty($enrollment['created_date'])) {
@@ -463,10 +538,20 @@ class EnrollmentController extends Controller
                     'event' => 'Application submitted'
                 ];
             }
-            if (!empty($enrollment['submitted_date'])) {
+            if (!empty($latestDocumentVerifiedDate)) {
+                $documentsTimelineEvent = 'Documents verified';
+
+                if ($requiredDocumentsCount > 0) {
+                    if ($verifiedDocumentsCount >= $requiredDocumentsCount) {
+                        $documentsTimelineEvent = 'All required documents verified';
+                    } else {
+                        $documentsTimelineEvent = "Document verification in progress ({$verifiedDocumentsCount}/{$requiredDocumentsCount})";
+                    }
+                }
+
                 $timeline[] = [
-                    'date' => $enrollment['submitted_date'],
-                    'event' => 'Documents submitted'
+                    'date' => $latestDocumentVerifiedDate,
+                    'event' => $documentsTimelineEvent
                 ];
             }
             if (!empty($enrollment['first_reviewed_date'])) {
@@ -517,9 +602,12 @@ class EnrollmentController extends Controller
                     return [
                         'type' => $doc['document_type'],
                         'status' => $doc['verification_status'],
-                        'uploaded' => $doc['upload_date']
+                        'uploaded' => $doc['upload_date'],
+                        'verified' => $doc['verified_date'] ?? null
                     ];
                 }, $enrollment['documents'] ?? []),
+                'documents_count' => $requiredDocumentsCount,
+                'documents_verified' => $verifiedDocumentsCount,
                 'created_student_id' => $enrollment['created_student_id'] ?? null
             ];
 
@@ -871,11 +959,95 @@ class EnrollmentController extends Controller
             'Pending' => 'Please wait for our review. We will contact you soon with updates.',
             'Incomplete' => 'Please submit all required documents to proceed with your application.',
             'Under Review' => 'Your application is being reviewed. We will notify you of the decision shortly.',
+            'Verified' => 'Your documents are verified. Your enrollment is waiting for final approval.',
             'Approved' => 'Congratulations! Your enrollment has been approved. Please proceed to payment.',
             'Rejected' => 'Unfortunately, your application was not approved. Please contact the admissions office for more information.'
         ];
 
         return $nextSteps[$status] ?? 'Please wait for further updates on your application.';
+    }
+
+    private function normalize_enrollment_type_for_requirements($enrollmentType)
+    {
+        $rawType = strtolower(trim((string)($enrollmentType ?? '')));
+
+        if ($rawType === '') {
+            return '';
+        }
+
+        if (strpos($rawType, 'transf') !== false) {
+            return 'transferee';
+        }
+
+        if (strpos($rawType, 'return') !== false || strpos($rawType, 'continu') !== false) {
+            return 'returning student';
+        }
+
+        if (strpos($rawType, 'new') !== false) {
+            return 'new student';
+        }
+
+        return $rawType;
+    }
+
+    private function get_required_document_count_for_enrollment($gradeLevel, $enrollmentType)
+    {
+        $targetGrade = strtolower(trim((string)($gradeLevel ?? '')));
+        if ($targetGrade === '') {
+            return 0;
+        }
+
+        $normalizedTargetType = $this->normalize_enrollment_type_for_requirements($enrollmentType);
+        if ($normalizedTargetType === '') {
+            $normalizedTargetType = 'new student';
+        }
+
+        if ($normalizedTargetType === 'continuing student') {
+            $normalizedTargetType = 'returning student';
+        }
+
+        $requirements = $this->DocumentRequirement_model->get_active_requirements();
+
+        if (!is_array($requirements) || empty($requirements)) {
+            return 0;
+        }
+
+        $bestByDocument = [];
+
+        foreach ($requirements as $req) {
+            if (empty($req['is_active'])) {
+                continue;
+            }
+
+            $rowGrade = strtolower(trim((string)($req['grade_level'] ?? '')));
+            if ($rowGrade !== $targetGrade) {
+                continue;
+            }
+
+            $rowTypeRaw = trim((string)($req['enrollment_type'] ?? ''));
+            $rowTypeLower = strtolower($rowTypeRaw);
+            $rowTypeNormalized = $this->normalize_enrollment_type_for_requirements($rowTypeRaw);
+
+            $isGeneric = ($rowTypeRaw === '' || $rowTypeLower === 'all types');
+            $isSpecificMatch = ($rowTypeNormalized !== '' && $rowTypeNormalized === $normalizedTargetType);
+
+            if (!$isGeneric && !$isSpecificMatch) {
+                continue;
+            }
+
+            $docKey = strtolower(trim((string)($req['document_name'] ?? '')));
+            if ($docKey === '') {
+                continue;
+            }
+
+            $score = $isSpecificMatch ? 2 : 1;
+
+            if (!isset($bestByDocument[$docKey]) || $score > $bestByDocument[$docKey]) {
+                $bestByDocument[$docKey] = $score;
+            }
+        }
+
+        return count($bestByDocument);
     }
 
     /**

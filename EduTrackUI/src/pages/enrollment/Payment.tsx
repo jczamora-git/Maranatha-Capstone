@@ -19,7 +19,6 @@ import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
 import { calculateInstallmentPenalty } from "@/utils/penaltyCalculator";
 import { WaiverRequestModal } from "@/components/WaiverRequestModal";
 import Joyride, { CallBackProps, STATUS, EVENTS } from "react-joyride";
-import TourHelpButton from "@/components/TourHelpButton";
 import { PaymentMobileView, FeeTypeModal } from "@/components/PaymentMobileView";
 
 interface PaymentItem {
@@ -385,6 +384,60 @@ const Payment = () => {
     setShowInstallmentModal(true);
   };
 
+  const handleMobilePayInstallment = (installment: any, plan: any) => {
+    if (!enrollment) {
+      toast.error('Enrollment information not available');
+      return;
+    }
+
+    const relatedPayment = payments.find(p => p.installment_id === installment.id);
+    const penaltyInfo = installment.installment_number === 1
+      ? { hasPenalty: false, penaltyAmount: 0, totalDue: installment.balance || installment.amount_due, daysOverdue: 0, penaltyPercentage: 0 }
+      : calculateInstallmentPenalty({
+          due_date: installment.due_date,
+          balance: installment.balance || installment.amount_due,
+          status: installment.status,
+          amount_paid: installment.amount_paid
+        });
+
+    const totalAmountDue = penaltyInfo?.hasPenalty
+      ? Number(penaltyInfo.totalDue)
+      : Number(installment.balance || installment.amount_due);
+
+    const navigationState = {
+      enrollment,
+      tuitionFee: {
+        id: Number(plan?.id || 0),
+        amount: installment.amount_due,
+        fee_name: `Installment #${installment.installment_number} - ${plan?.academic_period || enrollment.school_year}`
+      },
+      paymentType: 'Installment Payment',
+      amountPerInstallment: totalAmountDue,
+      paymentPlanId: Number(plan?.id || 0),
+      installmentNumber: installment.installment_number,
+      periodLabel: `Installment ${installment.installment_number}`,
+      installment: {
+        ...installment,
+        penaltyInfo
+      },
+      paymentPlan: plan,
+      previousPayment: relatedPayment,
+      penaltyAmount: penaltyInfo?.hasPenalty ? Number(penaltyInfo.penaltyAmount) : 0,
+      daysOverdue: penaltyInfo?.daysOverdue || 0,
+      waiverSubmitted: false
+    };
+
+    if (penaltyInfo?.hasPenalty && installment.installment_number !== 1) {
+      setPendingPaymentNavigation(navigationState);
+      setShowWaiverModal(true);
+    } else {
+      localStorage.setItem('pending_installment_payment', JSON.stringify(navigationState));
+      navigate('/enrollment/payment-process', {
+        state: navigationState
+      });
+    }
+  };
+
   const handleSchoolFeeClick = (fee: SchoolFee) => {
     setSelectedSchoolFee(fee);
     
@@ -633,8 +686,11 @@ const Payment = () => {
     .filter((p) => p.status === "Pending" || p.status === "Verified")
     .reduce((sum, p) => sum + Number(p.net_amount), 0);
 
+  const isApprovedPayment = (payment: any) =>
+    String(payment?.status || '').trim().toLowerCase() === 'approved';
+
   const paidAmount = payments
-    .filter((p) => p.status === "Approved")
+    .filter((p) => isApprovedPayment(p))
     .reduce((sum, p) => sum + Number(p.net_amount), 0);
 
   const filteredPayments = payments.filter((payment) => {
@@ -735,22 +791,26 @@ const Payment = () => {
     }
   };
 
-  // Start tour function
-  const tourOptions = [
-    {
-      id: 'payment-management',
-      title: 'Payment Management Guide',
-      description: 'Learn how to manage payments and fees.',
-      icon: <CreditCard className="h-5 w-5 text-blue-600" />,
-      onStart: () => {
-        setTourStepIndex(0);
-        setRunTour(true);
-      },
-    },
-  ];
+  useEffect(() => {
+    const handleStartTourEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ tourId?: string }>;
+      if (customEvent.detail?.tourId !== 'payment-management') {
+        return;
+      }
+
+      setTourStepIndex(0);
+      setRunTour(true);
+    };
+
+    window.addEventListener('campuscompanion:start-tour', handleStartTourEvent as EventListener);
+    return () => {
+      window.removeEventListener('campuscompanion:start-tour', handleStartTourEvent as EventListener);
+    };
+  }, []);
 
   return (
     <DashboardLayout>
+      <div className="enrollment-readable">
       {isPaymentSectionUnlocked === null && (
         <div className="flex items-center justify-center min-h-screen">
           {console.log('📄 [Payment] Rendering: isPaymentSectionUnlocked === null (Loading)')}
@@ -839,6 +899,7 @@ const Payment = () => {
             paymentPlans={paymentPlans}
             installments={installments}
             handleViewInstallments={handleViewInstallments}
+            onPayInstallment={handleMobilePayInstallment}
             // Desktop modals for mobile use
             showSchoolFeeModal={showSchoolFeeModal}
             setShowSchoolFeeModal={setShowSchoolFeeModal}
@@ -848,7 +909,6 @@ const Payment = () => {
             runTour={runTour}
             setRunTour={setRunTour}
             setTourStepIndex={setTourStepIndex}
-            tourOptions={tourOptions}
             tourSteps={tourSteps}
             tourStepIndex={tourStepIndex}
             handleTourCallback={handleTourCallback}
@@ -870,7 +930,7 @@ const Payment = () => {
           
 
           {/* Header with Icon and Title */}
-          <div id="payment-header" className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div id="payment-header" className="flex items-start gap-3 sm:gap-4">
             <div className="flex items-start gap-3 sm:gap-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center shadow-lg flex-shrink-0">
                 <CreditCard className="h-6 sm:h-8 w-6 sm:w-8 text-white" />
@@ -881,9 +941,6 @@ const Payment = () => {
                 </h1>
                 <p className="text-muted-foreground text-xs sm:text-base">Manage your tuition and school fees</p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <TourHelpButton tourOptions={tourOptions} />
             </div>
           </div>
         </div>
@@ -928,7 +985,7 @@ const Payment = () => {
             </CardHeader>
             <CardContent>
               <p className="text-2xl sm:text-3xl font-bold text-green-600">₱{paidAmount.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground mt-1 sm:mt-2">{payments.filter(p => p.status === "Approved").length} charge(s) paid</p>
+              <p className="text-xs text-muted-foreground mt-1 sm:mt-2">{payments.filter(p => isApprovedPayment(p)).length} charge(s) paid</p>
             </CardContent>
           </Card>
 
@@ -1572,34 +1629,34 @@ const Payment = () => {
 
       {/* Payment Plan Selection Modal - Available on Mobile & Desktop */}
       <Dialog open={showPaymentPlanModal} onOpenChange={setShowPaymentPlanModal}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-[380px] max-h-[85vh] overflow-y-auto p-4 sm:max-w-md sm:p-6">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-blue-600" />
+              <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 Select Tuition Payment Plan
               </DialogTitle>
-              <DialogDescription className="text-sm">
+              <DialogDescription className="text-xs sm:text-sm">
                 Choose how you would like to pay your tuition fee for this enrollment period.
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4 py-4">
+            <div className="space-y-3 py-2 sm:py-3">
               {/* Enrollment Info */}
               {enrollment && (
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                <div className="bg-muted/50 p-3 rounded-lg space-y-1.5">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <span className="font-semibold">{enrollment.school_year}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Grade Level: <span className="font-medium text-foreground">{enrollment.grade_level}</span>
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     Student Name: <span className="font-medium text-foreground">{user?.first_name} {user?.last_name}</span>
                   </div>
                   {tuitionFee && (
-                    <div className="text-sm text-muted-foreground">
-                      Tuition Fee: <span className="font-bold text-lg text-blue-600">₱{Number(tuitionFee.amount).toLocaleString()}</span>
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Tuition Fee: <span className="font-bold text-base sm:text-lg text-blue-600">₱{Number(tuitionFee.amount).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -1607,7 +1664,7 @@ const Payment = () => {
 
               {/* Payment Options */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-sm text-muted-foreground">Select Payment Option:</h4>
+                <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground">Select Payment Option:</h4>
                 
                 {/* Full Payment Option */}
                 <button
@@ -1631,18 +1688,18 @@ const Payment = () => {
                       }
                     });
                   }}
-                  className="w-full p-4 border-2 border-border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left group"
+                  className="w-full p-3 sm:p-4 border-2 border-border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left group"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 group-hover:bg-blue-500 flex items-center justify-center transition-colors flex-shrink-0">
-                      <CreditCard className="w-5 h-5 text-blue-600 group-hover:text-white" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-100 group-hover:bg-blue-500 flex items-center justify-center transition-colors flex-shrink-0">
+                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-white" />
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-semibold text-foreground mb-1">Full Payment</h5>
+                      <h5 className="font-semibold text-sm sm:text-base text-foreground mb-1">Full Payment</h5>
                       <p className="text-xs text-muted-foreground">Pay the entire tuition fee in one transaction</p>
                       {tuitionFee && (
                         <div className="mt-2 space-y-1">
-                          <p className="text-sm font-bold text-blue-600">₱{Number(tuitionFee.amount).toLocaleString()}</p>
+                          <p className="text-base sm:text-sm font-bold text-blue-600">₱{Number(tuitionFee.amount).toLocaleString()}</p>
                           {(() => {
                             const fullPaymentDiscount = discountTemplates.find(dt => dt.name === 'Full Payment Discount' && dt.is_active);
                             if (fullPaymentDiscount) {
@@ -1655,7 +1712,7 @@ const Payment = () => {
                                   <p className="text-green-600 font-medium">
                                     -₱{discountAmount.toLocaleString()} {fullPaymentDiscount.name}
                                   </p>
-                                  <p className="text-sm font-bold text-green-700">
+                                  <p className="text-base sm:text-sm font-bold text-green-700">
                                     Pay only: ₱{discountedAmount.toLocaleString()}
                                   </p>
                                 </div>
@@ -1682,14 +1739,14 @@ const Payment = () => {
                       }
                     });
                   }}
-                  className="w-full p-4 border-2 border-border rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left group"
+                  className="w-full p-3 sm:p-4 border-2 border-border rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left group"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-100 group-hover:bg-green-500 flex items-center justify-center transition-colors flex-shrink-0">
-                      <Calendar className="w-5 h-5 text-green-600 group-hover:text-white" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-green-100 group-hover:bg-green-500 flex items-center justify-center transition-colors flex-shrink-0">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 group-hover:text-white" />
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-semibold text-foreground mb-1">Installment Plan</h5>
+                      <h5 className="font-semibold text-sm sm:text-base text-foreground mb-1">Installment Plan</h5>
                       <p className="text-xs text-muted-foreground">Pay in multiple installments over time</p>
                       {tuitionFee && (
                         <p className="text-xs text-muted-foreground mt-2">Starting from ₱{(Number(tuitionFee.amount) / 4).toLocaleString()} per quarter</p>
@@ -1700,7 +1757,7 @@ const Payment = () => {
               </div>
 
               {/* Info Notice */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 sm:p-3">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-blue-800">
@@ -2264,62 +2321,65 @@ const Payment = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Tour Component */}
-      <Joyride
-        steps={tourSteps}
-        run={runTour}
-        stepIndex={tourStepIndex}
-        callback={handleTourCallback}
-        continuous={true}
-        showProgress={true}
-        showSkipButton={true}
-        disableOverlayClose={true}
-        disableCloseOnEsc={false}
-        spotlightClicks={true}
-        styles={{
-          options: {
-            primaryColor: '#2563eb',
-            textColor: '#1f2937',
-            backgroundColor: '#ffffff',
-            overlayColor: 'rgba(0, 0, 0, 0.5)',
-            spotlightShadow: '0 0 15px rgba(0, 0, 0, 0.5)',
-          },
-          tooltip: {
-            borderRadius: 8,
-            fontSize: 14,
-          },
-          buttonNext: {
-            backgroundColor: '#2563eb',
-            fontSize: 14,
-            borderRadius: 6,
-            padding: '8px 16px',
-          },
-          buttonBack: {
-            color: '#6b7280',
-            fontSize: 14,
-            marginRight: 10,
-            marginLeft: 'auto',
-          },
-          buttonSkip: {
-            color: '#6b7280',
-            fontSize: 14,
-          },
-          buttonClose: {
-            height: 14,
-            width: 14,
-            right: 15,
-            top: 15,
-          },
-        }}
-        locale={{
-          back: 'Previous',
-          close: 'Close',
-          last: 'Finish',
-          next: 'Next',
-          open: 'Open the dialog',
-          skip: 'Skip tour',
-        }}
-      />
+      {/* Tour Component (desktop only; mobile Joyride is handled in PaymentMobileView) */}
+      {!isMobile && (
+        <Joyride
+          steps={tourSteps}
+          run={runTour}
+          stepIndex={tourStepIndex}
+          callback={handleTourCallback}
+          continuous={true}
+          showProgress={true}
+          showSkipButton={true}
+          disableOverlayClose={true}
+          disableCloseOnEsc={false}
+          spotlightClicks={true}
+          styles={{
+            options: {
+              primaryColor: '#2563eb',
+              textColor: '#1f2937',
+              backgroundColor: '#ffffff',
+              overlayColor: 'rgba(0, 0, 0, 0.5)',
+              spotlightShadow: '0 0 15px rgba(0, 0, 0, 0.5)',
+            },
+            tooltip: {
+              borderRadius: 8,
+              fontSize: 14,
+            },
+            buttonNext: {
+              backgroundColor: '#2563eb',
+              fontSize: 14,
+              borderRadius: 6,
+              padding: '8px 16px',
+            },
+            buttonBack: {
+              color: '#6b7280',
+              fontSize: 14,
+              marginRight: 10,
+              marginLeft: 'auto',
+            },
+            buttonSkip: {
+              color: '#6b7280',
+              fontSize: 14,
+            },
+            buttonClose: {
+              height: 14,
+              width: 14,
+              right: 15,
+              top: 15,
+            },
+          }}
+          locale={{
+            back: 'Previous',
+            close: 'Close',
+            last: 'Finish',
+            next: 'Next',
+            open: 'Open the dialog',
+            skip: 'Skip tour',
+          }}
+        />
+      )}
+      </div>
     </DashboardLayout>
   );
 };
