@@ -182,7 +182,9 @@ const AppContent = () => {
             {!isProd && (
               <Route path="/student/forum" element={<ProtectedRoute requiredRole="student"><StudentForum /></ProtectedRoute>} />
             )}
-            <Route path="/student/feedback" element={<ProtectedRoute requiredRole="student"><StudentFeedbackSentiment /></ProtectedRoute>} />
+            {!isProd && (
+              <Route path="/student/feedback" element={<ProtectedRoute requiredRole="student"><StudentFeedbackSentiment /></ProtectedRoute>} />
+            )}
             
             {/* Enrollee Routes */}
             <Route path="/enrollee/dashboard" element={<ProtectedRoute requiredRole="enrollee"><EnrolleeDashboard /></ProtectedRoute>} />
@@ -236,7 +238,9 @@ const AppContent = () => {
             
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/chatbot-knowledge" element={<ProtectedRoute requiredRole="admin"><AdminChatbotKnowledge /></ProtectedRoute>} />
+            {!isProd && (
+              <Route path="/admin/chatbot-knowledge" element={<ProtectedRoute requiredRole="admin"><AdminChatbotKnowledge /></ProtectedRoute>} />
+            )}
             {FEATURES.enrollment && (
               <>
                 <Route path="/admin/enrollments" element={<ProtectedRoute requiredRole={["admin", "teacher"]}><ManagementPage /></ProtectedRoute>} />
@@ -305,7 +309,9 @@ const AppContent = () => {
               <Route path="/admin/campuses" element={<ProtectedRoute requiredRole="admin"><Suspense fallback={null}><LazyCampuses /></Suspense></ProtectedRoute>} />
             )}
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
-            <Route path="/admin/sentiment" element={<ProtectedRoute requiredRole="admin"><AdminSentimentAnalytics /></ProtectedRoute>} />
+            {!isProd && (
+              <Route path="/admin/sentiment" element={<ProtectedRoute requiredRole="admin"><AdminSentimentAnalytics /></ProtectedRoute>} />
+            )}
             {FEATURES.analytics && (
               <Route path="/admin/predictive-analytics" element={<ProtectedRoute requiredRole="admin"><PredictiveAnalytics /></ProtectedRoute>} />
             )}

@@ -50,6 +50,13 @@ interface EnrollmentData {
   rejection_reason?: string | null;
 }
 
+interface NotificationRow {
+  id: number | string;
+  entity_type?: string;
+  entity_id?: number | string;
+  action_url?: string;
+}
+
 const statusConfig: Record<string, { bg: string; text: string; icon: React.ReactNode; bgLight: string }> = {
   'Pending': {
     bg: 'bg-yellow-500',
@@ -125,6 +132,7 @@ export const EnrollmentManagement = () => {
   const [enrollmentTypeModalOpen, setEnrollmentTypeModalOpen] = useState(false);
   const [selectedEnrollmentType, setSelectedEnrollmentType] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [unreadEnrollmentNotifications, setUnreadEnrollmentNotifications] = useState<NotificationRow[]>([]);
   const itemsPerPage = 20;
 
   // React Query hooks
@@ -219,6 +227,28 @@ export const EnrollmentManagement = () => {
     }
   }, [enrollments]);
 
+  const refreshUnreadEnrollmentNotifications = async () => {
+    try {
+      const res = await apiGet(`${API_ENDPOINTS.NOTIFICATIONS}?unread_only=true&limit=100`);
+      const rows = Array.isArray(res?.data) ? res.data : [];
+      const filtered = rows.filter((row: any) => {
+        const entityType = String(row?.entity_type || '').toLowerCase();
+        const actionUrl = String(row?.action_url || '').toLowerCase();
+        return (
+          (entityType === 'enrollment' || entityType === 'enrollments') &&
+          actionUrl.includes('/admin/enrollments')
+        );
+      });
+      setUnreadEnrollmentNotifications(filtered);
+    } catch {
+      setUnreadEnrollmentNotifications([]);
+    }
+  };
+
+  useEffect(() => {
+    refreshUnreadEnrollmentNotifications();
+  }, []);
+
   const filteredEnrollments = enrollments.filter((enrollment) => {
     const matchesSearch =
       String(enrollment.id).includes(searchQuery) ||
@@ -248,6 +278,16 @@ export const EnrollmentManagement = () => {
   }, [currentPage, totalPages]);
 
   const pagedEnrollments = filteredEnrollments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const unreadEnrollmentNotificationsById = unreadEnrollmentNotifications.reduce((acc, notif) => {
+    const key = String(notif.entity_id || '');
+    if (!key) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(notif);
+    return acc;
+  }, {} as Record<string, NotificationRow[]>);
+
+  const unreadHighlightedEnrollmentIds = new Set(Object.keys(unreadEnrollmentNotificationsById));
 
   const stats = {
     total: enrollments.length,
@@ -529,6 +569,7 @@ export const EnrollmentManagement = () => {
                       };
 
                       const isHighlighted = highlightedEnrollmentId === enrollment.id;
+                      const isUnreadFromNotification = unreadHighlightedEnrollmentIds.has(String(enrollment.id));
                       
                       return (
                         <tr 
@@ -537,14 +578,23 @@ export const EnrollmentManagement = () => {
                           className={`transition-all duration-500 ${
                             isHighlighted 
                               ? 'bg-primary/5 dark:bg-primary/10 border-l-2 border-l-primary' 
-                              : 'hover:bg-muted/50'
+                              : isUnreadFromNotification
+                                ? 'bg-amber-50/70 hover:bg-amber-100/60'
+                                : 'hover:bg-muted/50'
                           }`}
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4 text-muted-foreground" />
                               <div>
-                                <p className="text-sm font-medium text-gray-900">{enrollment.student_name}</p>
+                                <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                                  {enrollment.student_name}
+                                  {isUnreadFromNotification && (
+                                    <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] px-1.5 py-0 h-5">
+                                      New
+                                    </Badge>
+                                  )}
+                                </p>
                                 {enrollment.formatted_student_id && (
                                   <p className="text-xs text-gray-500">ID: {enrollment.formatted_student_id}</p>
                                 )} 

@@ -305,7 +305,7 @@ export const Sidebar = () => {
       collapsible: true,
       items: [
         ...(FEATURES.announcements ? [{ to: "/admin/announcements", icon: Bell, label: "Announcements" }] : []),
-        { to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" }
+        ...(!isProd ? [{ to: "/admin/sentiment", icon: MessageSquare, label: "Feedback" }] : [])
       ]
     },
     {
@@ -315,7 +315,7 @@ export const Sidebar = () => {
       collapsible: true,
       items: [
         ...(FEATURES.analytics ? [{ to: "/admin/predictive-analytics", icon: TrendingUp, label: "Predictive Analytics" }] : []),
-        { to: "/admin/chatbot-knowledge", icon: ChatbotIcon, label: "Chatbot Knowledge" },
+        ...(!isProd ? [{ to: "/admin/chatbot-knowledge", icon: ChatbotIcon, label: "Chatbot Knowledge" }] : []),
         ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : [])
       ]
     }
@@ -342,7 +342,7 @@ export const Sidebar = () => {
     ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: Coins, label: "Payment" }] : []),
     ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
     ...(!isProd ? [{ to: "/student/forum", icon: Users, label: "Forum" }] : []),
-    { to: "/student/feedback", icon: MessageSquare, label: "Feedback" },
+    ...(!isProd ? [{ to: "/student/feedback", icon: MessageSquare, label: "Feedback" }] : []),
     { to: "/student/settings", icon: Settings, label: "Settings" },
   ];
 
