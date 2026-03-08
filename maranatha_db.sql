@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.2
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost:3306
--- Generation Time: Mar 07, 2026 at 08:05 PM
+-- Host: 127.0.0.1
+-- Generation Time: Mar 08, 2026 at 04:56 PM
 -- Server version: 8.4.3
--- PHP Version: 8.3.26
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -551,14 +551,18 @@ INSERT INTO `audit_logs` (`id`, `actor_user_id`, `actor_role`, `actor_name`, `ac
 (34, 3, 'admin', 'Demo Admin', 'payment.created', 'payment', 137, 'Demo Admin recorded a Tuition Installment payment of ₱5,000.00 for Chloe Katindig', '{\"amount\": 5000, \"payment_id\": 137, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-07 19:11:45'),
 (35, 458, 'enrollee', 'Jose Rizal', 'enrollment.submitted', 'enrollment', 65, 'Jose Rizal submitted a Continuing Student enrollment for Grade Grade 2', '{\"grade_level\": \"Grade 2\", \"student_name\": \"Jose Rizal\", \"enrollment_id\": 65, \"enrollment_type\": \"Continuing Student\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-07 20:03:32'),
 (36, 458, 'enrollee', 'Jose Rizal', 'enrollment.submitted', 'enrollment', 66, 'Jose Rizal submitted a New Student enrollment for Grade Grade 3', '{\"grade_level\": \"Grade 3\", \"student_name\": \"Jose Rizal\", \"enrollment_id\": 66, \"enrollment_type\": \"New Student\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 00:23:52'),
-(37, 458, 'enrollee', 'Jose Rizal', 'payment_plan.created', 'payment_plan', 44, 'Jose Rizal created a Monthly installment plan for Jose Rizal (₱17,000.00)', '{\"student_id\": 458, \"enrollment_id\": 66, \"schedule_type\": \"Monthly\", \"total_tuition\": 17000, \"payment_plan_id\": 44, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:04:23'),
-(38, 458, 'enrollee', 'Jose Rizal', 'payment.created', 'payment', 140, 'Jose Rizal recorded a Tuition Installment payment of ₱5,000.00 for Jose Rizal', '{\"amount\": 5000, \"payment_id\": 140, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:04:36'),
-(39, 458, 'enrollee', 'Jose Rizal', 'payment_plan.created', 'payment_plan', 45, 'Jose Rizal created a Monthly installment plan (₱17,000.00)', '{\"student_id\": 458, \"enrollment_id\": 66, \"schedule_type\": \"Monthly\", \"total_tuition\": 17000, \"payment_plan_id\": 45, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:12:47'),
-(40, 458, 'enrollee', 'Jose Rizal', 'payment.created', 'payment', 141, 'Jose Rizal submitted a payment of ₱5,000.00', '{\"amount\": 5000, \"payment_id\": 141, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:12:56'),
 (41, 3, 'admin', 'Demo Admin', 'update', 'payment', 141, 'Payment updated: Status changed from Pending to Approved', '{\"new_status\": \"Approved\", \"old_status\": \"Pending\", \"payment_id\": \"141\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:22:42'),
 (42, 3, 'admin', 'Demo Admin', 'payment.approved', 'payment', 141, 'Payment of ₱5,000.00 has been approved', '{\"amount\": 5000, \"new_status\": \"approved\", \"old_status\": \"pending\", \"payment_id\": \"141\", \"payment_type\": \"Tuition Installment\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:22:42'),
 (43, 3, 'admin', 'Demo Admin', 'update', 'payment', 136, 'Payment updated: Status changed from Pending to Approved', '{\"new_status\": \"Approved\", \"old_status\": \"Pending\", \"payment_id\": \"136\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:55:38'),
-(44, 3, 'admin', 'Demo Admin', 'payment.approved', 'payment', 136, 'Payment of ₱4,275.00 has been approved', '{\"amount\": 4275, \"new_status\": \"approved\", \"old_status\": \"pending\", \"payment_id\": \"136\", \"payment_type\": \"Tuition Installment\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:55:38');
+(44, 3, 'admin', 'Demo Admin', 'payment.approved', 'payment', 136, 'Payment of ₱4,275.00 has been approved', '{\"amount\": 4275, \"new_status\": \"approved\", \"old_status\": \"pending\", \"payment_id\": \"136\", \"payment_type\": \"Tuition Installment\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 03:55:38'),
+(45, 458, 'enrollee', 'Jose Rizal', 'payment_plan.created', 'payment_plan', 46, 'Jose Rizal created a Quarterly installment plan (₱17,000.00)', '{\"student_id\": 458, \"enrollment_id\": 66, \"schedule_type\": \"Quarterly\", \"total_tuition\": 17000, \"payment_plan_id\": 46, \"academic_period_id\": 30, \"number_of_installments\": 4}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 04:07:46'),
+(46, 458, 'enrollee', 'Jose Rizal', 'payment.created', 'payment', 142, 'Jose Rizal submitted a payment of ₱5,000.00', '{\"amount\": 5000, \"payment_id\": 142, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 04:07:52'),
+(47, 459, 'enrollee', 'James Smith', 'enrollment.submitted', 'enrollment', 67, 'James Smith submitted a New Student enrollment for Grade Grade 2', '{\"grade_level\": \"Grade 2\", \"student_name\": \"James Smith\", \"enrollment_id\": 67, \"enrollment_type\": \"New Student\"}', '::1', 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-03-08 22:29:20'),
+(48, 3, 'admin', 'Demo Admin', 'payment_plan.created', 'payment_plan', 47, 'Demo Admin created a Monthly installment plan for Ana Ortega (₱17,000.00)', '{\"student_id\": 110, \"enrollment_id\": 35, \"schedule_type\": \"Monthly\", \"total_tuition\": 17000, \"payment_plan_id\": 47, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 23:03:14'),
+(49, 3, 'admin', 'Demo Admin', 'payment_plan.created', 'payment_plan', 48, 'Demo Admin created a Semestral installment plan for James Smith (₱17,000.00)', '{\"student_id\": 459, \"enrollment_id\": 67, \"schedule_type\": \"Semestral\", \"total_tuition\": 17000, \"payment_plan_id\": 48, \"academic_period_id\": 30, \"number_of_installments\": 2}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 23:03:34'),
+(50, 3, 'admin', 'Demo Admin', 'payment.created', 'payment', 143, 'Demo Admin recorded a Tuition Installment payment of ₱5,000.00 for Ana Ortega', '{\"amount\": 5000, \"payment_id\": 143, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-03-08 23:03:40'),
+(51, 432, 'student', 'Jordan Clarkson', 'payment_plan.created', 'payment_plan', 49, 'Jordan Clarkson created a Monthly installment plan (₱16,500.00)', '{\"student_id\": 432, \"enrollment_id\": 33, \"schedule_type\": \"Monthly\", \"total_tuition\": 16500, \"payment_plan_id\": 49, \"academic_period_id\": 30, \"number_of_installments\": 10}', '::1', 'Mozilla/5.0 (Linux; Android 13; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-03-08 23:52:26'),
+(52, 432, 'student', 'Jordan Clarkson', 'payment.created', 'payment', 144, 'Jordan Clarkson submitted a payment of ₱5,000.00', '{\"amount\": 5000, \"payment_id\": 144, \"payment_type\": \"Tuition Installment\", \"payment_method\": \"Cash\"}', '::1', 'Mozilla/5.0 (Linux; Android 13; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36', '2026-03-08 23:52:42');
 
 -- --------------------------------------------------------
 
@@ -657,7 +661,22 @@ INSERT INTO `chatbot_conversations` (`id`, `user_id`, `role`, `message`, `normal
 (38, 71, 'student', 'nakalimutan ko ang pin ko', 'nakalimutan ko ang pin ko', 'Noong nakalimutan mo ang PIN mo, maaari kang mag-reset nito sa [link:Forgot PIN|/auth/forgot-pin] halimbawa ng page. Sa orihinal na page, maaaring makita mo ang \"Forgot PIN?\" link sa paglalatag ng PIN mo.', 'llm', '2026-03-01 17:21:31'),
 (39, 455, 'admin', 'Fee overview', 'fee overview', 'Here\'s the fee overview for the 2026-2027 academic year:\n\n- Kinder: ₱20,700.00\n- Nursery 1: ₱20,500.00\n- Nursery 2: ₱20,700.00\n- Grade 1: ₱21,200.00\n- Grade 2: ₱21,200.00\n- Grade 3: ₱22,100.00\n- Grade 4: ₱22,800.00\n- Grade 5: ₱22,800.00\n- Grade 6: ₱22,800.00\n\nIf you need more detailed information or have specific questions about these fees, feel free to ask!', 'llm', '2026-03-01 18:24:53'),
 (40, 455, 'admin', 'what are the available tuition packages', 'what are the available tuition packages', 'Manage tuition packages and pricing bundles. [link:Tuition Packages|/admin/tuition-packages]', 'knowledge', '2026-03-01 18:25:20'),
-(41, 455, 'admin', 'who are the new enrollees?', 'who are the new enrollees?', 'To view the new enrollees, you can go to the Enrollments page. Use this link: [link:Enrollments|/admin/enrollments] Here, you can review and manage all enrollment submissions for the current academic period.', 'llm', '2026-03-01 18:26:17');
+(41, 455, 'admin', 'who are the new enrollees?', 'who are the new enrollees?', 'To view the new enrollees, you can go to the Enrollments page. Use this link: [link:Enrollments|/admin/enrollments] Here, you can review and manage all enrollment submissions for the current academic period.', 'llm', '2026-03-01 18:26:17'),
+(42, 458, 'enrollee', 'Painel da conta do inscrito', 'painel da conta do inscrito', 'I can only answer questions about the Campus Companion system. Try asking about enrollments, payments, fees, teachers, or your subjects.', 'guard', '2026-03-08 17:29:57'),
+(43, 458, 'enrollee', 'Ações rápidas\n\nVer inscrição\n\nStatus de pagamento', 'ações rápidas ver inscrição status de pagamento', 'I can only answer questions about the Campus Companion system. Try asking about enrollments, payments, fees, teachers, or your subjects.', 'guard', '2026-03-08 17:30:04'),
+(44, 458, 'enrollee', 'Mga kinakailangan sa pagpapatala', 'mga kinakailangan sa pagpapatala', 'I can only answer questions about the Campus Companion system. Try asking about enrollments, payments, fees, teachers, or your subjects.', 'guard', '2026-03-08 17:34:14'),
+(45, 459, 'enrollee', 'paano mag activate ng email?', 'paano mag activate ng email?', 'I do not have information on activating an email account specifically for this school. I recommend contacting the school\'s admin for guidance on setting up or activating an email account related to the school\'s systems.', 'llm', '2026-03-08 17:39:54'),
+(46, 459, 'enrollee', 'メールアカウントを有効化する方法を教えてください。', 'メールアカウントを有効化する方法を教えてください。', 'I can only answer questions about the Campus Companion system. Try asking about enrollments, payments, fees, teachers, or your subjects.', 'guard', '2026-03-08 17:52:15'),
+(47, 459, 'enrollee', 'メールのアクティベート方法を教えてください。', 'メールのアクティベート方法を教えてください。', 'I can only answer questions about the Campus Companion system. Try asking about enrollments, payments, fees, teachers, or your subjects.', 'guard', '2026-03-08 17:52:25'),
+(48, 459, 'enrollee', 'Enrollment requirements', 'enrollment requirements', 'I don\'t have the specific enrollment requirements for the 2026-2027 academic year at this time. However, you can find the most up-to-date and detailed enrollment requirements by visiting the [link:Enrollment Requirements|/enrollment_requirements] page. If you need further assistance, please contact the school administration.', 'llm', '2026-03-08 17:57:17'),
+(49, 459, 'enrollee', 'How much is the tuition?', 'how much is the tuition?', 'The tuition fees vary by grade level. Here are the current tuition fees:\n\n- Kinder: ₱16,500.00\n- Nursery 1: ₱16,500.00\n- Nursery 2: ₱16,500.00\n- Grade 1: ₱17,000.00\n- Grade 2: ₱17,000.00\n- Grade 3: ₱17,000.00\n- Grade 4: ₱17,100.00\n- Grade 5: ₱17,100.00\n- Grade 6: ₱17,100.00\n\nIf you need more specific information, feel free to ask!', 'llm', '2026-03-08 18:12:15'),
+(50, 459, 'enrollee', 'How to enroll?', 'how to enroll?', 'I can only answer questions about the Campus Companion system. Try asking about enrollments, payments, fees, teachers, or your subjects.', 'guard', '2026-03-08 18:36:00'),
+(51, 459, 'enrollee', 'How to enroll?', 'how to enroll?', 'I can only answer questions about the Campus Companion system. Try asking about enrollments, payments, fees, teachers, or your subjects.', 'guard', '2026-03-08 18:41:31'),
+(52, 459, 'enrollee', 'How much is the tuition?', 'how much is the tuition?', 'The tuition fees vary by grade level. Here are the current tuition fees:\n\n- Kinder: ₱16,500.00\n- Nursery 1: ₱16,500.00\n- Nursery 2: ₱16,500.00\n- Grade 1: ₱17,000.00\n- Grade 2: ₱17,000.00\n- Grade 3: ₱17,000.00\n- Grade 4: ₱17,100.00\n- Grade 5: ₱17,100.00\n- Grade 6: ₱17,100.00\n\nIf you need more specific information, feel free to ask!', 'llm', '2026-03-08 18:42:18'),
+(53, 458, 'enrollee', 'How much is the tuition?', 'how much is the tuition?', 'The tuition fees vary by grade level. Here are the current tuition fees:\n\n- Kinder: ₱16,500.00\n- Nursery 1: ₱16,500.00\n- Nursery 2: ₱16,500.00\n- Grade 1: ₱17,000.00\n- Grade 2: ₱17,000.00\n- Grade 3: ₱17,000.00\n- Grade 4: ₱17,100.00\n- Grade 5: ₱17,100.00\n- Grade 6: ₱17,100.00\n\nFor more detailed information, you can visit the [Fees and Charges|/fees-charges] page.', 'llm', '2026-03-08 21:14:45'),
+(54, 458, 'enrollee', 'I forgot my PIN', 'i forgot my pin', 'Nakalimutan mo ang iyong payment PIN? Narito ang dalawang paraan:\n\n1. I-verify muna ang iyong PIN sa [link:Verify Payment PIN|/enrollment/verify-pin] — dito mo mahahanap ang \"Forgot PIN?\" link sa ibaba ng page.\n2. O direkta kang pumunta sa [link:Forgot PIN|/auth/forgot-pin] para i-reset ang iyong PIN gamit ang iyong email address.\n\nKung wala kang access sa iyong email, makipag-ugnayan sa admin para sa tulong.', 'knowledge', '2026-03-08 21:16:21'),
+(55, 458, 'enrollee', 'I forgot my PIN', 'i forgot my pin', 'Nakalimutan mo ang iyong payment PIN? Narito ang dalawang paraan:\n\n1. I-verify muna ang iyong PIN sa [link:Verify Payment PIN|/enrollment/verify-pin] — dito mo mahahanap ang \"Forgot PIN?\" link sa ibaba ng page.\n2. O direkta kang pumunta sa [link:Forgot PIN|/auth/forgot-pin] para i-reset ang iyong PIN gamit ang iyong email address.\n\nKung wala kang access sa iyong email, makipag-ugnayan sa admin para sa tulong.', 'knowledge', '2026-03-08 21:16:56'),
+(56, 458, 'enrollee', 'How much is the tuition?', 'how much is the tuition?', 'The tuition fees vary by grade level. Here are the current tuition fees:\n\n- Kinder: ₱16,500.00\n- Nursery 1: ₱16,500.00\n- Nursery 2: ₱16,500.00\n- Grade 1: ₱17,000.00\n- Grade 2: ₱17,000.00\n- Grade 3: ₱17,000.00\n- Grade 4: ₱17,100.00\n- Grade 5: ₱17,100.00\n- Grade 6: ₱17,100.00\n\nIf you need more specific information, feel free to ask!', 'llm', '2026-03-08 21:19:47');
 
 -- --------------------------------------------------------
 
@@ -868,7 +887,8 @@ INSERT INTO `enrollments` (`id`, `academic_period_id`, `enrollment_period_id`, `
 (62, 30, 1, 299, 282, 'Continuing Student', 'Grade 3', 'Pending', NULL, NULL, '2026-03-05 17:25:48', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 17:25:48', '2026-03-05 17:25:48', 0),
 (63, 30, 1, 343, 326, 'Continuing Student', 'Grade 5', 'Pending', NULL, NULL, '2026-03-05 20:19:23', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 20:19:23', '2026-03-05 20:19:23', 0),
 (64, 30, 1, 340, 323, 'Continuing Student', 'Grade 5', 'Pending', NULL, NULL, '2026-03-05 20:20:21', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-05 20:20:21', '2026-03-05 20:20:21', 0),
-(66, 30, 1, 458, NULL, 'New Student', 'Grade 3', 'Pending', NULL, NULL, '2026-03-07 16:23:52', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-07 16:23:52', '2026-03-07 16:23:52', 0);
+(66, 30, 1, 458, NULL, 'New Student', 'Grade 3', 'Pending', NULL, NULL, '2026-03-07 16:23:52', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-07 16:23:52', '2026-03-07 16:23:52', 0),
+(67, 30, 1, 459, NULL, 'New Student', 'Grade 2', 'Pending', NULL, NULL, '2026-03-08 14:29:20', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-08 14:29:20', '2026-03-08 14:29:20', 0);
 
 -- --------------------------------------------------------
 
@@ -912,7 +932,8 @@ INSERT INTO `enrollment_addresses` (`id`, `enrollment_id`, `address_type`, `addr
 (60, 62, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Alag', 'Baco', 'Oriental Mindoro', '5200', '09123124123', '2026-03-05 17:25:48'),
 (61, 63, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Bangkatan', 'Baco', 'Oriental Mindoro', '5200', '09123124123', '2026-03-05 20:19:23'),
 (62, 64, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Balite', 'City of Calapan', 'Oriental Mindoro', '5200', '09123124123', '2026-03-05 20:20:21'),
-(64, 66, 'Current', 'koasdij', 'Banbanaal', 'Banayoyo', 'Ilocos Sur', '5200', '091237862462', '2026-03-07 16:23:52');
+(64, 66, 'Current', 'koasdij', 'Banbanaal', 'Banayoyo', 'Ilocos Sur', '5200', '091237862462', '2026-03-07 16:23:52'),
+(65, 67, 'Current', 'Brgy. Camilmil, Caunlaran 1', 'Ambil', 'Looc', 'Occidental Mindoro', '5200', '09123124123', '2026-03-08 14:29:20');
 
 -- --------------------------------------------------------
 
@@ -975,6 +996,13 @@ CREATE TABLE `enrollment_documents` (
   `resubmitted_date` timestamp NULL DEFAULT NULL COMMENT 'When student uploaded new version'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores documents uploaded during enrollment process';
 
+--
+-- Dumping data for table `enrollment_documents`
+--
+
+INSERT INTO `enrollment_documents` (`id`, `enrollment_id`, `file_name`, `file_path`, `file_type`, `file_size`, `document_type`, `submission_method`, `upload_date`, `verified_by`, `physical_verified_by`, `verification_status`, `rejection_reason`, `physical_verification_status`, `verification_notes`, `verified_date`, `physical_verified_date`, `created_at`, `updated_at`, `resubmission_count`, `previous_version_id`, `is_current_version`, `resubmission_requested_date`, `resubmitted_date`) VALUES
+(23, 66, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-03-08 13:53:48', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-08 13:53:48', NULL, '2026-03-08 13:53:48', '2026-03-08 13:53:48', 0, NULL, 1, NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -1034,7 +1062,8 @@ INSERT INTO `enrollment_flags` (`id`, `enrollment_id`, `is_returning_student`, `
 (55, 62, 0, 0, 0, 0, '', '', '2026-03-05 17:25:48'),
 (56, 63, 0, 0, 0, 0, '', '', '2026-03-05 20:19:23'),
 (57, 64, 0, 0, 0, 0, '', '', '2026-03-05 20:20:21'),
-(59, 66, 0, 0, 0, 0, '', '', '2026-03-07 16:23:52');
+(59, 66, 0, 0, 0, 0, '', '', '2026-03-07 16:23:52'),
+(60, 67, 0, 0, 0, 0, '', '', '2026-03-08 14:29:20');
 
 -- --------------------------------------------------------
 
@@ -1076,7 +1105,8 @@ INSERT INTO `enrollment_learners` (`id`, `enrollment_id`, `first_name`, `middle_
 (55, 62, 'Ellie', 'Madrigal', 'Alvarez', '2022-02-02', 'Female', '', '2026-03-05 17:25:48'),
 (56, 63, 'Chloe', 'Flores', 'Katindig', '2022-02-02', 'Female', '', '2026-03-05 20:19:23'),
 (57, 64, 'Juan', 'Flores', 'Lim', '2020-02-02', 'Male', '', '2026-03-05 20:20:21'),
-(59, 66, 'Jose', 'ko', 'Rizal', '2020-02-22', 'Male', '', '2026-03-07 16:23:52');
+(59, 66, 'Jose', 'ko', 'Rizal', '2020-02-22', 'Male', '', '2026-03-07 16:23:52'),
+(60, 67, 'James', 'ko', 'Smith', '2020-02-02', 'Male', '', '2026-03-08 14:29:20');
 
 -- --------------------------------------------------------
 
@@ -1117,7 +1147,8 @@ INSERT INTO `enrollment_parent_contacts` (`id`, `enrollment_id`, `contact_type`,
 (58, 62, 'Father', 'Nik Soriano', '0123912747123', 'nikaldabasoriano@gmail.com', 1, '2026-03-05 17:25:48'),
 (59, 63, 'Father', 'Nik Soriano', '0123912747123', 'nikaldabasoriano@gmail.com', 1, '2026-03-05 20:19:23'),
 (60, 64, 'Father', 'Nik Soriano', '0123912747123', 'nikaldabasoriano@gmail.com', 1, '2026-03-05 20:20:21'),
-(62, 66, 'Father', 'oiqwjdoiqwd', '091237892742', 'qweqwpiewq@gmail.com', 1, '2026-03-07 16:23:52');
+(62, 66, 'Father', 'oiqwjdoiqwd', '091237892742', 'qweqwpiewq@gmail.com', 1, '2026-03-07 16:23:52'),
+(63, 67, 'Father', 'Nik Soriano', '09123782443', 'nikaldabasoriano@gmail.com', 1, '2026-03-08 14:29:20');
 
 -- --------------------------------------------------------
 
@@ -1609,16 +1640,32 @@ INSERT INTO `installments` (`id`, `payment_plan_id`, `installment_number`, `amou
 (260, 43, 8, 1344.44, 0.00, 1344.44, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
 (261, 43, 9, 1344.44, 0.00, 1344.44, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
 (262, 43, 10, 1344.48, 0.00, 1344.48, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-03-07 10:46:15', '2026-03-07 10:46:15', 0),
-(273, 45, 1, 5000.00, 5000.00, 0.00, '2026-03-07', '2026-03-08', 'Paid', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:56', 0),
-(274, 45, 2, 1333.33, 0.00, 1333.33, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(275, 45, 3, 1333.33, 0.00, 1333.33, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(276, 45, 4, 1333.33, 0.00, 1333.33, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(277, 45, 5, 1333.33, 0.00, 1333.33, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(278, 45, 6, 1333.33, 0.00, 1333.33, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(279, 45, 7, 1333.33, 0.00, 1333.33, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(280, 45, 8, 1333.33, 0.00, 1333.33, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(281, 45, 9, 1333.33, 0.00, 1333.33, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0),
-(282, 45, 10, 1333.36, 0.00, 1333.36, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-03-07 19:12:47', '2026-03-07 19:12:47', 0);
+(283, 46, 1, 5000.00, 5000.00, 0.00, '2026-03-07', '2026-03-08', 'Paid', 0.00, 0, '2026-03-07 20:07:46', '2026-03-07 20:07:52', 0),
+(284, 46, 2, 4000.00, 0.00, 4000.00, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-07 20:07:46', '2026-03-07 20:07:46', 0),
+(285, 46, 3, 4000.00, 0.00, 4000.00, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-07 20:07:46', '2026-03-07 20:07:46', 0),
+(286, 46, 4, 4000.00, 0.00, 4000.00, '2027-03-12', NULL, 'Pending', 0.00, 0, '2026-03-07 20:07:46', '2026-03-07 20:07:46', 0),
+(287, 47, 1, 5000.00, 5000.00, 0.00, '2026-03-08', '2026-03-08', 'Paid', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:40', 0),
+(288, 47, 2, 1333.33, 0.00, 1333.33, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(289, 47, 3, 1333.33, 0.00, 1333.33, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(290, 47, 4, 1333.33, 0.00, 1333.33, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(291, 47, 5, 1333.33, 0.00, 1333.33, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(292, 47, 6, 1333.33, 0.00, 1333.33, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(293, 47, 7, 1333.33, 0.00, 1333.33, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(294, 47, 8, 1333.33, 0.00, 1333.33, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(295, 47, 9, 1333.33, 0.00, 1333.33, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:13', '2026-03-08 15:03:13', 0),
+(296, 47, 10, 1333.36, 0.00, 1333.36, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:14', '2026-03-08 15:03:14', 0),
+(297, 48, 1, 8500.00, 0.00, 8500.00, '2026-03-08', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:34', '2026-03-08 15:03:34', 0),
+(298, 48, 2, 8500.00, 0.00, 8500.00, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:03:34', '2026-03-08 15:03:34', 0),
+(299, 49, 1, 5000.00, 5000.00, 0.00, '2026-03-08', '2026-03-08', 'Paid', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:42', 0),
+(300, 49, 2, 1277.78, 0.00, 1277.78, '2026-08-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(301, 49, 3, 1277.78, 0.00, 1277.78, '2026-09-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(302, 49, 4, 1277.78, 0.00, 1277.78, '2026-10-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(303, 49, 5, 1277.78, 0.00, 1277.78, '2026-11-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(304, 49, 6, 1277.78, 0.00, 1277.78, '2026-12-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(305, 49, 7, 1277.78, 0.00, 1277.78, '2027-01-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(306, 49, 8, 1277.78, 0.00, 1277.78, '2027-02-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(307, 49, 9, 1277.78, 0.00, 1277.78, '2027-03-05', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0),
+(308, 49, 10, 1277.76, 0.00, 1277.76, '2027-04-12', NULL, 'Pending', 0.00, 0, '2026-03-08 15:52:26', '2026-03-08 15:52:26', 0);
 
 -- --------------------------------------------------------
 
@@ -1817,23 +1864,19 @@ INSERT INTO `notifications` (`id`, `user_id`, `role`, `type`, `title`, `body`, `
 (28, 455, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Juan Lim submitted an enrollment application for Grade Grade 5', 'user-plus', '/admin/enrollments', 'enrollment', 64, NULL, 28, 0, NULL, 0, NULL, '2026-03-06 04:20:21', '2026-03-06 04:20:21'),
 (29, 3, 'admin', 'payment.received', 'New Payment Received', 'Juan Lim submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 135, NULL, 29, 0, NULL, 0, NULL, '2026-03-06 04:21:50', '2026-03-06 04:21:50'),
 (30, 455, 'admin', 'payment.received', 'New Payment Received', 'Juan Lim submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 135, NULL, 29, 0, NULL, 0, NULL, '2026-03-06 04:21:50', '2026-03-06 04:21:50'),
-(31, 3, 'admin', 'payment.received', 'New Installment Plan Created', 'Chloe Katindig selected a Quarterly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 41, NULL, 30, 0, NULL, 0, NULL, '2026-03-06 04:27:26', '2026-03-06 04:27:26'),
-(32, 455, 'admin', 'payment.received', 'New Installment Plan Created', 'Chloe Katindig selected a Quarterly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 41, NULL, 30, 0, NULL, 0, NULL, '2026-03-06 04:27:26', '2026-03-06 04:27:26'),
-(33, 3, 'admin', 'payment.received', 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 136, NULL, 31, 1, '2026-03-08 03:55:38', 0, NULL, '2026-03-06 04:28:02', '2026-03-08 03:55:38'),
-(34, 455, 'admin', 'payment.received', 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', 'dollar-sign', '/admin/payments', 'payment', 136, NULL, 31, 1, '2026-03-08 03:55:38', 0, NULL, '2026-03-06 04:28:02', '2026-03-08 03:55:38'),
-(35, 457, 'student', 'payment.received', 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', 'calendar', '/enrollment/payment', 'payment_plan', 42, NULL, 32, 0, NULL, 0, NULL, '2026-03-06 04:42:09', '2026-03-06 04:42:09'),
-(36, 343, 'student', 'payment.received', 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', 'calendar', '/enrollment/payment', 'payment_plan', 43, NULL, 33, 0, NULL, 0, NULL, '2026-03-07 18:46:15', '2026-03-07 18:46:15'),
-(37, 343, 'student', 'payment.received', 'Payment Recorded', 'Your Tuition Installment payment of ₱5,000.00 has been recorded', 'dollar-sign', '/enrollment/payment', 'payment', 137, NULL, 34, 0, NULL, 0, NULL, '2026-03-07 19:11:45', '2026-03-07 19:11:45'),
-(38, 3, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', 'user-plus', '/admin/enrollments', 'enrollment', 65, NULL, 35, 0, NULL, 0, NULL, '2026-03-07 20:03:32', '2026-03-07 20:03:32'),
-(39, 455, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', 'user-plus', '/admin/enrollments', 'enrollment', 65, NULL, 35, 0, NULL, 0, NULL, '2026-03-07 20:03:32', '2026-03-07 20:03:32'),
-(40, 3, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', 'user-plus', '/admin/enrollments', 'enrollment', 66, NULL, 36, 0, NULL, 0, NULL, '2026-03-08 00:23:52', '2026-03-08 00:23:52'),
-(41, 455, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', 'user-plus', '/admin/enrollments', 'enrollment', 66, NULL, 36, 0, NULL, 0, NULL, '2026-03-08 00:23:52', '2026-03-08 00:23:52'),
-(44, 3, 'admin', 'payment.received', 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 45, NULL, 39, 0, NULL, 0, NULL, '2026-03-08 03:12:47', '2026-03-08 03:12:47'),
-(45, 455, 'admin', 'payment.received', 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 45, NULL, 39, 0, NULL, 0, NULL, '2026-03-08 03:12:47', '2026-03-08 03:12:47'),
-(46, 3, 'admin', 'payment.received', 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 141, NULL, 40, 1, '2026-03-08 03:22:42', 0, NULL, '2026-03-08 03:12:56', '2026-03-08 03:22:42'),
-(47, 455, 'admin', 'payment.received', 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 141, NULL, 40, 1, '2026-03-08 03:22:42', 0, NULL, '2026-03-08 03:12:56', '2026-03-08 03:22:42'),
-(48, 458, 'student', 'payment.confirmed', 'Payment Approved', 'Your Tuition Installment payment of ₱5,000.00 has been approved', 'check-circle', '/enrollment/payment', 'payment', 141, NULL, 42, 1, '2026-03-08 03:22:42', 0, NULL, '2026-03-08 03:22:42', '2026-03-08 03:22:42'),
-(49, 343, 'student', 'payment.confirmed', 'Payment Approved', 'Your Tuition Installment payment of ₱4,275.00 has been approved', 'check-circle', '/enrollment/payment', 'payment', 136, NULL, 44, 1, '2026-03-08 03:55:38', 0, NULL, '2026-03-08 03:55:38', '2026-03-08 03:55:38');
+(50, 3, 'admin', 'payment.received', 'New Installment Plan Created', 'Jose Rizal selected a Quarterly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 46, NULL, 45, 1, '2026-03-08 04:13:59', 0, NULL, '2026-03-08 04:07:46', '2026-03-08 04:13:59'),
+(51, 455, 'admin', 'payment.received', 'New Installment Plan Created', 'Jose Rizal selected a Quarterly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 46, NULL, 45, 0, NULL, 0, NULL, '2026-03-08 04:07:46', '2026-03-08 04:07:46'),
+(52, 3, 'admin', 'payment.received', 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 142, NULL, 46, 0, NULL, 0, NULL, '2026-03-08 04:07:52', '2026-03-08 04:07:52'),
+(53, 455, 'admin', 'payment.received', 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 142, NULL, 46, 0, NULL, 0, NULL, '2026-03-08 04:07:52', '2026-03-08 04:07:52'),
+(54, 3, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'James Smith submitted an enrollment application for Grade Grade 2', 'user-plus', '/admin/enrollments', 'enrollment', 67, NULL, 47, 0, NULL, 0, NULL, '2026-03-08 22:29:20', '2026-03-08 22:29:20'),
+(55, 455, 'admin', 'enrollment.submitted', 'New Enrollment Submitted', 'James Smith submitted an enrollment application for Grade Grade 2', 'user-plus', '/admin/enrollments', 'enrollment', 67, NULL, 47, 0, NULL, 0, NULL, '2026-03-08 22:29:20', '2026-03-08 22:29:20'),
+(56, 110, 'student', 'payment.received', 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', 'calendar', '/enrollment/payment', 'payment_plan', 47, NULL, 48, 0, NULL, 0, NULL, '2026-03-08 23:03:14', '2026-03-08 23:03:14'),
+(57, 459, 'student', 'payment.received', 'Installment Plan Approved', 'Your Semestral tuition installment plan has been created', 'calendar', '/enrollment/payment', 'payment_plan', 48, NULL, 49, 0, NULL, 0, NULL, '2026-03-08 23:03:34', '2026-03-08 23:03:34'),
+(58, 110, 'student', 'payment.received', 'Payment Recorded', 'Your Tuition Installment payment of ₱5,000.00 has been recorded', 'dollar-sign', '/enrollment/payment', 'payment', 143, NULL, 50, 0, NULL, 0, NULL, '2026-03-08 23:03:40', '2026-03-08 23:03:40'),
+(59, 3, 'admin', 'payment.received', 'New Installment Plan Created', 'Jordan Clarkson selected a Monthly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 49, NULL, 51, 0, NULL, 0, NULL, '2026-03-08 23:52:26', '2026-03-08 23:52:26'),
+(60, 455, 'admin', 'payment.received', 'New Installment Plan Created', 'Jordan Clarkson selected a Monthly tuition installment plan', 'calendar', '/admin/payment-plans', 'payment_plan', 49, NULL, 51, 0, NULL, 0, NULL, '2026-03-08 23:52:26', '2026-03-08 23:52:26'),
+(61, 3, 'admin', 'payment.received', 'New Payment Received', 'Jordan Clarkson submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 144, NULL, 52, 0, NULL, 0, NULL, '2026-03-08 23:52:42', '2026-03-08 23:52:42'),
+(62, 455, 'admin', 'payment.received', 'New Payment Received', 'Jordan Clarkson submitted a Tuition Installment payment of ₱5,000.00', 'dollar-sign', '/admin/payments', 'payment', 144, NULL, 52, 0, NULL, 0, NULL, '2026-03-08 23:52:42', '2026-03-08 23:52:42');
 
 -- --------------------------------------------------------
 
@@ -1889,23 +1932,19 @@ INSERT INTO `notification_outbox` (`id`, `notification_id`, `user_id`, `fcm_titl
 (28, 28, 455, 'New Enrollment Submitted', 'Juan Lim submitted an enrollment application for Grade Grade 5', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 64}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:20:21', NULL, '2026-03-07 04:20:21'),
 (29, 29, 3, 'New Payment Received', 'Juan Lim submitted a Tuition Installment payment of ₱4,275.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 135}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:21:50', NULL, '2026-03-07 04:21:50'),
 (30, 30, 455, 'New Payment Received', 'Juan Lim submitted a Tuition Installment payment of ₱4,275.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 135}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:21:50', NULL, '2026-03-07 04:21:50'),
-(31, 31, 3, 'New Installment Plan Created', 'Chloe Katindig selected a Quarterly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 41}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:27:26', NULL, '2026-03-07 04:27:26'),
-(32, 32, 455, 'New Installment Plan Created', 'Chloe Katindig selected a Quarterly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 41}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:27:26', NULL, '2026-03-07 04:27:26'),
-(33, 33, 3, 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 136}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:28:02', NULL, '2026-03-07 04:28:02'),
-(34, 34, 455, 'New Payment Received', 'Chloe Katindig submitted a Tuition Installment payment of ₱4,275.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 136}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:28:02', NULL, '2026-03-07 04:28:02'),
-(35, 35, 457, 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 42}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-06 04:42:09', NULL, '2026-03-07 04:42:09'),
-(36, 36, 343, 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 43}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 18:46:15', NULL, '2026-03-08 18:46:15'),
-(37, 37, 343, 'Payment Recorded', 'Your Tuition Installment payment of ₱5,000.00 has been recorded', '{\"screen\": \"PaymentHistory\", \"payment_id\": 137}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 19:11:45', NULL, '2026-03-08 19:11:45'),
-(38, 38, 3, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 65}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 20:03:32', NULL, '2026-03-08 20:03:32'),
-(39, 39, 455, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 2', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 65}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-07 20:03:32', NULL, '2026-03-08 20:03:32'),
-(40, 40, 3, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 66}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 00:23:52', NULL, '2026-03-09 00:23:52'),
-(41, 41, 455, 'New Enrollment Submitted', 'Jose Rizal submitted an enrollment application for Grade Grade 3', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 66}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 00:23:52', NULL, '2026-03-09 00:23:52'),
-(44, 44, 3, 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 45}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:47', NULL, '2026-03-09 03:12:47'),
-(45, 45, 455, 'New Installment Plan Created', 'Jose Rizal selected a Monthly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 45}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:47', NULL, '2026-03-09 03:12:47'),
-(46, 46, 3, 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 141}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:56', NULL, '2026-03-09 03:12:56'),
-(47, 47, 455, 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 141}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:12:56', NULL, '2026-03-09 03:12:56'),
-(48, 48, 458, 'Payment Approved', 'Your Tuition Installment payment of ₱5,000.00 has been approved', '{\"screen\": \"PaymentHistory\", \"payment_id\": \"141\"}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:22:42', NULL, '2026-03-09 03:22:42'),
-(49, 49, 343, 'Payment Approved', 'Your Tuition Installment payment of ₱4,275.00 has been approved', '{\"screen\": \"PaymentHistory\", \"payment_id\": \"136\"}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 03:55:38', NULL, '2026-03-09 03:55:38');
+(50, 50, 3, 'New Installment Plan Created', 'Jose Rizal selected a Quarterly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 46}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 04:07:46', NULL, '2026-03-09 04:07:46'),
+(51, 51, 455, 'New Installment Plan Created', 'Jose Rizal selected a Quarterly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 46}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 04:07:46', NULL, '2026-03-09 04:07:46'),
+(52, 52, 3, 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 142}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 04:07:52', NULL, '2026-03-09 04:07:52'),
+(53, 53, 455, 'New Payment Received', 'Jose Rizal submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 142}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 04:07:52', NULL, '2026-03-09 04:07:52'),
+(54, 54, 3, 'New Enrollment Submitted', 'James Smith submitted an enrollment application for Grade Grade 2', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 67}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 22:29:20', NULL, '2026-03-09 22:29:20'),
+(55, 55, 455, 'New Enrollment Submitted', 'James Smith submitted an enrollment application for Grade Grade 2', '{\"screen\": \"EnrollmentDetails\", \"enrollment_id\": 67}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 22:29:20', NULL, '2026-03-09 22:29:20'),
+(56, 56, 110, 'Installment Plan Approved', 'Your Monthly tuition installment plan has been created', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 47}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 23:03:14', NULL, '2026-03-09 23:03:14'),
+(57, 57, 459, 'Installment Plan Approved', 'Your Semestral tuition installment plan has been created', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 48}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 23:03:34', NULL, '2026-03-09 23:03:34'),
+(58, 58, 110, 'Payment Recorded', 'Your Tuition Installment payment of ₱5,000.00 has been recorded', '{\"screen\": \"PaymentHistory\", \"payment_id\": 143}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 23:03:40', NULL, '2026-03-09 23:03:40'),
+(59, 59, 3, 'New Installment Plan Created', 'Jordan Clarkson selected a Monthly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 49}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 23:52:26', NULL, '2026-03-09 23:52:26'),
+(60, 60, 455, 'New Installment Plan Created', 'Jordan Clarkson selected a Monthly tuition installment plan', '{\"screen\": \"PaymentPlans\", \"payment_plan_id\": 49}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 23:52:26', NULL, '2026-03-09 23:52:26'),
+(61, 61, 3, 'New Payment Received', 'Jordan Clarkson submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 144}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 23:52:42', NULL, '2026-03-09 23:52:42'),
+(62, 62, 455, 'New Payment Received', 'Jordan Clarkson submitted a Tuition Installment payment of ₱5,000.00', '{\"screen\": \"PaymentDetails\", \"payment_id\": 144}', NULL, 'pending', 0, 3, NULL, NULL, '2026-03-08 23:52:42', NULL, '2026-03-09 23:52:42');
 
 -- --------------------------------------------------------
 
@@ -2063,8 +2102,6 @@ CREATE TABLE `payments` (
 INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id`, `receipt_number`, `payment_type`, `payment_for`, `amount`, `total_discount`, `payment_method`, `payment_date`, `reference_number`, `idempotency_key`, `installment_id`, `proof_of_payment_url`, `status`, `is_refund`, `refund_reason`, `original_payment_id`, `remarks`, `received_by`, `verified_by`, `verified_at`, `created_at`, `updated_at`, `version`, `service_period_month`, `service_period_year`, `is_recurring_service`) VALUES
 (16, 429, 19, 30, 'RCP-202602-2864', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 1250.00, 0.00, 'Cash', '2026-02-07', 'MCAFINV-20260208002334478', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-07 09:23:36', '2026-02-07 09:23:36', 0, NULL, NULL, 0),
 (17, 430, 20, 30, 'RCP-202602-6223', 'Tuition Full Payment', 'Tuition Fee', 5000.00, 1000.00, 'Cash', '2026-02-07', 'MCAFINV-20260208041013725', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-07 13:10:22', '2026-02-07 14:20:42', 0, NULL, NULL, 0),
-(44, 432, 33, 30, 'RCP-202602-5524', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 555.56, 0.00, 'Cash', '2026-02-12', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-12 06:08:24', '2026-02-12 06:09:02', 0, NULL, NULL, 0),
-(45, 432, 33, 30, 'RCP-202602-2007', 'Tuition Installment', 'Installment #2 - SY 2026-2027', 555.56, 0.00, 'Cash', '2026-02-12', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-12 06:09:12', '2026-02-12 06:09:12', 0, NULL, NULL, 0),
 (46, 398, 34, 30, 'RCP-202602-6942', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1250.00, 0.00, 'Cash', '2026-02-13', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-13 10:03:40', '2026-02-13 10:03:40', 0, NULL, NULL, 0),
 (68, 110, 35, 30, 'RCP-202602-5857', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 1700.00, 85.00, 'Cash', '2026-02-21', 'MCAFINV-20260221192004310', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-21 04:20:06', '2026-02-21 04:20:06', 0, NULL, NULL, 0),
 (69, 110, 35, 30, 'RCP-202602-2434', 'Tuition Installment', 'Installment #2 - 2026-2027 - 1st Quarter', 1785.00, 0.00, 'Cash', '2026-02-21', 'MCAFINV-20260221192037216', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-21 04:20:42', '2026-02-21 04:20:42', 0, NULL, NULL, 0),
@@ -2119,7 +2156,9 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (137, 343, 63, 30, 'RCP-202603-0248', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 5000.00, 0.00, 'Cash', '2026-03-07', '', NULL, 253, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-07 11:11:45', '2026-03-07 11:11:45', 0, NULL, NULL, 0),
 (138, 443, NULL, 30, 'RCP-202603-740457', 'Uniform', 'Uniform order (2 items)', 770.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order (2 items)', NULL, NULL, NULL, '2026-03-07 16:47:09', '2026-03-07 16:47:09', 0, NULL, NULL, 0),
 (139, 443, NULL, 30, 'RCP-202603-419953', 'Uniform', 'Uniform order (3 items)', 2250.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order (3 items)', NULL, NULL, NULL, '2026-03-07 17:45:13', '2026-03-07 17:45:13', 0, NULL, NULL, 0),
-(141, 458, 66, 30, 'RCP-202603-875531', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 5000.00, 0.00, 'Cash', '2026-03-07', NULL, NULL, 273, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-07 19:12:56', '2026-03-07 19:22:42', 0, NULL, NULL, 0);
+(142, 458, 66, 30, 'RCP-202603-101202', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 5000.00, 0.00, 'Cash', '2026-03-07', NULL, NULL, 283, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-07 20:07:52', '2026-03-07 20:07:52', 0, NULL, NULL, 0),
+(143, 110, 35, 30, 'RCP-202603-2933', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 5000.00, 0.00, 'Cash', '2026-03-08', '', NULL, 287, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-08 15:03:40', '2026-03-08 15:03:40', 0, NULL, NULL, 0),
+(144, 432, 33, 30, 'RCP-202603-053662', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 5000.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, 299, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-08 15:52:42', '2026-03-08 15:52:42', 0, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -2174,7 +2213,10 @@ CREATE TABLE `payment_plans` (
 
 INSERT INTO `payment_plans` (`id`, `student_id`, `enrollment_id`, `academic_period_id`, `total_tuition`, `total_paid`, `balance`, `schedule_type`, `number_of_installments`, `template_id`, `status`, `notes`, `created_at`, `updated_at`) VALUES
 (43, 343, 63, 30, 17100.00, 5000.00, 12100.00, 'Monthly', 10, 2, 'Active', NULL, '2026-03-07 10:46:15', '2026-03-07 11:11:45'),
-(45, 458, 66, 30, 17000.00, 5000.00, 12000.00, 'Monthly', 10, 2, 'Active', NULL, '2026-03-07 19:12:47', '2026-03-07 19:12:56');
+(46, 458, 66, 30, 17000.00, 5000.00, 12000.00, 'Quarterly', 4, 3, 'Active', NULL, '2026-03-07 20:07:46', '2026-03-07 20:07:52'),
+(47, 110, 35, 30, 17000.00, 5000.00, 12000.00, 'Monthly', 10, 2, 'Active', NULL, '2026-03-08 15:03:13', '2026-03-08 15:03:40'),
+(48, 459, 67, 30, 17000.00, 0.00, 17000.00, 'Semestral', 2, 1, 'Active', NULL, '2026-03-08 15:03:34', '2026-03-08 15:03:34'),
+(49, 432, 33, 30, 16500.00, 5000.00, 11500.00, 'Monthly', 10, 2, 'Active', NULL, '2026-03-08 15:52:26', '2026-03-08 15:52:42');
 
 -- --------------------------------------------------------
 
@@ -3741,7 +3783,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `profile_photo_path`, `profile_photo_updated_at`, `status`, `must_change_password`, `created_at`, `updated_at`, `version`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
 (1, 'student@demo.com', '$2y$10$Ll4dzxFoqlaGCC1aL702BOdZ3xtLLijHcLKzW4SF1HPrlEgP9Frz6', 'student', 'Demo', NULL, 'Student', '', NULL, NULL, 'active', 0, '2025-11-06 11:13:56', '2025-11-10 01:05:04', 0, NULL, NULL, 0, NULL),
 (2, 'teacher@demo.com', '$2y$10$/zuE1Q4AmA1J6MXuovoRoenUL5PoblPSzSxXA3ubUw47wpiTNfoVS', 'teacher', 'Demo', NULL, 'Teacher', '', NULL, NULL, 'active', 0, '2025-11-06 11:14:42', '2026-01-06 20:49:02', 0, NULL, NULL, 0, NULL),
-(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', NULL, NULL, 'active', 0, '2025-11-06 11:15:04', '2026-03-07 19:44:17', 0, NULL, NULL, 0, NULL),
+(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', NULL, NULL, 'active', 0, '2025-11-06 11:15:04', '2026-03-08 13:53:31', 0, NULL, NULL, 0, NULL),
 (16, 'john.doe@example.com', '$2y$10$I19hzyUWwzkG9HMk8wEutekUr7tC9GmtiRFvW4lqePlq4eKBKXQtS', 'teacher', 'John', NULL, 'Doe', '', NULL, NULL, 'active', 0, '2025-11-06 14:05:34', '2025-11-06 18:29:13', 0, NULL, NULL, 0, NULL),
 (18, 'juan.delacruz@mcc.edu.ph', '$2y$10$762nxMWoGHGu7kRyvzc8K.FGrrYGGJpRdMbm5jentTkF4mfui3iBK', 'student', 'Juan', NULL, 'Dela Cruz', '', NULL, NULL, 'active', 0, '2025-11-06 18:30:24', '2025-11-06 18:30:24', 0, NULL, NULL, 0, NULL),
 (19, 'maria.santos@mcc.edu.ph', '$2y$10$KGlfA0PiOWB4HR0pds9.1epVHMzpgv3hsk.qLKXZCSh9mgaD20FCW', 'student', 'Maria', NULL, 'Santos', '', NULL, NULL, 'active', 0, '2025-11-06 18:30:45', '2026-02-14 08:35:58', 0, '$2y$10$eHfLDD/lkTefVxHXDsIUc.aQ5zhzyP.vp/AckoRlj.F42gZ4oEXku', '2026-02-14 01:35:58', 0, NULL),
@@ -3775,7 +3817,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (49, 'jake.silva@mcc.edu.ph', '$2y$10$KkoQ0Kd5xJgW5f653dpUiOcCyZbZYuZwMRKxzW9Mhq05np6P25mvu', 'student', 'Jake Anthony', NULL, 'Silva', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:32', '2025-11-10 08:47:32', 0, NULL, NULL, 0, NULL),
 (50, 'kaye.castro@mcc.edu.ph', '$2y$10$E5sxDNYuS7PQPqFEdcdqcupccfatEk39MJsK7LNx0ujWmpNwocPWy', 'student', 'Kaye', NULL, 'Castro', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:40', '2025-11-10 08:47:40', 0, NULL, NULL, 0, NULL),
 (51, 'leandro.morales@mcc.edu.ph', '$2y$10$icTlD1gFj.SReFcPhM./bec13jp9ru0KFZlfEChhE4zpue7Mzz4CW', 'student', 'Leandro', NULL, 'Morales', '', NULL, NULL, 'active', 0, '2025-11-10 09:21:56', '2025-11-10 09:21:56', 0, NULL, NULL, 0, NULL),
-(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', NULL, NULL, 'active', 0, '2025-11-10 09:38:20', '2026-03-05 19:48:27', 0, NULL, NULL, 0, NULL),
+(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', NULL, NULL, 'active', 0, '2025-11-10 09:38:20', '2026-03-08 06:54:13', 0, NULL, NULL, 0, NULL),
 (53, 'nico.perez@mcc.edu.ph', '$2y$10$m.hi3cAvdrAUzCF7TMoaseMCqY.oGHNorWf7U4e1.IXkR7ANud61S', 'student', 'Nico Allan', NULL, 'Perez', '', NULL, NULL, 'active', 0, '2025-11-10 09:46:50', '2025-11-10 09:46:50', 0, NULL, NULL, 0, NULL),
 (54, 'olivia.delgado@mcc.edu.ph', '$2y$10$0h4mahiMCDm96OWctcRdXeujn7Yr/PRJvgyO7KQtO954d7V39.26m', 'student', 'Olivia Anne', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
 (55, 'paul.uy@mcc.edu.ph', '$2y$10$8IsNfV4is0Sgs0N6e70Zk.PP.DcSJswNe.GBdLa3aLZhDxvJ.KiZG', 'student', 'Paul Vincent', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
@@ -3833,7 +3875,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (107, 'yara.malonzo@mcc.edu.ph', '$2y$10$oJSjMflWYI2WHCutruB4iO.HflHnYW4oYmh7e4X7BzKJ4uewlaJs.', 'student', 'Yara Nicole', NULL, 'Malonzo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
 (108, 'zeke.noble@mcc.edu.ph', '$2y$10$Do.MIHhKjzqTsd8N9rU.Nekp2W2JzIz/QLVCRi3.CJSf70CJSksr6', 'student', 'Zeke Daniel', NULL, 'Noble', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
 (109, 'abigail.pineda@mcc.edu.ph', '$2y$10$Nl81BwhhufU0cKkd3yOfA.bbRUkcgfXb/NJJ6Bo4x8xAZkzMzOtpq', 'student', 'Abigail Rose', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2026-02-09 04:59:02', 0, NULL, NULL, 0, NULL),
-(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2026-03-05 20:15:04', 0, '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
+(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2026-03-08 14:58:04', 0, '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
 (111, 'ricardo.lim@mcc.edu.ph', '$2y$10$oO3esbnhLoSBMVVAEpi/5.oT2SZ4ht0cj1N1Bpg/Nug.hAicPeL/m', 'student', 'Ricardo', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
 (112, 'diego.alvarez@mcc.edu.ph', '$2y$10$RzvrH2OmfCYy8g5rf9YNuu/0eIfT0qnWWPwxU6A3x38lBR7r.QVE.', 'student', 'Diego', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
 (113, 'julian.sy@mcc.edu.ph', '$2y$10$//yUsNWHi4oBimdkncqP0uhb0MgunJa4PDtINSAPbFT6S152uVm66', 'student', 'Julian', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
@@ -4122,7 +4164,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (429, 'kairi@gmail.com', '$2y$10$0POMgGARytBr0BnpPkN/6uQ2SWKdYxU/5wN8hoqW.qi7n9XN3P0RC', 'student', 'Kairi', NULL, 'Dela Cruz', '', NULL, NULL, 'active', 0, '2026-01-19 13:54:35', '2026-02-13 05:12:14', 0, NULL, NULL, 0, NULL),
 (430, 'jeizi.jczamora@gmail.com', '$2y$10$5eYtQ5jXLBmZA6JWm.gmOOT2kppWfUgPAN6cbcObYDtgMP80f4iDm', 'student', 'John Christopher King', 'Visaya', 'Zamora', '', NULL, NULL, 'active', 0, '2026-01-20 15:07:02', '2026-03-05 12:34:31', 0, NULL, NULL, 0, NULL),
 (431, 'juandelacruz99@gmail.com', '$2y$10$2czTBfblWFLkWS042EjXE.pEBsuSIOK4QNRGTYPO/VFQeAv1z3izi', 'student', 'Juan', NULL, 'Dela Cruz', '', NULL, NULL, 'active', 0, '2026-02-07 21:48:30', '2026-02-22 11:00:45', 0, '$2y$10$euQ540jXsVyiSVqS156xnez8f9Y3PuW093N/lApcqyfrOV/Al.5Dm', '2026-02-15 02:17:07', 0, NULL),
-(432, 'jordanclarkson@gmail.com', '$2y$10$9aLaE/ELzywl/MIVw9iqRufkz5uHC07qi0M.F2gFxeHdLg1Fjvv9.', 'student', 'Jordan', NULL, 'Clarkson', '', NULL, NULL, 'active', 0, '2026-02-10 12:03:15', '2026-02-22 06:25:50', 0, '$2y$10$bJzqmwnP0zPF.H7C5oon1ecr80gFARBr2Xp5Cll7AUPyCRlHvVqqu', '2026-02-14 08:07:50', 0, NULL),
+(432, 'jordanclarkson@gmail.com', '$2y$10$9aLaE/ELzywl/MIVw9iqRufkz5uHC07qi0M.F2gFxeHdLg1Fjvv9.', 'student', 'Jordan', NULL, 'Clarkson', '', NULL, NULL, 'active', 0, '2026-02-10 12:03:15', '2026-03-08 15:52:41', 0, '$2y$10$bJzqmwnP0zPF.H7C5oon1ecr80gFARBr2Xp5Cll7AUPyCRlHvVqqu', '2026-02-14 08:07:50', 0, NULL),
 (441, 'mcaflebronjames@gmail.com', '$2y$10$sZCkibdO86R3ST.n4MjbuuFyRJ4acGvPFZLfg4.4J3OOcXpSTDity', 'student', 'Lebron', NULL, 'James', '', NULL, NULL, 'active', 0, '2026-02-15 09:04:06', '2026-02-15 09:04:06', 0, NULL, NULL, 0, NULL),
 (442, 'karlmcaf@gmail.com', '$2y$10$o3DFLZr0L2rH/qiiTUMvre7CZQpVRmktY.vouH1BjLA/n5DYteiWS', 'enrollee', 'karl', NULL, 'nepomuceno', '', NULL, NULL, 'active', 0, '2026-02-15 09:18:09', '2026-02-15 02:18:57', 0, NULL, NULL, 0, NULL),
 (443, 'michaeljordanmcaf@gamil.com', '$2y$10$IplfFfH1cNRf3or0sSNAgeoyedmDOzeUx2EJ6JWmI3zBXDUfx/nCK', 'student', 'Michael', NULL, 'Jordan', '', NULL, NULL, 'active', 0, '2026-02-15 09:28:02', '2026-02-22 13:55:10', 0, '$2y$10$kNn5KqsK/5xIb.GnTqyOcOweIEbst2OujAm4BVtaTzfOpTYUKwEQy', '2026-02-22 06:13:45', 0, NULL),
@@ -4133,10 +4175,11 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (452, 'juanmanzano@gmail.com', '$2y$10$ACZMd/nTeFRNggcYfWEBrO1BFJ5esz9T2Y3qqYlo9DIe5fCLhxKWC', 'enrollee', 'Juan', 'Manzano', 'Torres', '', NULL, NULL, 'active', 0, '2026-02-24 16:27:04', '2026-02-24 16:29:10', 0, '$2y$10$Fx560as5MjyFX..cDf.tX.iE6lofHD9.B5BdYFBxX0eHQpgASlU6a', '2026-02-24 09:29:10', 0, NULL),
 (453, 'nikmanzano@gmail.com', '$2y$10$yCQFac0OtQXrbJEzYj3FTOmXWK59FpfJ85GyMiZDcSnOuP7DMUXwe', 'enrollee', 'Nik', 'Manzano', 'Santos', '', NULL, NULL, 'active', 0, '2026-02-24 16:41:22', '2026-02-24 17:12:56', 0, '$2y$10$QEoNk1iBR1XgiXps4CkVVue.AIxFipWBWiebVL3F.Inqd7k.ICrKW', '2026-02-24 10:12:56', 0, NULL),
 (454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'student', 'Luna', 'Mendoza', 'Santos', '', NULL, NULL, 'active', 0, '2026-02-24 17:36:11', '2026-03-02 14:13:05', 0, '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
-(455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', NULL, NULL, 'active', 0, '2026-03-01 17:22:08', '2026-03-05 16:36:49', 0, NULL, NULL, 0, NULL),
+(455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', NULL, NULL, 'active', 0, '2026-03-01 17:22:08', '2026-03-08 09:57:51', 0, NULL, NULL, 0, NULL),
 (456, 'kiel1@gmail.com', '$2y$10$VHcOuEsOihaQlWQhNOpgqu47m8DtSdv16Ok3eJTA5EYxB3HvhmIfa', 'enrollee', 'Kiel', 'Santos', 'Sarmiento', '', NULL, NULL, 'active', 0, '2026-03-04 13:51:23', '2026-03-04 13:51:57', 0, NULL, NULL, 0, NULL),
 (457, 'joanasantos@gmail.com', '$2y$10$hpZZuedUas9glWD/GHC.8OULQXnYUGFO8DI1yO0HggRts0mR9.tum', 'enrollee', 'Joana', 'Miller', 'Santos', '', NULL, NULL, 'active', 0, '2026-03-05 16:55:18', '2026-03-05 20:42:36', 0, '$2y$10$no8bnw2v8PiS5pjlOM.U0.s0Vd6a1bZBcAVVOMgRDggxzyK6Uvm/i', '2026-03-05 20:42:36', 0, NULL),
-(458, 'joserizal2@gmail.com', '$2y$10$rS106vcGA0up96KWVUZphOGopzGTFvKesB7yTa4HW8toGXvfTK.lO', 'enrollee', 'Jose', '', 'Rizal', '', NULL, NULL, 'active', 0, '2026-03-07 12:00:25', '2026-03-07 19:12:35', 0, '$2y$10$o4KgzMKbvgBvuUMFVSWLb.oI3wr9Js79bPAyIxYWSB.FQwuIr215e', '2026-03-07 18:52:06', 0, NULL);
+(458, 'joserizal2@gmail.com', '$2y$10$rS106vcGA0up96KWVUZphOGopzGTFvKesB7yTa4HW8toGXvfTK.lO', 'enrollee', 'Jose', '', 'Rizal', '', NULL, NULL, 'active', 0, '2026-03-07 12:00:25', '2026-03-08 13:27:16', 0, '$2y$10$o4KgzMKbvgBvuUMFVSWLb.oI3wr9Js79bPAyIxYWSB.FQwuIr215e', '2026-03-07 18:52:06', 0, NULL),
+(459, 'jamessmith@gmail.com', '$2y$10$O2pQxfGf6D0Hu0I.XkAfEe0LFUuTmRjnQwhKbP/el265O7fLjwO8C', 'enrollee', 'James', 'ko', 'Smith', '09123748234', NULL, NULL, 'active', 0, '2026-03-08 09:39:38', '2026-03-08 14:56:55', 0, '$2y$10$Wkycf6x8cY.vNsH6QQXDUOfvauxPrtyuY7pnjUMr/jTk4MTLF51IC', '2026-03-08 14:29:40', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -4246,6 +4289,15 @@ INSERT INTO `year_level_sections` (`year_level_id`, `section_id`) VALUES
 (11, 13),
 (12, 14),
 (13, 15);
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `student_balance_summary`
+--
+DROP TABLE IF EXISTS `student_balance_summary`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `student_balance_summary`  AS SELECT `s`.`id` AS `student_id`, `s`.`student_id` AS `student_number`, concat(`u`.`first_name`,' ',`u`.`last_name`) AS `student_name`, `s`.`year_level` AS `year_level`, `pp`.`academic_period_id` AS `academic_period_id`, `ap`.`school_year` AS `academic_year`, `ap`.`quarter` AS `quarter`, `pp`.`total_tuition` AS `total_amount`, coalesce(`pp`.`total_paid`,0) AS `paid_amount`, coalesce(`pp`.`balance`,`pp`.`total_tuition`) AS `balance`, `pp`.`status` AS `payment_plan_status`, count(distinct `i`.`id`) AS `total_installments`, count(distinct (case when (`i`.`status` = 'Pending') then `i`.`id` end)) AS `pending_installments`, count(distinct (case when (`i`.`status` = 'Overdue') then `i`.`id` end)) AS `overdue_installments`, min((case when (`i`.`status` in ('Pending','Overdue')) then `i`.`due_date` end)) AS `next_due_date`, min((case when (`i`.`status` in ('Pending','Overdue')) then `i`.`amount_due` end)) AS `next_amount_due`, sum((case when (`i`.`status` = 'Overdue') then `i`.`late_fee` else 0 end)) AS `total_late_fees` FROM ((((`students` `s` left join `users` `u` on((`u`.`id` = `s`.`user_id`))) left join `payment_plans` `pp` on(((`pp`.`student_id` = `s`.`id`) and (`pp`.`status` = 'Active')))) left join `academic_periods` `ap` on((`ap`.`id` = `pp`.`academic_period_id`))) left join `installments` `i` on((`i`.`payment_plan_id` = `pp`.`id`))) WHERE (`s`.`status` = 'active') GROUP BY `s`.`id`, `pp`.`id`, `ap`.`id`, `u`.`first_name`, `u`.`last_name` ;
 
 --
 -- Indexes for dumped tables
@@ -5011,7 +5063,7 @@ ALTER TABLE `attendance`
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- AUTO_INCREMENT for table `broadcasts`
@@ -5029,7 +5081,7 @@ ALTER TABLE `campus`
 -- AUTO_INCREMENT for table `chatbot_conversations`
 --
 ALTER TABLE `chatbot_conversations`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
 
 --
 -- AUTO_INCREMENT for table `chatbot_knowledge`
@@ -5059,13 +5111,13 @@ ALTER TABLE `document_requirements`
 -- AUTO_INCREMENT for table `enrollments`
 --
 ALTER TABLE `enrollments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `enrollment_addresses`
 --
 ALTER TABLE `enrollment_addresses`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT for table `enrollment_discounts`
@@ -5077,7 +5129,7 @@ ALTER TABLE `enrollment_discounts`
 -- AUTO_INCREMENT for table `enrollment_documents`
 --
 ALTER TABLE `enrollment_documents`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `enrollment_fee_items`
@@ -5089,19 +5141,19 @@ ALTER TABLE `enrollment_fee_items`
 -- AUTO_INCREMENT for table `enrollment_flags`
 --
 ALTER TABLE `enrollment_flags`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `enrollment_learners`
 --
 ALTER TABLE `enrollment_learners`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `enrollment_parent_contacts`
 --
 ALTER TABLE `enrollment_parent_contacts`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
 
 --
 -- AUTO_INCREMENT for table `enrollment_periods`
@@ -5143,7 +5195,7 @@ ALTER TABLE `grading_input_scores`
 -- AUTO_INCREMENT for table `installments`
 --
 ALTER TABLE `installments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=283;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=309;
 
 --
 -- AUTO_INCREMENT for table `late_payment_explanations`
@@ -5167,13 +5219,13 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- AUTO_INCREMENT for table `notification_outbox`
 --
 ALTER TABLE `notification_outbox`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- AUTO_INCREMENT for table `notification_preferences`
@@ -5197,7 +5249,7 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
 
 --
 -- AUTO_INCREMENT for table `payment_installment_penalties`
@@ -5209,7 +5261,7 @@ ALTER TABLE `payment_installment_penalties`
 -- AUTO_INCREMENT for table `payment_plans`
 --
 ALTER TABLE `payment_plans`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT for table `payment_proof_sessions`
@@ -5347,7 +5399,7 @@ ALTER TABLE `uniform_prices`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=459;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=460;
 
 --
 -- AUTO_INCREMENT for table `user_fcm_tokens`
@@ -5366,15 +5418,6 @@ ALTER TABLE `weekly_insights`
 --
 ALTER TABLE `year_levels`
   MODIFY `id` tinyint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
-
--- --------------------------------------------------------
-
---
--- Structure for view `student_balance_summary`
---
-DROP TABLE IF EXISTS `student_balance_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `student_balance_summary`  AS SELECT `s`.`id` AS `student_id`, `s`.`student_id` AS `student_number`, concat(`u`.`first_name`,' ',`u`.`last_name`) AS `student_name`, `s`.`year_level` AS `year_level`, `pp`.`academic_period_id` AS `academic_period_id`, `ap`.`school_year` AS `academic_year`, `ap`.`quarter` AS `quarter`, `pp`.`total_tuition` AS `total_amount`, coalesce(`pp`.`total_paid`,0) AS `paid_amount`, coalesce(`pp`.`balance`,`pp`.`total_tuition`) AS `balance`, `pp`.`status` AS `payment_plan_status`, count(distinct `i`.`id`) AS `total_installments`, count(distinct (case when (`i`.`status` = 'Pending') then `i`.`id` end)) AS `pending_installments`, count(distinct (case when (`i`.`status` = 'Overdue') then `i`.`id` end)) AS `overdue_installments`, min((case when (`i`.`status` in ('Pending','Overdue')) then `i`.`due_date` end)) AS `next_due_date`, min((case when (`i`.`status` in ('Pending','Overdue')) then `i`.`amount_due` end)) AS `next_amount_due`, sum((case when (`i`.`status` = 'Overdue') then `i`.`late_fee` else 0 end)) AS `total_late_fees` FROM ((((`students` `s` left join `users` `u` on((`u`.`id` = `s`.`user_id`))) left join `payment_plans` `pp` on(((`pp`.`student_id` = `s`.`id`) and (`pp`.`status` = 'Active')))) left join `academic_periods` `ap` on((`ap`.`id` = `pp`.`academic_period_id`))) left join `installments` `i` on((`i`.`payment_plan_id` = `pp`.`id`))) WHERE (`s`.`status` = 'active') GROUP BY `s`.`id`, `pp`.`id`, `ap`.`id`, `u`.`first_name`, `u`.`last_name` ;
 
 --
 -- Constraints for dumped tables
