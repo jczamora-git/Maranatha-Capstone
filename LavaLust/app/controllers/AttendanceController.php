@@ -85,7 +85,7 @@ class AttendanceController extends Controller
                 'teacher_id' => intval($teacher_id),
                 'course_id' => intval($course_id),
                 'status' => $status,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now()
             ];
 
             $inserted_id = $this->db->table('attendance')->insert($attendance);
@@ -96,7 +96,7 @@ class AttendanceController extends Controller
                 'message' => 'Attendance marked successfully',
                 'attendance_id' => $inserted_id,
                 'status' => $status,
-                'timestamp' => date('Y-m-d H:i:s')
+                'timestamp' => app_now()
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -385,7 +385,7 @@ class AttendanceController extends Controller
                     'status' => $record['status'],
                     'created_at' => isset($record['attendance_date']) 
                         ? $record['attendance_date'] . ' ' . date('H:i:s')
-                        : date('Y-m-d H:i:s')
+                        : app_now()
                 ];
 
                 try {

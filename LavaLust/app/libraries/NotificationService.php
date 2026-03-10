@@ -322,7 +322,7 @@ class NotificationService
             ->where('user_id', $user_id)
             ->update([
                 'is_read' => 1,
-                'read_at' => date('Y-m-d H:i:s')
+                'read_at' => app_now()
             ]);
     }
     
@@ -339,7 +339,7 @@ class NotificationService
             ->where('is_read', 0)
             ->update([
                 'is_read' => 1,
-                'read_at' => date('Y-m-d H:i:s')
+                'read_at' => app_now()
             ]);
     }
     

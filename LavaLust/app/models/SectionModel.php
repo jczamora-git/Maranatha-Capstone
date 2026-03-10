@@ -89,7 +89,7 @@ class SectionModel extends Model
      */
     public function create($data)
     {
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $insert = [
             'name' => $data['name'] ?? '',
             'description' => $data['description'] ?? null,
@@ -118,7 +118,7 @@ class SectionModel extends Model
      */
     public function update_section($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
 
         $updateData = [];
         $allowed = ['name', 'description', 'status', 'updated_at'];
@@ -140,7 +140,7 @@ class SectionModel extends Model
     {
         return $this->db->table($this->table)
                         ->where('id', $id)
-                        ->update(['status' => 'inactive', 'updated_at' => date('Y-m-d H:i:s')]);
+                        ->update(['status' => 'inactive', 'updated_at' => app_now()]);
     }
 
     /**

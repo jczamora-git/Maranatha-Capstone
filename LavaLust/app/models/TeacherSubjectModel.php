@@ -26,7 +26,7 @@ class TeacherSubjectModel extends Model
             return $existing['id'];
         }
 
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $insert = [
             'teacher_id' => $teacher_id,
             'subject_id' => $subject_id,
@@ -62,8 +62,8 @@ class TeacherSubjectModel extends Model
             $this->db->table('teacher_subject_sections')->insert([
                 'teacher_subject_id' => $teacher_subject_id,
                 'section_id' => $section_id,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now(),
+                'updated_at' => app_now()
             ]);
         }
 
@@ -118,8 +118,8 @@ class TeacherSubjectModel extends Model
                 $this->db->table('teacher_subject_sections')->insert([
                     'teacher_subject_id' => $teacher_subject_id,
                     'section_id' => $section_id,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now(),
+                    'updated_at' => app_now()
                 ]);
             }
         }

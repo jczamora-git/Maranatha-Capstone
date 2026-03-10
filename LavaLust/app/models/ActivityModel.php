@@ -65,7 +65,7 @@ class ActivityModel extends Model
      */
     public function create($data)
     {
-        $data['created_at'] = date('Y-m-d H:i:s');
+        $data['created_at'] = app_now();
         
         return $this->db->table($this->table)
                         ->insert($data);

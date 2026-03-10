@@ -60,6 +60,7 @@ $router->post('/api/auth/set-password', 'UserController::api_set_password');
 $router->post('/api/auth/logout', 'UserController::api_logout');
 $router->get('/api/auth/me', 'UserController::me');
 $router->get('/api/auth/check', 'UserController::check');
+$router->put('/api/auth/profile', 'UserController::api_update_my_profile');
 // Payment PIN routes
 $router->post('/api/auth/setup-payment-pin', 'UserController::api_setup_payment_pin');
 $router->post('/api/auth/verify-payment-pin', 'UserController::api_verify_payment_pin');
@@ -371,6 +372,7 @@ $router->post('/api/payment-discounts', 'PaymentDiscountController::create_disco
 
 // API Routes - Payment Plans
 $router->get('/api/payment-plans', 'PaymentPlanController::get_plans');
+$router->get('/api/payment-plans/installments/all', 'PaymentPlanController::get_all_installments');
 $router->get('/api/payment-plans/{id}', 'PaymentPlanController::get_plan')->where_number('id');
 $router->get('/api/payment-plans/{id}/installments', 'PaymentPlanController::get_installments')->where_number('id');
 $router->post('/api/payment-plans/{id}/mark-notifications-read', 'PaymentPlanController::mark_plan_notifications_as_read')->where_number('id');
@@ -433,6 +435,14 @@ $router->post('/api/feedback', 'FeedbackController::api_create_feedback');
 $router->put('/api/feedback/{id}/sentiment', 'FeedbackController::api_update_sentiment')->where_number('id');
 $router->put('/api/feedback/{id}/response', 'FeedbackController::api_update_response')->where_number('id');
 
+// Concern Tickets
+$router->get('/api/concerns', 'ConcernController::api_get_concerns');
+$router->get('/api/concerns/my', 'ConcernController::api_get_my_concerns');
+$router->post('/api/concerns', 'ConcernController::api_create_concern');
+$router->get('/api/concerns/{id}/messages', 'ConcernController::api_get_concern_messages')->where_number('id');
+$router->post('/api/concerns/{id}/messages', 'ConcernController::api_add_concern_message')->where_number('id');
+$router->put('/api/concerns/{id}/status', 'ConcernController::api_update_concern_status')->where_number('id');
+
 // Sentiment Analysis API (Proxy to local/external ML models)
 $router->get('/api/sentiment/health', 'SentimentController::api_health');
 $router->post('/api/sentiment/predict', 'SentimentController::api_predict');
@@ -476,6 +486,8 @@ $router->post('/api/reports/bulk/pdf', 'ReportController::api_generate_bulk_repo
 // API Routes - Final Grades (Teacher)
 $router->post('/api/final-grades/submit', 'FinalGradesController::api_submit_grades');
 $router->get('/api/final-grades', 'FinalGradesController::api_get_final_grades');
+$router->get('/api/final-grades/submission-control', 'FinalGradesController::api_get_submission_control');
+$router->put('/api/final-grades/submission-control', 'FinalGradesController::api_update_submission_control');
 
 // API Routes - Messages (Student & Teacher)
 $router->get('/api/messages', 'MessageController::api_get_inbox');

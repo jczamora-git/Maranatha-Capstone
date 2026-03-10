@@ -160,7 +160,7 @@ class NotificationController extends Controller
                 ->where('id', $notification_id)
                 ->update([
                     'is_read' => 1,
-                    'read_at' => date('Y-m-d H:i:s')
+                    'read_at' => app_now()
                 ]);
 
             http_response_code(200);
@@ -193,7 +193,7 @@ class NotificationController extends Controller
                 ->where('is_read', 0)
                 ->update([
                     'is_read' => 1,
-                    'read_at' => date('Y-m-d H:i:s')
+                    'read_at' => app_now()
                 ]);
 
             http_response_code(200);
@@ -293,16 +293,21 @@ class NotificationController extends Controller
         }
 
         try {
+            $now = app_now();
+            $today = app_today();
+
             // Total notifications today
             $today_notif_stmt = $this->db->raw(
-                "SELECT COUNT(*) as count FROM notifications WHERE DATE(created_at) = CURDATE()"
+                "SELECT COUNT(*) as count FROM notifications WHERE DATE(created_at) = ?",
+                [$today]
             );
             $today_notif_result = $today_notif_stmt ? $today_notif_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
             $today_notifications = $today_notif_result[0]['count'] ?? 0;
 
             // Total audit logs today
             $today_audit_stmt = $this->db->raw(
-                "SELECT COUNT(*) as count FROM audit_logs WHERE DATE(created_at) = CURDATE()"
+                "SELECT COUNT(*) as count FROM audit_logs WHERE DATE(created_at) = ?",
+                [$today]
             );
             $today_audit_result = $today_audit_stmt ? $today_audit_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
             $today_audits = $today_audit_result[0]['count'] ?? 0;
@@ -316,7 +321,8 @@ class NotificationController extends Controller
 
             // Failed push notifications (last 24h)
             $failed_stmt = $this->db->raw(
-                "SELECT COUNT(*) as count FROM notification_outbox WHERE status = 'failed' AND last_attempt_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+                "SELECT COUNT(*) as count FROM notification_outbox WHERE status = 'failed' AND last_attempt_at >= DATE_SUB(?, INTERVAL 24 HOUR)",
+                [$now]
             );
             $failed_result = $failed_stmt ? $failed_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
             $failed_push = $failed_result[0]['count'] ?? 0;
@@ -325,11 +331,11 @@ class NotificationController extends Controller
             $by_type_stmt = $this->db->raw("
                 SELECT type, COUNT(*) as count
                 FROM notifications
-                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                WHERE created_at >= DATE_SUB(?, INTERVAL 7 DAY)
                 GROUP BY type
                 ORDER BY count DESC
                 LIMIT 10
-            ");
+            ", [$now]);
             $by_type = $by_type_stmt ? $by_type_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
             http_response_code(200);

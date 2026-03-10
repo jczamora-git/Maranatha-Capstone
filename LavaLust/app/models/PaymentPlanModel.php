@@ -73,8 +73,8 @@ class PaymentPlanModel extends Model
      */
     public function create($data)
     {
-        $data['created_at'] = date('Y-m-d H:i:s');
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['created_at'] = app_now();
+        $data['updated_at'] = app_now();
         
         // Ensure required defaults
         if (!isset($data['total_paid'])) {
@@ -95,7 +95,7 @@ class PaymentPlanModel extends Model
      */
     public function update($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
         
         return $this->db->table($this->table)
                         ->where('id', $id)

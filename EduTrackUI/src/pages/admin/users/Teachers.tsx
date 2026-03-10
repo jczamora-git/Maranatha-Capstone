@@ -422,17 +422,20 @@ const Teachers = () => {
       const year = new Date().getFullYear();
       const res = await apiGet(`${API_ENDPOINTS.TEACHERS}/last-id?year=${year}`);
       if (res && res.last_id) {
-        const match = String(res.last_id).match(/EMP\d+-(\d+)/);
+        const match = String(res.last_id).match(/EMP(\d+)-(\d+)/);
         if (match) {
-          const nextNum = parseInt(match[1], 10) + 1;
-          return `EMP${year}-${String(nextNum).padStart(3, '0')}`;
+          const lastYear = parseInt(match[1], 10);
+          if (lastYear === year) {
+            const nextNum = parseInt(match[2], 10) + 1;
+            return `EMP${year}-${String(nextNum).padStart(3, '0')}`;
+          }
+          // Different year — start fresh
         }
       }
       return `EMP${year}-001`;
     } catch (err) {
       console.error('Error generating employee ID:', err);
-      const year = new Date().getFullYear();
-      return `EMP${year}-001`;
+      return `EMP${new Date().getFullYear()}-001`;
     }
   };
 

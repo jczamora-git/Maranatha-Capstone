@@ -37,7 +37,7 @@ class PaymentDiscountApplicationModel extends Model {
                 'template_id' => $template_id,
                 'applied_amount' => $discount_amount,
                 'approved_by' => null,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now()
             ];
             
             $this->db->table('enrollment_discounts')->insert($data);

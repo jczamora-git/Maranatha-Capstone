@@ -68,8 +68,8 @@ class ChatbotKnowledgeModel extends Model
             'is_active' => $data['is_active'] ?? 1,
             'created_by' => $data['created_by'] ?? null,
             'updated_by' => $data['updated_by'] ?? null,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
+            'created_at' => app_now(),
+            'updated_at' => app_now(),
         ];
 
         return $this->db->table($this->table)->insert($payload);
@@ -84,7 +84,7 @@ class ChatbotKnowledgeModel extends Model
             'route' => $data['route'] ?? null,
             'is_active' => $data['is_active'] ?? 1,
             'updated_by' => $data['updated_by'] ?? null,
-            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_at' => app_now(),
         ];
 
         return $this->db->table($this->table)
@@ -106,7 +106,7 @@ class ChatbotKnowledgeModel extends Model
             ->update([
                 'is_active' => $isActive ? 1 : 0,
                 'updated_by' => $updatedBy,
-                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_at' => app_now(),
             ]);
     }
 }

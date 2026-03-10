@@ -160,7 +160,7 @@ class RFIDController extends Controller
             }
 
             $scanType = $scanType === 'exit' ? 'exit' : 'entry';
-            $now = date('Y-m-d H:i:s');
+            $now = app_now();
             $today = date('Y-m-d');
 
             $session = $this->RFIDSessionModel->get_active($scanType);

@@ -138,8 +138,8 @@ class EnrollmentController extends Controller
                     'type' => 'account_setup',
                     'expires_at' => $expiresAt,
                     'used' => 0,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now(),
+                    'updated_at' => app_now()
                 ];
                 $this->db->table('password_resets')->insert($tokenData);
 
@@ -1281,7 +1281,7 @@ class EnrollmentController extends Controller
             $userId = $this->session->userdata('user_id');
 
             // Get current grade from students table
-            $query = "SELECT year_level FROM students WHERE user_id = ? LIMIT 1";
+            $query = "SELECT year_level, status FROM students WHERE user_id = ? LIMIT 1";
             $stmt = $this->db->raw($query, [$userId]);
             $student = $stmt->fetch();
 
@@ -1292,6 +1292,7 @@ class EnrollmentController extends Controller
             }
 
             $currentGrade = $student['year_level'];
+            $studentStatus = $student['status'] ?? 'active';
             
             // Grade progression mapping
             $gradeProgression = [
@@ -1307,13 +1308,14 @@ class EnrollmentController extends Controller
             ];
 
             $nextGrade = $gradeProgression[$currentGrade] ?? $currentGrade;
+            $canEnroll = $studentStatus !== 'graduated' && $nextGrade !== 'Graduated';
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'current_grade' => $currentGrade,
                 'next_grade' => $nextGrade,
-                'can_enroll' => $nextGrade !== 'Graduated'
+                'can_enroll' => $canEnroll
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -1409,6 +1411,20 @@ class EnrollmentController extends Controller
             if (!$this->session->userdata('logged_in')) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+
+            $userId = $this->session->userdata('user_id');
+            $statusQuery = "SELECT status FROM students WHERE user_id = ? LIMIT 1";
+            $statusStmt = $this->db->raw($statusQuery, [$userId]);
+            $statusRow = $statusStmt->fetch();
+
+            if ($statusRow && ($statusRow['status'] ?? '') === 'graduated') {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Student has graduated and cannot continue enrollment'
+                ]);
                 return;
             }
 
@@ -1579,7 +1595,7 @@ class EnrollmentController extends Controller
                 'template_id' => $templateId,
                 'payment_id' => isset($data['payment_id']) ? $data['payment_id'] : null,
                 'applied_amount' => $data['discount_amount'],
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now()
             ];
 
             // Insert into enrollment_discounts table
@@ -1700,7 +1716,7 @@ class EnrollmentController extends Controller
                 ->where('is_read', 0)
                 ->update([
                     'is_read' => 1,
-                    'read_at' => date('Y-m-d H:i:s')
+                    'read_at' => app_now()
                 ]);
         } catch (Exception $e) {
             error_log('Failed to mark all admin notifications as read: ' . $e->getMessage());

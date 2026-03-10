@@ -493,7 +493,7 @@ class StudentController extends Controller
 
                 // Insert directly with provided ID
                 $studentData['student_id'] = $student_id;
-                $studentData['created_at'] = date('Y-m-d H:i:s');
+                $studentData['created_at'] = app_now();
 
                 try {
                     $this->db->transaction();
@@ -630,6 +630,22 @@ class StudentController extends Controller
 
             if (array_key_exists('status', $json_data)) {
                 $updateData['status'] = $json_data['status'];
+
+                if ($json_data['status'] === 'graduated') {
+                    if (array_key_exists('graduationBatch', $json_data)) {
+                        $batch = trim((string) $json_data['graduationBatch']);
+                        $updateData['graduation_batch'] = $batch !== '' ? $batch : null;
+                    }
+                    $updateData['graduated_at'] = app_now();
+                } else {
+                    $updateData['graduated_at'] = null;
+                    if (array_key_exists('graduationBatch', $json_data)) {
+                        $batch = trim((string) $json_data['graduationBatch']);
+                        $updateData['graduation_batch'] = $batch !== '' ? $batch : null;
+                    } else {
+                        $updateData['graduation_batch'] = null;
+                    }
+                }
             }
 
             if (array_key_exists('gender', $json_data)) {
@@ -930,7 +946,7 @@ class StudentController extends Controller
                         'password' => password_hash('demo123', PASSWORD_BCRYPT), // Default password
                         'role' => 'student',
                         'status' => 'active',
-                        'created_at' => date('Y-m-d H:i:s')
+                        'created_at' => app_now()
                     ];
 
                     $userId = $this->db->table('users')->insert($userData);
@@ -949,7 +965,7 @@ class StudentController extends Controller
                             'student_id' => $studentId,
                             'year_level' => $yearLevelNormalized,
                             'status' => 'active',
-                            'created_at' => date('Y-m-d H:i:s')
+                            'created_at' => app_now()
                         ];
 
                         try {
@@ -1074,6 +1090,12 @@ class StudentController extends Controller
         }
 
         try {
+            $requestedYearLevel = isset($_GET['year_level']) ? trim((string)$_GET['year_level']) : '';
+            $normalizedRequestedYearLevel = $requestedYearLevel !== '' ? $this->normalize_year_level($requestedYearLevel) : null;
+            $requestedYearLevelCanonical = $requestedYearLevel !== ''
+                ? preg_replace('/\s+/', ' ', strtolower($requestedYearLevel))
+                : '';
+
             // Fetch all students
             $students = $this->StudentModel->get_all([]);
             if (!is_array($students)) $students = [];
@@ -1094,6 +1116,20 @@ class StudentController extends Controller
                     'email' => $email,
                     'year_level' => $yearLevel,
                 ];
+            }
+
+            if ($requestedYearLevel !== '') {
+                $prepared = array_values(array_filter($prepared, function($row) use ($normalizedRequestedYearLevel, $requestedYearLevelCanonical) {
+                    $rowYearRaw = trim((string)($row['year_level'] ?? ''));
+                    $rowYearNormalized = $this->normalize_year_level($rowYearRaw);
+                    $rowYearCanonical = preg_replace('/\s+/', ' ', strtolower($rowYearRaw));
+
+                    if ($normalizedRequestedYearLevel) {
+                        return $rowYearNormalized === $normalizedRequestedYearLevel || $rowYearCanonical === $requestedYearLevelCanonical;
+                    }
+
+                    return $rowYearCanonical === $requestedYearLevelCanonical;
+                }));
             }
 
             // Sorting helper

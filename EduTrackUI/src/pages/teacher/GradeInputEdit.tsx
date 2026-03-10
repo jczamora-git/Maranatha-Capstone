@@ -68,7 +68,7 @@ const GradeInputEdit = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "teacher") {
+    if (!isAuthenticated || !["teacher", "admin"].includes(String(user?.role ?? ''))) {
       navigate("/auth");
     }
   }, [isAuthenticated, user, navigate]);
@@ -288,8 +288,57 @@ const GradeInputEdit = () => {
   };
 
   const formatFinalGrade = (initialGrade: number): number => {
-    const clamped = Math.max(0, Math.min(100, initialGrade || 0));
-    return Math.round(clamped);
+    const clamped = Math.max(0, Math.min(100, Number(initialGrade || 0)));
+
+    if (clamped >= 60) {
+      return Math.min(100, 75 + Math.floor((clamped - 60) / 1.6));
+    }
+
+    return 60 + Math.floor(clamped / 4);
+  };
+
+  const normalizeText = (value: any): string => String(value ?? '').replace(/\s+/g, ' ').trim();
+
+  const formatStudentDisplayName = (student: any): string => {
+    const lastName = normalizeText(student?.last_name ?? student?.lastname ?? '');
+    const firstName = normalizeText(student?.first_name ?? student?.firstname ?? '');
+    const middleRaw = normalizeText(student?.middle_name ?? student?.middlename ?? student?.middle_initial ?? '');
+    const middleInitial = middleRaw ? `${middleRaw.charAt(0).toUpperCase()}.` : '';
+
+    if (lastName || firstName) {
+      const base = [lastName, firstName].filter(Boolean).join(', ');
+      return `${base}${middleInitial ? ` ${middleInitial}` : ''}`.trim();
+    }
+
+    return normalizeText(student?.name ?? '');
+  };
+
+  const getStudentSortKeys = (student: any) => {
+    const lastName = normalizeText(student?.last_name ?? student?.lastname ?? '');
+    const firstName = normalizeText(student?.first_name ?? student?.firstname ?? '');
+    const middleRaw = normalizeText(student?.middle_name ?? student?.middlename ?? student?.middle_initial ?? '');
+    const middleInitial = middleRaw ? middleRaw.charAt(0).toUpperCase() : '';
+
+    return {
+      lastName,
+      firstName,
+      middleInitial,
+    };
+  };
+
+  const normalizeGender = (value: any): string => normalizeText(value).toLowerCase();
+
+  const getGenderRank = (gender: string): number => {
+    if (['male', 'm', 'boy', 'man'].includes(gender)) return 0;
+    if (['female', 'f', 'girl', 'woman'].includes(gender)) return 1;
+    return 2;
+  };
+
+  const getGenderGroupLabel = (gender: string): string => {
+    const rank = getGenderRank(gender);
+    if (rank === 0) return 'Male';
+    if (rank === 1) return 'Female';
+    return 'Unspecified';
   };
 
   // Fetch data on mount
@@ -322,10 +371,12 @@ const GradeInputEdit = () => {
 
         if (mounted && resolvedPeriodId) setSelectedPeriodId(resolvedPeriodId);
 
-        // Fetch teacher subjects — same endpoint as GradeInput
+        // Fetch teacher/admin subjects — same endpoint policy as GradeInput
         let yearLevel: string | null = null;
         try {
-          const subjectsRes = await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
+          const subjectsRes = user?.role === 'admin'
+            ? await apiGet(API_ENDPOINTS.SUBJECTS)
+            : await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
           const subjects = extractList(subjectsRes, ['subjects', 'data']);
           if (mounted && Array.isArray(subjects)) {
             setCourses(subjects);
@@ -435,10 +486,16 @@ const GradeInputEdit = () => {
             const gridRows = studList.map((st: any) => {
               const stGrades = st.grades ?? st.activity_grades ?? [];
               const studentMapId = String(st.id ?? st.student_id ?? st.user_id ?? '');
+              const sortKeys = getStudentSortKeys(st);
+              const normalizedGender = normalizeGender(st.gender ?? st.sex ?? '');
               const row: any = {
                 id: st.student_id ?? st.id ?? String(st.id),
                 student_db_id: st.id ?? null,
-                name: st.name ?? `${st.first_name ?? ''} ${st.last_name ?? ''}`,
+                name: formatStudentDisplayName(st),
+                gender: normalizedGender,
+                _sortLastName: sortKeys.lastName,
+                _sortFirstName: sortKeys.firstName,
+                _sortMiddleInitial: sortKeys.middleInitial,
               };
 
               allItems.forEach((item: any) => {
@@ -457,7 +514,23 @@ const GradeInputEdit = () => {
               return recalculateMergedFields(row);
             });
 
-            setGrades(gridRows);
+            const groupedAndSortedRows = [...gridRows].sort((a: any, b: any) => {
+              const genderDiff = getGenderRank(a.gender) - getGenderRank(b.gender);
+              if (genderDiff !== 0) return genderDiff;
+
+              const lastNameDiff = String(a._sortLastName ?? '').localeCompare(String(b._sortLastName ?? ''), undefined, { sensitivity: 'base' });
+              if (lastNameDiff !== 0) return lastNameDiff;
+
+              const firstNameDiff = String(a._sortFirstName ?? '').localeCompare(String(b._sortFirstName ?? ''), undefined, { sensitivity: 'base' });
+              if (firstNameDiff !== 0) return firstNameDiff;
+
+              const middleDiff = String(a._sortMiddleInitial ?? '').localeCompare(String(b._sortMiddleInitial ?? ''), undefined, { sensitivity: 'base' });
+              if (middleDiff !== 0) return middleDiff;
+
+              return String(a.id ?? '').localeCompare(String(b.id ?? ''), undefined, { sensitivity: 'base' });
+            });
+
+            setGrades(groupedAndSortedRows);
           }
         } catch (e) {
           console.error('Failed to fetch students:', e);
@@ -714,20 +787,95 @@ const GradeInputEdit = () => {
 
   const [sorting, setSorting] = useState<SortingState>([]);
 
+  const toggleColumnSort = useCallback((columnId: string) => {
+    setSorting((prev) => {
+      const current = prev[0];
+      if (!current || current.id !== columnId) {
+        return [{ id: columnId, desc: false }];
+      }
+      if (current.desc === false) {
+        return [{ id: columnId, desc: true }];
+      }
+      return [];
+    });
+  }, []);
+
   // Sort filteredGrades manually so pinnedTopRow (HPS) is always excluded from sorting
   const sortedGrades = useMemo(() => {
     if (!sorting.length) return filteredGrades;
     const { id, desc } = sorting[0];
+
+    const getSortableValue = (row: any): string | number => {
+      const writtenTotal = calculateWrittenTotal(row);
+      const performanceTotal = calculatePerformanceTotal(row);
+      const quarterlyTotal = calculateQuarterlyTotal(row);
+
+      const writtenMax = getWrittenMaxScore();
+      const performanceMax = getPerformanceMaxScore();
+      const quarterlyMax = getQuarterlyMaxScore();
+
+      const writtenPs = (writtenTotal / (writtenMax || 1)) * 100;
+      const performancePs = (performanceTotal / (performanceMax || 1)) * 100;
+      const quarterlyPs = (quarterlyTotal / (quarterlyMax || 1)) * 100;
+
+      const writtenWs = (writtenTotal / (writtenMax || 1)) * currentWeights.ww;
+      const performanceWs = (performanceTotal / (performanceMax || 1)) * currentWeights.pt;
+      const quarterlyWs = (quarterlyTotal / (quarterlyMax || 1)) * currentWeights.qa;
+
+      const initial = writtenWs + performanceWs + quarterlyWs;
+      const final = formatFinalGrade(initial);
+
+      switch (id) {
+        case 'written_total':
+          return writtenTotal;
+        case 'written_ps':
+          return writtenPs;
+        case 'written_ws':
+          return writtenWs;
+        case 'performance_total':
+          return performanceTotal;
+        case 'performance_ps':
+          return performancePs;
+        case 'performance_ws':
+          return performanceWs;
+        case 'quarterly_total':
+          return quarterlyTotal;
+        case 'quarterly_ps':
+          return quarterlyPs;
+        case 'quarterly_ws':
+          return quarterlyWs;
+        case 'initial_grade':
+          return initial;
+        case 'final_grade':
+          return final;
+        default:
+          return row[id] ?? '';
+      }
+    };
+
     return [...filteredGrades].sort((a, b) => {
-      const aVal = a[id] ?? '';
-      const bVal = b[id] ?? '';
-      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      const aVal = getSortableValue(a);
+      const bVal = getSortableValue(b);
+
+      let cmp = 0;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        cmp = String(aVal).localeCompare(String(bVal), undefined, { sensitivity: 'base' });
+      }
+
       return desc ? -cmp : cmp;
     });
-  }, [filteredGrades, sorting]);
+  }, [filteredGrades, sorting, currentWeights, componentItems]);
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const columnHelper = createColumnHelper<any>();
+  const manuallySortableComputedColumns = useMemo(() => new Set([
+    'written_total', 'written_ps', 'written_ws',
+    'performance_total', 'performance_ps', 'performance_ws',
+    'quarterly_total', 'quarterly_ps', 'quarterly_ws',
+    'initial_grade', 'final_grade',
+  ]), []);
 
   const writtenMaxScore = useMemo(() => getWrittenMaxScore(), [componentItems.written]);
   const performanceMaxScore = useMemo(() => getPerformanceMaxScore(), [componentItems.performance]);
@@ -840,15 +988,15 @@ const GradeInputEdit = () => {
         columns: [
           columnHelper.accessor('id', {
             id: 'id',
-            header: 'ID',
-            size: 120,
-            cell: (info) => <span className="font-semibold text-slate-700">{String(info.getValue() ?? '')}</span>,
+            header: () => <span className="block w-full text-right">ID</span>,
+            size: 140,
+            cell: (info) => <span className="block w-full text-right whitespace-nowrap font-semibold text-slate-700">{String(info.getValue() ?? '')}</span>,
           }),
           columnHelper.accessor('name', {
             id: 'name',
             header: "Learner's Name",
             size: 220,
-            cell: (info) => <span className="font-medium text-slate-800">{String(info.getValue() ?? '')}</span>,
+            cell: (info) => <span className="font-medium block w-full text-left text-slate-800">{String(info.getValue() ?? '')}</span>,
           }),
         ],
       }),
@@ -861,6 +1009,7 @@ const GradeInputEdit = () => {
             id: 'written_total',
             header: 'Total',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -874,6 +1023,7 @@ const GradeInputEdit = () => {
             id: 'written_ps',
             header: 'PS',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -887,6 +1037,7 @@ const GradeInputEdit = () => {
             id: 'written_ws',
             header: 'WS',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -907,6 +1058,7 @@ const GradeInputEdit = () => {
             id: 'performance_total',
             header: 'Total',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -920,6 +1072,7 @@ const GradeInputEdit = () => {
             id: 'performance_ps',
             header: 'PS',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -933,6 +1086,7 @@ const GradeInputEdit = () => {
             id: 'performance_ws',
             header: 'WS',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -953,6 +1107,7 @@ const GradeInputEdit = () => {
             id: 'quarterly_total',
             header: 'Total',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -966,6 +1121,7 @@ const GradeInputEdit = () => {
             id: 'quarterly_ps',
             header: 'PS',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -979,6 +1135,7 @@ const GradeInputEdit = () => {
             id: 'quarterly_ws',
             header: 'WS',
             size: 88,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -998,6 +1155,7 @@ const GradeInputEdit = () => {
             id: 'initial_grade',
             header: 'Initial',
             size: 100,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -1012,6 +1170,7 @@ const GradeInputEdit = () => {
             id: 'final_grade',
             header: 'Grade',
             size: 100,
+            enableSorting: true,
             cell: (info) => {
               const row = info.row.original;
               if (row.__hps) {
@@ -1032,7 +1191,27 @@ const GradeInputEdit = () => {
     ];
   }, [columnHelper, componentItems, currentWeights, getRowMetrics, handleCellValueChanged, quarterlyMaxScore, selectedQuarter, writtenMaxScore, performanceMaxScore]);
 
-  const tableData = useMemo(() => [pinnedTopRow, ...sortedGrades], [pinnedTopRow, sortedGrades]);
+  const rowsWithGenderLabels = useMemo(() => {
+    const rows: any[] = [];
+    let previousGenderLabel: string | null = null;
+
+    sortedGrades.forEach((row: any) => {
+      const currentGenderLabel = getGenderGroupLabel(String(row?.gender ?? ''));
+      if (currentGenderLabel !== previousGenderLabel) {
+        rows.push({
+          __gender_label: true,
+          __label_text: currentGenderLabel,
+          id: `gender-label-${currentGenderLabel.toLowerCase()}-${rows.length}`,
+        });
+        previousGenderLabel = currentGenderLabel;
+      }
+      rows.push(row);
+    });
+
+    return rows;
+  }, [sortedGrades]);
+
+  const tableData = useMemo(() => [pinnedTopRow, ...rowsWithGenderLabels], [pinnedTopRow, rowsWithGenderLabels]);
 
   const table = useReactTable({
     data: tableData,
@@ -1066,11 +1245,11 @@ const GradeInputEdit = () => {
     const sticky = columnId === 'id'
       ? ' sticky left-0 z-30 bg-white'
       : columnId === 'name'
-        ? ' sticky left-[120px] z-30 text-left bg-white'
+        ? ' sticky left-[140px] z-30 text-left bg-white'
         : '';
 
     const width = columnId === 'id'
-      ? ' min-w-[120px] w-[120px]'
+      ? ' min-w-[140px] w-[140px]'
       : columnId === 'name'
         ? ' min-w-[220px] w-[220px]'
         : columnId.endsWith('_total') || columnId.endsWith('_ps') || columnId.endsWith('_ws')
@@ -1079,7 +1258,9 @@ const GradeInputEdit = () => {
             ? ' min-w-[100px] w-[100px]'
             : ' min-w-[96px] w-[96px]';
 
-    return `${base}${sticky}${width}`;
+    const alignment = columnId === 'id' ? ' text-right whitespace-nowrap' : '';
+
+    return `${base}${sticky}${width}${alignment}`;
   }, []);
 
   const handleSaveGrades = () => {
@@ -1710,6 +1891,7 @@ const GradeInputEdit = () => {
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       const headerId = header.column.id;
+                      const canSortHeader = manuallySortableComputedColumns.has(headerId) || header.column.getCanSort();
                       const fixedColumns = [
                         'id', 'name',
                         'written_total', 'written_ps', 'written_ws',
@@ -1787,13 +1969,19 @@ const GradeInputEdit = () => {
                           {header.isPlaceholder ? null : (
                             <div className="flex items-center gap-1">
                               {canDrag && <GripVertical className="h-3 w-3 text-muted-foreground" />}
-                              <button
-                                type="button"
-                                className="flex-1 text-left hover:opacity-70 transition-opacity"
-                                onClick={header.column.getToggleSortingHandler()}
-                              >
-                                {flexRender(header.column.columnDef.header, header.getContext())}
-                              </button>
+                              {canSortHeader ? (
+                                <button
+                                  type="button"
+                                  className="flex-1 text-left hover:opacity-70 transition-opacity"
+                                  onClick={() => toggleColumnSort(header.column.id)}
+                                >
+                                  {flexRender(header.column.columnDef.header, header.getContext())}
+                                </button>
+                              ) : (
+                                <div className="flex-1 text-left">
+                                  {flexRender(header.column.columnDef.header, header.getContext())}
+                                </div>
+                              )}
                             </div>
                           )}
                         </th>
@@ -1805,6 +1993,18 @@ const GradeInputEdit = () => {
               <tbody>
                 {table.getRowModel().rows.map((row) => {
                   const isHps = !!row.original.__hps;
+                  const isGenderLabel = !!row.original.__gender_label;
+
+                  if (isGenderLabel) {
+                    return (
+                      <tr key={row.id} className="border-y border-slate-300 bg-slate-100/70">
+                        <td colSpan={row.getVisibleCells().length} className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          {String(row.original.__label_text ?? 'Unspecified')}
+                        </td>
+                      </tr>
+                    );
+                  }
+
                   return (
                     <tr key={row.id} className={isHps ? 'bg-gradient-to-r from-slate-100 to-slate-50 font-semibold border-y-2 border-slate-300' : 'bg-white hover:bg-slate-50/50 transition-colors'}>
                       {row.getVisibleCells().map((cell) => {

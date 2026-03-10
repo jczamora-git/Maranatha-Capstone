@@ -377,7 +377,7 @@ class TeacherController extends Controller
             $teacherData = [
                 'user_id' => $user_id,
                 'employee_id' => $employee_id,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now()
             ];
 
             $result = $this->db->table('teachers')->insert($teacherData);

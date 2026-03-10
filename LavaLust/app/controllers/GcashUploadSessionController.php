@@ -287,7 +287,7 @@ class GcashUploadSessionController extends Controller
                 'original_filename' => $original_name,
                 'ocr_reference'     => $ocr_reference,
                 'status'            => 'uploaded',
-                'uploaded_at'       => date('Y-m-d H:i:s'),
+                'uploaded_at'       => app_now(),
             ]);
 
             echo json_encode([

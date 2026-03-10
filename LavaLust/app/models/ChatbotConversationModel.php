@@ -43,7 +43,7 @@ class ChatbotConversationModel extends Model
             'normalized_message' => $data['normalized_message'] ?? '',
             'reply' => $data['reply'] ?? '',
             'source' => $data['source'] ?? 'unknown',
-            'created_at' => date('Y-m-d H:i:s'),
+            'created_at' => app_now(),
         ];
 
         return $this->db->table($this->table)->insert($payload);

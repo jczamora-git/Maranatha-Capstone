@@ -64,7 +64,7 @@ class UserModel extends Model
     public function update_user($id, $data)
     {
         // Update timestamp
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
         
         // If password is being updated, hash it
         if (isset($data['password'])) {
@@ -142,7 +142,7 @@ class UserModel extends Model
         return $this->db->table($this->table)
                         ->where('id', $user_id)
                         ->update([
-                            'updated_at' => date('Y-m-d H:i:s')
+                            'updated_at' => app_now()
                         ]);
     }
     
@@ -188,7 +188,7 @@ class UserModel extends Model
                         ->where('id', $id)
                         ->update([
                             'status' => 'inactive',
-                            'updated_at' => date('Y-m-d H:i:s')
+                            'updated_at' => app_now()
                         ]);
     }
 

@@ -25,7 +25,7 @@ class StudentSubjectModel extends Model
 
         if (!empty($exists) && isset($exists['id'])) return $exists['id'];
 
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $res = $this->db->table($this->table)->insert([
             'student_id' => $student_id,
             'subject_id' => $subject_id,

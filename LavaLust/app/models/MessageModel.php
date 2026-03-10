@@ -25,8 +25,8 @@ class MessageModel extends Model
             'section_id' => $section_id,
             'body' => $body,
             'attachments' => $attachments_json,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
+            'created_at' => app_now(),
+            'updated_at' => app_now()
         ]);
 
         return $insertId ?: false;
@@ -76,8 +76,8 @@ class MessageModel extends Model
      */
     public function mark_as_read($message_id, $receiver_id)
     {
-        $sql = "UPDATE {$this->table} SET is_read = 1, updated_at = NOW() WHERE id = ? AND receiver_id = ?";
-        $stmt = $this->db->raw($sql, [$message_id, $receiver_id]);
+        $sql = "UPDATE {$this->table} SET is_read = 1, updated_at = ? WHERE id = ? AND receiver_id = ?";
+        $stmt = $this->db->raw($sql, [app_now(), $message_id, $receiver_id]);
         return $stmt->rowCount();
     }
 
@@ -87,12 +87,12 @@ class MessageModel extends Model
     public function mark_all_as_read($receiver_id, $sender_id = null)
     {
         if ($sender_id) {
-            $sql = "UPDATE {$this->table} SET is_read = 1, updated_at = NOW() WHERE receiver_id = ? AND sender_id = ? AND is_read = 0";
-            $stmt = $this->db->raw($sql, [$receiver_id, $sender_id]);
+            $sql = "UPDATE {$this->table} SET is_read = 1, updated_at = ? WHERE receiver_id = ? AND sender_id = ? AND is_read = 0";
+            $stmt = $this->db->raw($sql, [app_now(), $receiver_id, $sender_id]);
             return $stmt->rowCount();
         } else {
-            $sql = "UPDATE {$this->table} SET is_read = 1, updated_at = NOW() WHERE receiver_id = ? AND is_read = 0";
-            $stmt = $this->db->raw($sql, [$receiver_id]);
+            $sql = "UPDATE {$this->table} SET is_read = 1, updated_at = ? WHERE receiver_id = ? AND is_read = 0";
+            $stmt = $this->db->raw($sql, [app_now(), $receiver_id]);
             return $stmt->rowCount();
         }
     }
@@ -173,8 +173,8 @@ class MessageModel extends Model
                 'section_id' => $section_id,
                 'body' => $body,
                 'attachments' => $attachments_json,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now(),
+                'updated_at' => app_now()
             ]);
 
             if ($insertId) {

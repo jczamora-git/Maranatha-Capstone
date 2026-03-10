@@ -39,13 +39,13 @@ class RFIDScanModel extends Model
             'student_id' => $data['student_id'] ?? null,
             'student_number' => $data['student_number'] ?? null,
             'rfid_code' => $data['rfid_code'],
-            'scan_time' => $data['scan_time'] ?? date('Y-m-d H:i:s'),
+            'scan_time' => $data['scan_time'] ?? app_now(),
             'scan_type' => $data['scan_type'],
             'status' => $data['status'] ?? 'success',
             'is_late' => $data['is_late'] ?? 0,
             'image_path' => $data['image_path'] ?? null,
             'notes' => $data['notes'] ?? null,
-            'created_at' => date('Y-m-d H:i:s')
+            'created_at' => app_now()
         ];
 
         return $this->db->table($this->table)->insert($payload);

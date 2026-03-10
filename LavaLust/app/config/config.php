@@ -343,6 +343,20 @@ $config['sentiment_api_mode'] = 'external'; // 'local' | 'external' | 'auto'
 $config['sentiment_local_url'] = 'http://localhost:5000';
 $config['sentiment_hf_token'] = $_ENV['HF_API_TOKEN'] ?? getenv('HF_API_TOKEN') ?: ''; // Read from .env file or environment variable
 $config['sentiment_hf_url'] = 'https://router.huggingface.co/hf-inference/models/tabularisai/multilingual-sentiment-analysis';
+$config['feedback_moderation_hf_url'] = 'https://router.huggingface.co/hf-inference/models/facebook/roberta-hate-speech-dynabench-r4-target';
+$config['feedback_moderation_threshold'] = 0.75;
+$config['feedback_blocked_keywords'] = [
+    'putang ina',
+    'gago',
+    'tanga',
+    'bobo',
+    'ulol',
+    'fuck you',
+    'bitch',
+    'nigger',
+    'faggot',
+    'retard',
+];
 $config['insights_hf_url'] = 'https://router.huggingface.co/v1/chat/completions';
 $config['insights_hf_model'] = 'Qwen/Qwen2.5-7B-Instruct:together';
 $config['insights_window_days'] = 7; // Today + previous 6 days

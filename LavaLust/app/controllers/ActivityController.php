@@ -490,7 +490,7 @@ class ActivityController extends Controller
             $gradeData = [
                 'grade' => $data['grade'] ?? null,
                 'status' => $data['status'] ?? 'Pending',
-                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_at' => app_now(),
             ];
 
             if ($existing) {
@@ -522,7 +522,7 @@ class ActivityController extends Controller
                 // Create new record
                 $gradeData['activity_id'] = $activityId;
                 $gradeData['student_id'] = $data['student_id'];
-                $gradeData['created_at'] = date('Y-m-d H:i:s');
+                $gradeData['created_at'] = app_now();
 
                 $result = $this->db->table('activity_grades')
                                    ->insert($gradeData);
@@ -1755,7 +1755,7 @@ class ActivityController extends Controller
                         $existingGrade = intval($existing['grade'] ?? 0);
                         if ($existingGrade !== $grade) {
                             $updateQuery = "UPDATE activity_grades SET grade = ?, updated_at = ? WHERE activity_id = ? AND student_id = ?";
-                            $updateStmt = $this->db->raw($updateQuery, [$grade, date('Y-m-d H:i:s'), $activityId, $studentDbId]);
+                            $updateStmt = $this->db->raw($updateQuery, [$grade, app_now(), $activityId, $studentDbId]);
                             $affectedRows = $updateStmt->rowCount();
                             if ($affectedRows > 0) {
                                 $updated++;
@@ -1768,7 +1768,7 @@ class ActivityController extends Controller
                                         'new_grade' => $grade,
                                         'affected_rows' => $affectedRows,
                                         'query' => $updateQuery,
-                                        'params' => [$grade, date('Y-m-d H:i:s'), $activityId, $studentDbId]
+                                        'params' => [$grade, app_now(), $activityId, $studentDbId]
                                     ];
                                 }
                             } else {
@@ -1789,7 +1789,7 @@ class ActivityController extends Controller
                     } else {
                         // Insert new record
                         $insertQuery = "INSERT INTO activity_grades (activity_id, student_id, grade, created_at, updated_at) VALUES (?, ?, ?, ?, ?)";
-                        $now = date('Y-m-d H:i:s');
+                        $now = app_now();
                         $insertStmt = $this->db->raw($insertQuery, [$activityId, $studentDbId, $grade, $now, $now]);
                         if ($insertStmt) {
                             $inserted++;
@@ -1823,7 +1823,7 @@ class ActivityController extends Controller
 
                             $gradeData = [
                                 'grade' => $actGrade,
-                                'updated_at' => date('Y-m-d H:i:s'),
+                                'updated_at' => app_now(),
                             ];
 
                             if ($existing) {
@@ -1842,7 +1842,7 @@ class ActivityController extends Controller
                             } else {
                                 $gradeData['activity_id'] = $examAct['id'];
                                 $gradeData['student_id'] = $studentDbId;
-                                $gradeData['created_at'] = date('Y-m-d H:i:s');
+                                $gradeData['created_at'] = app_now();
 
                                 $result = $this->db->table('activity_grades')->insert($gradeData);
                                 if ($result) {
@@ -1936,7 +1936,7 @@ class ActivityController extends Controller
             $inserted = 0;
             $updated = 0;
             $order = 1;
-            $now = date('Y-m-d H:i:s');
+            $now = app_now();
             $userId = (int)($this->session->userdata('user_id') ?? 0);
 
             foreach ($activities as $activity) {
@@ -2298,7 +2298,7 @@ class ActivityController extends Controller
                 return;
             }
 
-            $now = date('Y-m-d H:i:s');
+            $now = app_now();
             $userId = (int)($this->session->userdata('user_id') ?? 0);
 
             $itemId = (int)$this->db->table('grading_input_items')->insert([
@@ -2414,11 +2414,11 @@ class ActivityController extends Controller
                 "UPDATE grading_input_items
                  SET title = ?, component = ?, max_score = ?, merge_strategy = ?, display_order = ?, quarter = ?, is_active = ?, updated_at = ?
                  WHERE id = ?",
-                [$title, $component, $maxScore, $mergeStrategy, $displayOrder, $quarter, $isActive, date('Y-m-d H:i:s'), $itemId]
+                [$title, $component, $maxScore, $mergeStrategy, $displayOrder, $quarter, $isActive, app_now(), $itemId]
             );
 
             if (($existing['source_type'] ?? '') === 'merged' && isset($data['merge_sources']) && is_array($data['merge_sources'])) {
-                $now = date('Y-m-d H:i:s');
+                $now = app_now();
 
                 // Re-activate items that were previously sources of this merge (before replacing)
                 $oldSrcStmt = $this->db->raw(
@@ -2496,7 +2496,7 @@ class ActivityController extends Controller
 
         try {
             $itemId = (int)$id;
-            $now = date('Y-m-d H:i:s');
+            $now = app_now();
 
             // If this is a merged item, re-activate its source items before removing it
             $deletingItemStmt = $this->db->raw(
@@ -2588,10 +2588,10 @@ class ActivityController extends Controller
             if ($existing) {
                 $this->db->raw(
                     "UPDATE grading_input_scores SET score = ?, updated_at = ? WHERE id = ?",
-                    [$score, date('Y-m-d H:i:s'), (int)$existing['id']]
+                    [$score, app_now(), (int)$existing['id']]
                 );
             } else {
-                $now = date('Y-m-d H:i:s');
+                $now = app_now();
                 $this->db->raw(
                     "INSERT INTO grading_input_scores (grading_input_item_id, student_id, score, created_at, updated_at)
                      VALUES (?, ?, ?, ?, ?)",
@@ -3072,7 +3072,7 @@ class ActivityController extends Controller
                 // Insert new grade
                 $data['activity_id'] = $activityId;
                 $data['student_id'] = $studentId;
-                $data['created_at'] = date('Y-m-d H:i:s');
+                $data['created_at'] = app_now();
                 
                 $result = $this->db->table('activity_grades')->insert($data);
             }
@@ -3200,7 +3200,7 @@ class ActivityController extends Controller
                 // Update existing submission
                 $updateData = [
                     'submission_text' => $submissionText,
-                    'submitted_at' => date('Y-m-d H:i:s'),
+                    'submitted_at' => app_now(),
                     'is_late' => $isLate ? 1 : 0
                 ];
 
@@ -3220,7 +3220,7 @@ class ActivityController extends Controller
                     'activity_id' => $activityId,
                     'student_id' => $studentId,
                     'submission_text' => $submissionText,
-                    'submitted_at' => date('Y-m-d H:i:s'),
+                    'submitted_at' => app_now(),
                     'is_late' => $isLate ? 1 : 0
                 ]);
             }

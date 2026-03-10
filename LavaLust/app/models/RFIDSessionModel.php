@@ -66,8 +66,8 @@ class RFIDSessionModel extends Model
             'scheduled_end' => $data['scheduled_end'],
             'status' => $data['status'] ?? 'scheduled',
             'created_by' => $data['created_by'] ?? null,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
+            'created_at' => app_now(),
+            'updated_at' => app_now()
         ];
 
         return $this->db->table($this->table)->insert($payload);
@@ -78,9 +78,9 @@ class RFIDSessionModel extends Model
         return $this->db->table($this->table)
                         ->where('id', $id)
                         ->update([
-                            'actual_start' => date('Y-m-d H:i:s'),
+                            'actual_start' => app_now(),
                             'status' => 'active',
-                            'updated_at' => date('Y-m-d H:i:s')
+                            'updated_at' => app_now()
                         ]);
     }
 
@@ -89,9 +89,9 @@ class RFIDSessionModel extends Model
         return $this->db->table($this->table)
                         ->where('id', $id)
                         ->update([
-                            'actual_end' => date('Y-m-d H:i:s'),
+                            'actual_end' => app_now(),
                             'status' => 'closed',
-                            'updated_at' => date('Y-m-d H:i:s')
+                            'updated_at' => app_now()
                         ]);
     }
 }

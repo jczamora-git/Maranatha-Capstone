@@ -75,7 +75,7 @@ class TeacherAdviserAssignmentModel extends Model
             return ['success' => false, 'message' => 'Teacher is already assigned as adviser for this school year'];
         }
 
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $data = [
             'teacher_id' => $teacher_id,
             'level' => $level,

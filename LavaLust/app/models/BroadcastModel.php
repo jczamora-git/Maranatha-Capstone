@@ -15,10 +15,7 @@ class BroadcastModel extends Model
     public function create_broadcast($teacher_id, $body, $attachments = null, $teacher_subject_id = null, $section_id = null, $status = 'sent')
     {
         $attachments_json = !empty($attachments) ? json_encode($attachments) : null;
-        
-        $sql = "INSERT INTO {$this->table} (teacher_id, teacher_subject_id, section_id, body, attachments, status, sent_at, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
-        
+
         // Use the Database table insert helper to perform the insert
         $this->db->table($this->table);
         $insertId = $this->db->insert([
@@ -28,8 +25,8 @@ class BroadcastModel extends Model
             'body' => $body,
             'attachments' => $attachments_json,
             'status' => $status,
-            'sent_at' => date('Y-m-d H:i:s'),
-            'created_at' => date('Y-m-d H:i:s')
+            'sent_at' => app_now(),
+            'created_at' => app_now()
         ]);
 
         return $insertId ?: false;
@@ -89,8 +86,8 @@ class BroadcastModel extends Model
      */
     public function update_status($broadcast_id, $status)
     {
-        $sql = "UPDATE {$this->table} SET status = ?, updated_at = NOW() WHERE id = ?";
-        $stmt = $this->db->raw($sql, [$status, $broadcast_id]);
+        $sql = "UPDATE {$this->table} SET status = ?, updated_at = ? WHERE id = ?";
+        $stmt = $this->db->raw($sql, [$status, app_now(), $broadcast_id]);
         return $stmt->rowCount();
     }
 

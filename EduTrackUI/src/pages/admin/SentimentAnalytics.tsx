@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -13,426 +13,357 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { API_ENDPOINTS, apiGet, apiPut } from "@/lib/api";
-import { Brain, MessageSquare, RefreshCw, Search, TrendingUp } from "lucide-react";
+import { API_ENDPOINTS, apiGet, apiPost, apiPut } from "@/lib/api";
+import { Inbox, MessageSquare, Send, Clock, CheckCircle2, RotateCcw, Loader2 } from "lucide-react";
 
-// Use PHP backend proxy for sentiment analysis (handles local/external API switching server-side)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-const SENTIMENT_API_PATH = "/api/sentiment";
-
-type SentimentLabel = "positive" | "neutral" | "negative";
-
-type FeedbackItem = {
+type ConcernTicket = {
   id: number;
-  text: string;
+  ticket_no: string;
+  subject: string;
   category: string;
-  source: string;
-  date: string;
-  sentiment?: SentimentLabel;
-  confidence?: number;
-  responseText?: string;
-  respondedAt?: string;
-  responderName?: string;
+  status: "Open" | "In Progress" | "Resolved" | "Closed";
+  overall_sentiment?: string | null;
+  overall_confidence?: number | null;
+  created_at?: string;
+  last_message_at?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
 };
 
-const sentimentBadgeClass = (sentiment?: SentimentLabel) => {
-  switch (sentiment) {
-    case "positive":
-      return "bg-emerald-500/10 text-emerald-700 border-emerald-200";
-    case "negative":
-      return "bg-rose-500/10 text-rose-700 border-rose-200";
-    case "neutral":
-      return "bg-amber-500/10 text-amber-700 border-amber-200";
-    default:
-      return "bg-muted text-muted-foreground border-border";
-  }
+type ConcernMessage = {
+  id: number;
+  message: string;
+  sentiment?: string | null;
+  confidence?: number | null;
+  created_at?: string;
+  sender_user_id?: number | null;
+  sender_role?: string;
+  sender_first_name?: string;
+  sender_last_name?: string;
 };
 
-const normalizeSentiment = (value?: string | null): SentimentLabel | undefined => {
-  if (!value) return undefined;
-  const normalized = value.toLowerCase();
-  if (normalized === "positive" || normalized === "negative" || normalized === "neutral") {
-    return normalized as SentimentLabel;
-  }
-  return undefined;
+const statusOptions = ["all", "Open", "In Progress", "Resolved", "Closed"] as const;
+const categoryOptions = ["all", "Payments", "Enrollments", "Grades", "Teachers", "Facilities", "Technology", "General"];
+
+const sentimentBadgeClass = (value?: string | null) => {
+  const sentiment = (value || "").toLowerCase();
+  if (sentiment === "positive") return "bg-emerald-500/10 text-emerald-700 border-emerald-200";
+  if (sentiment === "negative") return "bg-rose-500/10 text-rose-700 border-rose-200";
+  if (sentiment === "neutral") return "bg-amber-500/10 text-amber-700 border-amber-200";
+  return "bg-muted text-muted-foreground border-border";
 };
 
-type WeeklyInsight = {
-  title: string;
-  description: string;
+const formatDate = (value?: string) => {
+  if (!value) return "";
+  return new Date(value).toLocaleString();
+};
+
+const getInitials = (name: string) => {
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
 };
 
 const AdminSentimentAnalytics = () => {
-  const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([]);
-  const [search, setSearch] = useState("");
-  const [sentimentFilter, setSentimentFilter] = useState("all");
+  const [tickets, setTickets] = useState<ConcernTicket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<ConcernTicket | null>(null);
+  const [messages, setMessages] = useState<ConcernMessage[]>([]);
+  const [statusFilter, setStatusFilter] = useState<(typeof statusOptions)[number]>("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">("checking");
+  const [search, setSearch] = useState("");
+  const [statusDraft, setStatusDraft] = useState<ConcernTicket["status"]>("Open");
+  const [reply, setReply] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [responseDrafts, setResponseDrafts] = useState<Record<number, string>>({});
-  const [savingResponseIds, setSavingResponseIds] = useState<Record<number, boolean>>({});
-  const [testText, setTestText] = useState("");
-  const [testResult, setTestResult] = useState<{ sentiment: SentimentLabel; confidence: number; probabilities: Record<string, number> } | null>(null);
-  const [testError, setTestError] = useState<string | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
-  const [feedbackPage, setFeedbackPage] = useState(1);
-  const FEEDBACK_PAGE_SIZE = 5;
+  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  
+  // Lazy loading states for tickets
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const ITEMS_PER_PAGE = 20;
+  
+  // Lazy loading states for messages
+  const [messagePage, setMessagePage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
+  const messagesObserverRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreMessagesRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const MESSAGES_PER_PAGE = 30;
 
-  const [weeklyInsights, setWeeklyInsights] = useState<WeeklyInsight[]>([]);
-  const [insightsError, setInsightsError] = useState<string | null>(null);
-  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
-  const [lastGenerated, setLastGenerated] = useState<string | null>(null);
-  const [insightsCached, setInsightsCached] = useState(false);
-  const [regenAllowed, setRegenAllowed] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    const checkStatus = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}${SENTIMENT_API_PATH}/health`);
-        if (!active) return;
-        setApiStatus(res.ok ? "online" : "offline");
-      } catch {
-        if (!active) return;
-        setApiStatus("offline");
-      }
-    };
-
-    checkStatus();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadFeedback = async () => {
-    setIsLoading(true);
+  const loadTickets = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoadingTickets(true);
+    }
     setError(null);
-    try {
-      const response = await apiGet(API_ENDPOINTS.FEEDBACK);
-      const list = response?.data ?? [];
-      const mapped: FeedbackItem[] = (Array.isArray(list) ? list : []).map((item: any) => {
-        const sourceName = item.first_name || item.last_name
-          ? `${item.first_name ?? ""} ${item.last_name ?? ""}`.trim()
-          : item.role || "Student";
-        return {
-          id: item.id,
-          text: item.message ?? "",
-          category: item.category ?? "General",
-          source: sourceName || "Student",
-          date: item.created_at ? new Date(item.created_at).toLocaleDateString() : "",
-          sentiment: normalizeSentiment(item.sentiment),
-          confidence: item.confidence !== null && item.confidence !== undefined ? Number(item.confidence) : undefined,
-          responseText: item.response_text ?? undefined,
-          respondedAt: item.responded_at ?? undefined,
-          responderName: item.response_text ? "System Admin" : undefined,
-        };
-      });
 
-      setFeedbackItems(mapped);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (categoryFilter !== "all") params.set("category", categoryFilter);
+      if (search.trim()) params.set("search", search.trim());
+      
+      // Add pagination parameters
+      params.set("limit", String(ITEMS_PER_PAGE));
+      params.set("offset", String((pageNum - 1) * ITEMS_PER_PAGE));
+
+      const url = `${API_ENDPOINTS.CONCERNS}?${params.toString()}`;
+      const response = await apiGet(url);
+      const list = Array.isArray(response?.data) ? response.data : [];
+
+      // Check if there are more items to load
+      setHasMore(list.length === ITEMS_PER_PAGE);
+      
+      if (append) {
+        setTickets((prev) => [...prev, ...list]);
+      } else {
+        setTickets(list);
+        if (list.length > 0) {
+          const current = selectedTicket ? list.find((entry: ConcernTicket) => entry.id === selectedTicket.id) : null;
+          setSelectedTicket(current || list[0]);
+        } else {
+          setSelectedTicket(null);
+          setMessages([]);
+        }
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load feedback.";
+      const message = err instanceof Error ? err.message : "Failed to load concern tickets.";
       setError(message);
     } finally {
-      setIsLoading(false);
+      setIsLoadingTickets(false);
+      setIsLoadingMore(false);
     }
-  };
+  }, [statusFilter, categoryFilter, search, selectedTicket, ITEMS_PER_PAGE]);
+
+  const loadMessages = useCallback(async (ticketId: number, pageNum: number = 1, append: boolean = false) => {
+    if (append) {
+      setIsLoadingMoreMessages(true);
+      shouldAutoScrollRef.current = false;
+    } else {
+      setIsLoadingMessages(true);
+      shouldAutoScrollRef.current = true;
+    }
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      params.set("limit", String(MESSAGES_PER_PAGE));
+      params.set("offset", String((pageNum - 1) * MESSAGES_PER_PAGE));
+      
+      const url = `${API_ENDPOINTS.CONCERN_MESSAGES(ticketId)}?${params.toString()}`;
+      const response = await apiGet(url);
+      const thread = Array.isArray(response?.messages) ? response.messages : [];
+      
+      setHasMoreMessages(thread.length === MESSAGES_PER_PAGE);
+      
+      if (append) {
+        // When loading older messages, prepend them to maintain scroll position
+        setMessages((prev) => [...thread, ...prev]);
+      } else {
+        setMessages(thread);
+      }
+      
+      if (response?.ticket && !append) {
+        setSelectedTicket(response.ticket);
+        setStatusDraft(response.ticket.status || "Open");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load ticket thread.";
+      setError(message);
+    } finally {
+      setIsLoadingMessages(false);
+      setIsLoadingMoreMessages(false);
+    }
+  }, [MESSAGES_PER_PAGE]);
 
   useEffect(() => {
-    loadFeedback();
-    fetchWeeklyInsights();
-  }, []);
+    // Reset to page 1 when filters change
+    setPage(1);
+    setHasMore(true);
+    const timer = setTimeout(() => {
+      loadTickets(1, false);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [statusFilter, categoryFilter, search]);
+
+  useEffect(() => {
+    if (!selectedTicket?.id) return;
+    setMessagePage(1);
+    setHasMoreMessages(true);
+    loadMessages(selectedTicket.id, 1, false);
+  }, [selectedTicket?.id, loadMessages]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (isLoadingTickets || isLoadingMore || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          loadTickets(nextPage, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current = observer;
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [page, hasMore, isLoadingTickets, isLoadingMore, loadTickets]);
+
+  // Intersection Observer for infinite scroll on messages (load older messages at top)
+  useEffect(() => {
+    if (!selectedTicket?.id || isLoadingMessages || isLoadingMoreMessages || !hasMoreMessages) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreMessages && !isLoadingMoreMessages) {
+          const nextPage = messagePage + 1;
+          setMessagePage(nextPage);
+          loadMessages(selectedTicket.id, nextPage, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    messagesObserverRef.current = observer;
+
+    if (loadMoreMessagesRef.current) {
+      observer.observe(loadMoreMessagesRef.current);
+    }
+
+    return () => {
+      if (messagesObserverRef.current) {
+        messagesObserverRef.current.disconnect();
+      }
+    };
+  }, [selectedTicket?.id, messagePage, hasMoreMessages, isLoadingMessages, isLoadingMoreMessages, loadMessages]);
+
+  useEffect(() => {
+    if (shouldAutoScrollRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const summary = useMemo(() => {
-    const total = feedbackItems.length;
-    const positive = feedbackItems.filter((item) => item.sentiment === "positive").length;
-    const neutral = feedbackItems.filter((item) => item.sentiment === "neutral").length;
-    const negative = feedbackItems.filter((item) => item.sentiment === "negative").length;
-    const analyzed = positive + neutral + negative;
+    const total = tickets.length;
+    const open = tickets.filter((entry) => entry.status === "Open").length;
+    const inProgress = tickets.filter((entry) => entry.status === "In Progress").length;
+    const resolved = tickets.filter((entry) => entry.status === "Resolved").length;
+    const closed = tickets.filter((entry) => entry.status === "Closed").length;
+    return { total, open, inProgress, resolved, closed };
+  }, [tickets]);
 
-    return {
-      total,
-      positive,
-      neutral,
-      negative,
-      analyzed,
-      positiveRate: analyzed ? Math.round((positive / analyzed) * 100) : 0,
-      neutralRate: analyzed ? Math.round((neutral / analyzed) * 100) : 0,
-      negativeRate: analyzed ? Math.round((negative / analyzed) * 100) : 0,
-    };
-  }, [feedbackItems]);
+  const groupedMessages = useMemo(() => {
+    const groups: Array<{
+      sender: string;
+      isOwn: boolean;
+      key: string;
+      entries: ConcernMessage[];
+    }> = [];
 
-  const fetchWeeklyInsights = async () => {
-    setInsightsError(null);
+    for (const entry of messages) {
+      const sender = `${entry.sender_first_name || ""} ${entry.sender_last_name || ""}`.trim() || (entry.sender_role === "admin" ? "Admin" : "User");
+      const isOwn = entry.sender_role === "admin";
+      const key = `${entry.sender_role || ""}-${entry.sender_user_id ?? "none"}-${sender}`;
+      const lastGroup = groups[groups.length - 1];
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/insights/weekly`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ fetch_only: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Unable to fetch weekly insights.");
+      if (lastGroup && lastGroup.key === key) {
+        lastGroup.entries.push(entry);
+      } else {
+        groups.push({ sender, isOwn, key, entries: [entry] });
       }
-
-      const data = await response.json();
-      if (!data || !Array.isArray(data.insights)) {
-        throw new Error("Unexpected insights response.");
-      }
-
-      setWeeklyInsights(data.insights.slice(0, 3));
-      setLastGenerated(data.last_generated ?? null);
-      setInsightsCached(Boolean(data.cached));
-      setRegenAllowed(Boolean(data.regen_allowed));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load weekly insights.";
-      setInsightsError(message);
     }
+
+    return groups;
+  }, [messages]);
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setCategoryFilter("all");
+    setPage(1);
+    setHasMore(true);
   };
 
-  const generateWeeklyInsights = async () => {
-    setIsGeneratingInsights(true);
-    setInsightsError(null);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/insights/weekly`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({}),
-      });
-
-      if (!response.ok) {
-        throw new Error("Unable to generate insights.");
-      }
-
-      const data = await response.json();
-      if (!data || !Array.isArray(data.insights)) {
-        throw new Error("Unexpected insights response.");
-      }
-
-      setWeeklyInsights(data.insights.slice(0, 3));
-      setLastGenerated(data.last_generated ?? null);
-      setInsightsCached(Boolean(data.cached));
-      setRegenAllowed(Boolean(data.regen_allowed));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to generate insights.";
-      setInsightsError(message);
-    } finally {
-      setIsGeneratingInsights(false);
-    }
-  };
-
-  const filteredFeedback = useMemo(() => {
-    setFeedbackPage(1);
-    return feedbackItems.filter((item) => {
-      const matchesSearch = item.text.toLowerCase().includes(search.toLowerCase());
-      const matchesSentiment = sentimentFilter === "all" || item.sentiment === sentimentFilter;
-      const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
-      return matchesSearch && matchesSentiment && matchesCategory;
-    });
-  }, [feedbackItems, search, sentimentFilter, categoryFilter]);
-
-  const totalFeedbackPages = Math.max(1, Math.ceil(filteredFeedback.length / FEEDBACK_PAGE_SIZE));
-  const pagedFeedback = filteredFeedback.slice(
-    (feedbackPage - 1) * FEEDBACK_PAGE_SIZE,
-    feedbackPage * FEEDBACK_PAGE_SIZE
-  );
-
-  const runBatchAnalysis = async () => {
-    setIsAnalyzing(true);
-    setError(null);
-
-    if (feedbackItems.length === 0) {
-      setError("No feedback available to analyze.");
-      setIsAnalyzing(false);
-      return;
-    }
-
-    const pendingItems = feedbackItems.filter((item) => !item.sentiment);
-    if (pendingItems.length === 0) {
-      setError("All feedback already analyzed.");
-      setIsAnalyzing(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}${SENTIMENT_API_PATH}/predict/batch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: pendingItems.map((item) => item.text) }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Unable to reach sentiment service.");
-      }
-
-      const data = await response.json();
-      if (!data || !Array.isArray(data.results)) {
-        throw new Error("Unexpected response from sentiment service.");
-      }
-
-      const updated = feedbackItems.map((item) => {
-        const pendingIndex = pendingItems.findIndex((pending) => pending.id === item.id);
-        if (pendingIndex === -1) {
-          return item;
-        }
-
-        const result = data.results[pendingIndex];
-        if (!result) {
-          return item;
-        }
-
-        return {
-          ...item,
-          sentiment: normalizeSentiment(result.sentiment) ?? item.sentiment,
-          confidence: result.confidence ?? item.confidence,
-        };
-      });
-
-      setFeedbackItems(updated);
-
-      await Promise.all(
-        pendingItems.map((item, index) => {
-          const result = data.results[index];
-          if (!result) return Promise.resolve();
-          return apiPut(API_ENDPOINTS.FEEDBACK_SENTIMENT_UPDATE(item.id), {
-            sentiment: normalizeSentiment(result.sentiment) ?? result.sentiment,
-            confidence: result.confidence,
-            probabilities: result.probabilities ?? {},
-          }).catch(() => undefined);
-        })
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Sentiment analysis failed.";
-      setError(message);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const updateResponseDraft = (id: number, value: string) => {
-    setResponseDrafts((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  const handleSaveResponse = async (item: FeedbackItem) => {
-    const responseText = (responseDrafts[item.id] ?? item.responseText ?? "").trim();
-    if (!responseText) {
-      setError("Response text cannot be empty.");
-      return;
-    }
-
-    setSavingResponseIds((prev) => ({
-      ...prev,
-      [item.id]: true,
-    }));
+  const handleStatusUpdate = async () => {
+    if (!selectedTicket?.id) return;
+    setIsUpdatingStatus(true);
     setError(null);
 
     try {
-      await apiPut(API_ENDPOINTS.FEEDBACK_RESPONSE_UPDATE(item.id), {
-        response_text: responseText,
-      });
-
-      setFeedbackItems((prev) =>
-        prev.map((entry) =>
-          entry.id === item.id
-            ? {
-                ...entry,
-                responseText,
-                respondedAt: new Date().toISOString(),
-                responderName: entry.responderName,
-              }
-            : entry
-        )
-      );
-      setResponseDrafts((prev) => ({
-        ...prev,
-        [item.id]: responseText,
-      }));
+      await apiPut(API_ENDPOINTS.CONCERN_STATUS(selectedTicket.id), { status: statusDraft });
+      setMessagePage(1);
+      setHasMoreMessages(true);
+      await loadMessages(selectedTicket.id, 1, false);
+      setPage(1);
+      setHasMore(true);
+      await loadTickets(1, false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save response.";
+      const message = err instanceof Error ? err.message : "Failed to update ticket status.";
       setError(message);
     } finally {
-      setSavingResponseIds((prev) => ({
-        ...prev,
-        [item.id]: false,
-      }));
+      setIsUpdatingStatus(false);
     }
   };
 
-  const handleSentimentTest = async () => {
-    if (!testText.trim()) {
-      setTestError("Enter text to test sentiment.");
-      return;
-    }
-
-    setIsTesting(true);
-    setTestError(null);
+  const handleSendReply = async () => {
+    if (!selectedTicket?.id || !reply.trim()) return;
+    setIsSendingReply(true);
+    setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}${SENTIMENT_API_PATH}/predict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: testText }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Unable to reach sentiment service.");
-      }
-
-      const data = await response.json();
-      if (!data || !data.sentiment) {
-        throw new Error("Unexpected response from sentiment service.");
-      }
-
-      const normalized = normalizeSentiment(data.sentiment);
-      if (!normalized) {
-        throw new Error("Unsupported sentiment label returned.");
-      }
-
-      setTestResult({
-        sentiment: normalized,
-        confidence: data.confidence,
-        probabilities: data.probabilities ?? {},
-      });
+      await apiPost(API_ENDPOINTS.CONCERN_MESSAGES(selectedTicket.id), { message: reply.trim() });
+      setReply("");
+      setMessagePage(1);
+      setHasMoreMessages(true);
+      await loadMessages(selectedTicket.id, 1, false);
+      setPage(1);
+      setHasMore(true);
+      await loadTickets(1, false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Sentiment test failed.";
-      setTestError(message);
-      setTestResult(null);
+      const message = err instanceof Error ? err.message : "Failed to send reply.";
+      setError(message);
     } finally {
-      setIsTesting(false);
+      setIsSendingReply(false);
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Brain className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold">Sentiment Analytics</h1>
-                <p className="text-muted-foreground">Track feedback tone across campus services.</p>
-              </div>
+      <div className="px-4 py-4 sm:px-8 sm:py-8 min-h-screen bg-gradient-to-b from-background to-muted/30 space-y-6">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md flex-shrink-0">
+              <Inbox className="h-5 w-5 text-white" />
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge className={apiStatus === "online" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}>
-              {apiStatus === "online" ? "Model Online" : apiStatus === "offline" ? "Model Offline" : "Checking"}
-            </Badge>
-            <Button onClick={runBatchAnalysis} disabled={isAnalyzing} className="gap-2">
-              <RefreshCw className={`h-4 w-4 ${isAnalyzing ? "animate-spin" : ""}`} />
-              {isAnalyzing ? "Analyzing" : "Run Batch Analysis"}
-            </Button>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent leading-tight">
+                Concern Inbox
+              </h1>
+              <p className="text-muted-foreground text-base">Review tickets, update status, and respond in-thread.</p>
+            </div>
           </div>
         </div>
 
@@ -442,326 +373,308 @@ const AdminSentimentAnalytics = () => {
           </Card>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Feedback</CardTitle>
-              <CardDescription>Collected entries</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{summary.total}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-slate-100">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600 font-semibold">Total Tickets</p>
+                  <p className="text-2xl font-bold text-slate-900">{summary.total}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
+                  <Inbox className="h-6 w-6 text-slate-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Positive Rate</CardTitle>
-              <CardDescription>Analyzed feedback</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-bold text-emerald-600">{summary.positiveRate}%</span>
-                <span className="text-sm text-muted-foreground">{summary.positive} positive</span>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-yellow-100">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-yellow-600 font-semibold">Open</p>
+                  <p className="text-2xl font-bold text-yellow-700">{summary.open}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-yellow-600" />
+                </div>
               </div>
-              <Progress value={summary.positiveRate} className="h-2" />
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Neutral Rate</CardTitle>
-              <CardDescription>Analyzed feedback</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-bold text-amber-600">{summary.neutralRate}%</span>
-                <span className="text-sm text-muted-foreground">{summary.neutral} neutral</span>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600 font-semibold">In Progress</p>
+                  <p className="text-2xl font-bold text-blue-700">{summary.inProgress}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
+                  <MessageSquare className="h-6 w-6 text-blue-600" />
+                </div>
               </div>
-              <Progress value={summary.neutralRate} className="h-2" />
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Negative Rate</CardTitle>
-              <CardDescription>Analyzed feedback</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-bold text-rose-600">{summary.negativeRate}%</span>
-                <span className="text-sm text-muted-foreground">{summary.negative} negative</span>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600 font-semibold">Resolved/Closed</p>
+                  <p className="text-2xl font-bold text-green-700">{summary.resolved + summary.closed}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                </div>
               </div>
-              <Progress value={summary.negativeRate} className="h-2" />
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MessageSquare className="h-5 w-5" />
-                Feedback Stream
-              </CardTitle>
-              <CardDescription>Filter, review, and prioritize the latest insights.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col lg:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <Input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search feedback"
-                    className="pl-9"
-                  />
-                </div>
-                <Select value={sentimentFilter} onValueChange={setSentimentFilter}>
-                  <SelectTrigger className="w-full lg:w-44">
-                    <SelectValue placeholder="Sentiment" />
-                  </SelectTrigger>
+        <Card className="border-0 shadow-lg">
+          <CardContent className="pt-6">
+            <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_170px_170px_auto] items-end">
+              <div className="space-y-1.5">
+                <Label htmlFor="concern-search">Search</Label>
+                <Input
+                  id="concern-search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search ticket no, title, name"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as (typeof statusOptions)[number])}>
+                  <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All sentiment</SelectItem>
-                    <SelectItem value="positive">Positive</SelectItem>
-                    <SelectItem value="neutral">Neutral</SelectItem>
-                    <SelectItem value="negative">Negative</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-full lg:w-44">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All categories</SelectItem>
-                    <SelectItem value="Payments">Payments</SelectItem>
-                    <SelectItem value="Enrollments">Enrollments</SelectItem>
-                    <SelectItem value="Grades">Grades</SelectItem>
-                    <SelectItem value="Events">Events</SelectItem>
-                    <SelectItem value="Facilities">Facilities</SelectItem>
-                    <SelectItem value="Teachers">Teachers</SelectItem>
-                    <SelectItem value="Learning Management System">Learning Management System</SelectItem>
-                    <SelectItem value="RFID Student Gate System">RFID Student Gate System</SelectItem>
-                    <SelectItem value="Notifications">Notifications</SelectItem>
-                    <SelectItem value="Others">Others</SelectItem>
+                    {statusOptions.map((entry) => (
+                      <SelectItem key={entry} value={entry}>{entry}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-3">
-                {isLoading ? (
-                  <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                    Loading feedback...
-                  </div>
-                ) : filteredFeedback.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                    No feedback entries found.
-                  </div>
-                ) : (
-                  pagedFeedback.map((item) => (
-                    <div key={item.id} className="border border-border rounded-xl p-4 space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{item.category}</span>
-                          <span>•</span>
-                          <span>{item.source}</span>
-                          <span>•</span>
-                          <span>{item.date}</span>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.map((entry) => (
+                      <SelectItem key={entry} value={entry}>{entry}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button variant="outline" onClick={handleResetFilters} className="gap-2">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-1 border-blue-100/70 relative overflow-hidden">
+            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+            <CardHeader>
+              <CardTitle className="text-lg">Ticket Queue</CardTitle>
+              <CardDescription>
+                {isLoadingTickets ? "Loading..." : `${tickets.length} ticket(s) loaded${hasMore ? ' (scroll for more)' : ''}`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
+              {tickets.length === 0 && !isLoadingTickets ? (
+                <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">No tickets found.</div>
+              ) : (
+                <>
+                  {tickets.map((ticket) => {
+                    const owner = `${ticket.first_name || ""} ${ticket.last_name || ""}`.trim() || ticket.email || "Unknown user";
+                    return (
+                      <button
+                        key={ticket.id}
+                        type="button"
+                        onClick={() => setSelectedTicket(ticket)}
+                        className={`w-full rounded-xl border p-3 text-left transition ${selectedTicket?.id === ticket.id ? "border-blue-300 bg-gradient-to-r from-blue-50 to-cyan-50 shadow-sm" : "border-border hover:bg-muted/30"}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold truncate">{ticket.subject}</p>
+                          <Badge variant="outline" className="bg-white">{ticket.status}</Badge>
                         </div>
-                        <Badge className={sentimentBadgeClass(item.sentiment)}>
-                          {item.sentiment ? item.sentiment : "Unanalyzed"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm leading-relaxed">{item.text}</p>
-                      {item.confidence !== undefined && (
-                        <p className="text-xs text-muted-foreground">Confidence: {(item.confidence * 100).toFixed(1)}%</p>
-                      )}
-                      {item.responseText ? (
-                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-2">
-                          <div className="flex items-center justify-between text-xs text-emerald-700">
-                            <span className="font-semibold">Admin Response</span>
-                            <span>System Admin</span>
-                          </div>
-                          <p className="text-sm text-emerald-900 leading-relaxed">{item.responseText}</p>
+                        <p className="mt-2 text-xs text-muted-foreground truncate">{ticket.ticket_no} • {owner}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <Badge variant="outline" className="bg-white">{ticket.category}</Badge>
+                          <Badge variant="outline" className={sentimentBadgeClass(ticket.overall_sentiment)}>
+                            {ticket.overall_sentiment || "N/A"}
+                          </Badge>
                         </div>
-                      ) : (
-                        <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                          <p className="text-xs font-semibold text-muted-foreground">Admin Response</p>
-                          <p className="text-sm text-muted-foreground">No response yet.</p>
-                          <Textarea
-                            value={responseDrafts[item.id] ?? ""}
-                            onChange={(event) => updateResponseDraft(item.id, event.target.value)}
-                            placeholder="Write a response for the student"
-                            rows={3}
-                          />
-                          <div className="flex justify-end">
-                            <Button
-                              size="sm"
-                              onClick={() => handleSaveResponse(item)}
-                              disabled={savingResponseIds[item.id]}
-                            >
-                              {savingResponseIds[item.id] ? "Saving..." : "Save response"}
-                            </Button>
-                          </div>
+                      </button>
+                    );
+                  })}
+                  
+                  {/* Intersection observer target for infinite scroll */}
+                  {hasMore && (
+                    <div ref={loadMoreRef} className="py-2 text-center">
+                      {isLoadingMore && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Loading more...</span>
                         </div>
                       )}
                     </div>
-                  ))
-                )}
-              </div>
-
-              {/* Pagination */}
-              {filteredFeedback.length > FEEDBACK_PAGE_SIZE && (
-                <div className="flex items-center justify-between pt-2">
-                  <p className="text-xs text-muted-foreground">
-                    Showing {(feedbackPage - 1) * FEEDBACK_PAGE_SIZE + 1}–{Math.min(feedbackPage * FEEDBACK_PAGE_SIZE, filteredFeedback.length)} of {filteredFeedback.length}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0"
-                      disabled={feedbackPage === 1}
-                      onClick={() => setFeedbackPage((p) => p - 1)}
-                    >
-                      ‹
-                    </Button>
-                    {Array.from({ length: totalFeedbackPages }, (_, i) => i + 1).map((page) => (
-                      <Button
-                        key={page}
-                        size="sm"
-                        variant={page === feedbackPage ? "default" : "outline"}
-                        className="h-8 w-8 p-0 text-xs"
-                        onClick={() => setFeedbackPage(page)}
-                      >
-                        {page}
-                      </Button>
-                    ))}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0"
-                      disabled={feedbackPage === totalFeedbackPages}
-                      onClick={() => setFeedbackPage((p) => p + 1)}
-                    >
-                      ›
-                    </Button>
-                  </div>
-                </div>
+                  )}
+                  
+                  {!hasMore && tickets.length > 0 && (
+                    <div className="py-2 text-center text-xs text-muted-foreground">
+                      No more tickets to load
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
-            <Card>
-              <CardHeader className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <TrendingUp className="h-5 w-5" />
-                    Insight Highlights
-                  </CardTitle>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={generateWeeklyInsights}
-                    disabled={isGeneratingInsights || (insightsCached && !regenAllowed)}
-                  >
-                    {isGeneratingInsights ? "Generating" : "Generate weekly"}
-                  </Button>
-                </div>
-                <CardDescription>
-                  Weekly insights from the last 7 days of feedback.
-                  {lastGenerated ? ` Last generated: ${lastGenerated}.` : ""}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {insightsError && (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3 text-rose-700">
-                    {insightsError}
-                  </div>
-                )}
-                {weeklyInsights.length === 0 ? (
-                  <div className="rounded-xl border border-border p-3 text-muted-foreground">
-                    Generate weekly insights to summarize the latest feedback.
-                  </div>
-                ) : (
-                  weeklyInsights.map((insight, index) => (
-                    <div key={`${insight.title}-${index}`} className="rounded-xl border border-border p-3">
-                      <p className="font-medium">{insight.title}</p>
-                      <p className="text-muted-foreground">{insight.description}</p>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Model Snapshot</CardTitle>
-                <CardDescription>Current classifier details.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Model type</span>
-                  <span className="font-medium">CNN + BiLSTM</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">API Endpoint</span>
-                  <span className="font-medium truncate max-w-[180px]">{SENTIMENT_API_PATH}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Analyzed items</span>
-                  <span className="font-medium">{summary.analyzed} / {summary.total}</span>
-                </div>
-                <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
-                  Run batch analysis after importing new feedback to refresh sentiment scores.
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Sentiment Testing</CardTitle>
-                <CardDescription>Quickly test a phrase against the model.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Textarea
-                  value={testText}
-                  onChange={(event) => setTestText(event.target.value)}
-                  placeholder="Type a sentence to test"
-                  rows={4}
-                />
-                <div className="flex justify-end">
-                  <Button onClick={handleSentimentTest} disabled={isTesting}>
-                    {isTesting ? "Testing..." : "Run test"}
-                  </Button>
-                </div>
-                {testError && (
-                  <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-3 text-xs text-rose-700">
-                    {testError}
-                  </div>
-                )}
-                {testResult && (
-                  <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Sentiment</span>
-                      <Badge className={sentimentBadgeClass(testResult.sentiment)}>
-                        {testResult.sentiment}
+          <Card className="lg:col-span-2 border-blue-100/70 relative overflow-hidden">
+            <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-cyan-500" />
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Ticket Thread
+              </CardTitle>
+              <CardDescription>
+                {selectedTicket ? `${selectedTicket.ticket_no} • ${selectedTicket.subject}` : "Select a ticket from the queue"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!selectedTicket ? (
+                <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">No ticket selected.</div>
+              ) : (
+                <>
+                  <div className="grid gap-3 md:grid-cols-3 rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/80 to-cyan-50/80 px-3 py-2">
+                    <div className="md:col-span-2 flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="bg-white">{selectedTicket.category}</Badge>
+                      <Badge variant="outline" className={sentimentBadgeClass(selectedTicket.overall_sentiment)}>
+                        Overall: {selectedTicket.overall_sentiment || "N/A"}
                       </Badge>
+                      <span className="text-xs text-muted-foreground">Last update: {formatDate(selectedTicket.last_message_at || selectedTicket.created_at)}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Confidence</span>
-                      <span className="font-medium">{(testResult.confidence * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      {Object.entries(testResult.probabilities).map(([label, value]) => (
-                        <div key={label} className="flex items-center justify-between">
-                          <span>{label}</span>
-                          <span>{(value * 100).toFixed(1)}%</span>
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <Select value={statusDraft} onValueChange={(value) => setStatusDraft(value as ConcernTicket["status"])}>
+                        <SelectTrigger className="bg-white"><SelectValue placeholder="Set status" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Open">Open</SelectItem>
+                          <SelectItem value="In Progress">In Progress</SelectItem>
+                          <SelectItem value="Resolved">Resolved</SelectItem>
+                          <SelectItem value="Closed">Closed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleStatusUpdate} disabled={isUpdatingStatus} variant="outline" className="bg-white">
+                        {isUpdatingStatus ? "Saving..." : "Save"}
+                      </Button>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+
+                  <div ref={messagesContainerRef} className="max-h-[360px] space-y-3 overflow-y-auto pr-1 rounded-2xl border border-blue-100 bg-gradient-to-b from-slate-50 to-white p-3">
+                    {isLoadingMessages ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"} animate-pulse`}>
+                            <div className={`max-w-[85%] flex gap-2 ${i % 2 === 0 ? "items-end" : "items-start"}`}>
+                              {i % 2 !== 0 && <div className="h-8 w-8 shrink-0 rounded-full bg-slate-200" />}
+                              <div className={`px-4 py-3 rounded-2xl ${i % 2 === 0 ? "bg-blue-200" : "bg-slate-200"}`}>
+                                <div className="h-3 bg-slate-300 rounded w-16 mb-2" />
+                                <div className="h-4 bg-slate-300 rounded w-48 mb-1" />
+                                <div className="h-4 bg-slate-300 rounded w-32" />
+                              </div>
+                              {i % 2 === 0 && <div className="h-8 w-8 shrink-0 rounded-full bg-blue-300" />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">No messages yet.</div>
+                    ) : (
+                      <>
+                        {/* Load more older messages indicator at top */}
+                        {hasMoreMessages && (
+                          <div ref={loadMoreMessagesRef} className="py-2 text-center">
+                            {isLoadingMoreMessages && (
+                              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Loading older messages...</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {groupedMessages.map((group) => (
+                          <div key={`${group.key}-${group.entries[0]?.id ?? "0"}`} className={`flex ${group.isOwn ? "justify-end" : "justify-start"}`}>
+                            <div className="max-w-[85%] flex gap-2 items-end">
+                              {!group.isOwn && (
+                                <div className="h-8 w-8 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
+                                  {getInitials(group.sender)}
+                                </div>
+                              )}
+
+                              <div className="space-y-1.5">
+                                {group.entries.map((entry, index) => (
+                                  <div key={entry.id} className={`px-4 py-3 rounded-2xl shadow-sm ${group.isOwn ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white" : "bg-background text-foreground border border-border"} ${index === group.entries.length - 1 && group.isOwn ? "rounded-br-none" : ""} ${index === group.entries.length - 1 && !group.isOwn ? "rounded-bl-none" : ""}`}>
+                                    {index === 0 && (
+                                      <div className={`text-xs mb-1 ${group.isOwn ? "text-white/80" : "text-muted-foreground"}`}>
+                                        {group.sender}
+                                      </div>
+                                    )}
+
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{entry.message}</p>
+
+                                    <div className={`mt-2 pt-2 border-t ${group.isOwn ? "border-white/20" : "border-border/70"} flex flex-wrap items-center gap-2`}>
+                                      {entry.sentiment && (
+                                        <Badge variant="outline" className={`${group.isOwn ? "bg-white/15 text-white border-white/30" : sentimentBadgeClass(entry.sentiment)}`}>
+                                          {entry.sentiment} {entry.confidence ? `(${Math.round(entry.confidence * 100)}%)` : ""}
+                                        </Badge>
+                                      )}
+                                      <div className={`text-[11px] ${group.isOwn ? "text-white/75" : "text-muted-foreground"}`}>
+                                        {formatDate(entry.created_at)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {group.isOwn && (
+                                <div className="h-8 w-8 shrink-0 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold">
+                                  {getInitials(group.sender)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                      </>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl border border-blue-100 bg-white p-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                      <Textarea
+                        value={reply}
+                        onChange={(event) => setReply(event.target.value)}
+                        placeholder="Reply to this ticket"
+                        rows={3}
+                        className="sm:flex-1 border-0 shadow-none focus-visible:ring-0"
+                      />
+                      <Button onClick={handleSendReply} disabled={isSendingReply || !reply.trim()} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white">
+                        <Send className="h-4 w-4" />
+                        {isSendingReply ? "Sending..." : "Send reply"}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </DashboardLayout>

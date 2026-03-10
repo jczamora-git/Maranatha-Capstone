@@ -220,8 +220,8 @@ const AppContent = () => {
             )}
             {FEATURES.grading && (
               <>
-                <Route path="/teacher/grades" element={<ProtectedRoute requiredRole="teacher"><GradeInput /></ProtectedRoute>} />
-                <Route path="/teacher/grade-input-edit" element={<ProtectedRoute requiredRole="teacher"><GradeInputEdit /></ProtectedRoute>} />
+                <Route path="/teacher/grades" element={<ProtectedRoute requiredRole={["teacher", "admin"]}><GradeInput /></ProtectedRoute>} />
+                <Route path="/teacher/grade-input-edit" element={<ProtectedRoute requiredRole={["teacher", "admin"]}><GradeInputEdit /></ProtectedRoute>} />
               </>
             )}
             <Route path="/teacher/settings" element={<ProtectedRoute requiredRole="teacher"><TeacherSettings /></ProtectedRoute>} />
@@ -282,7 +282,10 @@ const AppContent = () => {
               </>
             )}
             {FEATURES.courses && (
-              <Route path="/admin/users/students/grades" element={<ProtectedRoute requiredRole="admin"><StudentGradeLevelManagement /></ProtectedRoute>} />
+              <>
+                <Route path="/admin/users/students/graduation" element={<ProtectedRoute requiredRole="admin"><StudentGradeLevelManagement /></ProtectedRoute>} />
+                <Route path="/admin/users/students/grades" element={<ProtectedRoute requiredRole="admin"><StudentGradeLevelManagement /></ProtectedRoute>} />
+              </>
             )}
             {FEATURES.subjects && (
               <>
@@ -299,7 +302,10 @@ const AppContent = () => {
               <Route path="/admin/announcements" element={<ProtectedRoute requiredRole="admin"><Announcements /></ProtectedRoute>} />
             )}
             {FEATURES.reports && (
-              <Route path="/admin/pdf" element={<ProtectedRoute requiredRole="admin"><PDFGeneration /></ProtectedRoute>} />
+              <>
+                <Route path="/admin/reports" element={<ProtectedRoute requiredRole="admin"><PDFGeneration /></ProtectedRoute>} />
+                <Route path="/admin/pdf" element={<ProtectedRoute requiredRole="admin"><PDFGeneration /></ProtectedRoute>} />
+              </>
             )}
             <Route path="/student/notifications" element={<ProtectedRoute requiredRole="student"><StudentNotifications /></ProtectedRoute>} />
             <Route path="/teacher/notifications" element={<ProtectedRoute requiredRole="teacher"><TeacherNotifications /></ProtectedRoute>} />

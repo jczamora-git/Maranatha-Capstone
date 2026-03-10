@@ -249,7 +249,7 @@ class SentimentController extends Controller
                 config_item('insights_hf_model') ?: null
             );
 
-            $lastGenerated = date('Y-m-d H:i:s');
+            $lastGenerated = app_now();
 
             http_response_code(200);
             echo json_encode([

@@ -368,6 +368,30 @@ class PaymentPlanController extends Controller
     }
 
     /**
+     * Get all installments across all payment plans (for reports/analytics)
+     * GET /api/payment-plans/installments/all
+     */
+    public function get_all_installments()
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $installments = $this->InstallmentModel->get_all();
+
+            echo json_encode([
+                'success' => true,
+                'data' => $installments ?: []
+            ]);
+        } catch (Exception $e) {
+            error_log("Error fetching all installments: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch installments'
+            ]);
+        }
+    }
+
+    /**
      * Get installments for a payment plan
      * GET /api/payment-plans/{id}/installments
      */
@@ -916,7 +940,7 @@ class PaymentPlanController extends Controller
                     ->where('is_read', 0)
                     ->update([
                         'is_read' => 1,
-                        'read_at' => date('Y-m-d H:i:s')
+                        'read_at' => app_now()
                     ]);
 
                 if ($updated) {

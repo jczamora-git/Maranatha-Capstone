@@ -151,7 +151,7 @@ class TeacherModel extends Model
      */
     public function update_teacher($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
         
         // Separate teacher data from user data
         $teacherData = [];
@@ -204,7 +204,7 @@ class TeacherModel extends Model
         $result = $this->db->table($this->table)
                           ->where('id', $id)
                           ->update([
-                              'deleted_at' => date('Y-m-d H:i:s')
+                              'deleted_at' => app_now()
                           ]);
         
         return $result;
@@ -283,7 +283,7 @@ class TeacherModel extends Model
                            ->where('id', $existing['id'])
                            ->update([
                                'level' => $level,
-                               'updated_at' => date('Y-m-d H:i:s')
+                               'updated_at' => app_now()
                            ]);
         } else {
             // Create new assignment
@@ -292,8 +292,8 @@ class TeacherModel extends Model
                                'teacher_id' => $teacherId,
                                'level' => $level,
                                'school_year' => $schoolYear,
-                               'created_at' => date('Y-m-d H:i:s'),
-                               'updated_at' => date('Y-m-d H:i:s')
+                               'created_at' => app_now(),
+                               'updated_at' => app_now()
                            ]);
         }
     }

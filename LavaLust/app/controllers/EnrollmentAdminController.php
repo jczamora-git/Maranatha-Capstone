@@ -840,8 +840,8 @@ class EnrollmentAdminController extends Controller
                     'type' => 'account_setup',
                     'expires_at' => $expiresAt,
                     'used' => 0,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now(),
+                    'updated_at' => app_now()
                 ];
                 $this->db->table('password_resets')->insert($tokenData);
 
@@ -1199,7 +1199,7 @@ class EnrollmentAdminController extends Controller
                 'status' => 'active',
                 'enrollment_id' => $enrollmentId,
                 'enrollment_date' => date('Y-m-d'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ];
             
             // Check if student profile already exists for this user
@@ -1246,7 +1246,7 @@ class EnrollmentAdminController extends Controller
                 ->where('id', $enrollmentId)
                 ->update([
                     'status' => 'Approved',
-                    'approved_date' => date('Y-m-d H:i:s'),
+                    'approved_date' => app_now(),
                     'approved_by' => $this->session->userdata('user_id'),
                     'created_student_id' => $newStudentPk
                 ]);
@@ -1309,7 +1309,7 @@ class EnrollmentAdminController extends Controller
                 ->update([
                     'status' => 'Rejected',
                     'rejection_reason' => $reason,
-                    'rejected_date' => date('Y-m-d H:i:s')
+                    'rejected_date' => app_now()
                 ]);
 
             http_response_code(200);
@@ -1356,7 +1356,7 @@ class EnrollmentAdminController extends Controller
                 ->where('id', $documentId)
                 ->update([
                     'verification_status' => 'Verified',
-                    'verified_date' => date('Y-m-d H:i:s')
+                    'verified_date' => app_now()
                 ]);
 
             http_response_code(200);
@@ -1420,8 +1420,8 @@ class EnrollmentAdminController extends Controller
                     'rejection_reason' => $rejectionReason,
                     'verification_notes' => $notes,
                     'verified_by' => $adminId,
-                    'verified_date' => date('Y-m-d H:i:s'),
-                    'resubmission_requested_date' => date('Y-m-d H:i:s')
+                    'verified_date' => app_now(),
+                    'resubmission_requested_date' => app_now()
                 ]);
 
             // Update enrollment status to Incomplete if it has rejected documents
@@ -1476,7 +1476,7 @@ class EnrollmentAdminController extends Controller
                 ->update([
                     'physical_verification_status' => 'Checked',
                     'physical_verified_by' => $adminId,
-                    'physical_verified_date' => date('Y-m-d H:i:s')
+                    'physical_verified_date' => app_now()
                 ]);
 
             http_response_code(200);
@@ -1675,9 +1675,9 @@ class EnrollmentAdminController extends Controller
                     'file_type' => 'N/A',
                     'submission_method' => 'Physical',
                     'verification_status' => 'Verified',
-                    'upload_date' => date('Y-m-d H:i:s'),
+                    'upload_date' => app_now(),
                     'verified_by' => $this->session->userdata('user_id'),
-                    'verified_date' => date('Y-m-d H:i:s'),
+                    'verified_date' => app_now(),
                     'is_current_version' => 1
                 ];
                 

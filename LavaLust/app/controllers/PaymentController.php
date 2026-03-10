@@ -451,7 +451,7 @@ class PaymentController extends Controller
                             'penalty_amount' => $penalty_amount,
                             'original_amount' => $original_amount,
                             'days_overdue' => $days_overdue,
-                            'applied_at' => date('Y-m-d H:i:s')
+                            'applied_at' => app_now()
                         ];
                         
                         // Include explanation_id if provided
@@ -1425,7 +1425,7 @@ class PaymentController extends Controller
                 'balance' => $newBalance,
                 'status' => $newStatus,
                 'paid_date' => $newStatus === 'Paid' ? ($installment['paid_date'] ?: date('Y-m-d')) : null,
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ]);
 
         if (!empty($installment['payment_plan_id'])) {
@@ -1473,7 +1473,7 @@ class PaymentController extends Controller
                 'total_paid' => $totalPaid,
                 'balance' => $newBalance,
                 'status' => $newStatus,
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ]);
 
         return true;
@@ -1496,7 +1496,7 @@ class PaymentController extends Controller
                 ->where('is_read', 0)
                 ->update([
                     'is_read' => 1,
-                    'read_at' => date('Y-m-d H:i:s')
+                    'read_at' => app_now()
                 ]);
         } catch (Exception $e) {
             error_log('Failed to mark all admin notifications as read: ' . $e->getMessage());

@@ -70,7 +70,7 @@ const REGISTER_TEXT_STRINGS = [
   "📧 Use @gmail.com or @yahoo.com - Please ensure this account is active and can receive emails for school updates",
   "Contact Phone Number *",
   "09XXXXXXXXX",
-  "📱 Enter 10-11 digit mobile number (e.g., 09171234567)",
+  "📱 Enter 10-11 digit mobile number (e.g., 09123456789)",
   "Create Account Password *",
   "🔒 Minimum 6 characters recommended",
   "Confirm Password *",

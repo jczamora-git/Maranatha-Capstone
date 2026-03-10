@@ -8,14 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Award, Save, Upload, Download, FileSpreadsheet, Edit3, Send, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { API_ENDPOINTS, apiGet, apiPost } from "@/lib/api";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { API_ENDPOINTS, apiGet, apiPost, apiPut } from "@/lib/api";
 
 const GradeInput = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "teacher") {
+    if (!isAuthenticated || !["teacher", "admin"].includes(String(user?.role ?? ''))) {
       navigate("/auth");
     }
   }, [isAuthenticated, user, navigate]);
@@ -33,9 +35,22 @@ const GradeInput = () => {
   const [sections, setSections] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [gradingItems, setGradingItems] = useState<any[]>([]);
+  const [gradingScoreMap, setGradingScoreMap] = useState<Record<string, Record<string, number>>>({});
   const [loading, setLoading] = useState({ periods: false, courses: false, sections: false, students: false, activities: false, submitting: false, importing: false });
 
   const [courseInfo, setCourseInfo] = useState({ code: "", title: "", teacher: "", section: "" });
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [submissionEnabled, setSubmissionEnabled] = useState(true);
+  const [submissionControlLoading, setSubmissionControlLoading] = useState(false);
+  const [submissionControlSaving, setSubmissionControlSaving] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{
+    success: boolean;
+    message: string;
+    inserted?: number;
+    updated?: number;
+    errors?: string[];
+  } | null>(null);
 
   const extractList = (res: any, keys: string[] = []): any[] => {
     if (Array.isArray(res)) return res;
@@ -48,6 +63,84 @@ const GradeInput = () => {
   };
 
   const normalizeLabel = (v: any): string => String(v ?? '').replace(/\s+/g, ' ').trim();
+
+  const formatStudentDisplayName = (student: any): string => {
+    const lastName = normalizeLabel(student?.last_name ?? student?.lastname ?? '');
+    const firstName = normalizeLabel(student?.first_name ?? student?.firstname ?? '');
+    const middleRaw = normalizeLabel(student?.middle_name ?? student?.middlename ?? student?.middle_initial ?? '');
+    const middleInitial = middleRaw ? `${middleRaw.charAt(0).toUpperCase()}.` : '';
+
+    if (lastName || firstName) {
+      const base = [lastName, firstName].filter(Boolean).join(', ');
+      return `${base}${middleInitial ? ` ${middleInitial}` : ''}`.trim();
+    }
+
+    return normalizeLabel(student?.name ?? '');
+  };
+
+  const getGenderRank = (student: any): number => {
+    const gender = normalizeLabel(student?.gender ?? student?.sex ?? '').toLowerCase();
+    if (['male', 'm', 'boy', 'man'].includes(gender)) return 0;
+    if (['female', 'f', 'girl', 'woman'].includes(gender)) return 1;
+    return 2;
+  };
+
+  const getGenderGroupLabel = (rank: number): string => {
+    if (rank === 0) return 'Male';
+    if (rank === 1) return 'Female';
+    return 'Unspecified';
+  };
+
+  const mapStudentsForDisplay = (list: any[]) => {
+    const mapped = (Array.isArray(list) ? list : []).map((st: any) => {
+      const lastName = normalizeLabel(st?.last_name ?? st?.lastname ?? '');
+      const firstName = normalizeLabel(st?.first_name ?? st?.firstname ?? '');
+      const middleRaw = normalizeLabel(st?.middle_name ?? st?.middlename ?? st?.middle_initial ?? '');
+      const middleInitial = middleRaw ? middleRaw.charAt(0).toUpperCase() : '';
+
+      return {
+        id: st.id ?? st.user_id ?? null,
+        student_code: st.student_id ?? null,
+        name: formatStudentDisplayName(st),
+        email: st.email ?? st.user_email ?? '',
+        status: st.status ?? 'active',
+        grades: st.grades ?? st.activity_grades ?? [],
+        _sort_last_name: lastName,
+        _sort_first_name: firstName,
+        _sort_middle_initial: middleInitial,
+        _gender_rank: getGenderRank(st),
+      };
+    });
+
+    return mapped.sort((a: any, b: any) => {
+      const genderDiff = Number(a._gender_rank ?? 2) - Number(b._gender_rank ?? 2);
+      if (genderDiff !== 0) return genderDiff;
+
+      const lastNameDiff = String(a._sort_last_name ?? '').localeCompare(String(b._sort_last_name ?? ''), undefined, { sensitivity: 'base' });
+      if (lastNameDiff !== 0) return lastNameDiff;
+
+      const firstNameDiff = String(a._sort_first_name ?? '').localeCompare(String(b._sort_first_name ?? ''), undefined, { sensitivity: 'base' });
+      if (firstNameDiff !== 0) return firstNameDiff;
+
+      const middleDiff = String(a._sort_middle_initial ?? '').localeCompare(String(b._sort_middle_initial ?? ''), undefined, { sensitivity: 'base' });
+      if (middleDiff !== 0) return middleDiff;
+
+      return String(a.student_code ?? a.id ?? '').localeCompare(String(b.student_code ?? b.id ?? ''), undefined, { sensitivity: 'base' });
+    });
+  };
+
+  const buildScoreMap = (scoreRows: any[]) => {
+    const map: Record<string, Record<string, number>> = {};
+    (scoreRows || []).forEach((row: any) => {
+      const itemId = String(row.item_id ?? row.grading_input_item_id ?? '');
+      const studentId = String(row.student_id ?? '');
+      const score = Number(row.score ?? 0);
+      if (!itemId || !studentId) return;
+      if (!map[itemId]) map[itemId] = {};
+      map[itemId][studentId] = Number.isFinite(score) ? score : 0;
+    });
+    return map;
+  };
 
   const debugLabelMeta = (value: any) => {
     const raw = String(value ?? '');
@@ -106,31 +199,93 @@ const GradeInput = () => {
 
   // Helper to categorize activities by DepEd grading component
   const categorizeActivities = (activities: any[]) => {
-    const written: any[] = [];     // quiz, assignment, other
-    const performance: any[] = []; // project, laboratory, performance, art
+    const written: any[] = [];     // quiz, worksheet, assignment, other
+    const performance: any[] = []; // project, laboratory, performance, art, storytime, recitation, participation
     const quarterly: any[] = [];   // exam (Quarterly Assessment — 1 per quarter)
 
     activities.forEach(act => {
-      const type = (act.type || '').toLowerCase();
-      if (['quiz', 'assignment', 'other'].includes(type)) {
+      const type = (act.type || '').toLowerCase().trim();
+      if (['quiz', 'worksheet', 'assignment', 'other'].includes(type)) {
         written.push(act);
-      } else if (['project', 'laboratory', 'performance', 'art'].includes(type)) {
+      } else if (['project', 'laboratory', 'performance', 'art', 'storytime', 'recitation', 'participation'].includes(type)) {
         performance.push(act);
       } else if (type === 'exam') {
         quarterly.push(act);
+      } else {
+        console.warn(`[categorizeActivities] Unrecognized activity type "${act.type}" (id: ${act.id}, title: "${act.title}") → defaulting to Written Work`);
+        written.push(act);
       }
     });
 
     return { written, performance, quarterly };
   };
 
-  // Helper to get student grade for an activity
-  const getStudentGrade = (studentId: string, activityId: string) => {
+  const buildComponentItems = (acts: any[], items: any[]) => {
+    if (Array.isArray(items) && items.length > 0) {
+      const sorted = [...items].sort((a, b) => {
+        const ao = Number(a.display_order ?? 0);
+        const bo = Number(b.display_order ?? 0);
+        if (ao !== bo) return ao - bo;
+        return Number(a.id ?? 0) - Number(b.id ?? 0);
+      });
+
+      const mergedSourceItemIds = new Set<string>();
+      sorted.forEach((item: any) => {
+        if (item.source_type === 'merged' && Array.isArray(item.merge_sources)) {
+          item.merge_sources.forEach((src: any) => {
+            if (src.source_item_id) mergedSourceItemIds.add(String(src.source_item_id));
+          });
+        }
+      });
+
+      const mapped = sorted.map((item: any) => {
+        let activityType = null;
+        if (item.source_type === 'activity' && item.source_activity_id) {
+          const activity = acts.find((a: any) => Number(a.id) === Number(item.source_activity_id));
+          activityType = activity ? String(activity.type ?? '').toLowerCase() : null;
+        }
+
+        const isHidden = !!item.is_hidden || mergedSourceItemIds.has(String(item.id));
+        return {
+          id: String(item.id),
+          title: String(item.title ?? ''),
+          max_score: Number(item.max_score ?? 0),
+          component: String(item.component ?? 'written'),
+          source_type: String(item.source_type ?? 'manual'),
+          source_activity_id: item.source_activity_id ? Number(item.source_activity_id) : null,
+          activity_type: activityType,
+          is_hidden: isHidden,
+        };
+      });
+
+      return {
+        written: mapped.filter((i: any) => i.component === 'written' && !i.is_hidden),
+        performance: mapped.filter((i: any) => i.component === 'performance' && !i.is_hidden),
+        quarterly: mapped.filter((i: any) => i.component === 'quarterly' && !i.is_hidden),
+      };
+    }
+
+    const categorized = categorizeActivities(acts || []);
+    return {
+      written: categorized.written,
+      performance: categorized.performance,
+      quarterly: categorized.quarterly,
+    };
+  };
+
+  // Helper to get student grade for activity/manual/merged item
+  const getStudentGrade = (studentId: string, item: any) => {
     const student = students.find(s => String(s.id) === String(studentId));
-    if (!student || !student.grades) return null;
-    
-    const gradeRecord = student.grades.find((g: any) => String(g.activity_id) === String(activityId));
-    return gradeRecord ? parseFloat(gradeRecord.grade ?? 0) : 0;
+    if (!student) return null;
+
+    if (item?.source_type === 'activity' && item?.source_activity_id) {
+      const studentGrades = student.grades ?? [];
+      const gradeRecord = studentGrades.find((g: any) => String(g.activity_id) === String(item.source_activity_id));
+      return gradeRecord ? parseFloat(gradeRecord.grade ?? 0) : 0;
+    }
+
+    const score = gradingScoreMap[String(item?.id ?? '')]?.[String(studentId)];
+    return Number.isFinite(score) ? Number(score) : 0;
   };
 
   // Helper to calculate weighted scores using DepEd component weights
@@ -139,27 +294,27 @@ const GradeInput = () => {
 
     // Written Work
     let writtenTotal = 0, writtenMax = 0;
-    categorized.written.forEach((act: any) => {
-      writtenTotal += getStudentGrade(studentId, act.id);
-      writtenMax += parseFloat(act.max_score ?? 0);
+    categorized.written.forEach((item: any) => {
+      writtenTotal += Number(getStudentGrade(studentId, item) ?? 0);
+      writtenMax += parseFloat(item.max_score ?? 0);
     });
     const writtenPS = writtenMax > 0 ? (writtenTotal / writtenMax) * 100 : 0;
     const writtenWS = (writtenPS / 100) * w.ww;
 
     // Performance Tasks
     let performanceTotal = 0, performanceMax = 0;
-    categorized.performance.forEach((act: any) => {
-      performanceTotal += getStudentGrade(studentId, act.id);
-      performanceMax += parseFloat(act.max_score ?? 0);
+    categorized.performance.forEach((item: any) => {
+      performanceTotal += Number(getStudentGrade(studentId, item) ?? 0);
+      performanceMax += parseFloat(item.max_score ?? 0);
     });
     const performancePS = performanceMax > 0 ? (performanceTotal / performanceMax) * 100 : 0;
     const performanceWS = (performancePS / 100) * w.pt;
 
     // Quarterly Assessment
     let qaTotal = 0, qaMax = 0;
-    categorized.quarterly.forEach((act: any) => {
-      qaTotal += getStudentGrade(studentId, act.id);
-      qaMax += parseFloat(act.max_score ?? 0);
+    categorized.quarterly.forEach((item: any) => {
+      qaTotal += Number(getStudentGrade(studentId, item) ?? 0);
+      qaMax += parseFloat(item.max_score ?? 0);
     });
     const qaPS = qaMax > 0 ? (qaTotal / qaMax) * 100 : 0;
     const qaWS = (qaPS / 100) * w.qa;
@@ -177,19 +332,16 @@ const GradeInput = () => {
   };
 
   // Build an empty grade row for a student when no grades exist yet
-  const makeEmptyGradeRow = (s: any) => ({ id: String(s.id ?? s.student_id ?? s.user_id ?? s.id ?? ''), name: s.name ?? `${s.first_name ?? ''} ${s.last_name ?? ''}`, grades: [] });
+  const makeEmptyGradeRow = (s: any) => ({ id: String(s.id ?? s.student_id ?? s.user_id ?? s.id ?? ''), name: formatStudentDisplayName(s), grades: [] });
 
-  const transmute = (percentage: number): string => {
-    if (percentage >= 97) return "1.00";
-    if (percentage >= 94) return "1.25";
-    if (percentage >= 91) return "1.50";
-    if (percentage >= 88) return "1.75";
-    if (percentage >= 85) return "2.00";
-    if (percentage >= 82) return "2.25";
-    if (percentage >= 79) return "2.50";
-    if (percentage >= 76) return "2.75";
-    if (percentage >= 75) return "3.00";
-    return "5.00";
+  const transmute = (initialGrade: number): number => {
+    const clamped = Math.max(0, Math.min(100, Number(initialGrade || 0)));
+
+    if (clamped >= 60) {
+      return Math.min(100, 75 + Math.floor((clamped - 60) / 1.6));
+    }
+
+    return 60 + Math.floor(clamped / 4);
   };
 
   const handleDownloadTemplate = () => {
@@ -410,14 +562,7 @@ const GradeInput = () => {
           const res = await apiGet(`${API_ENDPOINTS.STUDENTS}?${query}`);
           const list = extractList(res, ['data', 'students']);
           if (Array.isArray(list)) {
-            const mapped = list.map((st: any) => ({
-              id: st.id ?? st.user_id ?? null,
-              student_code: st.student_id ?? null,
-              name: st.name ?? `${st.first_name ?? ''} ${st.last_name ?? ''}`,
-              email: st.email ?? st.user_email ?? '',
-              status: st.status ?? 'active',
-              grades: st.grades ?? st.activity_grades ?? []
-            }));
+            const mapped = mapStudentsForDisplay(list);
             setStudents(mapped);
           }
         }
@@ -439,15 +584,44 @@ const GradeInput = () => {
   };
 
   // Helper to convert transmuted grade to numeric equivalent
-  const getNumericFromGrade = (gradeStr: string): number => {
-    const gradeMap: Record<string, number> = {
-      '1.00': 97, '1.25': 94, '1.50': 91, '1.75': 88, '2.00': 85,
-      '2.25': 82, '2.50': 79, '2.75': 76, '3.00': 75, '5.00': 0
-    };
-    return gradeMap[gradeStr] || 0;
+  const getNumericFromGrade = (grade: number | string): number => {
+    const parsed = Number(grade);
+    if (!Number.isFinite(parsed)) return 0;
+    return parsed;
   };
 
-  const handleSubmitGrades = async () => {
+  const fetchSubmissionControl = async () => {
+    try {
+      setSubmissionControlLoading(true);
+      const res = await apiGet(API_ENDPOINTS.FINAL_GRADES_SUBMISSION_CONTROL);
+      const enabled = !!(res?.data?.is_enabled ?? true);
+      setSubmissionEnabled(enabled);
+    } catch (e) {
+      setSubmissionEnabled(true);
+    } finally {
+      setSubmissionControlLoading(false);
+    }
+  };
+
+  const handleToggleSubmissionControl = async (enabled: boolean) => {
+    if (user?.role !== 'admin') return;
+    const previous = submissionEnabled;
+    setSubmissionEnabled(enabled);
+    try {
+      setSubmissionControlSaving(true);
+      const res = await apiPut(API_ENDPOINTS.FINAL_GRADES_SUBMISSION_CONTROL, { is_enabled: enabled });
+      if (!res?.success) {
+        throw new Error(res?.message || 'Failed to update grade submission control');
+      }
+    } catch (err: any) {
+      setSubmissionEnabled(previous);
+      alert(err?.message || 'Failed to update grade submission control');
+    } finally {
+      setSubmissionControlSaving(false);
+    }
+  };
+
+  const handleSubmitGrades = () => {
     if (!selectedCourse || !selectedSection || !selectedPeriodId) {
       alert("Please select a course, section, and academic period first");
       return;
@@ -458,11 +632,17 @@ const GradeInput = () => {
       return;
     }
 
-    const confirmSubmit = window.confirm(
-      `Are you sure you want to submit grades for ${students.length} students?\nThis will upload the final grades to the system.`
-    );
+    if (!submissionEnabled) {
+      alert("Grade submission is currently disabled by admin.");
+      return;
+    }
 
-    if (!confirmSubmit) return;
+    setSubmitResult(null);
+    setSubmitModalOpen(true);
+  };
+
+  const confirmSubmitGrades = async () => {
+    if (!selectedCourse || !selectedSection || !selectedPeriodId) return;
 
     try {
       setLoading((l) => ({ ...l, submitting: true }));
@@ -471,7 +651,7 @@ const GradeInput = () => {
       const courseObjForSubmit = courses.find((c) => String(c.id) === String(selectedCourse));
       const submitWeights = getWeights(getWeightGroup(courseObjForSubmit?.code ?? ''));
       const gradesData = students.map((student) => {
-        const categorized = categorizeActivities(activities);
+        const categorized = buildComponentItems(activities, gradingItems);
         const calculatedGrades = calculateGrades(student.id, categorized, submitWeights);
         const numericScore = getNumericFromGrade(calculatedGrades.finalGrade);
         
@@ -493,17 +673,26 @@ const GradeInput = () => {
       const response = await apiPost(API_ENDPOINTS.FINAL_GRADES_SUBMIT, payload);
 
       if (response.success) {
-        alert(
-          `Grades submitted successfully!\n` +
-          `Inserted: ${response.inserted}, Updated: ${response.updated}` +
-          (response.errors && response.errors.length > 0 ? `\nErrors: ${response.errors.join('; ')}` : '')
-        );
+        setSubmitResult({
+          success: true,
+          message: response.message ?? 'Grades submitted successfully.',
+          inserted: response.inserted,
+          updated: response.updated,
+          errors: response.errors,
+        });
       } else {
-        alert(`Failed to submit grades: ${response.message}`);
+        setSubmitResult({
+          success: false,
+          message: response.message ?? 'Failed to submit grades.',
+          errors: response.errors,
+        });
       }
     } catch (error: any) {
       console.error('Grade submission error:', error);
-      alert(`Error submitting grades: ${error.message}`);
+      setSubmitResult({
+        success: false,
+        message: `Error submitting grades: ${error.message}`,
+      });
     } finally {
       setLoading((l) => ({ ...l, submitting: false }));
     }
@@ -513,9 +702,11 @@ const GradeInput = () => {
   useEffect(() => {
     let mounted = true;
     const fetchInitial = async () => {
-      if (!isAuthenticated || user?.role !== 'teacher') return;
+      if (!isAuthenticated || !['teacher', 'admin'].includes(String(user?.role ?? ''))) return;
       try {
         setLoading((l) => ({ ...l, periods: true, courses: true }));
+        await fetchSubmissionControl();
+        let resolvedSchoolYear = selectedSchoolYear || '';
         // academic periods
         try {
           const pRes = await apiGet(API_ENDPOINTS.ACADEMIC_PERIODS);
@@ -524,6 +715,7 @@ const GradeInput = () => {
             setAcademicPeriods(plist);
             const active = plist.find((p: any) => p.status === 'active');
             if (active) {
+              resolvedSchoolYear = String(active.school_year ?? '');
               setSelectedSchoolYear(String(active.school_year ?? ''));
               setSelectedQuarter(String(active.quarter ?? ''));
               setSelectedPeriodId(String(active.id));
@@ -533,15 +725,76 @@ const GradeInput = () => {
           // ignore
         }
 
-        // teacher subjects -> courses (same fetch logic as Courses page)
+        // teacher/admin subjects -> courses
         try {
-          const subjectsRes = await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
+          const isAdminView = user?.role === 'admin';
+          const subjectsRes = isAdminView
+            ? await apiGet(API_ENDPOINTS.SUBJECTS)
+            : await apiGet(API_ENDPOINTS.TEACHER_MY_SUBJECTS);
           const subjects = extractList(subjectsRes, ['subjects', 'data']);
+
+          let teacherBySubjectId = new Map<string, string>();
+          let sectionBySubjectId = new Map<string, { id: string | number; name: string }>();
+          let sectionByYearLevel = new Map<string, { id: string | number; name: string }>();
+
+          if (isAdminView) {
+            try {
+              const schoolYearForAssignments = resolvedSchoolYear || selectedSchoolYear || '';
+
+              if (schoolYearForAssignments) {
+                const assignmentRes = await apiGet(
+                  `${API_ENDPOINTS.TEACHER_ASSIGNMENTS_LIST}?school_year=${encodeURIComponent(String(schoolYearForAssignments))}`
+                );
+                const assignments = extractList(assignmentRes, ['assignments', 'data']);
+
+                assignments.forEach((a: any) => {
+                  const sid = String(a.subject_id ?? '');
+                  if (!sid || teacherBySubjectId.has(sid)) return;
+                  const fullName = `${String(a.first_name ?? '').trim()} ${String(a.last_name ?? '').trim()}`.trim();
+                  teacherBySubjectId.set(sid, fullName || 'Unassigned');
+
+                  const assignmentSectionId = a.section_id;
+                  const assignmentSectionName = normalizeLabel(a.section_name ?? '');
+                  if (
+                    assignmentSectionId !== null &&
+                    assignmentSectionId !== undefined &&
+                    !String(assignmentSectionId).startsWith('default-')
+                  ) {
+                    sectionBySubjectId.set(sid, {
+                      id: assignmentSectionId,
+                      name: assignmentSectionName,
+                    });
+                  }
+                });
+              }
+            } catch (err) {
+              console.warn('Failed to fetch teacher assignments for admin grade input:', err);
+            }
+
+            try {
+              const ylsRes = await apiGet(API_ENDPOINTS.YEAR_LEVEL_SECTIONS);
+              const mappings = extractList(ylsRes, ['mappings', 'data']);
+              mappings.forEach((m: any) => {
+                const levelName = normalizeLabel(m.year_level_name);
+                if (!levelName || sectionByYearLevel.has(levelName)) return;
+                sectionByYearLevel.set(levelName, {
+                  id: m.section_id,
+                  name: normalizeLabel(m.section_name),
+                });
+              });
+            } catch (err) {
+              console.warn('Failed to fetch year-level sections for admin grade input:', err);
+            }
+          }
 
           if (mounted && Array.isArray(subjects) && subjects.length > 0) {
             const sectionIds = Array.from(new Set(
               subjects
-                .map((s: any) => s.section_id)
+                .map((s: any) => {
+                  if (s.section_id !== null && s.section_id !== undefined) return s.section_id;
+                  const levelName = normalizeLabel(s.level || s.subject_level || s.year_level || '');
+                  return sectionByYearLevel.get(levelName)?.id ?? null;
+                })
                 .filter((id: any) => id !== null && id !== undefined && !String(id).startsWith('default-'))
             )) as Array<string | number>;
 
@@ -556,11 +809,18 @@ const GradeInput = () => {
 
             const mapped = subjects.map((subject: any, idx: number) => {
               const level = normalizeLabel(subject.level || subject.subject_level || subject.year_level || '');
-              const sectionId = subject.section_id ?? null;
-              const sectionName = normalizeLabel(subject.section_name ?? level);
+              const subjectId = String(subject.subject_id ?? subject.id ?? idx);
+              const sectionInfoFromAssignment = sectionBySubjectId.get(subjectId);
+              const sectionInfoFromLevel = sectionByYearLevel.get(level);
+              const sectionId = subject.section_id ?? sectionInfoFromAssignment?.id ?? sectionInfoFromLevel?.id ?? null;
+              const sectionName = normalizeLabel(subject.section_name ?? subject.section ?? sectionInfoFromAssignment?.name ?? sectionInfoFromLevel?.name ?? level);
               const sectionsList = sectionId
                 ? [{ id: sectionId, name: sectionName, students: studentCountBySection.get(String(sectionId)) }]
-                : [];
+                : (Array.isArray(subject.sections)
+                  ? subject.sections.map((s: any) => ({ id: s.id, name: normalizeLabel(s.name), students: studentCountBySection.get(String(s.id)) }))
+                  : []);
+
+              const assignedTeacherName = teacherBySubjectId.get(subjectId);
 
               return {
                 id: subject.subject_id ?? subject.id ?? idx,
@@ -568,7 +828,7 @@ const GradeInput = () => {
                 title: normalizeLabel(subject.name || subject.subject_name || ''),
                 semester: subject.semester ?? null,
                 year_level: level || null,
-                teacher: normalizeLabel(user?.name ?? ''),
+                teacher: normalizeLabel(assignedTeacherName ?? subject.teacher_name ?? (isAdminView ? 'Unassigned' : (user?.name ?? ''))),
                 sections: sectionsList,
                 status: subject.status ?? 'active',
               };
@@ -693,17 +953,27 @@ const GradeInput = () => {
       if (!selectedCourse || !selectedSection) return;
       try {
         setLoading((l) => ({ ...l, activities: true }));
-        
+
         // Build query params - filter by academic_period_id if selected
         let query = `course_id=${encodeURIComponent(String(selectedCourse))}&section_id=${encodeURIComponent(String(selectedSection))}`;
-        
+
         if (selectedPeriodId) {
           query += `&academic_period_id=${encodeURIComponent(String(selectedPeriodId))}`;
         }
-        
+
         const res = await apiGet(`${API_ENDPOINTS.ACTIVITIES}?${query}`);
-        const list = extractList(res, ['data', 'activities']);
-        
+        let list = extractList(res, ['data', 'activities']);
+
+        // Fallback: if period-filtered query returns no activities, retry without period filter
+        if (selectedPeriodId && (!Array.isArray(list) || list.length === 0)) {
+          const fallbackQuery = `course_id=${encodeURIComponent(String(selectedCourse))}&section_id=${encodeURIComponent(String(selectedSection))}`;
+          const fallbackRes = await apiGet(`${API_ENDPOINTS.ACTIVITIES}?${fallbackQuery}`);
+          const fallbackList = extractList(fallbackRes, ['data', 'activities']);
+          if (Array.isArray(fallbackList) && fallbackList.length > 0) {
+            list = fallbackList;
+          }
+        }
+
         if (mounted && Array.isArray(list)) {
           console.log('Fetched activities:', list); // Debug log
           setActivities(list);
@@ -720,6 +990,56 @@ const GradeInput = () => {
     fetchActivities();
     return () => { mounted = false; };
   }, [selectedCourse, selectedSection, selectedPeriodId]);
+
+  // Fetch hybrid grading input items (activity + manual + merged) and student score map
+  useEffect(() => {
+    let mounted = true;
+    const fetchGradingInputs = async () => {
+      if (!selectedCourse || !selectedSection || !selectedPeriodId) {
+        if (mounted) {
+          setGradingItems([]);
+          setGradingScoreMap({});
+        }
+        return;
+      }
+
+      try {
+        // Sync LMS activities into grading inputs first (best effort)
+        try {
+          await apiPost(API_ENDPOINTS.GRADING_INPUTS_SYNC_LMS, {
+            course_id: Number(selectedCourse),
+            section_id: Number(selectedSection),
+            academic_period_id: Number(selectedPeriodId),
+            quarter: selectedQuarter || null,
+          });
+        } catch (syncErr) {
+          console.warn('Failed to sync LMS grading inputs:', syncErr);
+        }
+
+        const giQuery = `course_id=${encodeURIComponent(String(selectedCourse))}&section_id=${encodeURIComponent(String(selectedSection))}&academic_period_id=${encodeURIComponent(String(selectedPeriodId))}&quarter=${encodeURIComponent(selectedQuarter || '')}`;
+        const giRes = await apiGet(`${API_ENDPOINTS.GRADING_INPUTS}?${giQuery}`);
+        const activeItems = extractList(giRes, ['items', 'data']);
+        const hiddenItems = Array.isArray(giRes?.hidden_source_items)
+          ? giRes.hidden_source_items.map((i: any) => ({ ...i, is_hidden: true }))
+          : [];
+        const scoreRows = extractList(giRes, ['scores']);
+
+        if (mounted) {
+          setGradingItems([...(Array.isArray(activeItems) ? activeItems : []), ...hiddenItems]);
+          setGradingScoreMap(buildScoreMap(scoreRows));
+        }
+      } catch (err) {
+        console.warn('Failed to fetch grading inputs:', err);
+        if (mounted) {
+          setGradingItems([]);
+          setGradingScoreMap({});
+        }
+      }
+    };
+
+    fetchGradingInputs();
+    return () => { mounted = false; };
+  }, [selectedCourse, selectedSection, selectedPeriodId, selectedQuarter]);
 
   // When selectedSection changes, fetch students for that section
   useEffect(() => {
@@ -743,18 +1063,7 @@ const GradeInput = () => {
         const res = await apiGet(`${API_ENDPOINTS.STUDENTS}?${query}`);
         const list = extractList(res, ['data', 'students']);
         if (mounted && Array.isArray(list)) {
-          // Map backend student shape to UI student rows
-          // Use numeric DB `id` as the primary `id` for API calls, keep `student_code` for display
-          const mapped = list.map((st: any) => {
-            return {
-              id: st.id ?? st.user_id ?? null,
-              student_code: st.student_id ?? null,
-              name: st.name ?? `${st.first_name ?? ''} ${st.last_name ?? ''}`,
-              email: st.email ?? st.user_email ?? '',
-              status: st.status ?? 'active',
-              grades: st.grades ?? st.activity_grades ?? []
-            };
-          });
+          const mapped = mapStudentsForDisplay(list);
           setStudents(mapped);
         } else {
           setStudents([]);
@@ -776,6 +1085,13 @@ const GradeInput = () => {
   const selectedCourseObj = courses.find((c) => String(c.id) === String(selectedCourse));
   const currentWeightGroup = getWeightGroup(selectedCourseObj?.code ?? '');
   const currentWeights = getWeights(currentWeightGroup);
+  const componentItems = buildComponentItems(activities, gradingItems);
+  const writtenItems = componentItems.written;
+  const performanceItems = componentItems.performance;
+  const quarterlyItems = componentItems.quarterly;
+  const writtenSlots = Math.max(8, writtenItems.length);
+  const performanceSlots = Math.max(5, performanceItems.length);
+  const totalGradeColumns = 1 + (writtenSlots + 3) + (performanceSlots + 3) + 3 + 2;
 
   return (
     <DashboardLayout>
@@ -797,12 +1113,22 @@ const GradeInput = () => {
             </Button>
             <Button
               onClick={handleSubmitGrades}
-              disabled={loading.submitting}
+              disabled={loading.submitting || submissionControlLoading || !submissionEnabled}
               className="bg-green-600 hover:bg-green-700"
             >
-              <Send className="h-4 w-4 mr-2" />
-              {loading.submitting ? 'Submitting...' : 'Submit Grades'}
+              {loading.submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              {loading.submitting ? 'Submitting...' : submissionEnabled ? 'Submit Grades' : 'Submission Disabled'}
             </Button>
+            {user?.role === 'admin' && (
+              <div className="flex items-center gap-2 pl-2 border-l">
+                <Label className="text-xs text-muted-foreground">Allow Submission</Label>
+                <Switch
+                  checked={submissionEnabled}
+                  disabled={submissionControlSaving || submissionControlLoading}
+                  onCheckedChange={handleToggleSubmissionControl}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -871,7 +1197,7 @@ const GradeInput = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {courses.map((c) => (
-                      <SelectItem hideIndicator key={c.id} value={String(c.id)}>{`${normalizeLabel(c.code)} - ${normalizeLabel(c.title)}`}</SelectItem>
+                      <SelectItem hideIndicator key={c.id} value={String(c.id)}>{`${normalizeLabel(c.code)} - ${normalizeLabel(c.title)} (${normalizeLabel(c.teacher || 'Unassigned')})`}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -948,11 +1274,11 @@ const GradeInput = () => {
                       Learner's Name
                     </th>
                     {/* Written Work */}
-                    <th colSpan={11} className="p-2 text-center font-semibold bg-table-written border-r border-border">
+                    <th colSpan={writtenSlots + 3} className="p-2 text-center font-semibold bg-table-written border-r border-border">
                       Written Work ({currentWeights.ww}%)
                     </th>
                     {/* Performance Tasks */}
-                    <th colSpan={8} className="p-2 text-center font-semibold bg-table-performance border-r border-border">
+                    <th colSpan={performanceSlots + 3} className="p-2 text-center font-semibold bg-table-performance border-r border-border">
                       Performance Tasks ({currentWeights.pt}%)
                     </th>
                     {/* Quarterly Assessment */}
@@ -960,31 +1286,31 @@ const GradeInput = () => {
                       Quarterly Assessment ({currentWeights.qa}%)
                     </th>
                     {/* Total */}
-                    <th colSpan={1} className="p-2 text-center font-semibold bg-table-total">
+                    <th colSpan={2} className="p-2 text-center font-semibold bg-table-total">
                       {selectedQuarter ?? 'Quarter'} Grade
                     </th>
                   </tr>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="p-2 text-left text-xs font-medium sticky left-0 z-30 bg-muted border-r border-border min-w-[200px] max-w-[200px] w-[200px]">ID / Name</th>
                     {/* Written sub-columns */}
-                    {categorizeActivities(activities).written.map((act, idx) => (
+                    {writtenItems.map((act, idx) => (
                       <th key={`wh${idx}`} className="p-1 text-center font-medium w-12 bg-table-written/50" title={act.title}>
                         {act.title.length > 10 ? act.title.substring(0, 10) + '...' : act.title}
                       </th>
                     ))}
-                    {Array.from({ length: Math.max(0, 8 - categorizeActivities(activities).written.length) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, writtenSlots - writtenItems.length) }).map((_, i) => (
                       <th key={`whe${i}`} className="p-1 text-center font-medium w-12 bg-table-written/50">-</th>
                     ))}
                     <th className="p-1 text-center font-medium w-12 bg-table-written/50">Total</th>
                     <th className="p-1 text-center font-medium w-12 bg-table-written/50">PS</th>
                     <th className="p-1 text-center font-medium w-12 bg-table-written border-r border-border">WS</th>
                     {/* Performance sub-columns */}
-                    {categorizeActivities(activities).performance.map((act, idx) => (
+                    {performanceItems.map((act, idx) => (
                       <th key={`ph${idx}`} className="p-1 text-center font-medium w-12 bg-table-performance/50" title={act.title}>
                         {act.title.length > 10 ? act.title.substring(0, 10) + '...' : act.title}
                       </th>
                     ))}
-                    {Array.from({ length: Math.max(0, 5 - categorizeActivities(activities).performance.length) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, performanceSlots - performanceItems.length) }).map((_, i) => (
                       <th key={`phe${i}`} className="p-1 text-center font-medium w-12 bg-table-performance/50">-</th>
                     ))}
                     <th className="p-1 text-center font-medium w-12 bg-table-performance/50">Total</th>
@@ -996,106 +1322,123 @@ const GradeInput = () => {
                     <th className="p-1 text-center font-medium w-12 bg-table-exam border-r border-border">WS</th>
                     {/* Total columns */}
                     <th className="p-1 text-center font-medium w-16 bg-table-total">Initial<br/><span className="text-[10px] font-normal">(0-100)</span></th>
+                    <th className="p-1 text-center font-medium w-14 bg-table-total">Grade</th>
                   </tr>
                   <tr className="border-b border-border bg-muted/30 text-[10px]">
                     <th className="p-1 text-right font-medium sticky left-0 z-30 bg-muted border-r border-border min-w-[200px] max-w-[200px] w-[200px]">HPS →</th>
                     {/* Written Works HPS */}
-                    {categorizeActivities(activities).written.map((act, idx) => (
+                    {writtenItems.map((act, idx) => (
                       <th key={`whps${idx}`} className="p-1 text-center text-muted-foreground bg-table-written/30">{act.max_score}</th>
                     ))}
-                    {Array.from({ length: Math.max(0, 8 - categorizeActivities(activities).written.length) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, writtenSlots - writtenItems.length) }).map((_, i) => (
                       <th key={`whpse${i}`} className="p-1 text-center text-muted-foreground bg-table-written/30">-</th>
                     ))}
-                    <th className="p-1 text-center text-muted-foreground bg-table-written/30">{categorizeActivities(activities).written.reduce((sum, act) => sum + parseFloat(act.max_score ?? 0), 0)}</th>
+                    <th className="p-1 text-center text-muted-foreground bg-table-written/30">{writtenItems.reduce((sum, act) => sum + parseFloat(act.max_score ?? 0), 0)}</th>
                     <th className="p-1 text-center text-muted-foreground bg-table-written/30">100%</th>
                     <th className="p-1 text-center text-muted-foreground bg-table-written border-r border-border">{currentWeights.ww}%</th>
                     {/* Performance Tasks HPS */}
-                    {categorizeActivities(activities).performance.map((act, idx) => (
+                    {performanceItems.map((act, idx) => (
                       <th key={`phps${idx}`} className="p-1 text-center text-muted-foreground bg-table-performance/30">{act.max_score}</th>
                     ))}
-                    {Array.from({ length: Math.max(0, 5 - categorizeActivities(activities).performance.length) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, performanceSlots - performanceItems.length) }).map((_, i) => (
                       <th key={`phpsee${i}`} className="p-1 text-center text-muted-foreground bg-table-performance/30">-</th>
                     ))}
-                    <th className="p-1 text-center text-muted-foreground bg-table-performance/30">{categorizeActivities(activities).performance.reduce((sum, act) => sum + parseFloat(act.max_score ?? 0), 0)}</th>
+                    <th className="p-1 text-center text-muted-foreground bg-table-performance/30">{performanceItems.reduce((sum, act) => sum + parseFloat(act.max_score ?? 0), 0)}</th>
                     <th className="p-1 text-center text-muted-foreground bg-table-performance/30">100%</th>
                     <th className="p-1 text-center text-muted-foreground bg-table-performance border-r border-border">{currentWeights.pt}%</th>
                     {/* Quarterly Assessment HPS */}
-                    <th className="p-1 text-center text-muted-foreground bg-table-exam/30">{categorizeActivities(activities).quarterly.reduce((sum, act) => sum + parseFloat(act.max_score ?? 0), 0)}</th>
+                    <th className="p-1 text-center text-muted-foreground bg-table-exam/30">{quarterlyItems.reduce((sum, act) => sum + parseFloat(act.max_score ?? 0), 0)}</th>
                     <th className="p-1 text-center text-muted-foreground bg-table-exam/30">100%</th>
                     <th className="p-1 text-center text-muted-foreground bg-table-exam border-r border-border">{currentWeights.qa}%</th>
                     <th className="p-1 text-center text-muted-foreground bg-table-total">100%</th>
+                    <th className="p-1 text-center text-muted-foreground bg-table-total">100</th>
                   </tr>
                 </thead>
                 <tbody>
                   {students.map((student, idx) => {
-                    const categorized = categorizeActivities(activities);
+                    const categorized = componentItems;
                     const grades = calculateGrades(student.id, categorized, currentWeights);
+                    const currentGenderRank = Number(student?._gender_rank ?? 2);
+                    const previousGenderRank = idx > 0 ? Number(students[idx - 1]?._gender_rank ?? 2) : null;
+                    const showGenderLabel = idx === 0 || currentGenderRank !== previousGenderRank;
 
                     return (
-                      <tr key={idx} className="border-b border-border hover:bg-muted/30 transition-colors">
-                        <td className="p-2 sticky left-0 z-10 bg-background border-r border-border min-w-[200px] max-w-[200px] w-[200px]">
-                          <div>
-                            <p className="font-medium text-xs">{idx + 1}. {student.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{student.student_code ?? student.id}</p>
-                          </div>
-                        </td>
-                        {/* Written Works - Individual Scores */}
-                        {categorized.written.map((act, actIdx) => (
-                          <td key={`w${actIdx}`} className="p-1 text-center bg-table-written/20">
-                            <div className="text-xs">{getStudentGrade(student.id, act.id) || '-'}</div>
+                      <>
+                        {showGenderLabel && (
+                          <tr key={`gender-${currentGenderRank}-${idx}`} className="border-y border-border bg-muted/60">
+                            <td colSpan={totalGradeColumns} className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {getGenderGroupLabel(currentGenderRank)}
+                            </td>
+                          </tr>
+                        )}
+                        <tr key={idx} className="border-b border-border hover:bg-muted/30 transition-colors">
+                          <td className="p-2 sticky left-0 z-10 bg-background border-r border-border min-w-[200px] max-w-[200px] w-[200px]">
+                            <div>
+                              <p className="font-medium text-xs">{idx + 1}. {student.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{student.student_code ?? student.id}</p>
+                            </div>
                           </td>
-                        ))}
-                        {/* Fill empty columns if less than 8 activities */}
-                        {Array.from({ length: Math.max(0, 8 - categorized.written.length) }).map((_, i) => (
-                          <td key={`we${i}`} className="p-1 text-center bg-table-written/20">
-                            <div className="text-xs text-muted-foreground">-</div>
+                          {/* Written Works - Individual Scores */}
+                          {categorized.written.map((act, actIdx) => (
+                            <td key={`w${actIdx}`} className="p-1 text-center bg-table-written/20">
+                              <div className="text-xs">{getStudentGrade(student.id, act) || '-'}</div>
+                            </td>
+                          ))}
+                          {/* Fill empty columns if less than 8 activities */}
+                          {Array.from({ length: Math.max(0, writtenSlots - categorized.written.length) }).map((_, i) => (
+                            <td key={`we${i}`} className="p-1 text-center bg-table-written/20">
+                              <div className="text-xs text-muted-foreground">-</div>
+                            </td>
+                          ))}
+                          <td className="p-1 text-center font-semibold bg-table-written/30 text-xs">
+                            {grades.written.total.toFixed(0)}
                           </td>
-                        ))}
-                        <td className="p-1 text-center font-semibold bg-table-written/30 text-xs">
-                          {grades.written.total.toFixed(0)}
-                        </td>
-                        <td className="p-1 text-center font-medium bg-table-written/30 text-xs">
-                          {grades.written.ps.toFixed(2)}%
-                        </td>
-                        <td className="p-1 text-center font-semibold bg-table-written border-r border-border text-xs">
-                          {grades.written.ws.toFixed(2)}
-                        </td>
-                        {/* Performance Tasks - Individual Scores */}
-                        {categorized.performance.map((act, actIdx) => (
-                          <td key={`p${actIdx}`} className="p-1 text-center bg-table-performance/20">
-                            <div className="text-xs">{getStudentGrade(student.id, act.id) || '-'}</div>
+                          <td className="p-1 text-center font-medium bg-table-written/30 text-xs">
+                            {grades.written.ps.toFixed(2)}%
                           </td>
-                        ))}
-                        {/* Fill empty columns if less than 5 activities */}
-                        {Array.from({ length: Math.max(0, 5 - categorized.performance.length) }).map((_, i) => (
-                          <td key={`pe${i}`} className="p-1 text-center bg-table-performance/20">
-                            <div className="text-xs text-muted-foreground">-</div>
+                          <td className="p-1 text-center font-semibold bg-table-written border-r border-border text-xs">
+                            {grades.written.ws.toFixed(2)}
                           </td>
-                        ))}
-                        <td className="p-1 text-center font-semibold bg-table-performance/30 text-xs">
-                          {grades.performance.total.toFixed(0)}
-                        </td>
-                        <td className="p-1 text-center font-medium bg-table-performance/30 text-xs">
-                          {grades.performance.ps.toFixed(2)}%
-                        </td>
-                        <td className="p-1 text-center font-semibold bg-table-performance border-r border-border text-xs">
-                          {grades.performance.ws.toFixed(2)}
-                        </td>
-                        {/* Quarterly Assessment */}
-                        <td className="p-1 text-center bg-table-exam/20">
-                          <div className="text-xs">{grades.quarterly.total.toFixed(0)}</div>
-                        </td>
-                        <td className="p-1 text-center font-medium bg-table-exam/30 text-xs">
-                          {grades.quarterly.ps.toFixed(2)}%
-                        </td>
-                        <td className="p-1 text-center font-semibold bg-table-exam border-r border-border text-xs">
-                          {grades.quarterly.ws.toFixed(2)}
-                        </td>
-                        {/* Totals */}
-                        <td className="p-1 text-center font-bold bg-table-total text-xs">
-                          {grades.initialGrade.toFixed(2)}
-                        </td>
-                      </tr>
+                          {/* Performance Tasks - Individual Scores */}
+                          {categorized.performance.map((act, actIdx) => (
+                            <td key={`p${actIdx}`} className="p-1 text-center bg-table-performance/20">
+                              <div className="text-xs">{getStudentGrade(student.id, act) || '-'}</div>
+                            </td>
+                          ))}
+                          {/* Fill empty columns if less than 5 activities */}
+                          {Array.from({ length: Math.max(0, performanceSlots - categorized.performance.length) }).map((_, i) => (
+                            <td key={`pe${i}`} className="p-1 text-center bg-table-performance/20">
+                              <div className="text-xs text-muted-foreground">-</div>
+                            </td>
+                          ))}
+                          <td className="p-1 text-center font-semibold bg-table-performance/30 text-xs">
+                            {grades.performance.total.toFixed(0)}
+                          </td>
+                          <td className="p-1 text-center font-medium bg-table-performance/30 text-xs">
+                            {grades.performance.ps.toFixed(2)}%
+                          </td>
+                          <td className="p-1 text-center font-semibold bg-table-performance border-r border-border text-xs">
+                            {grades.performance.ws.toFixed(2)}
+                          </td>
+                          {/* Quarterly Assessment */}
+                          <td className="p-1 text-center bg-table-exam/20">
+                            <div className="text-xs">{grades.quarterly.total.toFixed(0)}</div>
+                          </td>
+                          <td className="p-1 text-center font-medium bg-table-exam/30 text-xs">
+                            {grades.quarterly.ps.toFixed(2)}%
+                          </td>
+                          <td className="p-1 text-center font-semibold bg-table-exam border-r border-border text-xs">
+                            {grades.quarterly.ws.toFixed(2)}
+                          </td>
+                          {/* Totals */}
+                          <td className="p-1 text-center font-bold bg-table-total text-xs">
+                            {grades.initialGrade.toFixed(2)}
+                          </td>
+                          <td className="p-1 text-center font-bold bg-table-total text-xs">
+                            {grades.finalGrade}
+                          </td>
+                        </tr>
+                      </>
                     );
                   })}
                 </tbody>
@@ -1194,6 +1537,49 @@ const GradeInput = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={submitModalOpen} onOpenChange={(open) => { if (!loading.submitting) setSubmitModalOpen(open); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{submitResult ? (submitResult.success ? 'Grades Submitted' : 'Submission Failed') : 'Submit Grades'}</DialogTitle>
+            <DialogDescription>
+              {submitResult
+                ? submitResult.message
+                : `You are about to submit grades for ${students.length} students. This will save the ${selectedQuarter ?? 'selected'} grades to the system.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {!submitResult && (
+            <div className="text-sm space-y-1">
+              <p><span className="font-medium">Course:</span> {courseInfo.code} - {courseInfo.title}</p>
+              <p><span className="font-medium">Section:</span> {courseInfo.section || selectedSection}</p>
+              <p><span className="font-medium">Period:</span> {selectedSchoolYear} • {selectedQuarter}</p>
+            </div>
+          )}
+
+          {submitResult && (
+            <div className="text-sm space-y-1">
+              {typeof submitResult.inserted === 'number' && <p>Inserted: {submitResult.inserted}</p>}
+              {typeof submitResult.updated === 'number' && <p>Updated: {submitResult.updated}</p>}
+              {submitResult.errors && submitResult.errors.length > 0 && (
+                <p className="text-amber-600">Warnings: {submitResult.errors.slice(0, 3).join('; ')}{submitResult.errors.length > 3 ? '...' : ''}</p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmitModalOpen(false)} disabled={loading.submitting}>
+              {submitResult ? 'Close' : 'Cancel'}
+            </Button>
+            {!submitResult && (
+              <Button onClick={confirmSubmitGrades} disabled={loading.submitting || !submissionEnabled} className="bg-green-600 hover:bg-green-700">
+                {loading.submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                {loading.submitting ? 'Submitting...' : 'Confirm Submit'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

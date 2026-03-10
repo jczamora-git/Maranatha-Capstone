@@ -9,6 +9,61 @@ class FinalGradesController extends Controller
     public function __construct()
     {
         parent::__construct();
+        $this->call->library('AuditLogger');
+        $this->call->database();
+    }
+
+    private function normalizeQuarter($value)
+    {
+        $raw = trim((string)$value);
+        if ($raw === '') return null;
+
+        $map = [
+            '1st' => '1st',
+            '1st quarter' => '1st',
+            '2nd' => '2nd',
+            '2nd quarter' => '2nd',
+            '3rd' => '3rd',
+            '3rd quarter' => '3rd',
+            '4th' => '4th',
+            '4th quarter' => '4th',
+            'midterm' => '2nd',
+            'final' => '4th',
+        ];
+
+        $key = strtolower($raw);
+        return $map[$key] ?? null;
+    }
+
+    private function getActorName()
+    {
+        $first = trim((string)$this->session->userdata('first_name'));
+        $last = trim((string)$this->session->userdata('last_name'));
+        return trim($first . ' ' . $last);
+    }
+
+    private function getSubmissionControl()
+    {
+        $row = $this->db->table('grade_submission_controls')
+            ->where('id', 1)
+            ->get();
+
+        if (!$row) {
+            $now = app_now();
+            $this->db->table('grade_submission_controls')->insert([
+                'id' => 1,
+                'is_enabled' => 1,
+                'updated_by' => $this->session->userdata('user_id') ?: null,
+                'updated_at' => $now,
+                'created_at' => $now,
+            ]);
+
+            $row = $this->db->table('grade_submission_controls')
+                ->where('id', 1)
+                ->get();
+        }
+
+        return $row;
     }
 
     /**
@@ -19,7 +74,7 @@ class FinalGradesController extends Controller
      *   "subject_id": 6,
      *   "section_id": 1,
      *   "academic_period_id": 10,
-     *   "term": "Midterm",
+    *   "quarter": "1st Quarter",
      *   "grades": [
      *     {"student_id": 5, "final_grade_num": 87.5, "final_grade": "1.50"},
      *     ...
@@ -30,7 +85,7 @@ class FinalGradesController extends Controller
     {
         api_set_json_headers();
 
-        // Check authorization - must be logged in and be a teacher
+        // Check authorization - must be logged in and be a teacher/admin
         if (!$this->session->userdata('logged_in')) {
             http_response_code(401);
             echo json_encode([
@@ -43,11 +98,11 @@ class FinalGradesController extends Controller
         $user_id = $this->session->userdata('user_id');
         $role = $this->session->userdata('role');
 
-        if ($role !== 'teacher') {
+        if (!in_array($role, ['teacher', 'admin'], true)) {
             http_response_code(403);
             echo json_encode([
                 'success' => false,
-                'message' => 'Only teachers can submit grades'
+                'message' => 'Only teachers or admins can submit grades'
             ]);
             return;
         }
@@ -67,61 +122,118 @@ class FinalGradesController extends Controller
             $subject_id = $input['subject_id'] ?? null;
             $section_id = $input['section_id'] ?? null;
             $academic_period_id = $input['academic_period_id'] ?? null;
-            $term = $input['term'] ?? null;
+            $quarterRaw = $input['quarter'] ?? ($input['term'] ?? null);
+            $quarter = $this->normalizeQuarter($quarterRaw);
             $grades = $input['grades'] ?? [];
 
             // Validate required fields
-            if (!$subject_id || !$section_id || !$academic_period_id || !$term || empty($grades)) {
+            if (!$subject_id || !$section_id || !$academic_period_id || !$quarter || empty($grades)) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Missing required fields'
+                    'message' => 'Missing required fields (subject_id, section_id, academic_period_id, quarter, grades)'
                 ]);
                 return;
             }
 
-            // Resolve teacher record (teacher.id) from current session user_id
-            $teacher = $this->TeacherModel->get_by_user_id($user_id);
-            if (empty($teacher) || empty($teacher['id'])) {
+            $submissionControl = $this->getSubmissionControl();
+            if (empty($submissionControl) || (int)($submissionControl['is_enabled'] ?? 0) !== 1) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Teacher profile not found for current user'
+                    'message' => 'Grade submission is currently disabled by admin.'
                 ]);
                 return;
             }
 
-            $teacher_id = $teacher['id'];
+            if ($role === 'teacher') {
+                // Resolve teacher record (teacher.id) from current session user_id
+                $teacher = $this->TeacherModel->get_by_user_id($user_id);
+                if (empty($teacher) || empty($teacher['id'])) {
+                    http_response_code(403);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Teacher profile not found for current user'
+                    ]);
+                    return;
+                }
 
-            // Verify teacher assignment for this subject/section using raw SQL
-            // Note: academic_period_id is not part of teacher_subjects, only subject + section matters
-            $stmt = $this->db->raw(
-                "SELECT ts.* FROM teacher_subjects ts
-                 JOIN teacher_subject_sections tss ON ts.id = tss.teacher_subject_id
-                 WHERE ts.teacher_id = ? AND ts.subject_id = ? AND tss.section_id = ?",
-                [$teacher_id, $subject_id, $section_id]
-            );
+                $teacher_id = $teacher['id'];
 
-            // LavaLust raw returns PDOStatement; fetch a row to check existence
-            $assignment = null;
-            if ($stmt) {
-                try {
-                    $assignment = $stmt->fetch(PDO::FETCH_ASSOC);
-                } catch (Exception $e) {
-                    $assignment = null;
+                // Verify teacher assignment for this subject/section using raw SQL
+                // Note: academic_period_id is not part of teacher_subjects, only subject + section matters
+                $stmt = $this->db->raw(
+                    "SELECT ts.* FROM teacher_subjects ts
+                     JOIN teacher_subject_sections tss ON ts.id = tss.teacher_subject_id
+                     WHERE ts.teacher_id = ? AND ts.subject_id = ? AND tss.section_id = ?",
+                    [$teacher_id, $subject_id, $section_id]
+                );
+
+                // LavaLust raw returns PDOStatement; fetch a row to check existence
+                $assignment = null;
+                if ($stmt) {
+                    try {
+                        $assignment = $stmt->fetch(PDO::FETCH_ASSOC);
+                    } catch (Exception $e) {
+                        $assignment = null;
+                    }
+                }
+
+                if (empty($assignment)) {
+                    http_response_code(403);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'You are not assigned to teach this subject/section'
+                    ]);
+                    return;
                 }
             }
 
-            if (empty($assignment)) {
-                http_response_code(403);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'You are not assigned to teach this subject/section'
-                ]);
-                return;
+            $usedTx = null;
+            if (method_exists($this->db, 'transaction')) {
+                $this->db->transaction();
+                $usedTx = 'transaction';
+            } elseif (method_exists($this->db, 'beginTransaction')) {
+                $this->db->beginTransaction();
+                $usedTx = 'beginTransaction';
             }
 
-            // Insert or update grades
+            // Create or update submission header
+            $existingSubmission = $this->FinalGradesModel->get_submission_by_scope(
+                $subject_id,
+                $section_id,
+                $academic_period_id,
+                $quarter
+            );
+
+            $submissionId = null;
+            if (!empty($existingSubmission) && !empty($existingSubmission['id'])) {
+                $submissionId = (int)$existingSubmission['id'];
+                $this->FinalGradesModel->update_submission($submissionId, [
+                    'status' => 'submitted',
+                    'submitted_by' => (int)$user_id,
+                    'submitted_at' => app_now(),
+                    'approved_by' => null,
+                    'approved_at' => null,
+                    'rejection_reason' => null,
+                ]);
+            } else {
+                $submissionId = $this->FinalGradesModel->create_submission([
+                    'subject_id' => (int)$subject_id,
+                    'section_id' => (int)$section_id,
+                    'academic_period_id' => (int)$academic_period_id,
+                    'quarter' => $quarter,
+                    'submitted_by' => (int)$user_id,
+                    'submitted_at' => app_now(),
+                    'status' => 'submitted',
+                ]);
+
+                if (!$submissionId) {
+                    throw new Exception('Failed to create final grade submission header');
+                }
+            }
+
+            // Insert or update grade items
             $inserted = 0;
             $updated = 0;
             $errors = [];
@@ -130,72 +242,74 @@ class FinalGradesController extends Controller
                 $student_id = $grade_data['student_id'] ?? null;
                 $final_grade_num = $grade_data['final_grade_num'] ?? null;
                 $final_grade = $grade_data['final_grade'] ?? null;
+                $remarks = $grade_data['remarks'] ?? null;
 
                 if (!$student_id || !$final_grade) {
                     $errors[] = "Invalid grade data for student {$student_id}";
                     continue;
                 }
 
-                // Check if grade already exists
-                $existing = $this->FinalGradesModel->grade_exists($student_id, $subject_id, $academic_period_id, $term);
+                $result = $this->FinalGradesModel->upsert_submission_item($submissionId, (int)$student_id, [
+                    'final_grade_num' => $final_grade_num,
+                    'final_grade' => $final_grade,
+                    'remarks' => $remarks,
+                ]);
 
-                if ($existing) {
-                    // Update existing grade
-                    $update_data = [
-                        'final_grade' => $final_grade,
-                        'final_grade_num' => $final_grade_num,
-                        'submitted_by' => $user_id,
-                        'submitted_at' => date('Y-m-d H:i:s'),
-                        'status' => 'submitted'
-                    ];
-                    
-                    $update_result = $this->FinalGradesModel->update_by_combo(
-                        $student_id,
-                        $subject_id,
-                        $academic_period_id,
-                        $term,
-                        $update_data
-                    );
-                    
-                    if ($update_result) {
+                if (!empty($result['success'])) {
+                    if (($result['action'] ?? '') === 'updated') {
                         $updated++;
                     } else {
-                        $errors[] = "Failed to update grade for student {$student_id}";
+                        $inserted++;
                     }
                 } else {
-                    // Insert new grade
-                    $insert_data = [
-                        'student_id' => $student_id,
-                        'subject_id' => $subject_id,
-                        'section_id' => $section_id,
-                        'academic_period_id' => $academic_period_id,
-                        'term' => $term,
-                        'final_grade' => $final_grade,
-                        'final_grade_num' => $final_grade_num,
-                        'status' => 'submitted',
-                        'submitted_by' => $user_id,
-                        'submitted_at' => date('Y-m-d H:i:s')
-                    ];
-                    
-                    $insert_result = $this->FinalGradesModel->create($insert_data);
-                    
-                    if ($insert_result) {
-                        $inserted++;
-                    } else {
-                        $errors[] = "Failed to insert grade for student {$student_id}";
-                    }
+                    $errors[] = "Failed to save grade for student {$student_id}";
                 }
+            }
+
+            if (($usedTx === 'transaction' || $usedTx === 'beginTransaction') && method_exists($this->db, 'commit')) {
+                $this->db->commit();
+            }
+
+            try {
+                $this->AuditLogger->log([
+                    'action' => 'grades.submitted',
+                    'entity_type' => 'final_grade_submission',
+                    'entity_id' => $submissionId,
+                    'actor_user_id' => $user_id,
+                    'actor_role' => $role,
+                    'actor_name' => $this->getActorName(),
+                    'description' => "Submitted final grades for subject {$subject_id}, section {$section_id}, period {$academic_period_id}, quarter {$quarter}",
+                    'metadata' => [
+                        'subject_id' => (int)$subject_id,
+                        'section_id' => (int)$section_id,
+                        'academic_period_id' => (int)$academic_period_id,
+                        'quarter' => $quarter,
+                        'submission_id' => (int)$submissionId,
+                        'inserted' => (int)$inserted,
+                        'updated' => (int)$updated,
+                        'errors_count' => count($errors),
+                    ],
+                ]);
+            } catch (Exception $auditError) {
+                error_log('Failed to create grade submission audit log: ' . $auditError->getMessage());
             }
 
             http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'message' => "Grades submitted successfully ({$inserted} inserted, {$updated} updated)",
+                'submission_id' => $submissionId,
                 'inserted' => $inserted,
                 'updated' => $updated,
                 'errors' => $errors
             ]);
         } catch (Exception $e) {
+            if (method_exists($this->db, 'rollback')) {
+                $this->db->rollback();
+            } elseif (method_exists($this->db, 'rollBack')) {
+                $this->db->rollBack();
+            }
+
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -233,6 +347,12 @@ class FinalGradesController extends Controller
             if (!empty($_GET['academic_period_id'])) {
                 $filters['academic_period_id'] = $_GET['academic_period_id'];
             }
+            if (!empty($_GET['section_id'])) {
+                $filters['section_id'] = $_GET['section_id'];
+            }
+            if (!empty($_GET['quarter'])) {
+                $filters['quarter'] = $this->normalizeQuarter($_GET['quarter']);
+            }
 
             $result = $this->FinalGradesModel->get_grades($filters);
 
@@ -241,6 +361,142 @@ class FinalGradesController extends Controller
                 'success' => true,
                 'data' => $result ?? [],
                 'count' => is_array($result) ? count($result) : 0
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get grade submission control (enabled/disabled)
+     * GET /api/final-grades/submission-control
+     */
+    public function api_get_submission_control()
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            $row = $this->getSubmissionControl();
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'is_enabled' => (int)($row['is_enabled'] ?? 0) === 1,
+                    'updated_by' => $row['updated_by'] ?? null,
+                    'updated_at' => $row['updated_at'] ?? null,
+                ]
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Update grade submission control (admin only)
+     * PUT /api/final-grades/submission-control
+     * Body: { "is_enabled": true|false }
+     */
+    public function api_update_submission_control()
+    {
+        api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        $role = $this->session->userdata('role');
+        if ($role !== 'admin') {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Only admin can update grade submission control'
+            ]);
+            return;
+        }
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($input) || !array_key_exists('is_enabled', $input)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing required field: is_enabled'
+                ]);
+                return;
+            }
+
+            $enabled = (int)((bool)$input['is_enabled']);
+            $user_id = (int)$this->session->userdata('user_id');
+
+            $existing = $this->getSubmissionControl();
+
+            $payload = [
+                'is_enabled' => $enabled,
+                'updated_by' => $user_id,
+                'updated_at' => app_now(),
+            ];
+
+            if ($existing && !empty($existing['id'])) {
+                $ok = $this->db->table('grade_submission_controls')
+                    ->where('id', 1)
+                    ->update($payload);
+            } else {
+                $payload['id'] = 1;
+                $payload['created_at'] = app_now();
+                $ok = $this->db->table('grade_submission_controls')->insert($payload);
+            }
+
+            if (!$ok) {
+                throw new Exception('Failed to update grade submission control');
+            }
+
+            try {
+                $this->AuditLogger->log([
+                    'action' => 'grades.submission_control_updated',
+                    'entity_type' => 'grade_submission_control',
+                    'entity_id' => 1,
+                    'actor_user_id' => $user_id,
+                    'actor_role' => 'admin',
+                    'actor_name' => $this->getActorName(),
+                    'description' => $enabled ? 'Enabled grade submission' : 'Disabled grade submission',
+                    'metadata' => [
+                        'is_enabled' => $enabled === 1,
+                    ],
+                ]);
+            } catch (Exception $auditError) {
+                error_log('Failed to create grade submission control audit log: ' . $auditError->getMessage());
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => $enabled ? 'Grade submission enabled' : 'Grade submission disabled',
+                'data' => [
+                    'is_enabled' => $enabled === 1,
+                ]
             ]);
         } catch (Exception $e) {
             http_response_code(500);

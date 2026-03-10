@@ -83,7 +83,7 @@ $autoload['libraries'] = array('database','session');
 |	$autoload['helpers'] = array('url', 'file');
 */
 $autoload['helpers'] = array('url','api','spreadsheet','mail','email_templates','classrecord',
-'classrecord_excel','pdf','firebase','token','proof_of_payment','feature','notification_templates');
+'classrecord_excel','pdf','firebase','token','proof_of_payment','feature','notification_templates','datetime');
 
 /*
 | -------------------------------------------------------------------

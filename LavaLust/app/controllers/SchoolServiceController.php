@@ -235,8 +235,8 @@ class SchoolServiceController extends Controller
                 'is_recurring_service' => 1,
                 'service_period_month' => $data['service_period_month'],
                 'service_period_year' => $data['service_period_year'],
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now(),
+                'updated_at' => app_now()
             ];
             
             // Create payment using PaymentModel

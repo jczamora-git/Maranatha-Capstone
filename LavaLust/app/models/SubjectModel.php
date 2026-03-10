@@ -84,7 +84,7 @@ class SubjectModel extends Model
      */
     public function create($data)
     {
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $insert = [
             'course_code' => $data['course_code'] ?? '',
             'name' => $data['name'] ?? '',
@@ -112,7 +112,7 @@ class SubjectModel extends Model
      */
     public function update_subject($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
 
         $allowed = ['course_code', 'name', 'level', 'status', 'updated_at'];
         $updateData = [];
@@ -132,6 +132,6 @@ class SubjectModel extends Model
     {
         return $this->db->table($this->table)
                         ->where('id', $id)
-                        ->update(['status' => 'inactive', 'updated_at' => date('Y-m-d H:i:s')]);
+                        ->update(['status' => 'inactive', 'updated_at' => app_now()]);
     }
 }

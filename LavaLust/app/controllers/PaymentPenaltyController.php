@@ -194,7 +194,7 @@ class PaymentPenaltyController extends Controller
                 'penalty_amount' => $input['penalty_amount'],
                 'days_overdue' => $input['days_overdue'] ?? 0,
                 'explanation' => trim($input['explanation']),
-                'submitted_at' => date('Y-m-d H:i:s'),
+                'submitted_at' => app_now(),
                 'viewed_by_admin' => 0,
                 'admin_notes' => null
             ];

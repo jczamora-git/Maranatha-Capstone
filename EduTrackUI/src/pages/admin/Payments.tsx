@@ -1747,34 +1747,22 @@ const filteredDiscounts = discountTemplates.filter((d) => {
 
         {summaryView === "payment" ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className={viewMode === "payments" 
+            <Card className={viewMode === "payments"
               ? "border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100"
               : "border-0 shadow-lg bg-gradient-to-br from-orange-50 to-red-100"
             }>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={viewMode === "payments" 
-                      ? "text-sm text-blue-600 font-semibold"
-                      : "text-sm text-orange-600 font-semibold"
-                    }>
+                    <p className={viewMode === "payments" ? "text-sm text-blue-600 font-semibold" : "text-sm text-orange-600 font-semibold"}>
                       {viewMode === "payments" ? "Total Collected" : "Total Refunds"}
                     </p>
-                    <p className={viewMode === "payments" 
-                      ? "text-2xl font-bold text-blue-700"
-                      : "text-2xl font-bold text-orange-700"
-                    }>
+                    <p className={viewMode === "payments" ? "text-2xl font-bold text-blue-700" : "text-2xl font-bold text-orange-700"}>
                       ₱{Number(totalPayments).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
-                  <div className={viewMode === "payments" 
-                    ? "w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center"
-                    : "w-12 h-12 rounded-full bg-orange-200 flex items-center justify-center"
-                  }>
-                    <Coins className={viewMode === "payments" 
-                      ? "h-6 w-6 text-blue-600"
-                      : "h-6 w-6 text-orange-600"
-                    } />
+                  <div className={viewMode === "payments" ? "w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center" : "w-12 h-12 rounded-full bg-orange-200 flex items-center justify-center"}>
+                    <Coins className={viewMode === "payments" ? "h-6 w-6 text-blue-600" : "h-6 w-6 text-orange-600"} />
                   </div>
                 </div>
               </CardContent>

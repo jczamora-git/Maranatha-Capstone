@@ -10,6 +10,17 @@ class InstallmentModel extends Model
     protected $table = 'installments';
 
     /**
+     * Get all installments across all payment plans
+     */
+    public function get_all()
+    {
+        return $this->db->table($this->table)
+                        ->order_by('payment_plan_id', 'ASC')
+                        ->order_by('installment_number', 'ASC')
+                        ->get_all();
+    }
+
+    /**
      * Get all installments for a payment plan
      */
     public function get_by_plan($payment_plan_id)
@@ -35,8 +46,8 @@ class InstallmentModel extends Model
      */
     public function create($data)
     {
-        $data['created_at'] = date('Y-m-d H:i:s');
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['created_at'] = app_now();
+        $data['updated_at'] = app_now();
         
         // Ensure required defaults
         if (!isset($data['amount_paid'])) {
@@ -79,7 +90,7 @@ class InstallmentModel extends Model
      */
     public function update($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
         
         return $this->db->table($this->table)
                         ->where('id', $id)

@@ -19,7 +19,7 @@ class AttendanceModel extends Model
      */
     public function create($data)
     {
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $data['created_at'] = $now;
         $data['updated_at'] = $now;
 

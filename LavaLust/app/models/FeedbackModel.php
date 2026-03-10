@@ -63,7 +63,7 @@ class FeedbackModel extends Model
 
     public function create($data)
     {
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $insert = [
             'user_id' => $data['user_id'] ?? null,
             'role' => $data['role'] ?? 'student',
@@ -89,7 +89,7 @@ class FeedbackModel extends Model
             'sentiment' => $data['sentiment'] ?? null,
             'confidence' => $data['confidence'] ?? null,
             'probabilities' => $data['probabilities'] ?? null,
-            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_at' => app_now(),
         ];
 
         return $this->db->table($this->table)
@@ -103,7 +103,7 @@ class FeedbackModel extends Model
             'response_text' => $data['response_text'] ?? null,
             'responded_by' => $data['responded_by'] ?? null,
             'responded_at' => $data['responded_at'] ?? null,
-            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_at' => app_now(),
         ];
 
         return $this->db->table($this->table)

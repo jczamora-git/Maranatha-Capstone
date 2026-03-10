@@ -326,8 +326,7 @@ const UserManagement = () => {
   const generateEmployeeId = async (): Promise<string> => {
     try {
       const year = new Date().getFullYear();
-      const pattern = `EMP${year}-%`;
-      
+
       // Fetch last employee ID from backend
       const response = await fetch(`${API_ENDPOINTS.USERS}/../teachers/last-id?year=${year}`, {
         credentials: 'include'
@@ -336,14 +335,18 @@ const UserManagement = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.last_id) {
-          const match = data.last_id.match(/EMP\d+-(\d+)/);
+          const match = String(data.last_id).match(/EMP(\d+)-(\d+)/);
           if (match) {
-            const nextNum = parseInt(match[1]) + 1;
-            return `EMP${year}-${String(nextNum).padStart(3, '0')}`;
+            const lastYear = parseInt(match[1], 10);
+            if (lastYear === year) {
+              const nextNum = parseInt(match[2], 10) + 1;
+              return `EMP${year}-${String(nextNum).padStart(3, '0')}`;
+            }
+            // Different year — start fresh
           }
         }
       }
-      
+
       // Fallback to 001
       return `EMP${year}-001`;
     } catch (error) {

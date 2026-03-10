@@ -232,7 +232,7 @@ class UserController extends Controller
                         'year_level' => 1, // Default to first year
                         'section_id' => null,
                         'status' => 'pending', // Pending until verified
-                        'updated_at' => date('Y-m-d H:i:s')
+                        'updated_at' => app_now()
                     ];
                     
                     // Use StudentModel safe creation to avoid duplicate IDs under concurrency
@@ -700,7 +700,7 @@ class UserController extends Controller
             // Mark token as used
             $this->db->table('password_resets')->where('id', $reset['id'])->update([
                 'used' => 1,
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ]);
 
             http_response_code(200);
@@ -813,7 +813,7 @@ class UserController extends Controller
             // Also update student record if exists
             $this->db->table('students')
                 ->where('user_id', $userId)
-                ->update(['status' => 'active', 'updated_at' => date('Y-m-d H:i:s')]);
+                ->update(['status' => 'active', 'updated_at' => app_now()]);
             
             echo json_encode([
                 'success' => true,
@@ -1019,6 +1019,157 @@ class UserController extends Controller
                 'success' => false,
                 'authenticated' => false,
                 'user' => null,
+                'message' => 'Server error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Update authenticated user's own profile
+     * PUT /api/auth/profile
+     */
+    public function api_update_my_profile()
+    {
+         api_set_json_headers();
+
+        if (!$this->session->userdata('logged_in')) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ]);
+            return;
+        }
+
+        try {
+            $userId = (int) $this->session->userdata('user_id');
+            $role = (string) $this->session->userdata('role');
+            $existingUser = $this->UserModel->find_by_id($userId);
+
+            if (!$existingUser) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'User not found'
+                ]);
+                return;
+            }
+
+            $rawInput = file_get_contents('php://input');
+            $jsonData = json_decode($rawInput, true);
+            if (!is_array($jsonData)) {
+                $jsonData = [];
+            }
+
+            $updateData = [];
+
+            if (array_key_exists('first_name', $jsonData)) {
+                $firstName = trim((string) $jsonData['first_name']);
+                if ($firstName === '') {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'First name is required'
+                    ]);
+                    return;
+                }
+                $updateData['first_name'] = $firstName;
+            }
+
+            if (array_key_exists('middle_name', $jsonData)) {
+                $middleName = trim((string) $jsonData['middle_name']);
+                $updateData['middle_name'] = $middleName === '' ? null : $middleName;
+            }
+
+            if (array_key_exists('last_name', $jsonData)) {
+                $lastName = trim((string) $jsonData['last_name']);
+                if ($lastName === '') {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Last name is required'
+                    ]);
+                    return;
+                }
+                $updateData['last_name'] = $lastName;
+            }
+
+            if (array_key_exists('phone', $jsonData)) {
+                $phone = trim((string) $jsonData['phone']);
+                if ($phone !== '' && !preg_match('/^\d{11}$/', $phone)) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Phone number must be exactly 11 digits'
+                    ]);
+                    return;
+                }
+                $updateData['phone'] = $phone;
+            }
+
+            if (!empty($updateData)) {
+                $updated = $this->UserModel->update_user($userId, $updateData);
+                if (!$updated) {
+                    http_response_code(500);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to update profile'
+                    ]);
+                    return;
+                }
+            }
+
+            $studentProfile = null;
+            if ($role === 'student' && array_key_exists('gender', $jsonData)) {
+                $this->call->model('StudentModel');
+                $studentProfile = $this->StudentModel->get_by_user_id($userId);
+
+                if ($studentProfile) {
+                    $incomingGender = $jsonData['gender'];
+                    $gender = null;
+                    if ($incomingGender !== null) {
+                        $incomingGender = trim((string) $incomingGender);
+                        if ($incomingGender !== '' && !in_array($incomingGender, ['Male', 'Female'])) {
+                            http_response_code(400);
+                            echo json_encode([
+                                'success' => false,
+                                'message' => 'Gender must be Male or Female'
+                            ]);
+                            return;
+                        }
+                        $gender = $incomingGender === '' ? null : $incomingGender;
+                    }
+
+                    $this->StudentModel->update($studentProfile['id'], [
+                        'gender' => $gender,
+                        'updated_at' => app_now()
+                    ]);
+
+                    $studentProfile = $this->StudentModel->get_by_user_id($userId);
+                }
+            } else if ($role === 'student') {
+                $this->call->model('StudentModel');
+                $studentProfile = $this->StudentModel->get_by_user_id($userId);
+            }
+
+            $user = $this->UserModel->find_by_id($userId);
+            unset($user['password']);
+
+            $this->session->set_userdata([
+                'first_name' => $user['first_name'],
+                'last_name' => $user['last_name']
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'user' => $user,
+                'student' => $studentProfile
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
                 'message' => 'Server error: ' . $e->getMessage()
             ]);
         }
@@ -1497,8 +1648,8 @@ class UserController extends Controller
                     'token' => $token,
                     'expires_at' => $expiresAt,
                     'used' => 0,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now(),
+                    'updated_at' => app_now()
                 ]);
             } catch (Exception $e) {
                 // Log and continue — insertion failure shouldn't stop email send attempt
@@ -1614,7 +1765,7 @@ class UserController extends Controller
 
             $expiresAt = strtotime($reset['expires_at']);
             if ($expiresAt === false || $expiresAt < time()) {
-                error_log('Token expired. Expires at: ' . $reset['expires_at'] . ', Current time: ' . date('Y-m-d H:i:s'));
+                error_log('Token expired. Expires at: ' . $reset['expires_at'] . ', Current time: ' . app_now());
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Token has expired.']);
                 return;
@@ -1650,7 +1801,7 @@ class UserController extends Controller
             // Mark token as used
             $tokenUpdate = $this->db->table('password_resets')->where('id', $reset['id'])->update([
                 'used' => 1,
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ]);
             error_log('Token marked as used: ' . ($tokenUpdate ? 'success' : 'failed'));
 
@@ -1713,8 +1864,8 @@ class UserController extends Controller
                 'type' => 'pin',
                 'expires_at' => $expiresAt,
                 'used' => 0,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now(),
+                'updated_at' => app_now()
             ]);
 
             if (!$inserted) {
@@ -1953,8 +2104,8 @@ class UserController extends Controller
             // Update user's PIN
             $updated = $this->db->table('users')->where('id', $user['id'])->update([
                 'payment_pin_hash' => $hashedPin,
-                'payment_pin_set_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'payment_pin_set_at' => app_now(),
+                'updated_at' => app_now()
             ]);
 
             if (!$updated) {
@@ -1967,7 +2118,7 @@ class UserController extends Controller
             // Mark token as used
             $this->db->table('password_resets')->where('id', $reset['id'])->update([
                 'used' => 1,
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ]);
 
             error_log('PIN reset successfully for user ID: ' . $user['id'] . ' via token sent to: ' . $reset['email']);
@@ -2101,7 +2252,7 @@ class UserController extends Controller
                 // Token already registered, just update timestamp
                 $this->db->table('user_fcm_tokens')
                          ->where('id', $existing['id'])
-                         ->update(['created_at' => date('Y-m-d H:i:s')]);
+                         ->update(['created_at' => app_now()]);
                 http_response_code(200);
                 echo json_encode(['success' => true, 'message' => 'FCM token already registered']);
                 return;
@@ -2114,7 +2265,7 @@ class UserController extends Controller
                 'user_id' => $user_id,
                 'token' => $token,
                 'is_active' => 1,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now()
             ]);
 
             if ($result) {
@@ -2249,7 +2400,7 @@ class UserController extends Controller
                 ->where('id', $user_id)
                 ->update([
                     'payment_pin_hash' => $pin_hash,
-                    'payment_pin_set_at' => date('Y-m-d H:i:s'),
+                    'payment_pin_set_at' => app_now(),
                     'pin_attempts' => 0,
                     'pin_locked_until' => null
                 ]);

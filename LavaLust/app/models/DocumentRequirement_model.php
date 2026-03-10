@@ -50,8 +50,8 @@ class DocumentRequirement_model extends Model {
             $documentId = (int) $existing['id'];
             if ($description !== null) {
                 $this->db->raw(
-                    "UPDATE {$this->catalogTable} SET description = ?, updated_at = NOW() WHERE id = ?",
-                    [$description, $documentId]
+                    "UPDATE {$this->catalogTable} SET description = ?, updated_at = ? WHERE id = ?",
+                    [$description, app_now(), $documentId]
                 );
             }
             return $documentId;
@@ -80,8 +80,8 @@ class DocumentRequirement_model extends Model {
 
         $this->db->raw(
             "INSERT INTO {$this->catalogTable} (code, name, description, is_active, created_at, updated_at)
-             VALUES (?, ?, ?, 1, NOW(), NOW())",
-            [$candidateCode, $documentName, $description]
+             VALUES (?, ?, ?, 1, ?, ?)",
+            [$candidateCode, $documentName, $description, app_now(), app_now()]
         );
 
         $inserted = $this->db->raw(
@@ -341,8 +341,8 @@ class DocumentRequirement_model extends Model {
         if (array_key_exists('is_active', $data)) {
             $isActive = $data['is_active'] ? 1 : 0;
             $this->db->raw(
-                "UPDATE {$this->catalogTable} SET is_active = ?, updated_at = NOW() WHERE id = ?",
-                [$isActive, $documentId]
+                "UPDATE {$this->catalogTable} SET is_active = ?, updated_at = ? WHERE id = ?",
+                [$isActive, app_now(), $documentId]
             );
         }
 
@@ -408,9 +408,9 @@ class DocumentRequirement_model extends Model {
 
         $this->db->raw(
             "UPDATE {$this->catalogTable}
-             SET code = ?, name = ?, description = ?, is_active = ?, updated_at = NOW()
+             SET code = ?, name = ?, description = ?, is_active = ?, updated_at = ?
              WHERE id = ?",
-            [$code, $name, $description, $isActive, $id]
+            [$code, $name, $description, $isActive, app_now(), $id]
         );
 
         return true;
@@ -431,8 +431,8 @@ class DocumentRequirement_model extends Model {
 
         $newStatus = $existing['is_active'] ? 0 : 1;
         $this->db->raw(
-            "UPDATE {$this->catalogTable} SET is_active = ?, updated_at = NOW() WHERE id = ?",
-            [$newStatus, $id]
+            "UPDATE {$this->catalogTable} SET is_active = ?, updated_at = ? WHERE id = ?",
+            [$newStatus, app_now(), $id]
         );
 
         return true;
@@ -460,9 +460,9 @@ class DocumentRequirement_model extends Model {
             $ruleId = (int) $existingRule['id'];
             $this->db->raw(
                 "UPDATE {$this->rulesTable}
-                 SET is_required = ?, display_order = ?, is_active = ?, updated_at = NOW()
+                 SET is_required = ?, display_order = ?, is_active = ?, updated_at = ?
                  WHERE id = ?",
-                [$isRequired, $displayOrder, $isActive, $ruleId]
+                [$isRequired, $displayOrder, $isActive, app_now(), $ruleId]
             );
 
             $this->sync_legacy_row(
@@ -482,15 +482,15 @@ class DocumentRequirement_model extends Model {
             $this->db->raw(
                 "INSERT INTO {$this->rulesTable}
                  (document_id, grade_level, enrollment_type, is_required, display_order, is_active, created_at, updated_at)
-                 VALUES (?, ?, NULL, ?, ?, ?, NOW(), NOW())",
-                [$documentId, $gradeLevel, $isRequired, $displayOrder, $isActive]
+                 VALUES (?, ?, NULL, ?, ?, ?, ?, ?)",
+                [$documentId, $gradeLevel, $isRequired, $displayOrder, $isActive, app_now(), app_now()]
             );
         } else {
             $this->db->raw(
                 "INSERT INTO {$this->rulesTable}
                  (document_id, grade_level, enrollment_type, is_required, display_order, is_active, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())",
-                [$documentId, $gradeLevel, $enrollmentType, $isRequired, $displayOrder, $isActive]
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [$documentId, $gradeLevel, $enrollmentType, $isRequired, $displayOrder, $isActive, app_now(), app_now()]
             );
         }
 
@@ -539,8 +539,8 @@ class DocumentRequirement_model extends Model {
             $documentId = $this->resolve_document_id($data['document_name'], $description);
         } elseif (array_key_exists('description', $data)) {
             $this->db->raw(
-                "UPDATE {$this->catalogTable} SET description = ?, updated_at = NOW() WHERE id = ?",
-                [$data['description'], $documentId]
+                "UPDATE {$this->catalogTable} SET description = ?, updated_at = ? WHERE id = ?",
+                [$data['description'], app_now(), $documentId]
             );
         }
 
@@ -571,9 +571,9 @@ class DocumentRequirement_model extends Model {
                         is_required = ?,
                         display_order = ?,
                         is_active = ?,
-                        updated_at = NOW()
+                        updated_at = ?
                     WHERE id = ?";
-            $this->db->raw($sql, [$documentId, $gradeLevel, $isRequired, $displayOrder, $isActive, $id]);
+            $this->db->raw($sql, [$documentId, $gradeLevel, $isRequired, $displayOrder, $isActive, app_now(), $id]);
         } else {
             $sql = "UPDATE {$this->rulesTable}
                     SET document_id = ?,
@@ -582,9 +582,9 @@ class DocumentRequirement_model extends Model {
                         is_required = ?,
                         display_order = ?,
                         is_active = ?,
-                        updated_at = NOW()
+                        updated_at = ?
                     WHERE id = ?";
-            $this->db->raw($sql, [$documentId, $gradeLevel, $enrollmentType, $isRequired, $displayOrder, $isActive, $id]);
+            $this->db->raw($sql, [$documentId, $gradeLevel, $enrollmentType, $isRequired, $displayOrder, $isActive, app_now(), $id]);
         }
 
         if (
@@ -656,7 +656,7 @@ class DocumentRequirement_model extends Model {
             ->where('id', $id)
             ->update([
                 'is_active' => $newStatus,
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ]);
 
         if ($updated) {

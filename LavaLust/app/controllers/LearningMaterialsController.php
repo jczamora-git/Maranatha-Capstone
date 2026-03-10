@@ -78,7 +78,7 @@ class LearningMaterialsController extends Controller
                 'file_size'   => $input['file_size'] ?? null,
                 'link_url'    => $input['link_url'] ?? null,
                 'created_by'  => $input['created_by'],
-                'created_at'  => date('Y-m-d H:i:s')
+                'created_at'  => app_now()
             ];
 
             // Create learning material
@@ -208,7 +208,7 @@ class LearningMaterialsController extends Controller
                 'file_name' => $input['file_name'] ?? $existing['file_name'],
                 'file_size' => $input['file_size'] ?? $existing['file_size'],
                 'link_url' => $input['link_url'] ?? $existing['link_url'],
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => app_now()
             ];
 
             // Update learning material

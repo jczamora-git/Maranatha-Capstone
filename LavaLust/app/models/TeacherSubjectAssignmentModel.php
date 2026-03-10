@@ -18,9 +18,13 @@ class TeacherSubjectAssignmentModel extends Model
                           ->join('teachers t', 'tsa.teacher_id = t.id')
                           ->join('users u', 't.user_id = u.id')
                           ->join('subjects s', 'tsa.subject_id = s.id')
+                          ->left_join('year_levels yl', 'yl.name COLLATE utf8mb4_unicode_ci = s.level COLLATE utf8mb4_unicode_ci')
+                          ->left_join('year_level_sections yls', 'yls.year_level_id = yl.id')
+                          ->left_join('sections sec', 'sec.id = yls.section_id')
                           ->select('tsa.id, tsa.teacher_id, tsa.subject_id, tsa.school_year, tsa.created_at, tsa.updated_at,
                                    t.employee_id, u.first_name, u.last_name, u.email, u.phone,
-                                   s.course_code, s.name as subject_name, s.level as subject_level');
+                                   s.course_code, s.name as subject_name, s.level as subject_level,
+                                   sec.id as section_id, sec.name as section_name');
 
         if (!empty($filters['school_year'])) {
             $query = $query->where('tsa.school_year', $filters['school_year']);
@@ -115,7 +119,7 @@ class TeacherSubjectAssignmentModel extends Model
             return ['success' => false, 'message' => 'Teacher is already assigned to this subject for this school year'];
         }
 
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $data = [
             'teacher_id' => $teacher_id,
             'subject_id' => $subject_id,

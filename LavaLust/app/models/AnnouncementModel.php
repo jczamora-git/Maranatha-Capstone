@@ -42,7 +42,7 @@ class AnnouncementModel extends Model
 
     public function create($data)
     {
-        $now = date('Y-m-d H:i:s');
+        $now = app_now();
         $insert = [
             'title' => $data['title'] ?? '',
             'message' => $data['message'] ?? '',
@@ -64,7 +64,7 @@ class AnnouncementModel extends Model
 
     public function update_announcement($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
         $allowed = ['title','message','audience','status','published_at','starts_at','ends_at','updated_at'];
         $update = [];
         foreach ($data as $k => $v) {
@@ -76,7 +76,7 @@ class AnnouncementModel extends Model
     public function delete_announcement($id)
     {
         // soft delete: mark as archived
-        return $this->db->table($this->table)->where('id', $id)->update(['status' => 'archived', 'updated_at' => date('Y-m-d H:i:s')]);
+        return $this->db->table($this->table)->where('id', $id)->update(['status' => 'archived', 'updated_at' => app_now()]);
     }
 
     /**
@@ -89,12 +89,16 @@ class AnnouncementModel extends Model
     {
         $where_clauses = ['a.status != \'archived\''];
         $params = [];
+        $now = app_now();
 
         $includeExpired = !empty($filters['include_expired']);
         if (!$includeExpired) {
-            $where_clauses[] = '(a.published_at IS NULL OR a.published_at <= NOW())';
-            $where_clauses[] = '(a.starts_at IS NULL OR a.starts_at <= NOW())';
-            $where_clauses[] = '(a.ends_at IS NULL OR a.ends_at >= NOW())';
+            $where_clauses[] = '(a.published_at IS NULL OR a.published_at <= ?)';
+            $params[] = $now;
+            $where_clauses[] = '(a.starts_at IS NULL OR a.starts_at <= ?)';
+            $params[] = $now;
+            $where_clauses[] = '(a.ends_at IS NULL OR a.ends_at >= ?)';
+            $params[] = $now;
         }
 
         if (!empty($filters['audience'])) {
@@ -149,9 +153,10 @@ class AnnouncementModel extends Model
     public function mark_as_read($announcement_id, $user_id)
     {
         $sql = "INSERT INTO announcement_reads (announcement_id, user_id, read_at)
-                VALUES (?, ?, NOW())
-                ON DUPLICATE KEY UPDATE read_at = NOW()";
-        $stmt = $this->db->raw($sql, [$announcement_id, $user_id]);
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE read_at = ?";
+        $now = app_now();
+        $stmt = $this->db->raw($sql, [$announcement_id, $user_id, $now, $now]);
         return $stmt !== false;
     }
 }

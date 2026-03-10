@@ -112,8 +112,8 @@ class PaymentModel extends Model
     public function create($data)
     {
         // Set defaults
-        $data['created_at'] = date('Y-m-d H:i:s');
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['created_at'] = app_now();
+        $data['updated_at'] = app_now();
 
         // Set default status if not provided
         if (!isset($data['status'])) {
@@ -208,7 +208,7 @@ class PaymentModel extends Model
                     'balance' => $new_balance,
                     'status' => $status,
                     'paid_date' => $status === 'Paid' ? date('Y-m-d') : null,
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'updated_at' => app_now()
                 ]);
 
         // Update payment plan totals
@@ -259,7 +259,7 @@ class PaymentModel extends Model
                     'total_paid' => $total_paid,
                     'balance' => $new_balance,
                     'status' => $status,
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'updated_at' => app_now()
                 ]);
 
         return true;
@@ -301,7 +301,7 @@ class PaymentModel extends Model
      */
     public function update($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
         
         return $this->db->table($this->table)
                         ->where('id', $id)

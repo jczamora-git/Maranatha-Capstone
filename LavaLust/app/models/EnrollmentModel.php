@@ -44,8 +44,8 @@ class EnrollmentModel extends Model
                 'status' => 'Pending',
                 'created_user_id' => $data['created_user_id'] ?? $data['user_id'] ?? null,
                 'created_student_id' => $data['created_student_id'] ?? null,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now(),
+                'updated_at' => app_now()
             ];
 
             // Insert enrollment
@@ -95,7 +95,7 @@ class EnrollmentModel extends Model
                     'birth_date' => $data['learner']['birth_date'] ?? null,
                     'gender' => $data['learner']['gender'] ?? '',
                     'psa_birth_cert_number' => $data['learner']['psa_birth_cert_number'] ?? null,
-                    'created_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now()
                 ];
                 $this->db->table('enrollment_learners')->insert($learner);
             }
@@ -113,7 +113,7 @@ class EnrollmentModel extends Model
                             'province' => $address['province'] ?? '',
                             'zip_code' => $address['zip_code'] ?? '',
                             'phone' => $address['phone'] ?? '',
-                            'created_at' => date('Y-m-d H:i:s')
+                            'created_at' => app_now()
                         ];
                         $this->db->table('enrollment_addresses')->insert($addressRecord);
                     }
@@ -130,7 +130,7 @@ class EnrollmentModel extends Model
                     'has_disability' => $data['flags']['has_disability'] ? 1 : 0,
                     'disability_type' => $data['flags']['disability_type'] ?? null,
                     'special_language' => $data['flags']['special_language'] ?? null,
-                    'created_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now()
                 ];
                 $this->db->table('enrollment_flags')->insert($flags);
             }
@@ -146,7 +146,7 @@ class EnrollmentModel extends Model
                             'phone' => $contact['phone'] ?? '',
                             'email' => $contact['email'] ?? '',
                             'is_primary' => $contact['is_primary'] ?? 0,
-                            'created_at' => date('Y-m-d H:i:s')
+                            'created_at' => app_now()
                         ];
                         $this->db->table('enrollment_parent_contacts')->insert($contactRecord);
                     }
@@ -164,10 +164,10 @@ class EnrollmentModel extends Model
                             'file_type' => $document['file_type'] ?? '',
                             'file_size' => $document['file_size'] ?? 0,
                             'document_type' => $document['document_type'] ?? '',
-                            'upload_date' => date('Y-m-d H:i:s'),
+                            'upload_date' => app_now(),
                             'verification_status' => 'Pending',
-                            'created_at' => date('Y-m-d H:i:s'),
-                            'updated_at' => date('Y-m-d H:i:s')
+                            'created_at' => app_now(),
+                            'updated_at' => app_now()
                         ];
                         $this->db->table('enrollment_documents')->insert($docRecord);
                     }
@@ -342,12 +342,12 @@ class EnrollmentModel extends Model
     {
         $updateData = [
             'status' => $status,
-            'updated_at' => date('Y-m-d H:i:s')
+            'updated_at' => app_now()
         ];
 
         if ($status === 'Approved' && !empty($userId)) {
             $updateData['approved_by'] = $userId;
-            $updateData['approved_date'] = date('Y-m-d H:i:s');
+            $updateData['approved_date'] = app_now();
             
             // AUTOMATICALLY UPDATE THE STUDENT RECORD UPON APPROVAL
             // 1. Get the enrollment details to find the student
@@ -374,7 +374,7 @@ class EnrollmentModel extends Model
                         'enrollment_date' => date('Y-m-d'),
                         'year_level' => $enrollment['grade_level'],
                         'status' => 'active',
-                        'updated_at' => date('Y-m-d H:i:s')
+                        'updated_at' => app_now()
                     ];
                     
                     $this->db->table('students')
@@ -390,12 +390,12 @@ class EnrollmentModel extends Model
             }
 
         } elseif ($status === 'Rejected' && !empty($userId)) {
-            $updateData['rejected_date'] = date('Y-m-d H:i:s');
+            $updateData['rejected_date'] = app_now();
         }
 
         if (!empty($userId)) {
             $updateData['last_reviewed_by'] = $userId;
-            $updateData['last_review_date'] = date('Y-m-d H:i:s');
+            $updateData['last_review_date'] = app_now();
         }
 
         return $this->db->table('enrollments')
@@ -500,8 +500,8 @@ class EnrollmentModel extends Model
                 'status' => 'Pending',
                 'created_user_id' => $userId,
                 'created_student_id' => $pastEnrollment['created_student_id'] ?? null,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now(),
+                'updated_at' => app_now()
             ];
 
             $this->db->table('enrollments')->insert($newEnrollment);
@@ -527,7 +527,7 @@ class EnrollmentModel extends Model
                     'birth_date' => $pastEnrollment['learner']['birth_date'] ?? null,
                     'gender' => $pastEnrollment['learner']['gender'] ?? '',
                     'psa_birth_cert_number' => $pastEnrollment['learner']['psa_birth_cert_number'] ?? null,
-                    'created_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now()
                 ];
                 $this->db->table('enrollment_learners')->insert($learner);
             }
@@ -544,7 +544,7 @@ class EnrollmentModel extends Model
                         'province' => $address['province'] ?? '',
                         'zip_code' => $address['zip_code'] ?? '',
                         'phone' => $address['phone'] ?? '',
-                        'created_at' => date('Y-m-d H:i:s')
+                        'created_at' => app_now()
                     ];
                     $this->db->table('enrollment_addresses')->insert($addressRecord);
                 }
@@ -560,7 +560,7 @@ class EnrollmentModel extends Model
                     'has_disability' => $pastEnrollment['flags']['has_disability'] ?? 0,
                     'disability_type' => $pastEnrollment['flags']['disability_type'] ?? null,
                     'special_language' => $pastEnrollment['flags']['special_language'] ?? null,
-                    'created_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now()
                 ];
                 $this->db->table('enrollment_flags')->insert($flags);
             }
@@ -576,7 +576,7 @@ class EnrollmentModel extends Model
                             'phone' => $contact['phone'] ?? '',
                             'email' => $contact['email'] ?? '',
                             'is_primary' => $contact['is_primary'] ?? 0,
-                            'created_at' => date('Y-m-d H:i:s')
+                            'created_at' => app_now()
                         ];
                         $this->db->table('enrollment_parent_contacts')->insert($contactRecord);
                     }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import AccessLockedCard from "@/components/AccessLockedCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ const MyGrades = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSY, setActiveSY] = useState<string>("");
+  const [hasActiveEnrollmentRecord, setHasActiveEnrollmentRecord] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "student") {
@@ -75,6 +77,38 @@ const MyGrades = () => {
         // Store active school year for display
         if (activePeriod.school_year) {
           setActiveSY(activePeriod.school_year);
+        }
+
+        // Gate access: student must have an enrollment record for the active academic period
+        let enrollmentsArray: any[] = [];
+        try {
+          const enrollmentResponse = await apiGet(API_ENDPOINTS.ENROLLMENTS);
+          if (Array.isArray(enrollmentResponse.data)) {
+            enrollmentsArray = enrollmentResponse.data;
+          } else if (enrollmentResponse.data && Array.isArray(enrollmentResponse.data.data)) {
+            enrollmentsArray = enrollmentResponse.data.data;
+          } else if (enrollmentResponse.data?.data?.id) {
+            enrollmentsArray = [enrollmentResponse.data.data];
+          } else if (enrollmentResponse.data?.id) {
+            enrollmentsArray = [enrollmentResponse.data];
+          }
+        } catch (error) {
+          console.error('Error checking student enrollment records:', error);
+          enrollmentsArray = [];
+        }
+
+        const hasEnrollmentForActivePeriod = activePeriod?.id
+          ? enrollmentsArray.some((e: any) => {
+              const periodId = e?.academic_period_id ?? e?.academicPeriodId ?? e?.enrollment_period_id;
+              return String(periodId) === String(activePeriod.id);
+            })
+          : enrollmentsArray.length > 0;
+
+        setHasActiveEnrollmentRecord(hasEnrollmentForActivePeriod);
+        if (!hasEnrollmentForActivePeriod) {
+          setCourses([]);
+          setLoading(false);
+          return;
         }
 
         // Extract semester from active period (e.g., "1st Semester" -> "1st")
@@ -298,6 +332,7 @@ const MyGrades = () => {
         setCourses(coursesWithGrades);
       } catch (e) {
         console.error('Failed to load grades', e);
+        setHasActiveEnrollmentRecord(true);
         setCourses([]);
       } finally {
         setLoading(false);
@@ -310,6 +345,40 @@ const MyGrades = () => {
   }, [user, isAuthenticated]);
 
   if (!isAuthenticated) return null;
+
+  if (loading || hasActiveEnrollmentRecord === null) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading your enrollment access...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!loading && hasActiveEnrollmentRecord === false) {
+    return (
+      <DashboardLayout>
+        <AccessLockedCard
+          title="Enrollment Record Required"
+          description={`There are no enrollment records for this SY ${activeSY || 'N/A'}.`}
+          benefitsTitle="What you need to do"
+          benefits={[
+            "Submit your enrollment for the current active school year",
+            "Wait for your enrollment to be recorded in the system",
+            "Return to access your grades once your record exists"
+          ]}
+          actionButton={{
+            label: "Go to My Enrollments",
+            onClick: () => navigate('/enrollment/my-enrollments')
+          }}
+        />
+      </DashboardLayout>
+    );
+  }
 
   const QUARTERS = [
     { label: "Q1", full: "1st Quarter" },

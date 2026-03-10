@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Edit, Trash2, User, BookOpen, LayoutGrid, List, Upload, DownloadCloud } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, BookOpen, LayoutGrid, List, DownloadCloud, GraduationCap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertMessage } from "@/components/AlertMessage";
 import EmailLoadingModal from "@/components/EmailLoadingModal";
@@ -34,6 +34,10 @@ type Student = {
   id: string;
   userId?: string;
   name: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  gender?: "Male" | "Female" | "" | null;
   email: string;
   studentId: string;
   yearLevel: string;
@@ -44,7 +48,7 @@ type Student = {
     name: string;
     phone: string;
   };
-  status: "active" | "inactive" | "graduated";
+  status: "active" | "inactive" | "pending" | "graduated" | "transferred" | "dropout";
   assignedCourses: AssignedCourse[];
 };
 
@@ -69,6 +73,7 @@ const Students = () => {
     firstName: "",
     lastName: "",
     middleName: "",
+    gender: "",
     email: "",
     studentId: "",
     yearLevel: "",
@@ -89,8 +94,8 @@ const Students = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 12;
 
-  const [isImportResultOpen, setIsImportResultOpen] = useState(false);
-  const [importResult, setImportResult] = useState<{ inserted: number; skipped: number; total_rows: number; errors: string[] } | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportYearLevel, setExportYearLevel] = useState<string>("all");
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
 
@@ -131,7 +136,6 @@ const Students = () => {
   };
 
   const confirm = useConfirm();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Helper function to get section name by section_id
   const getSectionName = (sectionId: string | undefined): string => {
@@ -148,14 +152,16 @@ const Students = () => {
     return '';
   };
 
-  const handleImportClick = () => {
-    if (fileInputRef.current) fileInputRef.current.click();
-  };
-
   const handleExport = async () => {
     try {
       showAlert('info', 'Preparing export...');
-      const resp = await fetch(API_ENDPOINTS.STUDENTS_EXPORT, { method: 'GET', credentials: 'include' });
+      const params = new URLSearchParams();
+      if (exportYearLevel !== 'all') {
+        params.set('year_level', exportYearLevel);
+      }
+      const exportUrl = params.toString() ? `${API_ENDPOINTS.STUDENTS_EXPORT}?${params.toString()}` : API_ENDPOINTS.STUDENTS_EXPORT;
+
+      const resp = await fetch(exportUrl, { method: 'GET', credentials: 'include' });
       if (!resp.ok) {
         // try to parse json error
         const txt = await resp.text();
@@ -170,56 +176,19 @@ const Students = () => {
         filename = decodeURIComponent((match[1] || match[2] || '').replace(/"/g, '')) || filename;
       }
 
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       showAlert('success', 'Export ready — download started');
+      setIsExportModalOpen(false);
     } catch (err: any) {
       console.error('Export error', err);
       showAlert('error', err?.message || 'Failed to export students');
-    }
-  };
-
-  const handleFileChange = async (e: any) => {
-    const file = e?.target?.files?.[0];
-    if (!file) return;
-
-    // Show loading state
-    showAlert("info", `Uploading ${file.name}...`);
-
-    try {
-      // Upload file to backend
-      const result = await apiUploadFile(API_ENDPOINTS.STUDENTS_IMPORT, file);
-
-      if (result && result.success) {
-        // Store import results and show dialog
-        setImportResult({
-          inserted: result.inserted || 0,
-          skipped: result.skipped || 0,
-          total_rows: result.total_rows || 0,
-          errors: result.errors || [],
-        });
-        setIsImportResultOpen(true);
-
-        // Refresh student list
-        await fetchStudents();
-
-        // Show success alert
-        showAlert("success", result.message || `Import completed: ${result.inserted} students added`);
-      } else {
-        throw new Error(result?.message || "Import failed");
-      }
-    } catch (err: any) {
-      console.error("Import error:", err);
-      showAlert("error", err.message || "Failed to import students");
-    } finally {
-      // Reset file input so the same file can be selected again
-      if (e.currentTarget) e.currentTarget.value = "";
     }
   };
 
@@ -314,6 +283,10 @@ const Students = () => {
           return {
           id: String(r.id ?? r.user_id ?? Date.now()),
           userId: r.user_id ? String(r.user_id) : undefined,
+          firstName: r.first_name || r.firstName || '',
+          middleName: r.middle_name || r.middleName || '',
+          lastName: r.last_name || r.lastName || '',
+          gender: (r.gender === 'Male' || r.gender === 'Female') ? r.gender : '',
           // Display as "Lastname, Firstname"
           name: (() => {
             const first = r.first_name || r.firstName || '';
@@ -403,12 +376,12 @@ const Students = () => {
   // Many subject records include year-level metadata, so the API supports a query param like ?year_level=1
   const fetchSubjects = async (yearLevel?: string) => {
     try {
-      let url = API_ENDPOINTS.SUBJECTS;
+      let subjectsUrl = API_ENDPOINTS.SUBJECTS;
       if (yearLevel && String(yearLevel).trim() !== '') {
         // prefer sending numeric year value (1/2/3/4)
-        url = `${API_ENDPOINTS.SUBJECTS}?year_level=${encodeURIComponent(String(yearLevel))}`;
+        subjectsUrl = `${API_ENDPOINTS.SUBJECTS}?year_level=${encodeURIComponent(String(yearLevel))}`;
       }
-      const res = await apiGet(url);
+      const res = await apiGet(subjectsUrl);
       if (res && res.success) {
         const mapped = (res.subjects || []).map((s: any) => ({ code: s.course_code, title: s.course_name, units: s.credits ?? 3 }));
         setSubjects(mapped);
@@ -530,6 +503,7 @@ const Students = () => {
       firstName: "",
       lastName: "",
       middleName: "",
+      gender: "",
       email: "",
       studentId: "",
       yearLevel: defaultYearLevelId,
@@ -551,8 +525,8 @@ const Students = () => {
 
   const handleCreate = async () => {
     // First/Last name and email required; studentId optional (backend will generate if empty)
-    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.email?.trim()) {
-      showAlert("error", "First name, last name and email are required");
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.email?.trim() || !form.gender) {
+      showAlert("error", "First name, last name, gender and email are required");
       return;
     }
     // We'll create a user first, then create the student profile linked to that user.
@@ -593,6 +567,7 @@ const Students = () => {
         user_id: createdUserId,
         year_level: yearLevelName,
         status: form.status,
+        gender: form.gender,
         first_name: firstName,
         // include middle name if provided
         ...(middleName ? { middle_name: middleName } : {}),
@@ -657,6 +632,10 @@ const Students = () => {
         const newStudent: Student = {
           id: created.id?.toString() || String(createdUserId),
           userId: created.user_id ? String(created.user_id) : String(createdUserId),
+          firstName,
+          middleName,
+          lastName,
+          gender: (created.gender === 'Male' || created.gender === 'Female') ? created.gender : form.gender,
           name: displayName,
           email: created.email ?? form.email,
           studentId: created.student_id ?? studentIdInput ?? "",
@@ -675,7 +654,7 @@ const Students = () => {
           const resetYearLevelId = getDefaultYearLevelId();
           setShowEmailModal(false);
           setIsCreateOpen(false);
-          setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", profilePhotoPath: "", userId: "", parentContact: undefined, status: "active", assignedCourses: [] });
+          setForm({ firstName: "", lastName: "", middleName: "", gender: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", profilePhotoPath: "", userId: "", parentContact: undefined, status: "active", assignedCourses: [] });
         }, 3000);
         
         showAlert('success', `Student ${newStudent.name} created. Welcome email ${emailData.success ? 'sent' : 'send attempted'}!`);
@@ -684,14 +663,14 @@ const Students = () => {
 
       // fallback: local add
       const displayName = `${lastName}${firstName ? ', ' + firstName : ''}`;
-      const newStudent: Student = { id: String(createdUserId ?? Date.now()), userId: String(createdUserId ?? ''), name: displayName, email: form.email, studentId: studentIdInput || "", yearLevel: yearLevelName, section: '', profilePhotoPath: form.profilePhotoPath || null, phone: form.phone, parentContact: form.parentContact, status: form.status, assignedCourses: form.assignedCourses };
+      const newStudent: Student = { id: String(createdUserId ?? Date.now()), userId: String(createdUserId ?? ''), name: displayName, firstName, middleName, lastName, gender: form.gender, email: form.email, studentId: studentIdInput || "", yearLevel: yearLevelName, section: '', profilePhotoPath: form.profilePhotoPath || null, phone: form.phone, parentContact: form.parentContact, status: form.status, assignedCourses: form.assignedCourses };
       setStudents((s) => [newStudent, ...s]);
       
       setTimeout(() => {
         const resetYearLevelId = getDefaultYearLevelId();
         setShowEmailModal(false);
         setIsCreateOpen(false);
-        setForm({ firstName: "", lastName: "", middleName: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", profilePhotoPath: "", userId: "", parentContact: undefined, status: "active", assignedCourses: [] });
+        setForm({ firstName: "", lastName: "", middleName: "", gender: "", email: "", studentId: "", yearLevel: resetYearLevelId, section: "", phone: "", profilePhotoPath: "", userId: "", parentContact: undefined, status: "active", assignedCourses: [] });
       }, 3000);
       
       showAlert('success', `Student ${displayName} created. Welcome email ${emailData.success ? 'sent' : 'send attempted'}!`);
@@ -717,8 +696,13 @@ const Students = () => {
     const matchingYearLevel = yearLevels.find(yl => yl.name === s.yearLevel);
     const yearLevelId = matchingYearLevel ? String(matchingYearLevel.id) : "";
     
+    const parsed = parseStudentDisplayName(s.name || '');
+
     setForm({
-      name: s.name,
+      firstName: s.firstName || parsed.firstName || "",
+      middleName: s.middleName || "",
+      lastName: s.lastName || parsed.lastName || "",
+      gender: s.gender || "",
       userId: s.userId || "",
       email: s.email,
       studentId: s.studentId,
@@ -738,6 +722,16 @@ const Students = () => {
   const handleEdit = async () => {
     if (!selectedStudentId) return;
 
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.email?.trim() || !form.gender) {
+      showAlert("error", "First name, last name, gender and email are required");
+      return;
+    }
+
+    const firstName = toTitleCase((form.firstName || '').trim());
+    const middleName = toTitleCase((form.middleName || '').trim());
+    const lastName = toTitleCase((form.lastName || '').trim());
+    const displayName = `${lastName}${firstName ? ', ' + firstName : ''}`;
+
     // Build payload expected by StudentController::api_update_student
   const payload: any = {};
   if (form.studentId !== undefined) payload.studentId = form.studentId;
@@ -748,15 +742,15 @@ const Students = () => {
       payload.sectionId = Number.isFinite(n) && n > 0 ? n : form.section;
     }
     if (form.status !== undefined) payload.status = form.status;
+    payload.gender = form.gender || '';
 
     try {
       if (form.userId) {
-        const parsed = parseStudentDisplayName(form.name || '');
         await apiPut(API_ENDPOINTS.USER_BY_ID(String(form.userId)), {
           email: form.email || '',
-          firstName: toTitleCase((parsed.firstName || '').trim()),
-          lastName: toTitleCase((parsed.lastName || '').trim()),
-          middleName: '',
+          firstName,
+          lastName,
+          middleName,
           phone: form.phone || '',
           role: 'student',
           status: form.status || 'active',
@@ -772,10 +766,14 @@ const Students = () => {
           const mapped: Student = {
             id: String(updated.id ?? updated.user_id ?? selectedStudentId),
             userId: updated.user_id ? String(updated.user_id) : (form.userId || ''),
+            firstName: updated.first_name || updated.firstName || firstName,
+            middleName: updated.middle_name || updated.middleName || middleName,
+            lastName: updated.last_name || updated.lastName || lastName,
+            gender: (updated.gender === 'Male' || updated.gender === 'Female') ? updated.gender : (form.gender || ''),
             name: (() => {
               const first = updated.first_name || updated.firstName || '';
               const last = updated.last_name || updated.lastName || '';
-              return (last || first) ? (last + (first ? ', ' + first : '')) : (form.name || '');
+              return (last || first) ? (last + (first ? ', ' + first : '')) : displayName;
             })(),
             email: updated.email ?? form.email ?? '',
             studentId: updated.student_id ?? form.studentId ?? '',
@@ -790,7 +788,20 @@ const Students = () => {
           setStudents((prev) => prev.map((s) => (s.id === selectedStudentId ? mapped : s)));
         } else {
           // fallback: update local copy with form values
-          setStudents((prev) => prev.map((s) => (s.id === selectedStudentId ? { ...s, ...form } : s)));
+          setStudents((prev) => prev.map((s) => (s.id === selectedStudentId ? {
+            ...s,
+            firstName,
+            middleName,
+            lastName,
+            gender: form.gender,
+            name: displayName,
+            email: form.email,
+            studentId: form.studentId,
+            yearLevel: yearLevelToEnum(form.yearLevel) || form.yearLevel,
+            section: form.section,
+            phone: form.phone,
+            status: form.status,
+          } : s)));
         }
 
         setIsEditOpen(false);
@@ -818,8 +829,18 @@ const Students = () => {
       variant: 'destructive'
     });
     if (!ok) return;
-    setStudents((prev) => prev.map((x) => (x.id === id ? { ...x, status: "inactive" } : x)));
-    showAlert("info", `Student ${s.name} has been set to inactive`);
+
+    try {
+      await apiPut(`/api/students/${id}`, { status: "inactive" });
+      if (s.userId) {
+        await apiPut(API_ENDPOINTS.USER_BY_ID(String(s.userId)), { status: "inactive" });
+      }
+
+      setStudents((prev) => prev.map((x) => (x.id === id ? { ...x, status: "inactive" } : x)));
+      showAlert("info", `Student ${s.name} has been set to inactive`);
+    } catch (err: any) {
+      showAlert("error", err?.message || "Failed to inactivate student");
+    }
   };
 
   if (!isAuthenticated) return null;
@@ -845,33 +866,18 @@ const Students = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="ml-auto flex items-center">
-              {/* hidden file input for import placeholder (accessible via aria-label/title) */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx"
-                className="hidden"
-                onChange={handleFileChange}
-                aria-label="Import students file"
-                title="Select a CSV or Excel file to import students"
-              />
-              <Button variant="outline" onClick={handleImportClick} className="mr-3 border-2 rounded-xl px-4 py-2.5">
-                <Upload className="h-4 w-4 mr-2" />
-                Import Students
-              </Button>
-
-              <Button variant="outline" onClick={handleExport} className="mr-3 border-2 rounded-xl px-4 py-2.5">
+              <Button variant="outline" onClick={() => setIsExportModalOpen(true)} className="mr-3 border-2 rounded-xl px-4 py-2.5">
                 <DownloadCloud className="h-4 w-4 mr-2" />
                 Export Students
               </Button>
 
               <Button 
                 variant="outline" 
-                onClick={() => navigate("/admin/users/students/grades")} 
+                onClick={() => navigate("/admin/users/students/graduation")} 
                 className="mr-3 border-2 rounded-xl px-4 py-2.5 hover:bg-primary/5 hover:border-primary/50"
               >
-                <BookOpen className="h-4 w-4 mr-2" />
-                Manage Grades
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Graduating Students
               </Button>
 
               <Button onClick={handleOpenCreate} className="bg-gradient-to-r from-primary to-accent text-white shadow-lg hover:shadow-xl">
@@ -926,7 +932,10 @@ const Students = () => {
                         <SelectItem value="all">All Status</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="graduated">Graduated</SelectItem>
+                        <SelectItem value="transferred">Transferred</SelectItem>
+                        <SelectItem value="dropout">Dropout</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1014,9 +1023,14 @@ const Students = () => {
                             </div>
                       </div>
                       <Badge
-                        variant={student.status === "active" ? "default" : student.status === "graduated" ? "secondary" : "outline"}
-                        className={`font-semibold ml-2 ${
-                          student.status === "active" ? "bg-gradient-to-r from-primary to-accent text-white" : ""
+                        variant="outline"
+                        className={`font-semibold ml-2 capitalize ${
+                          student.status === "active" ? "bg-gradient-to-r from-primary to-accent text-white border-0" :
+                          student.status === "graduated" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                          student.status === "pending" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                          student.status === "transferred" ? "bg-purple-100 text-purple-700 border-purple-200" :
+                          student.status === "dropout" ? "bg-red-100 text-red-700 border-red-200" :
+                          "bg-muted text-muted-foreground"
                         }`}
                       >
                         {student.status}
@@ -1219,6 +1233,20 @@ const Students = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="gender">Gender *</Label>
+                  <Select value={form.gender || ""} onValueChange={(v) => setForm((f) => ({ ...f, gender: v }))}>
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
@@ -1277,7 +1305,10 @@ const Students = () => {
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="graduated">Graduated</SelectItem>
+                      <SelectItem value="transferred">Transferred</SelectItem>
+                      <SelectItem value="dropout">Dropout</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1330,15 +1361,33 @@ const Students = () => {
               <DialogTitle className="text-2xl font-bold text-white">Edit Student</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="edit-name">Full Name *</Label>
+                  <Label htmlFor="edit-firstName">First Name *</Label>
                   <Input
-                    id="edit-name"
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    id="edit-firstName"
+                    value={form.firstName || ""}
+                    onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="edit-middleName">Middle Name</Label>
+                  <Input
+                    id="edit-middleName"
+                    value={form.middleName || ""}
+                    onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-lastName">Last Name *</Label>
+                  <Input
+                    id="edit-lastName"
+                    value={form.lastName || ""}
+                    onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-studentId">Student ID *</Label>
                   <Input
@@ -1346,6 +1395,18 @@ const Students = () => {
                     value={form.studentId}
                     onChange={(e) => setForm((f) => ({ ...f, studentId: e.target.value }))}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="edit-gender">Gender *</Label>
+                  <Select value={form.gender || ""} onValueChange={(v) => setForm((f) => ({ ...f, gender: v }))}>
+                    <SelectTrigger id="edit-gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1405,7 +1466,10 @@ const Students = () => {
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="graduated">Graduated</SelectItem>
+                      <SelectItem value="transferred">Transferred</SelectItem>
+                      <SelectItem value="dropout">Dropout</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1454,79 +1518,39 @@ const Students = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Import Results Dialog */}
-        <Dialog open={isImportResultOpen} onOpenChange={setIsImportResultOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto border-0 shadow-2xl">
+        <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+          <DialogContent className="max-w-md border-0 shadow-2xl">
             <DialogHeader className="bg-gradient-to-r from-primary to-accent px-6 py-6 -mx-6 -mt-6 mb-6 rounded-t-lg">
-              <DialogTitle className="text-2xl font-bold text-white">Import Results</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-white">Export Students</DialogTitle>
             </DialogHeader>
-            {importResult && (
-              <div className="space-y-4">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-3 gap-4">
-                  <Card className="border-2 border-green-200 bg-green-50">
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-green-700">{importResult.inserted}</p>
-                        <p className="text-sm text-green-600 mt-1">Students Imported</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-2 border-yellow-200 bg-yellow-50">
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-yellow-700">{importResult.skipped}</p>
-                        <p className="text-sm text-yellow-600 mt-1">Skipped</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-2 border-blue-200 bg-blue-50">
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-blue-700">{importResult.total_rows}</p>
-                        <p className="text-sm text-blue-600 mt-1">Total Rows</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Error Details */}
-                {importResult.errors && importResult.errors.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-lg mb-3 text-destructive">Errors & Warnings ({importResult.errors.length})</h3>
-                    <div className="max-h-96 overflow-y-auto border-2 border-destructive/20 rounded-lg bg-destructive/5 p-4">
-                      <ul className="space-y-2">
-                        {importResult.errors.map((error, idx) => (
-                          <li key={idx} className="text-sm text-destructive flex items-start gap-2">
-                            <span className="font-mono text-xs bg-destructive/10 px-2 py-0.5 rounded flex-shrink-0">
-                              {idx + 1}
-                            </span>
-                            <span>{error}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {/* Success message if no errors */}
-                {(!importResult.errors || importResult.errors.length === 0) && importResult.inserted > 0 && (
-                  <div className="text-center py-4">
-                    <p className="text-lg font-semibold text-green-700">✓ All students imported successfully!</p>
-                    <p className="text-sm text-muted-foreground mt-2">Default password for all imported students: <code className="bg-muted px-2 py-1 rounded">demo123</code></p>
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button
-                    className="flex-1 bg-gradient-to-r from-primary to-accent text-white py-3 font-semibold rounded-lg shadow-lg"
-                    onClick={() => setIsImportResultOpen(false)}
-                  >
-                    Close
-                  </Button>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="export-year-level">Grade Level</Label>
+                <Select value={exportYearLevel} onValueChange={setExportYearLevel}>
+                  <SelectTrigger id="export-year-level" className="mt-2">
+                    <SelectValue placeholder="Choose what to export" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Students</SelectItem>
+                    {yearLevels.map((yl) => (
+                      <SelectItem key={yl.id} value={yl.name}>{yl.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+
+              <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" className="flex-1" onClick={() => setIsExportModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-gradient-to-r from-primary to-accent text-white py-3 font-semibold rounded-lg shadow-lg"
+                  onClick={handleExport}
+                >
+                  Export
+                </Button>
+              </div>
+                </div>
           </DialogContent>
         </Dialog>
 

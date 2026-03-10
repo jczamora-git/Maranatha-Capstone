@@ -189,7 +189,7 @@ class Quiz_model extends Model {
             ->where('activity_id', $activityId)
             ->where('student_id', $studentId)
             ->where_null('submitted_at')
-            ->update(['submitted_at' => date('Y-m-d H:i:s')]);
+            ->update(['submitted_at' => app_now()]);
     }
 
     /**

@@ -43,6 +43,7 @@ import {
   TrendingUp,
   ChevronRight,
   DollarSign,
+  BarChart2,
   Megaphone,
   Wrench
 } from "lucide-react";
@@ -274,7 +275,8 @@ export const Sidebar = () => {
       collapsible: true,
       items: [
         { to: "/admin/users", icon: Users, label: "Manage Users", hasSubmenu: true },
-        ...(FEATURES.enrollment ? [{ to: "/admin/enrollments", icon: ClipboardList, label: "Enrollments" }] : [])
+        ...(FEATURES.enrollment ? [{ to: "/admin/enrollments", icon: ClipboardList, label: "Enrollments" }] : []),
+        ...(FEATURES.grading ? [{ to: "/teacher/grades", icon: Award, label: "Grade Input" }] : [])
       ]
     },
     {
@@ -316,7 +318,7 @@ export const Sidebar = () => {
       items: [
         ...(FEATURES.analytics ? [{ to: "/admin/predictive-analytics", icon: TrendingUp, label: "Predictive Analytics" }] : []),
         ...(!isProd ? [{ to: "/admin/chatbot-knowledge", icon: ChatbotIcon, label: "Chatbot Knowledge" }] : []),
-        ...(FEATURES.reports ? [{ to: "/admin/pdf", icon: FileText, label: "PDF Generation" }] : [])
+        ...(FEATURES.reports ? [{ to: "/admin/reports", icon: BarChart2, label: "Reports" }] : [])
       ]
     }
   ].filter(section => section.items.length > 0); // Filter out empty sections
@@ -340,8 +342,8 @@ export const Sidebar = () => {
     ...(FEATURES.enrollment ? [{ to: "/enrollment/my-enrollments", icon: FileText, label: "My Enrollments" }] : []),
     ...(FEATURES.grading ? [{ to: "/student/grades", icon: Award, label: "My Grades" }] : []),
     ...(FEATURES.payment ? [{ to: "/enrollment/payment", icon: Coins, label: "Payment" }] : []),
-    ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
-    ...(!isProd ? [{ to: "/student/forum", icon: Users, label: "Forum" }] : []),
+    // ...(FEATURES.messages ? [{ to: "/student/messages", icon: Mail, label: "Messages" }] : []),
+    // ...(!isProd ? [{ to: "/student/forum", icon: Users, label: "Forum" }] : []),
     ...(!isProd ? [{ to: "/student/feedback", icon: MessageSquare, label: "Feedback" }] : []),
     { to: "/student/settings", icon: Settings, label: "Settings" },
   ];

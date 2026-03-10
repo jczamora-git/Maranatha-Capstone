@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   LOGOUT: `${API_BASE_URL}/api/auth/logout`,
   ME: `${API_BASE_URL}/api/auth/me`,
   CHECK: `${API_BASE_URL}/api/auth/check`,
+  UPDATE_PROFILE: `${API_BASE_URL}/api/auth/profile`,
   CHECK_STUDENT: `${API_BASE_URL}/api/auth/check-student`,
   SET_PASSWORD: `${API_BASE_URL}/api/auth/set-password`,
   VALIDATE_SET_PASSWORD_TOKEN: `${API_BASE_URL}/api/auth/validate-set-password-token`,
@@ -119,6 +120,7 @@ export const API_ENDPOINTS = {
   
   // Payment Plans
   PAYMENT_PLANS: `${API_BASE_URL}/api/payment-plans`,
+  PAYMENT_PLAN_ALL_INSTALLMENTS: `${API_BASE_URL}/api/payment-plans/installments/all`,
   PAYMENT_PLAN_BY_ID: (id: string | number) => `${API_BASE_URL}/api/payment-plans/${id}`,
   PAYMENT_PLAN_INSTALLMENTS: (plan_id: string | number) => `${API_BASE_URL}/api/payment-plans/${plan_id}/installments`,
   PAYMENT_PLAN_MARK_NOTIFICATIONS_READ: (plan_id: string | number) => `${API_BASE_URL}/api/payment-plans/${plan_id}/mark-notifications-read`,
@@ -243,6 +245,11 @@ export const API_ENDPOINTS = {
   FEEDBACK_MY: `${API_BASE_URL}/api/feedback/my`,
   FEEDBACK_SENTIMENT_UPDATE: (id: string | number) => `${API_BASE_URL}/api/feedback/${id}/sentiment`,
   FEEDBACK_RESPONSE_UPDATE: (id: string | number) => `${API_BASE_URL}/api/feedback/${id}/response`,
+  CONCERNS: `${API_BASE_URL}/api/concerns`,
+  CONCERNS_MY: `${API_BASE_URL}/api/concerns/my`,
+  CONCERN_MESSAGES: (id: string | number) => `${API_BASE_URL}/api/concerns/${id}/messages`,
+  CONCERN_STATUS: (id: string | number) => `${API_BASE_URL}/api/concerns/${id}/status`,
+  SENTIMENT_PREDICT: `${API_BASE_URL}/api/sentiment/predict`,
   // Attendance
   ATTENDANCE: `${API_BASE_URL}/api/attendance`,
   ATTENDANCE_MARK: `${API_BASE_URL}/api/attendance/mark`,
@@ -254,6 +261,7 @@ export const API_ENDPOINTS = {
   // Final Grades
   FINAL_GRADES: `${API_BASE_URL}/api/final-grades`,
   FINAL_GRADES_SUBMIT: `${API_BASE_URL}/api/final-grades/submit`,
+  FINAL_GRADES_SUBMISSION_CONTROL: `${API_BASE_URL}/api/final-grades/submission-control`,
 
   // PDF Reports
   REPORTS_STUDENTS: `${API_BASE_URL}/api/reports/students`,

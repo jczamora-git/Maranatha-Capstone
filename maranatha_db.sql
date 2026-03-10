@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Mar 08, 2026 at 04:56 PM
+-- Host: localhost:3306
+-- Generation Time: Mar 10, 2026 at 10:18 PM
 -- Server version: 8.4.3
--- PHP Version: 8.2.12
+-- PHP Version: 8.3.26
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -35,8 +35,8 @@ CREATE TABLE `academic_periods` (
   `end_date` date NOT NULL COMMENT 'Period end date',
   `status` enum('active','past','upcoming') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'upcoming' COMMENT 'Current status of the period',
   `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Optional description or notes',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Global academic period tracking (school year + semester)';
 
 --
@@ -71,7 +71,7 @@ CREATE TABLE `activities` (
   `max_score` int NOT NULL DEFAULT '100',
   `due_at` datetime DEFAULT NULL,
   `allow_late_submission` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -100,8 +100,8 @@ CREATE TABLE `activity_grades` (
   `grade` decimal(5,2) DEFAULT NULL,
   `status` enum('Pending','Passed','Failed') NOT NULL DEFAULT 'Pending',
   `feedback` text COMMENT 'Teacher feedback',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -128,7 +128,7 @@ CREATE TABLE `activity_questions` (
   `image_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Optional question image path',
   `correct_answer` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Correct answer for true/false, short_answer, fill_blank',
   `sample_answer` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Sample answer for grading reference (short_answer, essay)',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Questions for quizzes and exams';
 
 --
@@ -194,7 +194,7 @@ CREATE TABLE `activity_question_choices` (
   `choice_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'The choice option text',
   `is_correct` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 if this is the correct answer',
   `order_number` int NOT NULL DEFAULT '1' COMMENT 'Display order of choice',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Multiple choice options for quiz questions';
 
 --
@@ -314,8 +314,8 @@ CREATE TABLE `activity_student_answers` (
   `answer_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Text answer for essay/short answer questions',
   `is_correct` tinyint(1) DEFAULT NULL COMMENT 'Auto-graded for MC, manual for essay',
   `points_earned` decimal(5,2) DEFAULT '0.00' COMMENT 'Points earned for this answer',
-  `answered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+  `answered_at` timestamp NOT NULL,
+  `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Student answers to quiz/exam questions';
 
 --
@@ -380,7 +380,7 @@ CREATE TABLE `activity_submissions` (
   `submission_type` enum('file','text','link','none') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'file' COMMENT 'Type of submission',
   `submission_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'For text-based submissions',
   `submission_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'For link-based submissions',
-  `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `submitted_at` timestamp NOT NULL,
   `is_late` tinyint(1) DEFAULT '0' COMMENT 'Submitted after due date',
   `attempt_number` int NOT NULL DEFAULT '1' COMMENT 'Attempt number (allow multiple attempts)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Student submissions for activities (files, text, links)';
@@ -408,7 +408,7 @@ CREATE TABLE `activity_submission_files` (
   `file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Server storage path',
   `file_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'MIME type (e.g., image/jpeg, application/pdf)',
   `file_size` bigint DEFAULT NULL COMMENT 'File size in bytes',
-  `uploaded_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `uploaded_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='File attachments for student submissions';
 
 --
@@ -438,8 +438,8 @@ CREATE TABLE `announcements` (
   `ends_at` datetime DEFAULT NULL,
   `created_by` int UNSIGNED DEFAULT NULL,
   `metadata` json DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -461,7 +461,7 @@ CREATE TABLE `announcement_reads` (
   `id` bigint UNSIGNED NOT NULL,
   `announcement_id` int UNSIGNED NOT NULL,
   `user_id` int UNSIGNED NOT NULL,
-  `read_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `read_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks per-user read status for announcements';
 
 --
@@ -492,8 +492,8 @@ CREATE TABLE `attendance` (
   `teacher_id` int UNSIGNED NOT NULL,
   `course_id` int UNSIGNED NOT NULL,
   `status` enum('present','late','absent','excused') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'present',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -514,7 +514,7 @@ CREATE TABLE `audit_logs` (
   `metadata` json DEFAULT NULL COMMENT 'Additional data: old_status, new_status, amount, etc.',
   `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'IPv4 or IPv6 address',
   `user_agent` text COLLATE utf8mb4_unicode_ci,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Immutable audit trail of all system actions';
 
 --
@@ -579,7 +579,7 @@ CREATE TABLE `broadcasts` (
   `attachments` json DEFAULT NULL,
   `status` enum('draft','pending','sent','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'sent',
   `recipients_count` int UNSIGNED NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime NOT NULL,
   `sent_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -604,8 +604,8 @@ CREATE TABLE `campus` (
   `latitude` decimal(10,7) NOT NULL,
   `longitude` decimal(10,7) NOT NULL,
   `geo_radius_m` int NOT NULL DEFAULT '50',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -629,7 +629,7 @@ CREATE TABLE `chatbot_conversations` (
   `normalized_message` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `reply` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `source` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unknown',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -676,7 +676,10 @@ INSERT INTO `chatbot_conversations` (`id`, `user_id`, `role`, `message`, `normal
 (53, 458, 'enrollee', 'How much is the tuition?', 'how much is the tuition?', 'The tuition fees vary by grade level. Here are the current tuition fees:\n\n- Kinder: ₱16,500.00\n- Nursery 1: ₱16,500.00\n- Nursery 2: ₱16,500.00\n- Grade 1: ₱17,000.00\n- Grade 2: ₱17,000.00\n- Grade 3: ₱17,000.00\n- Grade 4: ₱17,100.00\n- Grade 5: ₱17,100.00\n- Grade 6: ₱17,100.00\n\nFor more detailed information, you can visit the [Fees and Charges|/fees-charges] page.', 'llm', '2026-03-08 21:14:45'),
 (54, 458, 'enrollee', 'I forgot my PIN', 'i forgot my pin', 'Nakalimutan mo ang iyong payment PIN? Narito ang dalawang paraan:\n\n1. I-verify muna ang iyong PIN sa [link:Verify Payment PIN|/enrollment/verify-pin] — dito mo mahahanap ang \"Forgot PIN?\" link sa ibaba ng page.\n2. O direkta kang pumunta sa [link:Forgot PIN|/auth/forgot-pin] para i-reset ang iyong PIN gamit ang iyong email address.\n\nKung wala kang access sa iyong email, makipag-ugnayan sa admin para sa tulong.', 'knowledge', '2026-03-08 21:16:21'),
 (55, 458, 'enrollee', 'I forgot my PIN', 'i forgot my pin', 'Nakalimutan mo ang iyong payment PIN? Narito ang dalawang paraan:\n\n1. I-verify muna ang iyong PIN sa [link:Verify Payment PIN|/enrollment/verify-pin] — dito mo mahahanap ang \"Forgot PIN?\" link sa ibaba ng page.\n2. O direkta kang pumunta sa [link:Forgot PIN|/auth/forgot-pin] para i-reset ang iyong PIN gamit ang iyong email address.\n\nKung wala kang access sa iyong email, makipag-ugnayan sa admin para sa tulong.', 'knowledge', '2026-03-08 21:16:56'),
-(56, 458, 'enrollee', 'How much is the tuition?', 'how much is the tuition?', 'The tuition fees vary by grade level. Here are the current tuition fees:\n\n- Kinder: ₱16,500.00\n- Nursery 1: ₱16,500.00\n- Nursery 2: ₱16,500.00\n- Grade 1: ₱17,000.00\n- Grade 2: ₱17,000.00\n- Grade 3: ₱17,000.00\n- Grade 4: ₱17,100.00\n- Grade 5: ₱17,100.00\n- Grade 6: ₱17,100.00\n\nIf you need more specific information, feel free to ask!', 'llm', '2026-03-08 21:19:47');
+(56, 458, 'enrollee', 'How much is the tuition?', 'how much is the tuition?', 'The tuition fees vary by grade level. Here are the current tuition fees:\n\n- Kinder: ₱16,500.00\n- Nursery 1: ₱16,500.00\n- Nursery 2: ₱16,500.00\n- Grade 1: ₱17,000.00\n- Grade 2: ₱17,000.00\n- Grade 3: ₱17,000.00\n- Grade 4: ₱17,100.00\n- Grade 5: ₱17,100.00\n- Grade 6: ₱17,100.00\n\nIf you need more specific information, feel free to ask!', 'llm', '2026-03-08 21:19:47'),
+(57, 110, 'student', 'Who are my teachers?', 'who are my teachers?', 'Your teachers include Mia Rose Dizon for Makabansa. Your class teacher (adviser) is Emilio Quirino.', 'llm', '2026-03-09 18:02:52'),
+(58, 110, 'student', 'How much is my tuition?', 'how much is my tuition?', 'To determine your tuition, I\'ll need to know your grade level. Could you please tell me which grade you are in?', 'llm', '2026-03-09 18:02:57'),
+(59, 110, 'student', 'I forgot my PIN', 'i forgot my pin', 'Nakalimutan mo ang iyong payment PIN? Narito ang dalawang paraan:\n\n1. I-verify muna ang iyong PIN sa [link:Verify Payment PIN|/enrollment/verify-pin] — dito mo mahahanap ang \"Forgot PIN?\" link sa ibaba ng page.\n2. O direkta kang pumunta sa [link:Forgot PIN|/auth/forgot-pin] para i-reset ang iyong PIN gamit ang iyong email address.\n\nKung wala kang access sa iyong email, makipag-ugnayan sa admin para sa tulong.', 'knowledge', '2026-03-09 18:03:07');
 
 -- --------------------------------------------------------
 
@@ -693,8 +696,8 @@ CREATE TABLE `chatbot_knowledge` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_by` int DEFAULT NULL,
   `updated_by` int DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -711,6 +714,81 @@ INSERT INTO `chatbot_knowledge` (`id`, `title`, `content`, `tags`, `route`, `is_
 (7, 'Tuition Packages', 'Manage tuition packages and pricing bundles.', 'tuition, packages, pricing', '/admin/tuition-packages', 1, 3, 3, '2026-02-23 19:33:11', '2026-02-23 19:33:11'),
 (8, 'Uniform Management', 'Manage uniform inventory and pricing.', 'uniform, inventory', '/admin/uniform-management', 1, 3, 3, '2026-02-23 19:33:38', '2026-02-23 19:33:38'),
 (9, 'RFID Attendance', 'Monitor RFID attendance activity and device scans.', 'rfid, attendance', '/admin/rfid-attendance', 1, 3, 3, '2026-02-23 19:34:40', '2026-02-23 19:34:40');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `concern_messages`
+--
+
+CREATE TABLE `concern_messages` (
+  `id` int NOT NULL,
+  `ticket_id` int NOT NULL,
+  `sender_user_id` int DEFAULT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sentiment` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `confidence` decimal(6,5) DEFAULT NULL,
+  `probabilities` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON string of label probabilities',
+  `analyzed_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `concern_messages`
+--
+
+INSERT INTO `concern_messages` (`id`, `ticket_id`, `sender_user_id`, `message`, `sentiment`, `confidence`, `probabilities`, `analyzed_at`, `created_at`) VALUES
+(1, 1, 110, 'I dont like the payment system', 'negative', 0.42273, '{\"positive\":0.06018455512821674,\"neutral\":0.11876785010099411,\"negative\":0.8210476040840149}', '2026-03-09 16:59:00', '2026-03-09 16:59:00'),
+(2, 1, 3, 'okay', NULL, NULL, NULL, NULL, '2026-03-09 17:40:45'),
+(3, 1, 110, 'hatdog', 'neutral', 0.30477, '{\"positive\":0.4003797918558121,\"neutral\":0.30477485060691833,\"negative\":0.2948453351855278}', '2026-03-09 18:05:38', '2026-03-09 18:05:38'),
+(4, 1, 110, 'gg nice g', 'positive', 0.40341, '{\"positive\":0.5419473648071289,\"neutral\":0.3480575978755951,\"negative\":0.10999500006437302}', '2026-03-09 18:05:44', '2026-03-09 18:05:44'),
+(5, 1, 110, 'okay na pala', 'neutral', 0.52142, '{\"positive\":0.3993464820086956,\"neutral\":0.5214164853096008,\"negative\":0.07923704013228416}', '2026-03-09 18:12:44', '2026-03-09 18:12:44'),
+(6, 1, 3, 'sige', NULL, NULL, NULL, NULL, '2026-03-09 18:15:08'),
+(7, 1, 3, 'okay', NULL, NULL, NULL, NULL, '2026-03-09 18:15:11'),
+(8, 1, 110, 'gud ung system niyo mganda', 'positive', 0.34732, '{\"positive\":0.6590557396411896,\"neutral\":0.1503293663263321,\"negative\":0.19061487168073654}', '2026-03-09 18:18:23', '2026-03-09 18:18:23'),
+(9, 1, 110, 'h3l0 p0.. 4sk k0 lng p0 kung bkt d p0 d2ng 4pp34r ung r3c31pt ng b4y4d ng 4p0 k0? 4k0 k4s1 ung n4gp4b4y4d.. k4h4p0n n4mn p0.. n3rv0us 4k0 b4k4 h1nd1 n4-r3c0rd.. 🙏', 'neutral', 0.37368, '{\"positive\":0.22840171307325363,\"neutral\":0.3736821711063385,\"negative\":0.3979160934686661}', '2026-03-09 18:20:26', '2026-03-09 18:20:26'),
+(10, 1, 110, '4w3s0m3 p0.. s4n4 4ll 4dm1n g4ny4n k4-und3rst4nd1ng.. k4y4 n4 4k0 m4g-r3l4x n4.. th4nk y0u s0 much p0!! ❤️', 'positive', 0.43352, '{\"positive\":0.6150757521390915,\"neutral\":0.11777861416339874,\"negative\":0.26714564114809036}', '2026-03-09 18:21:10', '2026-03-09 18:21:10'),
+(11, 1, 110, '0k4y p0.. 4nt4y 4k0.. b4l1s 4k0 b4k4 m4-1ss ung d34dl1n3.. h3h3', 'neutral', 0.31149, '{\"positive\":0.21992139518260956,\"neutral\":0.3114946484565735,\"negative\":0.46858395636081696}', '2026-03-09 18:24:11', '2026-03-09 18:24:11'),
+(12, 1, 3, 'gud pm.. ask q lng p0.. bkt wla p ung grde ni anak q? nka log in nmn aq.. d q mkit..', NULL, NULL, NULL, NULL, '2026-03-09 18:25:56'),
+(13, 1, 110, 'gud pm.. ask q lng p0.. bkt wla p ung grde ni anak q? nka log in nmn aq.. d q mkit..', 'neutral', 0.34458, '{\"positive\":0.15835802257061005,\"neutral\":0.34457963705062866,\"negative\":0.4970623403787613}', '2026-03-09 18:26:04', '2026-03-09 18:26:04'),
+(14, 1, 110, 'ok.. anty q.. slmat..', 'neutral', 0.52519, '{\"positive\":0.26357516646385193,\"neutral\":0.5251916646957397,\"negative\":0.2112332209944725}', '2026-03-09 18:26:40', '2026-03-09 18:26:40'),
+(15, 1, 110, 'awsm.. sakt0.. thnx ulit.. bye p0..', 'neutral', 0.35349, '{\"positive\":0.2156001403927803,\"neutral\":0.353491872549057,\"negative\":0.4309079796075821}', '2026-03-09 18:27:00', '2026-03-09 18:27:00'),
+(16, 1, 110, 'panget', 'negative', 0.41932, '{\"positive\":0.11303702369332314,\"neutral\":0.12727034091949463,\"negative\":0.7596925795078278}', '2026-03-09 18:28:42', '2026-03-09 18:28:42'),
+(17, 1, 110, 'ayos pala to', 'positive', 0.32449, '{\"positive\":0.6192483305931091,\"neutral\":0.2833946943283081,\"negative\":0.09735697507858276}', '2026-03-09 18:50:50', '2026-03-09 18:50:50'),
+(18, 1, 110, 'Lagi may error, hindi maka-login ang anak ko', 'negative', 0.43296, '{\"positive\":0.06451604329049587,\"neutral\":0.18561501801013947,\"negative\":0.7498688995838165}', '2026-03-09 18:51:11', '2026-03-09 18:51:11'),
+(19, 1, 110, 'Ang panget ng system , naguguluhan ako gamitin.', 'negative', 0.54595, '{\"positive\":0.04593622125685215,\"neutral\":0.05870787054300308,\"negative\":0.8953558504581451}', '2026-03-09 18:52:00', '2026-03-09 18:52:00'),
+(20, 1, 110, 'システムがうまく動作しません。困っています。', 'negative', 0.47481, '{\"positive\":0.04823528043925762,\"neutral\":0.07147139310836792,\"negative\":0.8802933394908905}', '2026-03-09 19:28:59', '2026-03-09 19:28:59'),
+(21, 1, 110, 'ありがとうございます！とても助かりました。', 'positive', 0.59450, '{\"positive\":0.8258846998214722,\"neutral\":0.03467927873134613,\"negative\":0.13943595439195633}', '2026-03-09 19:29:51', '2026-03-09 19:29:51'),
+(22, 1, 110, 'システムが使えなくて、本当に困っています。', 'negative', 0.57017, '{\"positive\":0.0573336947709322,\"neutral\":0.05035301670432091,\"negative\":0.8923132419586182}', '2026-03-09 19:30:02', '2026-03-09 19:30:02'),
+(23, 1, 110, 'お前は本当に愚か者だ。死ね。', 'negative', 0.39473, '{\"positive\":0.33032379299402237,\"neutral\":0.09789877384901047,\"negative\":0.5717774480581284}', '2026-03-09 19:31:07', '2026-03-09 19:31:07');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `concern_tickets`
+--
+
+CREATE TABLE `concern_tickets` (
+  `id` int NOT NULL,
+  `ticket_no` varchar(24) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `category` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'General',
+  `subject` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('Open','In Progress','Resolved','Closed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Open',
+  `overall_sentiment` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `overall_confidence` decimal(6,5) DEFAULT NULL,
+  `sentiment_updated_at` datetime DEFAULT NULL,
+  `last_message_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `concern_tickets`
+--
+
+INSERT INTO `concern_tickets` (`id`, `ticket_no`, `user_id`, `category`, `subject`, `status`, `overall_sentiment`, `overall_confidence`, `sentiment_updated_at`, `last_message_at`, `created_at`, `updated_at`) VALUES
+(1, 'TKT-20260309-3861C8', 110, 'Payments', 'Test', 'In Progress', 'neutral', 0.39066, '2026-03-09 19:31:07', '2026-03-09 19:31:07', '2026-03-09 16:59:00', '2026-03-09 19:31:07');
 
 -- --------------------------------------------------------
 
@@ -748,8 +826,8 @@ CREATE TABLE `document_catalog` (
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
   `is_active` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -779,8 +857,8 @@ CREATE TABLE `document_requirements` (
   `is_required` tinyint(1) DEFAULT '1',
   `display_order` int DEFAULT '0',
   `is_active` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -853,15 +931,15 @@ CREATE TABLE `enrollments` (
   `status` enum('Pending','Under Review','Incomplete','Verified','Approved','Rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
   `rejection_reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `rejection_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `submitted_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `submitted_date` timestamp NULL DEFAULT NULL,
   `first_reviewed_date` timestamp NULL DEFAULT NULL,
   `approved_date` timestamp NULL DEFAULT NULL,
   `rejected_date` timestamp NULL DEFAULT NULL,
   `approved_by` int UNSIGNED DEFAULT NULL,
   `last_reviewed_by` int UNSIGNED DEFAULT NULL,
   `last_review_date` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   `version` int UNSIGNED NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -877,7 +955,7 @@ INSERT INTO `enrollments` (`id`, `academic_period_id`, `enrollment_period_id`, `
 (35, 30, 1, 110, 93, 'Continuing Student', 'Grade 3', 'Approved', NULL, NULL, '2026-02-14 08:22:16', NULL, '2026-02-20 17:08:19', NULL, 3, NULL, NULL, '2026-02-14 01:22:16', '2026-02-21 00:08:19', 0),
 (36, 26, 1, 431, 416, 'New Student', 'Nursery 1', 'Approved', NULL, NULL, '2026-02-15 09:16:06', NULL, '2026-02-15 02:16:40', NULL, 3, NULL, NULL, '2026-02-15 02:16:06', '2026-02-15 09:16:40', 0),
 (44, 30, 1, 446, NULL, 'New Student', 'Grade 4', 'Under Review', NULL, NULL, '2026-02-19 01:21:11', NULL, NULL, NULL, NULL, 3, '2026-02-22 03:01:13', '2026-02-18 18:21:11', '2026-02-22 03:01:13', 0),
-(47, 30, 1, 451, NULL, 'New Student', 'Grade 2', 'Pending', NULL, NULL, '2026-02-22 12:30:27', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-22 05:30:27', '2026-02-22 05:30:27', 0),
+(47, 30, 1, 451, NULL, 'New Student', 'Grade 2', 'Verified', NULL, NULL, '2026-02-22 12:30:27', NULL, NULL, NULL, NULL, 3, '2026-03-09 21:25:24', '2026-02-22 05:30:27', '2026-03-09 21:25:24', 0),
 (48, 30, 1, 443, NULL, 'Continuing Student', 'Kinder', 'Pending', NULL, NULL, '2026-02-22 13:13:28', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-22 06:13:28', '2026-02-22 06:13:28', 0),
 (51, 30, 1, 376, 359, 'Continuing Student', 'Kinder', 'Approved', NULL, NULL, '2026-02-23 10:09:14', NULL, '2026-02-23 03:24:36', NULL, 3, 3, '2026-02-23 03:10:58', '2026-02-23 03:09:14', '2026-02-23 10:24:36', 0),
 (52, 30, 1, 71, NULL, 'Continuing Student', 'Nursery 2', 'Pending', NULL, NULL, '2026-02-23 10:30:05', NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-23 03:30:05', '2026-02-23 03:30:05', 0),
@@ -906,7 +984,7 @@ CREATE TABLE `enrollment_addresses` (
   `province` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `zip_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -948,7 +1026,7 @@ CREATE TABLE `enrollment_discounts` (
   `payment_id` int UNSIGNED DEFAULT NULL,
   `applied_amount` decimal(10,2) NOT NULL,
   `approved_by` int UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -978,7 +1056,7 @@ CREATE TABLE `enrollment_documents` (
   `file_size` int UNSIGNED DEFAULT NULL COMMENT 'File size in bytes',
   `document_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'e.g., PSA Birth Certificate, School Records, Vaccination Card',
   `submission_method` enum('Uploaded','Physical','Both') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Uploaded',
-  `upload_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `upload_date` timestamp NULL DEFAULT NULL,
   `verified_by` int UNSIGNED DEFAULT NULL COMMENT 'User ID of admin who verified',
   `physical_verified_by` int UNSIGNED DEFAULT NULL COMMENT 'Admin who verified physical document',
   `verification_status` enum('Pending','Verified','Rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
@@ -987,8 +1065,8 @@ CREATE TABLE `enrollment_documents` (
   `verification_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `verified_date` timestamp NULL DEFAULT NULL,
   `physical_verified_date` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   `resubmission_count` int UNSIGNED DEFAULT '0' COMMENT 'Number of times this document has been resubmitted',
   `previous_version_id` int UNSIGNED DEFAULT NULL COMMENT 'Links to previous version of this document if resubmitted',
   `is_current_version` tinyint(1) DEFAULT '1' COMMENT 'FALSE if this has been replaced by a resubmission',
@@ -1001,7 +1079,12 @@ CREATE TABLE `enrollment_documents` (
 --
 
 INSERT INTO `enrollment_documents` (`id`, `enrollment_id`, `file_name`, `file_path`, `file_type`, `file_size`, `document_type`, `submission_method`, `upload_date`, `verified_by`, `physical_verified_by`, `verification_status`, `rejection_reason`, `physical_verification_status`, `verification_notes`, `verified_date`, `physical_verified_date`, `created_at`, `updated_at`, `resubmission_count`, `previous_version_id`, `is_current_version`, `resubmission_requested_date`, `resubmitted_date`) VALUES
-(23, 66, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-03-08 13:53:48', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-08 13:53:48', NULL, '2026-03-08 13:53:48', '2026-03-08 13:53:48', 0, NULL, 1, NULL, NULL);
+(23, 66, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-03-08 13:53:48', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-08 13:53:48', NULL, '2026-03-08 13:53:48', '2026-03-08 13:53:48', 0, NULL, 1, NULL, NULL),
+(24, 47, 'Physical Copy', '', 'N/A', NULL, 'Birth Certificate', 'Physical', '2026-03-09 21:25:12', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-09 21:25:12', NULL, NULL, NULL, 0, NULL, 1, NULL, NULL),
+(25, 47, 'Physical Copy', '', 'N/A', NULL, 'Data Privacy Act Consent Form', 'Physical', '2026-03-09 21:25:14', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-09 21:25:14', NULL, NULL, NULL, 0, NULL, 1, NULL, NULL),
+(26, 47, 'Physical Copy', '', 'N/A', NULL, 'Enrollment Form', 'Physical', '2026-03-09 21:25:17', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-09 21:25:17', NULL, NULL, NULL, 0, NULL, 1, NULL, NULL),
+(27, 47, 'Physical Copy', '', 'N/A', NULL, 'Parent\'s Agreement Form', 'Physical', '2026-03-09 21:25:20', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-09 21:25:20', NULL, NULL, NULL, 0, NULL, 1, NULL, NULL),
+(28, 47, 'Physical Copy', '', 'N/A', NULL, 'SF10', 'Physical', '2026-03-09 21:25:23', 3, NULL, 'Verified', NULL, 'Not Required', NULL, '2026-03-09 21:25:23', NULL, NULL, NULL, 0, NULL, 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1019,7 +1102,7 @@ CREATE TABLE `enrollment_fee_items` (
   `amount` decimal(10,2) NOT NULL,
   `is_required` tinyint(1) NOT NULL DEFAULT '1',
   `sort_order` int UNSIGNED NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1037,7 +1120,7 @@ CREATE TABLE `enrollment_flags` (
   `has_disability` tinyint(1) DEFAULT '0',
   `disability_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `special_language` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1080,7 +1163,7 @@ CREATE TABLE `enrollment_learners` (
   `birth_date` date NOT NULL,
   `gender` enum('Male','Female') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `psa_birth_cert_number` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1122,7 +1205,7 @@ CREATE TABLE `enrollment_parent_contacts` (
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_primary` tinyint(1) DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1167,8 +1250,8 @@ CREATE TABLE `enrollment_periods` (
   `max_slots` int UNSIGNED DEFAULT NULL COMMENT 'Maximum enrollees (optional)',
   `allowed_grade_levels` json DEFAULT NULL COMMENT 'Array of grade levels allowed, NULL = all grades',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1198,8 +1281,8 @@ CREATE TABLE `feedback` (
   `response_text` text COLLATE utf8mb4_unicode_ci,
   `responded_by` int DEFAULT NULL,
   `responded_at` datetime DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1233,8 +1316,8 @@ CREATE TABLE `final_grades` (
   `status` enum('pending','submitted','approved','rejected') DEFAULT 'submitted',
   `submitted_by` bigint UNSIGNED DEFAULT NULL,
   `submitted_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -1498,6 +1581,66 @@ INSERT INTO `final_grades` (`id`, `student_id`, `subject_id`, `section_id`, `aca
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `final_grade_submissions`
+--
+
+CREATE TABLE `final_grade_submissions` (
+  `id` bigint UNSIGNED NOT NULL,
+  `subject_id` int UNSIGNED NOT NULL,
+  `section_id` int UNSIGNED NOT NULL,
+  `academic_period_id` int UNSIGNED NOT NULL,
+  `quarter` enum('1st','2nd','3rd','4th') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `submitted_by` int UNSIGNED NOT NULL,
+  `submitted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `status` enum('pending','submitted','approved','rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'submitted',
+  `approved_by` int UNSIGNED DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `rejection_reason` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `final_grade_submission_items`
+--
+
+CREATE TABLE `final_grade_submission_items` (
+  `id` bigint UNSIGNED NOT NULL,
+  `submission_id` bigint UNSIGNED NOT NULL,
+  `student_id` int UNSIGNED NOT NULL,
+  `final_grade_num` decimal(5,2) NOT NULL,
+  `final_grade` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `remarks` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `grade_submission_controls`
+--
+
+CREATE TABLE `grade_submission_controls` (
+  `id` tinyint UNSIGNED NOT NULL DEFAULT '1',
+  `is_enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `updated_by` int UNSIGNED DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ;
+
+--
+-- Dumping data for table `grade_submission_controls`
+--
+
+INSERT INTO `grade_submission_controls` (`id`, `is_enabled`, `updated_by`, `updated_at`, `created_at`) VALUES
+(1, 0, 3, '2026-03-10 20:40:27', '2026-03-10 20:40:12');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `grading_input_items`
 --
 
@@ -1516,8 +1659,8 @@ CREATE TABLE `grading_input_items` (
   `display_order` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_by` int UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1525,7 +1668,7 @@ CREATE TABLE `grading_input_items` (
 --
 
 INSERT INTO `grading_input_items` (`id`, `subject_id`, `section_id`, `academic_period_id`, `quarter`, `title`, `component`, `max_score`, `source_type`, `source_activity_id`, `merge_strategy`, `display_order`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 51, 11, 30, '1st Quarter', 'quiz', 'written', 25.00, 'activity', 7, 'sum', 1, 1, 52, '2026-03-03 13:05:15', '2026-03-04 10:53:11'),
+(1, 51, 11, 30, '1st Quarter', 'quiz', 'written', 25.00, 'activity', 7, 'sum', 1, 1, 52, '2026-03-03 13:05:15', '2026-03-10 21:31:56'),
 (2, 51, 11, 30, '1st Quarter', 'Oral Recitation', 'written', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 13:08:32', '2026-03-04 08:57:45'),
 (3, 51, 11, 30, '1st Quarter', 'Test', 'written', 15.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 13:26:38', '2026-03-03 13:26:38'),
 (6, 51, 11, 30, '1st Quarter', 'Oral Recitation', 'written', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 14:35:37', '2026-03-04 08:57:45'),
@@ -1535,8 +1678,11 @@ INSERT INTO `grading_input_items` (`id`, `subject_id`, `section_id`, `academic_p
 (10, 51, 11, 30, '1st Quarter', 'Exam', 'quarterly', 50.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-03 14:36:07', '2026-03-04 09:03:41'),
 (15, 51, 11, 30, '1st Quarter', 'Oral', 'written', 30.00, 'merged', NULL, 'sum', 2, 0, 52, '2026-03-04 07:09:58', '2026-03-04 07:17:28'),
 (16, 51, 11, 30, '1st Quarter', 'Oral', 'written', 30.00, 'merged', NULL, 'sum', 2, 0, 52, '2026-03-04 07:17:43', '2026-03-04 08:57:45'),
-(17, 51, 11, 30, '1st Quarter', 'My Favorite Animal', 'written', 15.00, 'activity', 9, 'sum', 2, 1, 52, '2026-03-04 10:53:11', '2026-03-04 10:53:11'),
-(18, 51, 11, 30, '1st Quarter', 'Draw an Apple', 'performance', 25.00, 'activity', 10, 'sum', 3, 1, 52, '2026-03-04 10:53:11', '2026-03-04 10:53:11');
+(17, 51, 11, 30, '1st Quarter', 'My Favorite Animal', 'written', 15.00, 'activity', 9, 'sum', 2, 1, 52, '2026-03-04 10:53:11', '2026-03-10 21:31:56'),
+(18, 51, 11, 30, '1st Quarter', 'Draw an Apple', 'performance', 25.00, 'activity', 10, 'sum', 3, 1, 52, '2026-03-04 10:53:11', '2026-03-10 21:31:56'),
+(19, 51, 11, 30, '1st Quarter', 'Test', 'written', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-10 20:10:32', '2026-03-10 20:10:32'),
+(20, 51, 11, 30, '1st Quarter', 'one', 'written', 10.00, 'manual', NULL, 'sum', 0, 1, 52, '2026-03-10 20:10:36', '2026-03-10 20:10:36'),
+(21, 47, 10, 30, '1st Quarter', 'QUiz', 'written', 2.00, 'activity', 8, 'sum', 1, 1, 3, '2026-03-10 20:48:31', '2026-03-10 20:59:47');
 
 -- --------------------------------------------------------
 
@@ -1551,7 +1697,7 @@ CREATE TABLE `grading_input_item_sources` (
   `source_activity_id` bigint UNSIGNED DEFAULT NULL,
   `source_item_id` bigint UNSIGNED DEFAULT NULL,
   `weight` decimal(8,4) NOT NULL DEFAULT '1.0000',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1574,8 +1720,8 @@ CREATE TABLE `grading_input_scores` (
   `grading_input_item_id` bigint UNSIGNED NOT NULL,
   `student_id` int UNSIGNED NOT NULL,
   `score` decimal(8,2) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1620,8 +1766,8 @@ CREATE TABLE `installments` (
   `status` enum('Pending','Paid','Partial','Overdue') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
   `late_fee` decimal(10,2) DEFAULT '0.00' COMMENT 'Penalty for late payment',
   `days_overdue` int DEFAULT '0' COMMENT 'Calculated: days past due_date',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   `version` int UNSIGNED NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Individual installment payment deadlines';
 
@@ -1681,7 +1827,7 @@ CREATE TABLE `late_payment_explanations` (
   `penalty_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT 'Penalty amount at time of explanation',
   `days_overdue` int NOT NULL DEFAULT '0' COMMENT 'Days overdue when explanation submitted',
   `explanation` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Student explanation for late payment',
-  `submitted_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'When explanation was submitted',
+  `submitted_at` datetime DEFAULT NULL COMMENT 'When explanation was submitted',
   `viewed_by_admin` tinyint(1) DEFAULT '0' COMMENT 'Whether admin has viewed this',
   `admin_notes` text COLLATE utf8mb4_unicode_ci COMMENT 'Optional admin notes for internal use'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Mandatory explanations for late payments - penalties are still charged';
@@ -1705,8 +1851,8 @@ CREATE TABLE `learning_materials` (
   `file_size` int DEFAULT NULL COMMENT 'File size in bytes (for type=file)',
   `link_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Shared URL (for type=link)',
   `created_by` int UNSIGNED NOT NULL COMMENT 'Teacher user ID who created this material',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores learning materials for subjects/sections';
 
 --
@@ -1735,8 +1881,8 @@ CREATE TABLE `messages` (
   `body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `attachments` json DEFAULT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1830,8 +1976,8 @@ CREATE TABLE `notifications` (
   `read_at` datetime DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',
   `archived_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='In-app notifications for users';
 
 --
@@ -1897,9 +2043,9 @@ CREATE TABLE `notification_outbox` (
   `max_attempts` int UNSIGNED NOT NULL DEFAULT '3',
   `last_error` text COLLATE utf8mb4_unicode_ci,
   `last_attempt_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime NOT NULL,
   `sent_at` datetime DEFAULT NULL,
-  `expires_at` datetime NOT NULL DEFAULT ((now() + interval 24 hour)) COMMENT 'Stop trying after 24 hours'
+  `expires_at` datetime NOT NULL COMMENT 'Stop trying after 24 hours'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Queue for FCM push notification delivery with retry logic';
 
 --
@@ -1959,8 +2105,8 @@ CREATE TABLE `notification_preferences` (
   `in_app_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Show in notification center',
   `push_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Send FCM push notification',
   `email_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Send email (future)',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='User notification preferences';
 
 -- --------------------------------------------------------
@@ -1988,8 +2134,8 @@ CREATE TABLE `parent_contacts` (
   `is_authorized_pickup` tinyint(1) DEFAULT '1',
   `can_receive_communications` tinyint(1) DEFAULT '1',
   `preferred_contact_method` enum('Phone','Email','SMS') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Phone',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2006,8 +2152,8 @@ CREATE TABLE `password_resets` (
   `type` enum('password','pin','account_setup') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'password',
   `expires_at` datetime NOT NULL,
   `used` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores reset tokens for password reset, PIN reset, and account setup';
 
 --
@@ -2087,8 +2233,8 @@ CREATE TABLE `payments` (
   `received_by` int UNSIGNED DEFAULT NULL COMMENT 'User ID of cashier/admin who received payment',
   `verified_by` int UNSIGNED DEFAULT NULL COMMENT 'User ID who verified online payment',
   `verified_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   `version` int UNSIGNED NOT NULL DEFAULT '0',
   `service_period_month` int DEFAULT NULL COMMENT 'Month number (1-12) for recurring services',
   `service_period_year` int DEFAULT NULL COMMENT 'Year for recurring services',
@@ -2117,7 +2263,7 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (89, 432, NULL, 30, 'RCP-202602-4408', 'Uniform', 'School Polo (#16) x1', 300.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:52:25', '2026-02-21 23:52:25', 0, NULL, NULL, 0),
 (90, 432, NULL, 30, 'RCP-202602-6292', 'Uniform', 'School Polo (#16) x1', 300.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:52:30', '2026-02-21 23:52:30', 0, NULL, NULL, 0),
 (91, 370, NULL, 30, 'RCP-202602-9682', 'Uniform', 'PE Uniform (#6) x1', 400.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:52:53', '2026-02-21 23:52:53', 0, NULL, NULL, 0),
-(92, 443, NULL, 30, 'RCP-202602-3182', 'Uniform', 'School Polo (#16) x1', 300.00, 0.00, 'Check', '2026-02-22', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:54:18', '2026-02-21 23:54:18', 0, NULL, NULL, 0),
+(92, 443, NULL, 30, 'RCP-202602-3182', 'Uniform', 'School Polo (#16) x1', 300.00, 0.00, 'GCash', '2026-02-22', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:54:18', '2026-02-21 23:54:18', 0, NULL, NULL, 0),
 (93, 443, NULL, 30, 'RCP-202602-4959', 'Uniform', 'School Polo (#10) x1', 300.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:54:38', '2026-02-21 23:54:38', 0, NULL, NULL, 0),
 (94, 446, NULL, 30, 'RCP-202602-4590', 'Uniform', 'School Dress (M) x1', 600.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:54:45', '2026-02-21 23:54:45', 0, NULL, NULL, 0),
 (95, 446, NULL, 30, 'RCP-202602-4413', 'Uniform', 'School Polo (#10) x1', 300.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order', NULL, NULL, NULL, '2026-02-21 23:54:55', '2026-02-21 23:54:55', 0, NULL, NULL, 0),
@@ -2141,7 +2287,7 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (114, 451, 47, 30, 'RCP-202602-292427', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-22', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-02-22 06:10:56', '2026-02-22 06:10:56', 0, NULL, NULL, 0),
 (115, 376, 51, 30, 'RCP-202602-8868', 'Tuition Full Payment', 'Tuition Package - Nursery 1, Nursery 2, Kinder', 16500.00, 0.00, 'Cash', '2026-02-23', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2026-02-23 03:11:26', '2026-02-23 03:11:26', 0, NULL, NULL, 0),
 (116, 450, NULL, 30, 'RCP-202602-3022', 'Book', 'Text Book N2-G2', 4200.00, 0.00, 'Cash', '2026-02-23', '0927748', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2026-02-23 03:25:30', '2026-02-23 03:25:30', 0, NULL, NULL, 0),
-(117, 71, 52, 30, 'RCP-202602-2639', 'Tuition Full Payment', 'Tuition Package - Nursery 1, Nursery 2, Kinder', 16500.00, 500.00, 'Cash', '2026-02-23', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-23 04:06:51', '2026-02-23 11:06:51', 0, NULL, NULL, 0),
+(117, 71, 52, 30, 'RCP-202602-2639', 'Tuition Full Payment', 'Tuition Package - Nursery 1, Nursery 2, Kinder', 16500.00, 500.00, 'Check', '2026-02-23', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-23 04:06:51', '2026-02-23 11:06:51', 0, NULL, NULL, 0),
 (118, 431, 36, 26, 'RCP-202602-5141', 'Tuition Installment', 'Installment #1 - 2025-2026 - 1st Quarter', 1650.00, 82.50, 'Cash', '2026-02-23', '', NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-23 04:12:08', '2026-02-23 04:12:08', 0, NULL, NULL, 0),
 (119, 453, 53, 30, 'RCP-202602-525412', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 1700.00, 0.00, 'Cash', '2026-02-24', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:13:44', '2026-02-24 11:08:54', 0, NULL, NULL, 0),
 (120, 454, 54, 30, 'RCP-202602-033032', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4250.00, 0.00, 'Cash', '2026-02-24', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-02-24 10:45:44', '2026-02-24 11:08:48', 0, NULL, NULL, 0),
@@ -2150,7 +2296,7 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (131, 110, 35, 30, 'RCP-202603-680585', 'Miscellaneous', 'test', 100.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 13:05:25', '2026-03-05 16:27:42', 0, NULL, NULL, 0),
 (132, 110, 35, 30, 'RCP-202603-968052', 'Book', 'Text Book G3', 5100.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 16:13:50', '2026-03-05 16:27:37', 0, NULL, NULL, 0),
 (133, 110, 35, 30, 'RCP-202603-237760', 'Service Fee', 'School Shuttle', 1500.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 16:30:15', '2026-03-05 16:30:25', 0, NULL, NULL, 0),
-(134, 299, 62, 30, 'RCP-202603-923392', 'Tuition Full Payment', '2026-2027 Tuition Fee (Full Payment)', 17000.00, 500.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, 'Applied Full Payment Discount', NULL, NULL, NULL, '2026-03-05 17:31:29', '2026-03-05 17:31:29', 0, NULL, NULL, 0),
+(134, 299, 62, 30, 'RCP-202603-923392', 'Tuition Full Payment', '2026-2027 Tuition Fee (Full Payment)', 17000.00, 500.00, 'Check', '2026-03-05', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, 'Applied Full Payment Discount', NULL, NULL, NULL, '2026-03-05 17:31:29', '2026-03-05 17:31:29', 0, NULL, NULL, 0),
 (135, 340, 64, 30, 'RCP-202603-551057', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4275.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-05 20:21:50', '2026-03-05 20:21:50', 0, NULL, NULL, 0),
 (136, 343, 63, 30, 'RCP-202603-953389', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 4275.00, 0.00, 'Cash', '2026-03-05', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-05 20:28:02', '2026-03-07 19:55:38', 0, NULL, NULL, 0),
 (137, 343, 63, 30, 'RCP-202603-0248', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 5000.00, 0.00, 'Cash', '2026-03-07', '', NULL, 253, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-07 11:11:45', '2026-03-07 11:11:45', 0, NULL, NULL, 0),
@@ -2158,7 +2304,11 @@ INSERT INTO `payments` (`id`, `student_id`, `enrollment_id`, `academic_period_id
 (139, 443, NULL, 30, 'RCP-202603-419953', 'Uniform', 'Uniform order (3 items)', 2250.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order (3 items)', NULL, NULL, NULL, '2026-03-07 17:45:13', '2026-03-07 17:45:13', 0, NULL, NULL, 0),
 (142, 458, 66, 30, 'RCP-202603-101202', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 5000.00, 0.00, 'Cash', '2026-03-07', NULL, NULL, 283, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-07 20:07:52', '2026-03-07 20:07:52', 0, NULL, NULL, 0),
 (143, 110, 35, 30, 'RCP-202603-2933', 'Tuition Installment', 'Installment #1 - 2026-2027 - 1st Quarter', 5000.00, 0.00, 'Cash', '2026-03-08', '', NULL, 287, NULL, 'Approved', 0, NULL, NULL, '', 3, NULL, NULL, '2026-03-08 15:03:40', '2026-03-08 15:03:40', 0, NULL, NULL, 0),
-(144, 432, 33, 30, 'RCP-202603-053662', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 5000.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, 299, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-08 15:52:42', '2026-03-08 15:52:42', 0, NULL, NULL, 0);
+(144, 432, 33, 30, 'RCP-202603-053662', 'Tuition Installment', 'Installment #1 - SY 2026-2027', 5000.00, 0.00, 'Cash', '2026-03-08', NULL, NULL, 299, NULL, 'Pending', 0, NULL, NULL, '', NULL, NULL, NULL, '2026-03-08 15:52:42', '2026-03-08 15:52:42', 0, NULL, NULL, 0),
+(145, 82, NULL, 30, 'RCP-202603-4468', 'Service Fee', 'School Shuttle - March 2026', 1500.00, 0.00, 'Cash', '2026-05-01', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2026-03-11 21:43:20', '2026-03-11 21:43:20', 0, 3, 2026, 1),
+(146, 110, NULL, 30, 'RCP-202603-3062', 'Service Fee', 'School Shuttle - March 2026', 1500.00, 0.00, 'Cash', '2026-04-02', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, 3, NULL, NULL, '2025-12-31 21:43:22', '2025-12-31 21:43:22', 0, 3, 2026, 1),
+(147, 450, NULL, 30, 'RCP-202603-1087', 'Book', 'Text Book N2-G2', 4200.00, 0.00, 'Cash', '2026-01-09', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-09 21:47:05', '2026-03-09 21:47:05', 0, NULL, NULL, 0),
+(148, 91, NULL, 30, 'RCP-202603-385578', 'Uniform', 'Uniform order (3 items)', 3000.00, 0.00, 'Cash', '2026-03-10', NULL, NULL, NULL, NULL, 'Approved', 0, NULL, NULL, 'Uniform order (3 items)', NULL, NULL, NULL, '2026-03-10 13:22:53', '2026-03-10 13:22:53', 0, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -2174,7 +2324,7 @@ CREATE TABLE `payment_installment_penalties` (
   `original_amount` decimal(10,2) NOT NULL COMMENT 'Original installment amount',
   `days_overdue` int NOT NULL COMMENT 'Number of days overdue when penalty was calculated',
   `explanation_id` int DEFAULT NULL COMMENT 'References late_payment_explanations.id if student submitted explanation',
-  `applied_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `applied_at` timestamp NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2203,8 +2353,8 @@ CREATE TABLE `payment_plans` (
   `template_id` int UNSIGNED DEFAULT NULL COMMENT 'References payment_schedule_templates',
   `status` enum('Active','Completed','Overdue','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Active',
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Special arrangements, payment terms, etc.',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Annual tuition payment plans per student per school year';
 
 --
@@ -2238,7 +2388,7 @@ CREATE TABLE `payment_proof_sessions` (
   `file_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Server-relative path to uploaded screenshot',
   `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ocr_reference` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Reference number extracted by OCR on client side',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` timestamp NOT NULL,
   `expires_at` datetime NOT NULL COMMENT 'Set to created_at + 30 minutes on insert',
   `uploaded_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2320,8 +2470,8 @@ CREATE TABLE `payment_schedule_templates` (
   `is_default` tinyint(1) DEFAULT '0' COMMENT 'Deprecated - use status instead',
   `is_active` tinyint(1) DEFAULT '1' COMMENT 'Deprecated - use status instead',
   `status` enum('active','inactive') COLLATE utf8mb4_unicode_ci DEFAULT 'active',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2348,7 +2498,7 @@ CREATE TABLE `penalty_waiver_requests` (
   `reason` text COLLATE utf8mb4_unicode_ci,
   `status` enum('Pending','Approved','Rejected') COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
   `admin_response` text COLLATE utf8mb4_unicode_ci,
-  `requested_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `requested_at` datetime DEFAULT NULL,
   `reviewed_at` datetime DEFAULT NULL,
   `reviewed_by` int UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2368,8 +2518,8 @@ CREATE TABLE `quiz_sessions` (
   `question_order` text COLLATE utf8mb4_unicode_ci,
   `matching_order` text COLLATE utf8mb4_unicode_ci,
   `submitted_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2393,13 +2543,13 @@ CREATE TABLE `rfid_scans` (
   `student_id` int UNSIGNED DEFAULT NULL,
   `student_number` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `rfid_code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `scan_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `scan_time` datetime NOT NULL,
   `scan_type` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'success',
   `is_late` tinyint(1) NOT NULL DEFAULT '0',
   `image_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `notes` text COLLATE utf8mb4_unicode_ci,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2427,7 +2577,7 @@ CREATE TABLE `rfid_sessions` (
   `actual_end` datetime DEFAULT NULL,
   `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'scheduled',
   `created_by` int DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime NOT NULL,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2455,8 +2605,8 @@ CREATE TABLE `school_fees` (
   `due_date` date DEFAULT NULL COMMENT 'When this fee should be paid (optional)',
   `is_active` tinyint(1) DEFAULT '1' COMMENT 'Set to 0 to archive old fees',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   `is_recurring` tinyint(1) DEFAULT '0' COMMENT '1 if fee can be paid monthly (like Service Fee)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Fee catalog: defines all possible fees per academic period and grade level';
 
@@ -2500,8 +2650,8 @@ CREATE TABLE `sections` (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `status` enum('active','inactive') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2509,15 +2659,15 @@ CREATE TABLE `sections` (
 --
 
 INSERT INTO `sections` (`id`, `name`, `description`, `status`, `created_at`, `updated_at`) VALUES
-(7, 'Makabansa', 'Section for Nursery 1 students of Maranatha Christian Academy', 'active', '2026-01-17 09:22:38', '2026-01-17 17:32:46'),
-(8, 'Matatag', 'Section for Nursery 2 students of Maranatha Christian Academy', 'active', '2026-01-17 09:22:48', '2026-01-17 09:22:48'),
-(9, 'Little Smarties', 'Section for Kinder students of Maranatha Christian Academy', 'active', '2026-01-17 09:34:13', '2026-02-22 02:13:25'),
-(10, 'Matthew', 'Section for Grade 1 students of Maranatha Christian Academy', 'active', '2026-01-17 10:27:28', '2026-02-22 02:13:37'),
-(11, 'Mark', 'Section for Grade 2 students of Maranatha Christian Academy', 'active', '2026-01-17 10:27:37', '2026-02-22 02:13:46'),
-(12, 'Luke', 'Section for Grade 3 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:00', '2026-02-22 02:13:56'),
-(13, 'John', 'Section for Grade 4 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:08', '2026-02-22 02:14:11'),
-(14, 'Daniel', 'Section for Grade 5 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:18', '2026-02-22 02:14:20'),
-(15, 'Isaiah', 'Section for Grade 6 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:26', '2026-02-22 02:14:31');
+(7, 'Little Explorers', 'Section for Nursery 1 students of Maranatha Christian Academy', 'active', '2026-01-17 09:22:38', '2026-03-10 21:35:05'),
+(8, 'Little Builders', 'Section for Nursery 2 students of Maranatha Christian Academy', 'active', '2026-01-17 09:22:48', '2026-03-10 21:35:37'),
+(9, 'Little Dreamers', 'Section for Kinder students of Maranatha Christian Academy', 'active', '2026-01-17 09:34:13', '2026-03-10 21:35:54'),
+(10, 'Patience', 'Section for Grade 1 students of Maranatha Christian Academy', 'active', '2026-01-17 10:27:28', '2026-03-10 21:36:04'),
+(11, 'Kindness', 'Section for Grade 2 students of Maranatha Christian Academy', 'active', '2026-01-17 10:27:37', '2026-03-10 21:37:00'),
+(12, 'Honesty', 'Section for Grade 3 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:00', '2026-03-10 21:36:50'),
+(13, 'Hope', 'Section for Grade 4 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:08', '2026-03-10 21:36:39'),
+(14, 'Diligent', 'Section for Grade 5 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:18', '2026-03-10 21:36:29'),
+(15, 'Humility', 'Section for Grade 6 students of Maranatha Christian Academy', 'active', '2026-01-17 10:28:26', '2026-03-10 21:36:19');
 
 -- --------------------------------------------------------
 
@@ -2533,9 +2683,11 @@ CREATE TABLE `students` (
   `gender` enum('Male','Female') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `year_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `section_id` int UNSIGNED DEFAULT NULL,
-  `status` enum('active','inactive','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `status` enum('active','inactive','pending','graduated','transferred','dropout') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `graduated_at` datetime DEFAULT NULL,
+  `graduation_batch` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   `enrollment_date` date DEFAULT NULL,
   `enrollment_id` int UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2544,758 +2696,193 @@ CREATE TABLE `students` (
 -- Dumping data for table `students`
 --
 
-INSERT INTO `students` (`id`, `user_id`, `student_id`, `rfid_card`, `gender`, `year_level`, `section_id`, `status`, `created_at`, `updated_at`, `enrollment_date`, `enrollment_id`) VALUES
-(29, 46, 'MCAF2025-0001', NULL, 'Female', NULL, NULL, 'active', '2025-11-10 01:47:05', '2026-02-22 05:56:53', NULL, NULL),
-(30, 47, 'MCAF2025-0002', NULL, 'Male', 'Grade 4', 13, 'active', '2025-11-10 01:47:14', '2026-02-22 05:57:09', NULL, NULL),
-(31, 48, 'MCAF2025-0003', NULL, 'Male', 'Nursery 1', 7, 'active', '2025-11-10 01:47:22', '2026-02-22 05:57:17', NULL, NULL),
-(32, 49, 'MCAF2025-0004', NULL, 'Male', 'Grade 3', 12, 'active', '2025-11-10 01:47:32', '2026-02-22 05:57:27', NULL, NULL),
-(33, 50, 'MCAF2025-0005', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 01:47:40', '2026-02-06 06:25:56', NULL, NULL),
-(34, 51, 'MCAF2025-0006', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 02:21:56', '2026-02-06 06:25:56', NULL, NULL),
-(36, 53, 'MCAF2025-0007', NULL, NULL, NULL, NULL, 'active', '2025-11-10 02:46:50', '2026-02-06 06:25:56', NULL, NULL),
-(37, 54, 'MCAF2025-0008', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:04:08', '2026-02-06 06:25:56', NULL, NULL),
-(38, 55, 'MCAF2025-0009', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:04:08', '2026-02-06 06:25:56', NULL, NULL),
-(39, 56, 'MCAF2025-0010', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:04:08', '2026-02-06 06:25:56', NULL, NULL),
-(40, 57, 'MCAF2025-0011', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:04:08', '2026-02-06 06:25:56', NULL, NULL),
-(41, 58, 'MCAF2025-0012', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:04:08', '2026-02-06 06:25:56', NULL, NULL),
-(42, 59, 'MCAF2025-0013', NULL, NULL, '', NULL, 'active', '2025-11-10 12:04:08', '2026-02-21 23:11:23', NULL, NULL),
-(43, 60, 'MCAF2025-0014', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(44, 61, 'MCAF2025-0015', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:15:39', '2026-02-21 23:11:21', NULL, NULL),
-(45, 62, 'MCAF2025-0016', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(46, 63, 'MCAF2025-0017', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(47, 64, 'MCAF2025-0018', NULL, NULL, '', NULL, 'active', '2025-11-10 12:15:39', '2026-02-21 23:26:21', NULL, NULL),
-(48, 65, 'MCAF2025-0019', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(49, 66, 'MCAF2025-0020', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(50, 67, 'MCAF2025-0021', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(51, 68, 'MCAF2025-0022', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(52, 69, 'MCAF2025-0023', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(53, 70, 'MCAF2025-0024', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
-(54, 71, 'MCAF2025-0025', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(55, 72, 'MCAF2025-0026', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(56, 73, 'MCAF2025-0027', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(57, 74, 'MCAF2025-0028', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(58, 75, 'MCAF2025-0029', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(59, 76, 'MCAF2025-0030', NULL, NULL, '', NULL, 'active', '2025-11-10 12:15:40', '2026-02-21 23:25:52', NULL, NULL),
-(60, 77, 'MCAF2025-0031', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(61, 78, 'MCAF2025-0032', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(62, 79, 'MCAF2025-0033', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(63, 80, 'MCAF2025-0034', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(64, 81, 'MCAF2025-0035', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(65, 82, 'MCAF2025-0036', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(66, 83, 'MCAF2025-0037', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(67, 84, 'MCAF2025-0038', NULL, NULL, '', NULL, 'active', '2025-11-10 12:15:40', '2026-02-21 23:25:47', NULL, NULL),
-(68, 85, 'MCAF2025-0039', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
-(69, 86, 'MCAF2025-0040', NULL, NULL, '', NULL, 'active', '2025-11-10 12:15:41', '2026-02-21 23:11:18', NULL, NULL),
-(70, 87, 'MCAF2025-0041', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(71, 88, 'MCAF2025-0042', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(72, 89, 'MCAF2025-0043', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(73, 90, 'MCAF2025-0044', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(74, 91, 'MCAF2025-0045', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(75, 92, 'MCAF2025-0046', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(76, 93, 'MCAF2025-0047', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(77, 94, 'MCAF2025-0048', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(78, 95, 'MCAF2025-0049', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(79, 96, 'MCAF2025-0050', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(80, 97, 'MCAF2025-0051', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(81, 98, 'MCAF2025-0052', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(82, 99, 'MCAF2025-0053', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
-(83, 100, 'MCAF2025-0054', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(84, 101, 'MCAF2025-0055', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(85, 102, 'MCAF2025-0056', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(86, 103, 'MCAF2025-0057', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:15:42', '2026-02-21 23:11:16', NULL, NULL),
-(87, 104, 'MCAF2025-0058', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(88, 105, 'MCAF2025-0059', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(89, 106, 'MCAF2025-0060', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(90, 107, 'MCAF2025-0061', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(91, 108, 'MCAF2025-0062', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
-(92, 109, 'MCAF2025-0063', NULL, NULL, 'Nursery 2', 7, 'active', '2025-11-10 12:15:42', '2026-02-09 05:11:19', '2026-02-09', NULL),
-(93, 110, 'MCAF2025-0064', NULL, NULL, 'Grade 3', 10, 'active', '2025-11-10 12:30:35', '2026-02-21 23:26:11', '2026-02-21', 35),
-(94, 111, 'MCAF2025-0065', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:35', '2026-02-06 06:25:56', NULL, NULL),
-(95, 112, 'MCAF2025-0066', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:35', '2026-02-06 06:25:56', NULL, NULL),
-(96, 113, 'MCAF2025-0067', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:35', '2026-02-06 06:25:56', NULL, NULL),
-(97, 114, 'MCAF2025-0068', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:35', '2026-02-06 06:25:56', NULL, NULL),
-(98, 115, 'MCAF2025-0069', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:35', '2026-02-06 06:25:56', NULL, NULL),
-(99, 116, 'MCAF2025-0070', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(100, 117, 'MCAF2025-0071', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(101, 118, 'MCAF2025-0072', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(102, 119, 'MCAF2025-0073', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(103, 120, 'MCAF2025-0074', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(104, 121, 'MCAF2025-0075', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(105, 122, 'MCAF2025-0076', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(106, 123, 'MCAF2025-0077', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(107, 124, 'MCAF2025-0078', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(108, 125, 'MCAF2025-0079', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(109, 126, 'MCAF2025-0080', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(110, 127, 'MCAF2025-0081', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(111, 128, 'MCAF2025-0082', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
-(112, 129, 'MCAF2025-0083', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(113, 130, 'MCAF2025-0084', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(114, 131, 'MCAF2025-0085', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(115, 132, 'MCAF2025-0086', NULL, NULL, '', NULL, 'active', '2025-11-10 12:30:37', '2026-02-21 23:25:39', NULL, NULL),
-(116, 133, 'MCAF2025-0087', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(117, 134, 'MCAF2025-0088', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(118, 135, 'MCAF2025-0089', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(119, 136, 'MCAF2025-0090', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(120, 137, 'MCAF2025-0091', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(121, 138, 'MCAF2025-0092', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(122, 139, 'MCAF2025-0093', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(123, 140, 'MCAF2025-0094', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(124, 141, 'MCAF2025-0095', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(125, 142, 'MCAF2025-0096', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
-(126, 143, 'MCAF2025-0097', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(127, 144, 'MCAF2025-0098', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(128, 145, 'MCAF2025-0099', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(129, 146, 'MCAF2025-0100', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(130, 147, 'MCAF2025-0101', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(131, 148, 'MCAF2025-0102', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(132, 149, 'MCAF2025-0103', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(133, 150, 'MCAF2025-0104', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:38', '2026-02-21 23:26:14', NULL, NULL),
-(134, 151, 'MCAF2025-0105', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(135, 152, 'MCAF2025-0106', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(136, 153, 'MCAF2025-0107', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(137, 154, 'MCAF2025-0108', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(138, 155, 'MCAF2025-0109', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(139, 156, 'MCAF2025-0110', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(140, 157, 'MCAF2025-0111', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
-(141, 158, 'MCAF2025-0112', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(142, 159, 'MCAF2025-0113', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:39', '2026-02-21 23:26:16', NULL, NULL),
-(143, 160, 'MCAF2025-0114', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(144, 161, 'MCAF2025-0115', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(145, 162, 'MCAF2025-0116', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(146, 163, 'MCAF2025-0117', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(147, 164, 'MCAF2025-0118', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(148, 165, 'MCAF2025-0119', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(149, 166, 'MCAF2025-0120', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(150, 167, 'MCAF2025-0121', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(151, 168, 'MCAF2025-0122', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(152, 169, 'MCAF2025-0123', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(153, 170, 'MCAF2025-0124', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(154, 171, 'MCAF2025-0125', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
-(155, 172, 'MCAF2025-0126', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(156, 173, 'MCAF2025-0127', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(157, 174, 'MCAF2025-0128', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(158, 175, 'MCAF2025-0129', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(159, 176, 'MCAF2025-0130', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(160, 177, 'MCAF2025-0131', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(161, 178, 'MCAF2025-0132', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(162, 179, 'MCAF2025-0133', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(163, 180, 'MCAF2025-0134', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(164, 181, 'MCAF2025-0135', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(165, 182, 'MCAF2025-0136', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(166, 183, 'MCAF2025-0137', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(167, 184, 'MCAF2025-0138', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(168, 185, 'MCAF2025-0139', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(169, 186, 'MCAF2025-0140', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
-(170, 187, 'MCAF2025-0141', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(171, 188, 'MCAF2025-0142', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(172, 189, 'MCAF2025-0143', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:41', '2026-02-21 23:25:26', NULL, NULL),
-(173, 190, 'MCAF2025-0144', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(174, 191, 'MCAF2025-0145', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(175, 192, 'MCAF2025-0146', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(176, 193, 'MCAF2025-0147', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(177, 194, 'MCAF2025-0148', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(178, 195, 'MCAF2025-0149', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(179, 196, 'MCAF2025-0150', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(180, 197, 'MCAF2025-0151', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(181, 198, 'MCAF2025-0152', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(182, 199, 'MCAF2025-0153', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(183, 200, 'MCAF2025-0154', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
-(184, 201, 'MCAF2025-0155', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(185, 202, 'MCAF2025-0156', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(186, 203, 'MCAF2025-0157', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(187, 204, 'MCAF2025-0158', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(188, 205, 'MCAF2025-0159', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(189, 206, 'MCAF2025-0160', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(190, 207, 'MCAF2025-0161', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(191, 208, 'MCAF2025-0162', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(192, 209, 'MCAF2025-0163', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(193, 210, 'MCAF2025-0164', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(194, 211, 'MCAF2025-0165', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(195, 212, 'MCAF2025-0166', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(196, 213, 'MCAF2025-0167', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(197, 214, 'MCAF2025-0168', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(198, 215, 'MCAF2025-0169', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
-(199, 216, 'MCAF2025-0170', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(200, 217, 'MCAF2025-0171', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(201, 218, 'MCAF2025-0172', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(202, 219, 'MCAF2025-0173', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(203, 220, 'MCAF2025-0174', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(204, 221, 'MCAF2025-0175', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(205, 222, 'MCAF2025-0176', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(206, 223, 'MCAF2025-0177', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(207, 224, 'MCAF2025-0178', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(208, 225, 'MCAF2025-0179', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(209, 226, 'MCAF2025-0180', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(210, 227, 'MCAF2025-0181', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(211, 228, 'MCAF2025-0182', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(212, 229, 'MCAF2025-0183', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
-(213, 230, 'MCAF2025-0184', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(214, 231, 'MCAF2025-0185', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(215, 232, 'MCAF2025-0186', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(216, 233, 'MCAF2025-0187', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(217, 234, 'MCAF2025-0188', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(218, 235, 'MCAF2025-0189', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(219, 236, 'MCAF2025-0190', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(220, 237, 'MCAF2025-0191', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(221, 238, 'MCAF2025-0192', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(222, 239, 'MCAF2025-0193', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(223, 240, 'MCAF2025-0194', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(224, 241, 'MCAF2025-0195', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(225, 242, 'MCAF2025-0196', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(226, 243, 'MCAF2025-0197', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(227, 244, 'MCAF2025-0198', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
-(228, 245, 'MCAF2025-0199', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(229, 246, 'MCAF2025-0200', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(230, 247, 'MCAF2025-0201', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(231, 248, 'MCAF2025-0202', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(232, 249, 'MCAF2025-0203', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(233, 250, 'MCAF2025-0204', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(234, 251, 'MCAF2025-0205', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(235, 252, 'MCAF2025-0206', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(236, 253, 'MCAF2025-0207', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(237, 254, 'MCAF2025-0208', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(238, 255, 'MCAF2025-0209', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(239, 256, 'MCAF2025-0210', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(240, 257, 'MCAF2025-0211', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(241, 258, 'MCAF2025-0212', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
-(242, 259, 'MCAF2025-0213', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(243, 260, 'MCAF2025-0214', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(244, 261, 'MCAF2025-0215', NULL, NULL, '', NULL, 'active', '2025-11-10 12:30:46', '2026-02-21 23:25:23', NULL, NULL),
-(245, 262, 'MCAF2025-0216', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(246, 263, 'MCAF2025-0217', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(247, 264, 'MCAF2025-0218', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(248, 265, 'MCAF2025-0219', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(249, 266, 'MCAF2025-0220', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(250, 267, 'MCAF2025-0221', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(251, 268, 'MCAF2025-0222', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(252, 269, 'MCAF2025-0223', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(253, 270, 'MCAF2025-0224', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(254, 271, 'MCAF2025-0225', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(255, 272, 'MCAF2025-0226', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(256, 273, 'MCAF2025-0227', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
-(257, 274, 'MCAF2025-0228', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(258, 275, 'MCAF2025-0229', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(259, 276, 'MCAF2025-0230', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(260, 277, 'MCAF2025-0231', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(261, 278, 'MCAF2025-0232', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(262, 279, 'MCAF2025-0233', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(263, 280, 'MCAF2025-0234', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(264, 281, 'MCAF2025-0235', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(265, 282, 'MCAF2025-0236', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(266, 283, 'MCAF2025-0237', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(267, 284, 'MCAF2025-0238', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(268, 285, 'MCAF2025-0239', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(269, 286, 'MCAF2025-0240', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(270, 287, 'MCAF2025-0241', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
-(271, 288, 'MCAF2025-0242', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(272, 289, 'MCAF2025-0243', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(273, 290, 'MCAF2025-0244', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(274, 291, 'MCAF2025-0245', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(275, 292, 'MCAF2025-0246', NULL, NULL, '', NULL, 'active', '2025-11-10 12:30:48', '2026-02-21 23:25:20', NULL, NULL),
-(276, 293, 'MCAF2025-0247', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(277, 294, 'MCAF2025-0248', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(278, 295, 'MCAF2025-0249', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(279, 296, 'MCAF2025-0250', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(280, 297, 'MCAF2025-0251', NULL, NULL, '', NULL, 'active', '2025-11-10 12:30:48', '2026-02-21 23:25:15', NULL, NULL),
-(281, 298, 'MCAF2025-0252', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(282, 299, 'MCAF2025-0253', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:48', '2026-03-05 17:25:48', NULL, 62),
-(283, 300, 'MCAF2025-0254', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(284, 301, 'MCAF2025-0255', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(285, 302, 'MCAF2025-0256', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
-(286, 303, 'MCAF2025-0257', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(287, 304, 'MCAF2025-0258', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(288, 305, 'MCAF2025-0259', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(289, 306, 'MCAF2025-0260', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(290, 307, 'MCAF2025-0261', NULL, NULL, '', NULL, 'active', '2025-11-10 12:30:49', '2026-02-21 23:26:06', NULL, NULL),
-(291, 308, 'MCAF2025-0262', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(292, 309, 'MCAF2025-0263', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(293, 310, 'MCAF2025-0264', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(294, 311, 'MCAF2025-0265', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(295, 312, 'MCAF2025-0266', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(296, 313, 'MCAF2025-0267', NULL, NULL, 'Grade 2', 11, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(297, 314, 'MCAF2025-0268', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(298, 315, 'MCAF2025-0269', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(299, 316, 'MCAF2025-0270', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(300, 317, 'MCAF2025-0271', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
-(301, 318, 'MCAF2025-0272', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(302, 319, 'MCAF2025-0273', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(303, 320, 'MCAF2025-0274', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(304, 321, 'MCAF2025-0275', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(305, 322, 'MCAF2025-0276', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(306, 323, 'MCAF2025-0277', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(307, 324, 'MCAF2025-0278', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(308, 325, 'MCAF2025-0279', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(309, 326, 'MCAF2025-0280', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(310, 327, 'MCAF2025-0281', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(311, 328, 'MCAF2025-0282', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:50', '2026-02-21 23:26:03', NULL, NULL),
-(312, 329, 'MCAF2025-0283', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(313, 330, 'MCAF2025-0284', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(314, 331, 'MCAF2025-0285', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
-(315, 332, 'MCAF2025-0286', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(316, 333, 'MCAF2025-0287', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(317, 334, 'MCAF2025-0288', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(318, 335, 'MCAF2025-0289', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(319, 336, 'MCAF2025-0290', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(320, 337, 'MCAF2025-0291', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(321, 338, 'MCAF2025-0292', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(322, 339, 'MCAF2025-0293', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(323, 340, 'MCAF2025-0294', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:51', '2026-03-05 20:20:21', NULL, 64),
-(324, 341, 'MCAF2025-0295', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(325, 342, 'MCAF2025-0296', '0015560838', NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:51', '2026-02-23 17:59:39', NULL, NULL),
-(326, 343, 'MCAF2025-0297', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:51', '2026-03-05 20:19:23', NULL, 63),
-(327, 344, 'MCAF2025-0298', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(328, 345, 'MCAF2025-0299', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(329, 346, 'MCAF2025-0300', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
-(330, 347, 'MCAF2025-0301', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(331, 348, 'MCAF2025-0302', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(332, 349, 'MCAF2025-0303', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(333, 350, 'MCAF2025-0304', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(334, 351, 'MCAF2025-0305', NULL, NULL, '', NULL, 'active', '2025-11-10 12:30:52', '2026-02-21 23:25:11', NULL, NULL),
-(335, 352, 'MCAF2025-0306', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(336, 353, 'MCAF2025-0307', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(337, 354, 'MCAF2025-0308', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(338, 355, 'MCAF2025-0309', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(339, 356, 'MCAF2025-0310', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(340, 357, 'MCAF2025-0311', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(341, 358, 'MCAF2025-0312', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(342, 359, 'MCAF2025-0313', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(343, 360, 'MCAF2025-0314', NULL, NULL, 'Nursery 1', 7, 'active', '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
-(344, 361, 'MCAF2025-0315', NULL, NULL, 'Grade 4', 13, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(345, 362, 'MCAF2025-0316', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(346, 363, 'MCAF2025-0317', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(347, 364, 'MCAF2025-0318', NULL, NULL, 'Grade 5', 14, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(348, 365, 'MCAF2025-0319', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(349, 366, 'MCAF2025-0320', NULL, NULL, 'Grade 6', 15, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(350, 367, 'MCAF2025-0321', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(351, 368, 'MCAF2025-0322', NULL, NULL, 'Nursery 2', 8, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(352, 369, 'MCAF2025-0323', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(353, 370, 'MCAF2025-0324', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(354, 371, 'MCAF2025-0325', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(355, 372, 'MCAF2025-0326', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(356, 373, 'MCAF2025-0327', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(357, 374, 'MCAF2025-0328', NULL, NULL, 'Grade 1', 10, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(358, 375, 'MCAF2025-0329', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
-(359, 376, 'MCAF2025-0330', '0015603698', NULL, 'Kinder', 8, 'active', '2025-11-10 12:30:54', '2026-02-23 17:59:08', '2026-02-23', 51),
-(360, 377, 'MCAF2026-0003', NULL, NULL, 'Nursery 2', 7, 'active', '2026-02-09 04:52:52', '2026-02-09 04:52:52', '2026-02-09', NULL),
-(361, 378, 'MCAF2025-0332', NULL, NULL, NULL, NULL, 'active', '2025-11-10 12:30:54', '2026-02-06 06:25:56', NULL, NULL),
-(362, 379, 'MCAF2025-0333', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-10 12:30:54', '2026-02-06 06:25:56', NULL, NULL),
-(363, 380, 'MCAF2025-0334', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:54', '2026-02-06 06:25:56', NULL, NULL),
-(364, 381, 'MCAF2025-0335', NULL, NULL, 'Kinder', 9, 'active', '2025-11-10 12:30:54', '2026-02-06 06:25:56', NULL, NULL),
-(379, 398, 'MCAF2025-0336', NULL, NULL, 'Grade 3', 12, 'active', '2025-11-13 10:28:17', '2026-02-06 06:25:56', NULL, NULL),
-(386, 405, 'MCAF2025-0337', NULL, NULL, NULL, NULL, 'active', '2025-11-13 12:16:01', '2026-02-06 06:25:56', NULL, NULL),
-(389, 429, 'MCAF2026-0001', NULL, NULL, 'Grade 1', NULL, 'active', '2026-02-07 10:28:25', '2026-02-07 10:28:25', '2026-02-07', 19),
-(390, 430, 'MCAF2026-0002', NULL, NULL, 'Grade 1', NULL, 'active', '2026-02-07 14:31:49', '2026-02-07 14:31:49', '2026-02-07', 20),
-(414, 441, 'MCAF2026-0004', NULL, NULL, 'Grade 1', NULL, 'active', '2026-02-15 02:04:06', '2026-02-21 23:09:47', NULL, NULL),
-(415, 432, 'MCAF2026-0005', NULL, NULL, 'Nursery 1', NULL, 'active', '2026-02-15 02:12:47', '2026-02-21 23:09:40', '2026-02-15', 33),
-(416, 431, 'MCAF2025-0338', NULL, NULL, 'Nursery 1', NULL, 'active', '2026-02-15 02:16:40', '2026-02-15 02:16:40', '2026-02-15', 36),
-(417, 443, 'MCAF2026-0006', NULL, NULL, 'Nursery 2', NULL, 'active', '2026-02-15 02:28:02', '2026-02-15 09:28:02', NULL, NULL),
-(418, 450, 'MCAF2026-0007', '0002334689', NULL, 'Grade 1', NULL, 'active', '2026-02-22 05:00:32', '2026-02-27 01:04:54', NULL, NULL),
-(419, 454, 'MCAF2026-0008', NULL, NULL, 'Grade 2', NULL, 'active', '2026-03-02 14:13:05', '2026-03-02 14:13:05', '2026-03-02', 54);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `students_backup`
---
-
-CREATE TABLE `students_backup` (
-  `id` int UNSIGNED NOT NULL DEFAULT '0',
-  `user_id` int UNSIGNED DEFAULT NULL,
-  `student_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `year_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `section_id` int UNSIGNED DEFAULT NULL,
-  `status` enum('active','inactive','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `enrollment_date` date DEFAULT NULL,
-  `enrollment_id` int UNSIGNED DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `students_backup`
---
-
-INSERT INTO `students_backup` (`id`, `user_id`, `student_id`, `year_level`, `section_id`, `status`, `created_at`, `updated_at`, `enrollment_date`, `enrollment_id`) VALUES
-(29, 46, 'MCC2025-00028', NULL, NULL, 'active', '2025-11-10 01:47:05', '2026-01-17 16:36:13', NULL, NULL),
-(30, 47, 'MCC2025-00029', 'Grade 4', 13, 'active', '2025-11-10 01:47:14', '2026-01-17 10:32:44', NULL, NULL),
-(31, 48, 'MCC2025-00030', 'Nursery 1', 7, 'active', '2025-11-10 01:47:22', '2026-01-17 10:20:12', NULL, NULL),
-(32, 49, 'MCC2025-00031', 'Grade 3', 12, 'active', '2025-11-10 01:47:32', '2026-01-17 10:30:26', NULL, NULL),
-(33, 50, 'MCC2025-00032', 'Grade 4', 13, 'active', '2025-11-10 01:47:40', '2026-01-17 10:32:44', NULL, NULL),
-(34, 51, 'MCC2025-00033', 'Grade 5', 14, 'active', '2025-11-10 02:21:56', '2026-01-17 10:30:52', NULL, NULL),
-(36, 53, 'MCC2025-00035', NULL, NULL, 'active', '2025-11-10 02:46:50', '2026-01-17 16:36:13', NULL, NULL),
-(37, 54, 'MCC2025-00036', NULL, NULL, 'active', '2025-11-10 12:04:08', '2026-01-17 16:36:13', NULL, NULL),
-(38, 55, 'MCC2025-00037', 'Grade 6', 15, 'active', '2025-11-10 12:04:08', '2026-01-17 10:31:03', NULL, NULL),
-(39, 56, 'MCC2025-00038', NULL, NULL, 'active', '2025-11-10 12:04:08', '2026-01-17 16:36:13', NULL, NULL),
-(40, 57, 'MCC2025-00039', 'Nursery 1', 7, 'active', '2025-11-10 12:04:08', '2026-01-17 10:20:11', NULL, NULL),
-(41, 58, 'MCC2025-00040', NULL, NULL, 'active', '2025-11-10 12:04:08', '2026-01-17 16:36:13', NULL, NULL),
-(42, 59, 'MCC2025-00041', NULL, NULL, 'active', '2025-11-10 12:04:08', '2026-01-17 16:36:13', NULL, NULL),
-(43, 60, 'MCC2025-00042', 'Nursery 1', 7, 'active', '2025-11-10 12:15:39', '2026-01-17 10:20:09', NULL, NULL),
-(44, 61, 'MCC2025-00043', 'Nursery 1', 7, 'active', '2025-11-10 12:15:39', '2026-01-17 10:20:11', NULL, NULL),
-(45, 62, 'MCC2025-00044', NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-01-17 16:36:13', NULL, NULL),
-(46, 63, 'MCC2025-00045', 'Grade 6', 15, 'active', '2025-11-10 12:15:39', '2026-01-17 10:31:03', NULL, NULL),
-(47, 64, 'MCC2025-00046', NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-01-17 16:36:13', NULL, NULL),
-(48, 65, 'MCC2025-00047', 'Nursery 2', 8, 'active', '2025-11-10 12:15:39', '2026-01-17 10:24:59', NULL, NULL),
-(49, 66, 'MCC2025-00048', 'Nursery 2', 8, 'active', '2025-11-10 12:15:39', '2026-01-17 10:24:59', NULL, NULL),
-(50, 67, 'MCC2025-00049', NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-01-17 16:36:13', NULL, NULL),
-(51, 68, 'MCC2025-00050', 'Grade 3', 12, 'active', '2025-11-10 12:15:39', '2026-01-17 10:30:26', NULL, NULL),
-(52, 69, 'MCC2025-00051', NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-01-17 16:36:13', NULL, NULL),
-(53, 70, 'MCC2025-00052', NULL, NULL, 'active', '2025-11-10 12:15:39', '2026-01-17 16:36:13', NULL, NULL),
-(54, 71, 'MCC2025-00053', 'Nursery 1', 7, 'active', '2025-11-10 12:15:40', '2026-01-17 10:20:09', NULL, NULL),
-(55, 72, 'MCC2025-00054', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(56, 73, 'MCC2025-00055', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(57, 74, 'MCC2025-00056', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(58, 75, 'MCC2025-00057', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(59, 76, 'MCC2025-00058', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(60, 77, 'MCC2025-00059', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(61, 78, 'MCC2025-00060', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(62, 79, 'MCC2025-00061', 'Grade 3', 12, 'active', '2025-11-10 12:15:40', '2026-01-17 10:30:26', NULL, NULL),
-(63, 80, 'MCC2025-00062', 'Grade 4', 13, 'active', '2025-11-10 12:15:40', '2026-01-17 10:32:44', NULL, NULL),
-(64, 81, 'MCC2025-00063', 'Grade 6', 15, 'active', '2025-11-10 12:15:40', '2026-01-17 10:31:03', NULL, NULL),
-(65, 82, 'MCC2025-00064', 'Grade 4', 13, 'active', '2025-11-10 12:15:40', '2026-01-17 10:32:44', NULL, NULL),
-(66, 83, 'MCC2025-00065', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(67, 84, 'MCC2025-00066', NULL, NULL, 'active', '2025-11-10 12:15:40', '2026-01-17 16:36:13', NULL, NULL),
-(68, 85, 'MCC2025-00067', 'Grade 6', 15, 'active', '2025-11-10 12:15:40', '2026-01-17 10:31:03', NULL, NULL),
-(69, 86, 'MCC2025-00068', NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-01-17 16:36:13', NULL, NULL),
-(70, 87, 'MCC2025-00069', NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-01-17 16:36:13', NULL, NULL),
-(71, 88, 'MCC2025-00070', 'Nursery 2', 8, 'active', '2025-11-10 12:15:41', '2026-01-17 10:24:59', NULL, NULL),
-(72, 89, 'MCC2025-00071', NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-01-17 16:36:13', NULL, NULL),
-(73, 90, 'MCC2025-00072', NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-01-17 16:36:13', NULL, NULL),
-(74, 91, 'MCC2025-00073', 'Nursery 1', 7, 'active', '2025-11-10 12:15:41', '2026-01-17 10:20:08', NULL, NULL),
-(75, 92, 'MCC2025-00074', NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-01-17 16:36:13', NULL, NULL),
-(76, 93, 'MCC2025-00075', NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-01-17 16:36:13', NULL, NULL),
-(77, 94, 'MCC2025-00076', NULL, NULL, 'active', '2025-11-10 12:15:41', '2026-01-17 16:36:13', NULL, NULL),
-(78, 95, 'MCC2025-00077', 'Grade 3', 12, 'active', '2025-11-10 12:15:41', '2026-01-17 10:30:25', NULL, NULL),
-(79, 96, 'MCC2025-00078', 'Grade 3', 12, 'active', '2025-11-10 12:15:41', '2026-01-17 10:30:25', NULL, NULL),
-(80, 97, 'MCC2025-00079', 'Grade 3', 12, 'active', '2025-11-10 12:15:41', '2026-01-17 10:29:10', NULL, NULL),
-(81, 98, 'MCC2025-00080', 'Grade 5', 14, 'active', '2025-11-10 12:15:41', '2026-01-17 10:32:53', NULL, NULL),
-(82, 99, 'MCC2025-00081', 'Grade 2', 11, 'active', '2025-11-10 12:15:41', '2026-01-17 10:28:58', NULL, NULL),
-(83, 100, 'MCC2025-00082', 'Grade 1', 10, 'active', '2025-11-10 12:15:42', '2026-01-17 10:28:47', NULL, NULL),
-(84, 101, 'MCC2025-00083', NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-01-17 16:36:13', NULL, NULL),
-(85, 102, 'MCC2025-00084', NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-01-17 16:36:13', NULL, NULL),
-(86, 103, 'MCC2025-00085', 'Grade 4', 13, 'active', '2025-11-10 12:15:42', '2026-01-17 10:32:43', NULL, NULL),
-(87, 104, 'MCC2025-00086', NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-01-17 16:36:13', NULL, NULL),
-(88, 105, 'MCC2025-00087', NULL, NULL, 'active', '2025-11-10 12:15:42', '2026-01-17 16:36:13', NULL, NULL),
-(89, 106, 'MCC2025-00088', 'Grade 3', 12, 'active', '2025-11-10 12:15:42', '2026-01-17 10:30:25', NULL, NULL),
-(90, 107, 'MCC2025-00089', 'Grade 3', 12, 'active', '2025-11-10 12:15:42', '2026-01-17 10:29:10', NULL, NULL),
-(91, 108, 'MCC2025-00090', 'Grade 5', 14, 'active', '2025-11-10 12:15:42', '2026-01-17 10:30:52', NULL, NULL),
-(92, 109, 'MCC2025-00091', 'Nursery 1', 7, 'active', '2025-11-10 12:15:42', '2026-01-17 10:20:08', NULL, NULL),
-(93, 110, 'MCC2025-00092', 'Grade 1', 10, 'active', '2025-11-10 12:30:35', '2026-02-01 00:09:48', NULL, NULL),
-(94, 111, 'MCC2025-00093', NULL, NULL, 'active', '2025-11-10 12:30:35', '2026-01-17 16:36:13', NULL, NULL),
-(95, 112, 'MCC2025-00094', 'Grade 2', 11, 'active', '2025-11-10 12:30:35', '2026-01-17 10:28:58', NULL, NULL),
-(96, 113, 'MCC2025-00095', NULL, NULL, 'active', '2025-11-10 12:30:35', '2026-01-17 16:36:13', NULL, NULL),
-(97, 114, 'MCC2025-00096', 'Grade 5', 14, 'active', '2025-11-10 12:30:35', '2026-01-17 10:30:52', NULL, NULL),
-(98, 115, 'MCC2025-00097', 'Grade 4', 13, 'active', '2025-11-10 12:30:35', '2026-01-17 10:32:43', NULL, NULL),
-(99, 116, 'MCC2025-00098', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(100, 117, 'MCC2025-00099', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(101, 118, 'MCC2025-00100', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(102, 119, 'MCC2025-00101', 'Grade 6', 15, 'active', '2025-11-10 12:30:36', '2026-01-17 10:31:03', NULL, NULL),
-(103, 120, 'MCC2025-00102', 'Nursery 1', 7, 'active', '2025-11-10 12:30:36', '2026-01-17 10:20:08', NULL, NULL),
-(104, 121, 'MCC2025-00103', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(105, 122, 'MCC2025-00104', 'Grade 2', 11, 'active', '2025-11-10 12:30:36', '2026-01-17 10:28:58', NULL, NULL),
-(106, 123, 'MCC2025-00105', 'Grade 4', 13, 'active', '2025-11-10 12:30:36', '2026-01-17 10:32:43', NULL, NULL),
-(107, 124, 'MCC2025-00106', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(108, 125, 'MCC2025-00107', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(109, 126, 'MCC2025-00108', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(110, 127, 'MCC2025-00109', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(111, 128, 'MCC2025-00110', NULL, NULL, 'active', '2025-11-10 12:30:36', '2026-01-17 16:36:13', NULL, NULL),
-(112, 129, 'MCC2025-00111', NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-01-17 16:36:13', NULL, NULL),
-(113, 130, 'MCC2025-00112', 'Grade 3', 12, 'active', '2025-11-10 12:30:37', '2026-01-17 10:30:25', NULL, NULL),
-(114, 131, 'MCC2025-00113', 'Grade 4', 13, 'active', '2025-11-10 12:30:37', '2026-01-17 10:32:43', NULL, NULL),
-(115, 132, 'MCC2025-00114', NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-01-17 16:36:13', NULL, NULL),
-(116, 133, 'MCC2025-00115', NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-01-17 16:36:13', NULL, NULL),
-(117, 134, 'MCC2025-00116', 'Grade 5', 14, 'active', '2025-11-10 12:30:37', '2026-01-17 10:32:52', NULL, NULL),
-(118, 135, 'MCC2025-00117', 'Grade 1', 10, 'active', '2025-11-10 12:30:37', '2026-01-17 10:28:46', NULL, NULL),
-(119, 136, 'MCC2025-00118', NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-01-17 16:36:13', NULL, NULL),
-(120, 137, 'MCC2025-00119', NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-01-17 16:36:13', NULL, NULL),
-(121, 138, 'MCC2025-00120', 'Grade 3', 12, 'active', '2025-11-10 12:30:37', '2026-01-17 10:30:25', NULL, NULL),
-(122, 139, 'MCC2025-00121', 'Grade 6', 15, 'active', '2025-11-10 12:30:37', '2026-01-17 10:31:03', NULL, NULL),
-(123, 140, 'MCC2025-00122', NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-01-17 16:36:13', NULL, NULL),
-(124, 141, 'MCC2025-00123', 'Nursery 1', 7, 'active', '2025-11-10 12:30:37', '2026-01-17 10:20:08', NULL, NULL),
-(125, 142, 'MCC2025-00124', NULL, NULL, 'active', '2025-11-10 12:30:37', '2026-01-17 16:36:13', NULL, NULL),
-(126, 143, 'MCC2025-00125', 'Grade 5', 14, 'active', '2025-11-10 12:30:38', '2026-01-17 10:32:52', NULL, NULL),
-(127, 144, 'MCC2025-00126', 'Grade 2', 11, 'active', '2025-11-10 12:30:38', '2026-01-17 10:28:58', NULL, NULL),
-(128, 145, 'MCC2025-00127', NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-01-17 16:36:13', NULL, NULL),
-(129, 146, 'MCC2025-00128', NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-01-17 16:36:13', NULL, NULL),
-(130, 147, 'MCC2025-00129', NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-01-17 16:36:13', NULL, NULL),
-(131, 148, 'MCC2025-00130', 'Kinder', 9, 'active', '2025-11-10 12:30:38', '2026-01-17 10:25:12', NULL, NULL),
-(132, 149, 'MCC2025-00131', 'Grade 4', 13, 'active', '2025-11-10 12:30:38', '2026-01-17 10:32:43', NULL, NULL),
-(133, 150, 'MCC2025-00132', 'Kinder', 9, 'active', '2025-11-10 12:30:38', '2026-01-17 10:25:12', NULL, NULL),
-(134, 151, 'MCC2025-00133', 'Nursery 1', 7, 'active', '2025-11-10 12:30:38', '2026-01-17 10:20:07', NULL, NULL),
-(135, 152, 'MCC2025-00134', 'Grade 6', 15, 'active', '2025-11-10 12:30:38', '2026-01-17 10:31:03', NULL, NULL),
-(136, 153, 'MCC2025-00135', NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-01-17 16:36:13', NULL, NULL),
-(137, 154, 'MCC2025-00136', NULL, NULL, 'active', '2025-11-10 12:30:38', '2026-01-17 16:36:13', NULL, NULL),
-(138, 155, 'MCC2025-00137', 'Nursery 1', 7, 'active', '2025-11-10 12:30:38', '2026-01-17 10:20:07', NULL, NULL),
-(139, 156, 'MCC2025-00138', 'Grade 3', 12, 'active', '2025-11-10 12:30:38', '2026-01-17 10:30:25', NULL, NULL),
-(140, 157, 'MCC2025-00139', 'Grade 6', 15, 'active', '2025-11-10 12:30:38', '2026-01-17 10:31:03', NULL, NULL),
-(141, 158, 'MCC2025-00140', 'Nursery 2', 8, 'active', '2025-11-10 12:30:39', '2026-01-17 10:24:59', NULL, NULL),
-(142, 159, 'MCC2025-00141', 'Kinder', 9, 'active', '2025-11-10 12:30:39', '2026-01-17 10:25:12', NULL, NULL),
-(143, 160, 'MCC2025-00142', 'Grade 4', 13, 'active', '2025-11-10 12:30:39', '2026-01-17 10:32:43', NULL, NULL),
-(144, 161, 'MCC2025-00143', 'Grade 6', 15, 'active', '2025-11-10 12:30:39', '2026-01-17 10:31:03', NULL, NULL),
-(145, 162, 'MCC2025-00144', 'Grade 2', 11, 'active', '2025-11-10 12:30:39', '2026-01-17 10:28:57', NULL, NULL),
-(146, 163, 'MCC2025-00145', 'Kinder', 9, 'active', '2025-11-10 12:30:39', '2026-01-17 10:25:12', NULL, NULL),
-(147, 164, 'MCC2025-00146', 'Nursery 1', 7, 'active', '2025-11-10 12:30:39', '2026-01-17 10:20:06', NULL, NULL),
-(148, 165, 'MCC2025-00147', 'Grade 2', 11, 'active', '2025-11-10 12:30:39', '2026-01-17 10:28:57', NULL, NULL),
-(149, 166, 'MCC2025-00148', 'Nursery 1', 7, 'active', '2025-11-10 12:30:39', '2026-01-17 10:20:07', NULL, NULL),
-(150, 167, 'MCC2025-00149', NULL, NULL, 'active', '2025-11-10 12:30:39', '2026-01-17 16:36:13', NULL, NULL),
-(151, 168, 'MCC2025-00150', NULL, NULL, 'active', '2025-11-10 12:30:39', '2026-01-17 16:36:13', NULL, NULL),
-(152, 169, 'MCC2025-00151', 'Grade 4', 13, 'active', '2025-11-10 12:30:39', '2026-01-17 10:32:43', NULL, NULL),
-(153, 170, 'MCC2025-00152', NULL, NULL, 'active', '2025-11-10 12:30:39', '2026-01-17 16:36:13', NULL, NULL),
-(154, 171, 'MCC2025-00153', 'Nursery 1', 7, 'active', '2025-11-10 12:30:39', '2026-01-17 10:20:07', NULL, NULL),
-(155, 172, 'MCC2025-00154', 'Kinder', 9, 'active', '2025-11-10 12:30:40', '2026-01-17 10:25:12', NULL, NULL),
-(156, 173, 'MCC2025-00155', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(157, 174, 'MCC2025-00156', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(158, 175, 'MCC2025-00157', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(159, 176, 'MCC2025-00158', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(160, 177, 'MCC2025-00159', 'Grade 5', 14, 'active', '2025-11-10 12:30:40', '2026-01-17 10:30:51', NULL, NULL),
-(161, 178, 'MCC2025-00160', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(162, 179, 'MCC2025-00161', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(163, 180, 'MCC2025-00162', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(164, 181, 'MCC2025-00163', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(165, 182, 'MCC2025-00164', 'Grade 5', 14, 'active', '2025-11-10 12:30:40', '2026-01-17 10:32:52', NULL, NULL),
-(166, 183, 'MCC2025-00165', 'Grade 1', 10, 'active', '2025-11-10 12:30:40', '2026-01-17 10:28:46', NULL, NULL),
-(167, 184, 'MCC2025-00166', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(168, 185, 'MCC2025-00167', 'Nursery 2', 8, 'active', '2025-11-10 12:30:40', '2026-01-17 10:24:59', NULL, NULL),
-(169, 186, 'MCC2025-00168', NULL, NULL, 'active', '2025-11-10 12:30:40', '2026-01-17 16:36:13', NULL, NULL),
-(170, 187, 'MCC2025-00169', NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-01-17 16:36:13', NULL, NULL),
-(171, 188, 'MCC2025-00170', NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-01-17 16:36:13', NULL, NULL),
-(172, 189, 'MCC2025-00171', 'Grade 1', 10, 'active', '2025-11-10 12:30:41', '2026-01-17 10:28:46', NULL, NULL),
-(173, 190, 'MCC2025-00172', NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-01-17 16:36:13', NULL, NULL),
-(174, 191, 'MCC2025-00173', 'Nursery 1', 7, 'active', '2025-11-10 12:30:41', '2026-01-17 10:20:06', NULL, NULL),
-(175, 192, 'MCC2025-00174', NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-01-17 16:36:13', NULL, NULL),
-(176, 193, 'MCC2025-00175', 'Grade 5', 14, 'active', '2025-11-10 12:30:41', '2026-01-17 10:32:52', NULL, NULL),
-(177, 194, 'MCC2025-00176', 'Nursery 1', 7, 'active', '2025-11-10 12:30:41', '2026-01-17 10:20:06', NULL, NULL),
-(178, 195, 'MCC2025-00177', NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-01-17 16:36:13', NULL, NULL),
-(179, 196, 'MCC2025-00178', NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-01-17 16:36:13', NULL, NULL),
-(180, 197, 'MCC2025-00179', NULL, NULL, 'active', '2025-11-10 12:30:41', '2026-01-17 16:36:13', NULL, NULL),
-(181, 198, 'MCC2025-00180', 'Grade 5', 14, 'active', '2025-11-10 12:30:41', '2026-01-17 10:30:51', NULL, NULL),
-(182, 199, 'MCC2025-00181', 'Grade 4', 13, 'active', '2025-11-10 12:30:41', '2026-01-17 10:32:43', NULL, NULL),
-(183, 200, 'MCC2025-00182', 'Grade 5', 14, 'active', '2025-11-10 12:30:41', '2026-01-17 10:30:51', NULL, NULL),
-(184, 201, 'MCC2025-00183', 'Grade 5', 14, 'active', '2025-11-10 12:30:42', '2026-01-17 10:32:52', NULL, NULL),
-(185, 202, 'MCC2025-00184', NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-01-17 16:36:13', NULL, NULL),
-(186, 203, 'MCC2025-00185', 'Grade 6', 15, 'active', '2025-11-10 12:30:42', '2026-01-17 10:31:02', NULL, NULL),
-(187, 204, 'MCC2025-00186', 'Grade 5', 14, 'active', '2025-11-10 12:30:42', '2026-01-17 10:30:51', NULL, NULL),
-(188, 205, 'MCC2025-00187', NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-01-17 16:36:13', NULL, NULL),
-(189, 206, 'MCC2025-00188', 'Grade 4', 13, 'active', '2025-11-10 12:30:42', '2026-01-17 10:32:43', NULL, NULL),
-(190, 207, 'MCC2025-00189', 'Grade 6', 15, 'active', '2025-11-10 12:30:42', '2026-01-17 10:31:02', NULL, NULL),
-(191, 208, 'MCC2025-00190', 'Grade 5', 14, 'active', '2025-11-10 12:30:42', '2026-01-17 10:32:52', NULL, NULL),
-(192, 209, 'MCC2025-00191', NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-01-17 16:36:13', NULL, NULL),
-(193, 210, 'MCC2025-00192', NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-01-17 16:36:13', NULL, NULL),
-(194, 211, 'MCC2025-00193', 'Grade 6', 15, 'active', '2025-11-10 12:30:42', '2026-01-17 10:31:03', NULL, NULL),
-(195, 212, 'MCC2025-00194', 'Nursery 2', 8, 'active', '2025-11-10 12:30:42', '2026-01-17 10:24:58', NULL, NULL),
-(196, 213, 'MCC2025-00195', NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-01-17 16:36:13', NULL, NULL),
-(197, 214, 'MCC2025-00196', NULL, NULL, 'active', '2025-11-10 12:30:42', '2026-01-17 16:36:13', NULL, NULL),
-(198, 215, 'MCC2025-00197', 'Kinder', 9, 'active', '2025-11-10 12:30:42', '2026-01-17 10:25:12', NULL, NULL),
-(199, 216, 'MCC2025-00198', 'Grade 3', 12, 'active', '2025-11-10 12:30:43', '2026-01-17 10:29:09', NULL, NULL),
-(200, 217, 'MCC2025-00199', 'Grade 4', 13, 'active', '2025-11-10 12:30:43', '2026-01-17 10:32:43', NULL, NULL),
-(201, 218, 'MCC2025-00200', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(202, 219, 'MCC2025-00201', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(203, 220, 'MCC2025-00202', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(204, 221, 'MCC2025-00203', 'Grade 1', 10, 'active', '2025-11-10 12:30:43', '2026-01-17 10:28:46', NULL, NULL),
-(205, 222, 'MCC2025-00204', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(206, 223, 'MCC2025-00205', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(207, 224, 'MCC2025-00206', 'Kinder', 9, 'active', '2025-11-10 12:30:43', '2026-01-17 10:25:12', NULL, NULL),
-(208, 225, 'MCC2025-00207', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(209, 226, 'MCC2025-00208', 'Grade 6', 15, 'active', '2025-11-10 12:30:43', '2026-01-17 10:31:02', NULL, NULL),
-(210, 227, 'MCC2025-00209', 'Kinder', 9, 'active', '2025-11-10 12:30:43', '2026-01-17 10:25:12', NULL, NULL),
-(211, 228, 'MCC2025-00210', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(212, 229, 'MCC2025-00211', NULL, NULL, 'active', '2025-11-10 12:30:43', '2026-01-17 16:36:13', NULL, NULL),
-(213, 230, 'MCC2025-00212', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(214, 231, 'MCC2025-00213', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(215, 232, 'MCC2025-00214', 'Grade 6', 15, 'active', '2025-11-10 12:30:44', '2026-01-17 10:31:02', NULL, NULL),
-(216, 233, 'MCC2025-00215', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(217, 234, 'MCC2025-00216', 'Grade 1', 10, 'active', '2025-11-10 12:30:44', '2026-01-17 10:28:46', NULL, NULL),
-(218, 235, 'MCC2025-00217', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(219, 236, 'MCC2025-00218', 'Grade 1', 10, 'active', '2025-11-10 12:30:44', '2026-01-17 10:28:46', NULL, NULL),
-(220, 237, 'MCC2025-00219', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(221, 238, 'MCC2025-00220', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(222, 239, 'MCC2025-00221', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(223, 240, 'MCC2025-00222', 'Grade 1', 10, 'active', '2025-11-10 12:30:44', '2026-01-17 10:28:46', NULL, NULL),
-(224, 241, 'MCC2025-00223', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(225, 242, 'MCC2025-00224', 'Nursery 2', 8, 'active', '2025-11-10 12:30:44', '2026-01-17 10:24:58', NULL, NULL),
-(226, 243, 'MCC2025-00225', 'Grade 3', 12, 'active', '2025-11-10 12:30:44', '2026-01-17 10:30:25', NULL, NULL),
-(227, 244, 'MCC2025-00226', NULL, NULL, 'active', '2025-11-10 12:30:44', '2026-01-17 16:36:13', NULL, NULL),
-(228, 245, 'MCC2025-00227', 'Grade 3', 12, 'active', '2025-11-10 12:30:45', '2026-01-17 10:30:25', NULL, NULL),
-(229, 246, 'MCC2025-00228', 'Grade 6', 15, 'active', '2025-11-10 12:30:45', '2026-01-17 10:31:02', NULL, NULL),
-(230, 247, 'MCC2025-00229', NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-01-17 16:36:13', NULL, NULL),
-(231, 248, 'MCC2025-00230', 'Grade 6', 15, 'active', '2025-11-10 12:30:45', '2026-01-17 10:31:02', NULL, NULL),
-(232, 249, 'MCC2025-00231', 'Grade 2', 11, 'active', '2025-11-10 12:30:45', '2026-01-17 10:28:57', NULL, NULL),
-(233, 250, 'MCC2025-00232', NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-01-17 16:36:13', NULL, NULL),
-(234, 251, 'MCC2025-00233', 'Grade 4', 13, 'active', '2025-11-10 12:30:45', '2026-01-17 10:32:43', NULL, NULL),
-(235, 252, 'MCC2025-00234', NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-01-17 16:36:13', NULL, NULL),
-(236, 253, 'MCC2025-00235', 'Grade 5', 14, 'active', '2025-11-10 12:30:45', '2026-01-17 10:30:51', NULL, NULL),
-(237, 254, 'MCC2025-00236', 'Grade 1', 10, 'active', '2025-11-10 12:30:45', '2026-01-17 10:28:46', NULL, NULL),
-(238, 255, 'MCC2025-00237', 'Grade 1', 10, 'active', '2025-11-10 12:30:45', '2026-01-17 10:28:46', NULL, NULL),
-(239, 256, 'MCC2025-00238', NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-01-17 16:36:13', NULL, NULL),
-(240, 257, 'MCC2025-00239', NULL, NULL, 'active', '2025-11-10 12:30:45', '2026-01-17 16:36:13', NULL, NULL),
-(241, 258, 'MCC2025-00240', 'Grade 6', 15, 'active', '2025-11-10 12:30:45', '2026-01-17 10:31:02', NULL, NULL),
-(242, 259, 'MCC2025-00241', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(243, 260, 'MCC2025-00242', 'Grade 3', 12, 'active', '2025-11-10 12:30:46', '2026-01-17 10:29:09', NULL, NULL),
-(244, 261, 'MCC2025-00243', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(245, 262, 'MCC2025-00244', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(246, 263, 'MCC2025-00245', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(247, 264, 'MCC2025-00246', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(248, 265, 'MCC2025-00247', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(249, 266, 'MCC2025-00248', 'Nursery 1', 7, 'active', '2025-11-10 12:30:46', '2026-01-17 10:20:05', NULL, NULL),
-(250, 267, 'MCC2025-00249', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(251, 268, 'MCC2025-00250', 'Nursery 1', 7, 'active', '2025-11-10 12:30:46', '2026-01-17 10:20:05', NULL, NULL),
-(252, 269, 'MCC2025-00251', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(253, 270, 'MCC2025-00252', 'Grade 5', 14, 'active', '2025-11-10 12:30:46', '2026-01-17 10:30:51', NULL, NULL),
-(254, 271, 'MCC2025-00253', NULL, NULL, 'active', '2025-11-10 12:30:46', '2026-01-17 16:36:13', NULL, NULL),
-(255, 272, 'MCC2025-00254', 'Nursery 1', 7, 'active', '2025-11-10 12:30:46', '2026-01-17 10:20:06', NULL, NULL),
-(256, 273, 'MCC2025-00255', 'Grade 3', 12, 'active', '2025-11-10 12:30:46', '2026-01-17 10:29:09', NULL, NULL),
-(257, 274, 'MCC2025-00256', 'Nursery 1', 7, 'active', '2025-11-10 12:30:47', '2026-01-17 10:20:05', NULL, NULL),
-(258, 275, 'MCC2025-00257', 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-01-17 10:32:52', NULL, NULL),
-(259, 276, 'MCC2025-00258', NULL, NULL, 'active', '2025-11-10 12:30:47', '2026-01-17 16:36:13', NULL, NULL),
-(260, 277, 'MCC2025-00259', 'Grade 3', 12, 'active', '2025-11-10 12:30:47', '2026-01-17 10:30:25', NULL, NULL),
-(261, 278, 'MCC2025-00260', 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-01-17 10:30:51', NULL, NULL),
-(262, 279, 'MCC2025-00261', NULL, NULL, 'active', '2025-11-10 12:30:47', '2026-01-17 16:36:13', NULL, NULL),
-(263, 280, 'MCC2025-00262', 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-01-17 10:32:52', NULL, NULL),
-(264, 281, 'MCC2025-00263', 'Kinder', 9, 'active', '2025-11-10 12:30:47', '2026-01-17 10:25:12', NULL, NULL),
-(265, 282, 'MCC2025-00264', 'Grade 2', 11, 'active', '2025-11-10 12:30:47', '2026-01-17 10:28:57', NULL, NULL),
-(266, 283, 'MCC2025-00265', 'Grade 4', 13, 'active', '2025-11-10 12:30:47', '2026-01-17 10:32:43', NULL, NULL),
-(267, 284, 'MCC2025-00266', 'Grade 5', 14, 'active', '2025-11-10 12:30:47', '2026-01-17 10:30:51', NULL, NULL),
-(268, 285, 'MCC2025-00267', NULL, NULL, 'active', '2025-11-10 12:30:47', '2026-01-17 16:36:13', NULL, NULL),
-(269, 286, 'MCC2025-00268', 'Grade 2', 11, 'active', '2025-11-10 12:30:47', '2026-01-17 10:28:57', NULL, NULL),
-(270, 287, 'MCC2025-00269', 'Grade 4', 13, 'active', '2025-11-10 12:30:47', '2026-01-17 10:32:43', NULL, NULL),
-(271, 288, 'MCC2025-00270', NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-01-17 16:36:13', NULL, NULL),
-(272, 289, 'MCC2025-00271', NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-01-17 16:36:13', NULL, NULL),
-(273, 290, 'MCC2025-00272', 'Nursery 1', 7, 'active', '2025-11-10 12:30:48', '2026-01-17 10:20:05', NULL, NULL),
-(274, 291, 'MCC2025-00273', NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-01-17 16:36:13', NULL, NULL),
-(275, 292, 'MCC2025-00274', NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-01-17 16:36:13', NULL, NULL),
-(276, 293, 'MCC2025-00275', 'Grade 6', 15, 'active', '2025-11-10 12:30:48', '2026-01-17 10:31:02', NULL, NULL),
-(277, 294, 'MCC2025-00276', NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-01-17 16:36:13', NULL, NULL),
-(278, 295, 'MCC2025-00277', 'Nursery 2', 8, 'active', '2025-11-10 12:30:48', '2026-01-17 10:24:58', NULL, NULL),
-(279, 296, 'MCC2025-00278', 'Grade 2', 11, 'active', '2025-11-10 12:30:48', '2026-01-17 10:28:57', NULL, NULL),
-(280, 297, 'MCC2025-00279', NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-01-17 16:36:13', NULL, NULL),
-(281, 298, 'MCC2025-00280', 'Nursery 2', 8, 'active', '2025-11-10 12:30:48', '2026-01-17 10:24:58', NULL, NULL),
-(282, 299, 'MCC2025-00281', 'Grade 2', 11, 'active', '2025-11-10 12:30:48', '2026-01-17 10:28:57', NULL, NULL),
-(283, 300, 'MCC2025-00282', 'Grade 3', 12, 'active', '2025-11-10 12:30:48', '2026-01-17 10:30:25', NULL, NULL),
-(284, 301, 'MCC2025-00283', 'Kinder', 9, 'active', '2025-11-10 12:30:48', '2026-01-17 10:25:12', NULL, NULL),
-(285, 302, 'MCC2025-00284', NULL, NULL, 'active', '2025-11-10 12:30:48', '2026-01-17 16:36:13', NULL, NULL),
-(286, 303, 'MCC2025-00285', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(287, 304, 'MCC2025-00286', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(288, 305, 'MCC2025-00287', 'Grade 2', 11, 'active', '2025-11-10 12:30:49', '2026-01-17 10:28:57', NULL, NULL),
-(289, 306, 'MCC2025-00288', 'Grade 6', 15, 'active', '2025-11-10 12:30:49', '2026-01-17 10:31:02', NULL, NULL),
-(290, 307, 'MCC2025-00289', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(291, 308, 'MCC2025-00290', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(292, 309, 'MCC2025-00291', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(293, 310, 'MCC2025-00292', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(294, 311, 'MCC2025-00293', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(295, 312, 'MCC2025-00294', NULL, NULL, 'active', '2025-11-10 12:30:49', '2026-01-17 16:36:13', NULL, NULL),
-(296, 313, 'MCC2025-00295', 'Grade 2', 11, 'active', '2025-11-10 12:30:49', '2026-01-17 10:28:57', NULL, NULL),
-(297, 314, 'MCC2025-00296', 'Nursery 1', 7, 'active', '2025-11-10 12:30:49', '2026-01-17 10:20:04', NULL, NULL),
-(298, 315, 'MCC2025-00297', 'Nursery 2', 8, 'active', '2025-11-10 12:30:49', '2026-01-17 10:24:58', NULL, NULL),
-(299, 316, 'MCC2025-00298', 'Kinder', 9, 'active', '2025-11-10 12:30:49', '2026-01-17 10:25:12', NULL, NULL),
-(300, 317, 'MCC2025-00299', 'Nursery 2', 8, 'active', '2025-11-10 12:30:49', '2026-01-17 10:24:58', NULL, NULL),
-(301, 318, 'MCC2025-00300', 'Grade 6', 15, 'active', '2025-11-10 12:30:50', '2026-01-17 10:31:02', NULL, NULL),
-(302, 319, 'MCC2025-00301', 'Grade 4', 13, 'active', '2025-11-10 12:30:50', '2026-01-17 10:32:42', NULL, NULL),
-(303, 320, 'MCC2025-00302', 'Kinder', 9, 'active', '2025-11-10 12:30:50', '2026-01-17 10:25:12', NULL, NULL),
-(304, 321, 'MCC2025-00303', 'Grade 4', 13, 'active', '2025-11-10 12:30:50', '2026-01-17 10:32:43', NULL, NULL),
-(305, 322, 'MCC2025-00304', 'Grade 6', 15, 'active', '2025-11-10 12:30:50', '2026-01-17 10:31:02', NULL, NULL),
-(306, 323, 'MCC2025-00305', NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-01-17 16:36:13', NULL, NULL),
-(307, 324, 'MCC2025-00306', NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-01-17 16:36:13', NULL, NULL),
-(308, 325, 'MCC2025-00307', NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-01-17 16:36:13', NULL, NULL),
-(309, 326, 'MCC2025-00308', NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-01-17 16:36:13', NULL, NULL),
-(310, 327, 'MCC2025-00309', NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-01-17 16:36:13', NULL, NULL),
-(311, 328, 'MCC2025-00310', 'Nursery 2', 8, 'active', '2025-11-10 12:30:50', '2026-01-17 10:24:58', NULL, NULL),
-(312, 329, 'MCC2025-00311', 'Nursery 1', 7, 'active', '2025-11-10 12:30:50', '2026-01-17 10:20:04', NULL, NULL),
-(313, 330, 'MCC2025-00312', NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-01-17 16:36:13', NULL, NULL),
-(314, 331, 'MCC2025-00313', NULL, NULL, 'active', '2025-11-10 12:30:50', '2026-01-17 16:36:13', NULL, NULL),
-(315, 332, 'MCC2025-00314', 'Nursery 2', 8, 'active', '2025-11-10 12:30:51', '2026-01-17 10:24:58', NULL, NULL),
-(316, 333, 'MCC2025-00315', NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-01-17 16:36:13', NULL, NULL),
-(317, 334, 'MCC2025-00316', 'Grade 5', 14, 'active', '2025-11-10 12:30:51', '2026-01-17 10:32:52', NULL, NULL),
-(318, 335, 'MCC2025-00317', 'Kinder', 9, 'active', '2025-11-10 12:30:51', '2026-01-17 10:25:11', NULL, NULL),
-(319, 336, 'MCC2025-00318', NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-01-17 16:36:13', NULL, NULL),
-(320, 337, 'MCC2025-00319', 'Grade 4', 13, 'active', '2025-11-10 12:30:51', '2026-01-17 10:32:42', NULL, NULL),
-(321, 338, 'MCC2025-00320', NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-01-17 16:36:13', NULL, NULL),
-(322, 339, 'MCC2025-00321', 'Grade 1', 10, 'active', '2025-11-10 12:30:51', '2026-01-17 10:28:46', NULL, NULL),
-(323, 340, 'MCC2025-00322', 'Grade 4', 13, 'active', '2025-11-10 12:30:51', '2026-01-17 10:32:42', NULL, NULL),
-(324, 341, 'MCC2025-00323', NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-01-17 16:36:13', NULL, NULL),
-(325, 342, 'MCC2025-00324', 'Grade 1', 10, 'active', '2025-11-10 12:30:51', '2026-01-17 10:28:46', NULL, NULL),
-(326, 343, 'MCC2025-00325', 'Grade 4', 13, 'active', '2025-11-10 12:30:51', '2026-01-17 10:32:42', NULL, NULL),
-(327, 344, 'MCC2025-00326', NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-01-17 16:36:13', NULL, NULL),
-(328, 345, 'MCC2025-00327', 'Kinder', 9, 'active', '2025-11-10 12:30:51', '2026-01-17 10:25:11', NULL, NULL),
-(329, 346, 'MCC2025-00328', NULL, NULL, 'active', '2025-11-10 12:30:51', '2026-01-17 16:36:13', NULL, NULL),
-(330, 347, 'MCC2025-00329', 'Grade 3', 12, 'active', '2025-11-10 12:30:52', '2026-01-17 10:30:24', NULL, NULL),
-(331, 348, 'MCC2025-00330', NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-01-17 16:36:13', NULL, NULL),
-(332, 349, 'MCC2025-00331', 'Grade 6', 15, 'active', '2025-11-10 12:30:52', '2026-01-17 10:31:02', NULL, NULL),
-(333, 350, 'MCC2025-00332', 'Nursery 1', 7, 'active', '2025-11-10 12:30:52', '2026-01-17 10:20:03', NULL, NULL),
-(334, 351, 'MCC2025-00333', NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-01-17 16:36:13', NULL, NULL),
-(335, 352, 'MCC2025-00334', NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-01-17 16:36:13', NULL, NULL),
-(336, 353, 'MCC2025-00335', 'Nursery 2', 8, 'active', '2025-11-10 12:30:52', '2026-01-17 10:24:58', NULL, NULL),
-(337, 354, 'MCC2025-00336', 'Grade 1', 10, 'active', '2025-11-10 12:30:52', '2026-01-17 10:28:46', NULL, NULL),
-(338, 355, 'MCC2025-00337', NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-01-17 16:36:13', NULL, NULL),
-(339, 356, 'MCC2025-00338', NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-01-17 16:36:13', NULL, NULL),
-(340, 357, 'MCC2025-00339', NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-01-17 16:36:13', NULL, NULL),
-(341, 358, 'MCC2025-00340', NULL, NULL, 'active', '2025-11-10 12:30:52', '2026-01-17 16:36:13', NULL, NULL),
-(342, 359, 'MCC2025-00341', 'Nursery 2', 8, 'active', '2025-11-10 12:30:52', '2026-01-17 10:24:58', NULL, NULL),
-(343, 360, 'MCC2025-00342', 'Nursery 1', 7, 'active', '2025-11-10 12:30:52', '2026-01-17 10:20:03', NULL, NULL),
-(344, 361, 'MCC2025-00343', 'Grade 4', 13, 'active', '2025-11-10 12:30:53', '2026-01-17 10:32:42', NULL, NULL),
-(345, 362, 'MCC2025-00344', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(346, 363, 'MCC2025-00345', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(347, 364, 'MCC2025-00346', 'Grade 5', 14, 'active', '2025-11-10 12:30:53', '2026-01-17 10:32:52', NULL, NULL),
-(348, 365, 'MCC2025-00347', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(349, 366, 'MCC2025-00348', 'Grade 6', 15, 'active', '2025-11-10 12:30:53', '2026-01-17 10:31:02', NULL, NULL),
-(350, 367, 'MCC2025-00349', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(351, 368, 'MCC2025-00350', 'Nursery 2', 8, 'active', '2025-11-10 12:30:53', '2026-01-17 10:24:58', NULL, NULL),
-(352, 369, 'MCC2025-00351', 'Grade 1', 10, 'active', '2025-11-10 12:30:53', '2026-01-17 10:28:46', NULL, NULL),
-(353, 370, 'MCC2025-00352', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(354, 371, 'MCC2025-00353', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(355, 372, 'MCC2025-00354', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(356, 373, 'MCC2025-00355', 'Grade 3', 12, 'active', '2025-11-10 12:30:53', '2026-01-17 10:30:24', NULL, NULL),
-(357, 374, 'MCC2025-00356', 'Grade 1', 10, 'active', '2025-11-10 12:30:53', '2026-01-17 10:28:46', NULL, NULL),
-(358, 375, 'MCC2025-00357', NULL, NULL, 'active', '2025-11-10 12:30:53', '2026-01-17 16:36:13', NULL, NULL),
-(359, 376, 'MCC2025-00358', 'Nursery 2', 8, 'active', '2025-11-10 12:30:54', '2026-01-17 10:24:58', NULL, NULL),
-(360, 377, 'MCC2025-00359', 'Nursery 1', 7, 'active', '2025-11-10 12:30:54', '2026-01-17 10:20:01', NULL, NULL),
-(361, 378, 'MCC2025-00360', NULL, NULL, 'active', '2025-11-10 12:30:54', '2026-01-17 16:36:13', NULL, NULL),
-(362, 379, 'MCC2025-00361', 'Grade 3', 12, 'active', '2025-11-10 12:30:54', '2026-01-17 10:30:24', NULL, NULL),
-(363, 380, 'MCC2025-00362', 'Kinder', 9, 'active', '2025-11-10 12:30:54', '2026-01-17 10:25:11', NULL, NULL),
-(364, 381, 'MCC2025-00363', 'Kinder', 9, 'active', '2025-11-10 12:30:54', '2026-01-17 10:25:11', NULL, NULL),
-(379, 398, 'MCC2025-00364', 'Grade 3', 12, 'active', '2025-11-13 10:28:17', '2026-01-17 10:29:09', NULL, NULL),
-(386, 405, 'MCC2025-00365', NULL, NULL, 'active', '2025-11-13 12:16:01', '2026-01-17 16:36:13', NULL, NULL);
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `student_balance_summary`
--- (See below for the actual view)
---
-CREATE TABLE `student_balance_summary` (
-`academic_period_id` int unsigned
-,`academic_year` varchar(20)
-,`balance` decimal(10,2)
-,`next_amount_due` decimal(10,2)
-,`next_due_date` date
-,`overdue_installments` bigint
-,`paid_amount` decimal(10,2)
-,`payment_plan_status` enum('Active','Completed','Overdue','Cancelled')
-,`pending_installments` bigint
-,`quarter` enum('1st Quarter','2nd Quarter','3rd Quarter','4th Quarter')
-,`student_id` int unsigned
-,`student_name` varchar(201)
-,`student_number` varchar(50)
-,`total_amount` decimal(10,2)
-,`total_installments` bigint
-,`total_late_fees` decimal(32,2)
-,`year_level` varchar(20)
-);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `student_enrollment_history`
---
-
-CREATE TABLE `student_enrollment_history` (
-  `id` int UNSIGNED NOT NULL,
-  `student_id` int UNSIGNED NOT NULL,
-  `enrollment_id` int UNSIGNED NOT NULL,
-  `academic_period_id` int UNSIGNED NOT NULL,
-  `year_level` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `section_id` int UNSIGNED DEFAULT NULL,
-  `enrollment_status` enum('Enrolled','Promoted','Retained','Transferred','Graduated','Dropped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Enrolled',
-  `enrolled_date` date NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `students` (`id`, `user_id`, `student_id`, `rfid_card`, `gender`, `year_level`, `section_id`, `status`, `graduated_at`, `graduation_batch`, `created_at`, `updated_at`, `enrollment_date`, `enrollment_id`) VALUES
+(30, 47, 'MCAF2025-0002', NULL, 'Male', 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 01:47:14', '2026-02-22 05:57:09', NULL, NULL),
+(31, 48, 'MCAF2025-0003', NULL, 'Male', 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 01:47:22', '2026-02-22 05:57:17', NULL, NULL),
+(32, 49, 'MCAF2025-0004', NULL, 'Male', 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 01:47:32', '2026-02-22 05:57:27', NULL, NULL),
+(33, 50, 'MCAF2025-0005', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 01:47:40', '2026-02-06 06:25:56', NULL, NULL),
+(34, 51, 'MCAF2025-0006', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 02:21:56', '2026-02-06 06:25:56', NULL, NULL),
+(38, 55, 'MCAF2025-0009', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:04:08', '2026-02-06 06:25:56', NULL, NULL),
+(40, 57, 'MCAF2025-0011', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:04:08', '2026-02-06 06:25:56', NULL, NULL),
+(43, 60, 'MCAF2025-0014', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
+(44, 61, 'MCAF2025-0015', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:15:39', '2026-02-21 23:11:21', NULL, NULL),
+(46, 63, 'MCAF2025-0017', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
+(48, 65, 'MCAF2025-0019', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
+(49, 66, 'MCAF2025-0020', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
+(51, 68, 'MCAF2025-0022', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:15:39', '2026-02-06 06:25:56', NULL, NULL),
+(54, 71, 'MCAF2025-0025', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
+(62, 79, 'MCAF2025-0033', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
+(63, 80, 'MCAF2025-0034', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
+(64, 81, 'MCAF2025-0035', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
+(65, 82, 'MCAF2025-0036', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
+(68, 85, 'MCAF2025-0039', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:15:40', '2026-02-06 06:25:56', NULL, NULL),
+(71, 88, 'MCAF2025-0042', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
+(74, 91, 'MCAF2025-0045', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
+(78, 95, 'MCAF2025-0049', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
+(79, 96, 'MCAF2025-0050', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
+(80, 97, 'MCAF2025-0051', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
+(81, 98, 'MCAF2025-0052', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:15:41', '2026-02-06 06:25:56', NULL, NULL),
+(82, 99, 'MCAF2025-0053', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:15:41', '2026-03-10 21:10:10', NULL, NULL),
+(83, 100, 'MCAF2025-0054', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
+(86, 103, 'MCAF2025-0057', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:15:42', '2026-02-21 23:11:16', NULL, NULL),
+(89, 106, 'MCAF2025-0060', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
+(90, 107, 'MCAF2025-0061', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
+(91, 108, 'MCAF2025-0062', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:15:42', '2026-02-06 06:25:56', NULL, NULL),
+(92, 109, 'MCAF2025-0063', NULL, NULL, 'Nursery 2', 7, 'active', NULL, NULL, '2025-11-10 12:15:42', '2026-02-09 05:11:19', '2026-02-09', NULL),
+(93, 110, 'MCAF2025-0064', NULL, 'Female', 'Grade 3', 10, 'active', NULL, NULL, '2025-11-10 12:30:35', '2026-03-09 11:17:51', '2026-02-21', 35),
+(95, 112, 'MCAF2025-0066', NULL, 'Male', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:35', '2026-03-10 21:04:28', NULL, NULL),
+(97, 114, 'MCAF2025-0068', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:35', '2026-02-06 06:25:56', NULL, NULL),
+(98, 115, 'MCAF2025-0069', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:35', '2026-02-06 06:25:56', NULL, NULL),
+(102, 119, 'MCAF2025-0073', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
+(103, 120, 'MCAF2025-0074', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
+(105, 122, 'MCAF2025-0076', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:36', '2026-03-10 21:10:41', NULL, NULL),
+(106, 123, 'MCAF2025-0077', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:36', '2026-02-06 06:25:56', NULL, NULL),
+(113, 130, 'MCAF2025-0084', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
+(114, 131, 'MCAF2025-0085', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
+(117, 134, 'MCAF2025-0088', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
+(118, 135, 'MCAF2025-0089', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
+(121, 138, 'MCAF2025-0092', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
+(122, 139, 'MCAF2025-0093', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
+(124, 141, 'MCAF2025-0095', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:37', '2026-02-06 06:25:56', NULL, NULL),
+(126, 143, 'MCAF2025-0097', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(127, 144, 'MCAF2025-0098', NULL, 'Male', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-03-10 21:09:34', NULL, NULL),
+(131, 148, 'MCAF2025-0102', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(132, 149, 'MCAF2025-0103', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(133, 150, 'MCAF2025-0104', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-21 23:26:14', NULL, NULL),
+(134, 151, 'MCAF2025-0105', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(135, 152, 'MCAF2025-0106', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(138, 155, 'MCAF2025-0109', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(139, 156, 'MCAF2025-0110', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(140, 157, 'MCAF2025-0111', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:38', '2026-02-06 06:25:56', NULL, NULL),
+(141, 158, 'MCAF2025-0112', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(142, 159, 'MCAF2025-0113', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-21 23:26:16', NULL, NULL),
+(143, 160, 'MCAF2025-0114', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(144, 161, 'MCAF2025-0115', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(145, 162, 'MCAF2025-0116', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-03-10 21:10:17', NULL, NULL),
+(146, 163, 'MCAF2025-0117', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(147, 164, 'MCAF2025-0118', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(148, 165, 'MCAF2025-0119', NULL, NULL, 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(149, 166, 'MCAF2025-0120', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(152, 169, 'MCAF2025-0123', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(154, 171, 'MCAF2025-0125', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:39', '2026-02-06 06:25:56', NULL, NULL),
+(155, 172, 'MCAF2025-0126', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
+(160, 177, 'MCAF2025-0131', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
+(165, 182, 'MCAF2025-0136', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
+(166, 183, 'MCAF2025-0137', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
+(168, 185, 'MCAF2025-0139', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:40', '2026-02-06 06:25:56', NULL, NULL),
+(172, 189, 'MCAF2025-0143', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:41', '2026-02-21 23:25:26', NULL, NULL),
+(174, 191, 'MCAF2025-0145', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
+(176, 193, 'MCAF2025-0147', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
+(177, 194, 'MCAF2025-0148', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
+(181, 198, 'MCAF2025-0152', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
+(182, 199, 'MCAF2025-0153', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
+(183, 200, 'MCAF2025-0154', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:41', '2026-02-06 06:25:56', NULL, NULL),
+(184, 201, 'MCAF2025-0155', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(186, 203, 'MCAF2025-0157', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(187, 204, 'MCAF2025-0158', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(189, 206, 'MCAF2025-0160', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(190, 207, 'MCAF2025-0161', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(191, 208, 'MCAF2025-0162', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(194, 211, 'MCAF2025-0165', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(195, 212, 'MCAF2025-0166', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(198, 215, 'MCAF2025-0169', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:42', '2026-02-06 06:25:56', NULL, NULL),
+(199, 216, 'MCAF2025-0170', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
+(200, 217, 'MCAF2025-0171', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
+(204, 221, 'MCAF2025-0175', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
+(207, 224, 'MCAF2025-0178', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
+(209, 226, 'MCAF2025-0180', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
+(210, 227, 'MCAF2025-0181', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:43', '2026-02-06 06:25:56', NULL, NULL),
+(215, 232, 'MCAF2025-0186', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
+(217, 234, 'MCAF2025-0188', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
+(219, 236, 'MCAF2025-0190', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
+(223, 240, 'MCAF2025-0194', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
+(225, 242, 'MCAF2025-0196', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
+(226, 243, 'MCAF2025-0197', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:44', '2026-02-06 06:25:56', NULL, NULL),
+(228, 245, 'MCAF2025-0199', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(229, 246, 'MCAF2025-0200', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(231, 248, 'MCAF2025-0202', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(232, 249, 'MCAF2025-0203', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-03-10 21:10:26', NULL, NULL),
+(234, 251, 'MCAF2025-0205', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(236, 253, 'MCAF2025-0207', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(237, 254, 'MCAF2025-0208', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(238, 255, 'MCAF2025-0209', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(241, 258, 'MCAF2025-0212', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:45', '2026-02-06 06:25:56', NULL, NULL),
+(243, 260, 'MCAF2025-0214', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
+(249, 266, 'MCAF2025-0220', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
+(251, 268, 'MCAF2025-0222', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
+(253, 270, 'MCAF2025-0224', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
+(255, 272, 'MCAF2025-0226', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
+(256, 273, 'MCAF2025-0227', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:46', '2026-02-06 06:25:56', NULL, NULL),
+(257, 274, 'MCAF2025-0228', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(258, 275, 'MCAF2025-0229', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(260, 277, 'MCAF2025-0231', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(261, 278, 'MCAF2025-0232', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(263, 280, 'MCAF2025-0234', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(264, 281, 'MCAF2025-0235', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(265, 282, 'MCAF2025-0236', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-03-10 21:09:17', NULL, NULL),
+(266, 283, 'MCAF2025-0237', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(267, 284, 'MCAF2025-0238', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(269, 286, 'MCAF2025-0240', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-03-10 21:10:33', NULL, NULL),
+(270, 287, 'MCAF2025-0241', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:47', '2026-02-06 06:25:56', NULL, NULL),
+(273, 290, 'MCAF2025-0244', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
+(276, 293, 'MCAF2025-0247', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
+(278, 295, 'MCAF2025-0249', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
+(279, 296, 'MCAF2025-0250', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-03-10 21:09:42', NULL, NULL),
+(281, 298, 'MCAF2025-0252', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
+(282, 299, 'MCAF2025-0253', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-03-10 21:09:08', NULL, 62),
+(283, 300, 'MCAF2025-0254', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
+(284, 301, 'MCAF2025-0255', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:48', '2026-02-06 06:25:56', NULL, NULL),
+(288, 305, 'MCAF2025-0259', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:49', '2026-03-10 21:09:50', NULL, NULL),
+(289, 306, 'MCAF2025-0260', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
+(296, 313, 'MCAF2025-0267', NULL, 'Female', 'Grade 2', 11, 'active', NULL, NULL, '2025-11-10 12:30:49', '2026-03-10 21:09:59', NULL, NULL),
+(297, 314, 'MCAF2025-0268', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
+(298, 315, 'MCAF2025-0269', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
+(299, 316, 'MCAF2025-0270', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
+(300, 317, 'MCAF2025-0271', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:49', '2026-02-06 06:25:56', NULL, NULL),
+(301, 318, 'MCAF2025-0272', NULL, NULL, 'Grade 6', 15, 'active', NULL, NULL, '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
+(302, 319, 'MCAF2025-0273', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
+(303, 320, 'MCAF2025-0274', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
+(304, 321, 'MCAF2025-0275', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
+(305, 322, 'MCAF2025-0276', NULL, NULL, 'Grade 6', 15, 'graduated', '2026-03-09 21:04:58', NULL, '2025-11-10 12:30:50', '2026-03-09 13:04:58', NULL, NULL),
+(311, 328, 'MCAF2025-0282', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:50', '2026-02-21 23:26:03', NULL, NULL),
+(312, 329, 'MCAF2025-0283', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:50', '2026-02-06 06:25:56', NULL, NULL),
+(315, 332, 'MCAF2025-0286', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
+(317, 334, 'MCAF2025-0288', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
+(318, 335, 'MCAF2025-0289', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
+(320, 337, 'MCAF2025-0291', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
+(322, 339, 'MCAF2025-0293', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
+(323, 340, 'MCAF2025-0294', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-03-05 20:20:21', NULL, 64),
+(325, 342, 'MCAF2025-0296', '0015560838', NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-02-23 17:59:39', NULL, NULL),
+(326, 343, 'MCAF2025-0297', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-03-05 20:19:23', NULL, 63),
+(328, 345, 'MCAF2025-0299', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:51', '2026-02-06 06:25:56', NULL, NULL),
+(330, 347, 'MCAF2025-0301', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
+(332, 349, 'MCAF2025-0303', NULL, NULL, 'Grade 6', 15, 'graduated', '2026-03-09 21:13:04', NULL, '2025-11-10 12:30:52', '2026-03-09 13:13:04', NULL, NULL),
+(333, 350, 'MCAF2025-0304', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
+(336, 353, 'MCAF2025-0307', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
+(337, 354, 'MCAF2025-0308', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
+(342, 359, 'MCAF2025-0313', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
+(343, 360, 'MCAF2025-0314', NULL, NULL, 'Nursery 1', 7, 'active', NULL, NULL, '2025-11-10 12:30:52', '2026-02-06 06:25:56', NULL, NULL),
+(344, 361, 'MCAF2025-0315', NULL, NULL, 'Grade 4', 13, 'active', NULL, NULL, '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
+(347, 364, 'MCAF2025-0318', NULL, NULL, 'Grade 5', 14, 'active', NULL, NULL, '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
+(349, 366, 'MCAF2025-0320', NULL, NULL, 'Grade 6', 15, 'graduated', '2026-03-09 21:13:04', NULL, '2025-11-10 12:30:53', '2026-03-09 13:13:04', NULL, NULL),
+(351, 368, 'MCAF2025-0322', NULL, NULL, 'Nursery 2', 8, 'active', NULL, NULL, '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
+(352, 369, 'MCAF2025-0323', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
+(356, 373, 'MCAF2025-0327', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
+(357, 374, 'MCAF2025-0328', NULL, NULL, 'Grade 1', 10, 'active', NULL, NULL, '2025-11-10 12:30:53', '2026-02-06 06:25:56', NULL, NULL),
+(359, 376, 'MCAF2025-0330', '0015603698', NULL, 'Kinder', 8, 'active', NULL, NULL, '2025-11-10 12:30:54', '2026-02-23 17:59:08', '2026-02-23', 51),
+(360, 377, 'MCAF2026-0003', NULL, NULL, 'Nursery 2', 7, 'active', NULL, NULL, '2026-02-09 04:52:52', '2026-02-09 04:52:52', '2026-02-09', NULL),
+(362, 379, 'MCAF2025-0333', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-10 12:30:54', '2026-02-06 06:25:56', NULL, NULL),
+(363, 380, 'MCAF2025-0334', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:54', '2026-02-06 06:25:56', NULL, NULL),
+(364, 381, 'MCAF2025-0335', NULL, NULL, 'Kinder', 9, 'active', NULL, NULL, '2025-11-10 12:30:54', '2026-02-06 06:25:56', NULL, NULL),
+(379, 398, 'MCAF2025-0336', NULL, NULL, 'Grade 3', 12, 'active', NULL, NULL, '2025-11-13 10:28:17', '2026-02-06 06:25:56', NULL, NULL),
+(389, 429, 'MCAF2026-0001', NULL, NULL, 'Grade 1', NULL, 'active', NULL, NULL, '2026-02-07 10:28:25', '2026-02-07 10:28:25', '2026-02-07', 19),
+(390, 430, 'MCAF2026-0002', NULL, NULL, 'Grade 1', NULL, 'active', NULL, NULL, '2026-02-07 14:31:49', '2026-02-07 14:31:49', '2026-02-07', 20),
+(414, 441, 'MCAF2026-0004', NULL, NULL, 'Grade 1', NULL, 'active', NULL, NULL, '2026-02-15 02:04:06', '2026-02-21 23:09:47', NULL, NULL),
+(415, 432, 'MCAF2026-0005', NULL, NULL, 'Nursery 1', NULL, 'active', NULL, NULL, '2026-02-15 02:12:47', '2026-02-21 23:09:40', '2026-02-15', 33),
+(416, 431, 'MCAF2025-0338', NULL, NULL, 'Nursery 1', NULL, 'active', NULL, NULL, '2026-02-15 02:16:40', '2026-02-15 02:16:40', '2026-02-15', 36),
+(417, 443, 'MCAF2026-0006', NULL, NULL, 'Nursery 2', NULL, 'active', NULL, NULL, '2026-02-15 02:28:02', '2026-02-15 09:28:02', NULL, NULL),
+(418, 450, 'MCAF2026-0007', '0002334689', NULL, 'Grade 1', NULL, 'dropout', NULL, NULL, '2026-02-22 05:00:32', '2026-03-10 18:33:29', NULL, NULL),
+(419, 454, 'MCAF2026-0008', NULL, 'Female', 'Grade 2', NULL, 'active', NULL, NULL, '2026-03-02 14:13:05', '2026-03-10 21:03:51', '2026-03-02', 54);
 
 -- --------------------------------------------------------
 
@@ -3315,7 +2902,7 @@ CREATE TABLE `student_uniform_orders` (
   `piece_type` enum('Shirt','Pants') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `total_amount` decimal(8,2) NOT NULL,
   `payment_id` int UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3354,7 +2941,10 @@ INSERT INTO `student_uniform_orders` (`id`, `student_id`, `enrollment_id`, `unif
 (35, 443, NULL, 17, '#18', 1, 350.00, 0, NULL, 350.00, 138, '2026-03-07 16:47:09'),
 (36, 443, NULL, 25, 'One Size', 1, 50.00, 0, NULL, 50.00, 139, '2026-03-07 17:45:13'),
 (37, 443, NULL, 14, 'L', 3, 420.00, 0, NULL, 1260.00, 139, '2026-03-07 17:45:13'),
-(38, 443, NULL, 23, '#18', 2, 470.00, 0, NULL, 940.00, 139, '2026-03-07 17:45:13');
+(38, 443, NULL, 23, '#18', 2, 470.00, 0, NULL, 940.00, 139, '2026-03-07 17:45:13'),
+(39, 91, NULL, 15, 'M', 1, 600.00, 0, NULL, 600.00, 148, NULL),
+(40, 91, NULL, 20, 'L', 3, 400.00, 0, NULL, 1200.00, 148, NULL),
+(41, 91, NULL, 24, 'L', 2, 600.00, 0, NULL, 1200.00, 148, NULL);
 
 -- --------------------------------------------------------
 
@@ -3368,8 +2958,8 @@ CREATE TABLE `subjects` (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Full subject name',
   `level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Grade 1',
   `status` enum('active','inactive') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Simplified subjects for Nursery to Grade 6';
 
 --
@@ -3445,8 +3035,8 @@ CREATE TABLE `teachers` (
   `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('active','inactive') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
   `status_updated_at` timestamp NULL DEFAULT NULL COMMENT 'When status last changed',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3480,8 +3070,8 @@ CREATE TABLE `teacher_adviser_assignments` (
   `teacher_id` int UNSIGNED NOT NULL,
   `level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Grade level: Nursery 1, Nursery 2, Kinder, Grade 1-6',
   `school_year` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'e.g., 2026-2027',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Teacher adviser assignments by grade level per school year';
 
 --
@@ -3503,8 +3093,8 @@ CREATE TABLE `teacher_assignments` (
   `teacher_id` int UNSIGNED NOT NULL COMMENT 'References teachers.id',
   `level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Year level: Nursery, Kinder, Grade 1, etc.',
   `school_year` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'e.g., 2025-2026',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3533,8 +3123,8 @@ CREATE TABLE `teacher_subject_assignments` (
   `teacher_id` int UNSIGNED NOT NULL,
   `subject_id` int UNSIGNED NOT NULL,
   `school_year` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'e.g., 2026-2027',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Teacher-Subject assignments (supports multiple subjects per teacher)';
 
 --
@@ -3566,8 +3156,8 @@ CREATE TABLE `tuition_packages` (
   `effective_from` date NOT NULL,
   `effective_to` date DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3592,8 +3182,8 @@ CREATE TABLE `tuition_package_items` (
   `amount` decimal(10,2) NOT NULL,
   `is_required` tinyint(1) NOT NULL DEFAULT '1',
   `sort_order` int UNSIGNED NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3624,7 +3214,7 @@ CREATE TABLE `tuition_package_levels` (
   `id` int UNSIGNED NOT NULL,
   `package_id` int UNSIGNED NOT NULL,
   `year_level` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3657,8 +3247,8 @@ CREATE TABLE `uniform_items` (
   `is_pair` tinyint(1) DEFAULT '0',
   `allow_half_price` tinyint(1) DEFAULT '0',
   `is_active` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3695,7 +3285,7 @@ CREATE TABLE `uniform_prices` (
   `price` decimal(8,2) NOT NULL,
   `half_price` decimal(8,2) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -3767,8 +3357,8 @@ CREATE TABLE `users` (
   `profile_photo_updated_at` timestamp NULL DEFAULT NULL,
   `status` enum('active','inactive','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `must_change_password` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
   `version` int UNSIGNED NOT NULL DEFAULT '0',
   `payment_pin_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `payment_pin_set_at` timestamp NULL DEFAULT NULL,
@@ -3783,7 +3373,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_name`, `last_name`, `phone`, `profile_photo_path`, `profile_photo_updated_at`, `status`, `must_change_password`, `created_at`, `updated_at`, `version`, `payment_pin_hash`, `payment_pin_set_at`, `pin_attempts`, `pin_locked_until`) VALUES
 (1, 'student@demo.com', '$2y$10$Ll4dzxFoqlaGCC1aL702BOdZ3xtLLijHcLKzW4SF1HPrlEgP9Frz6', 'student', 'Demo', NULL, 'Student', '', NULL, NULL, 'active', 0, '2025-11-06 11:13:56', '2025-11-10 01:05:04', 0, NULL, NULL, 0, NULL),
 (2, 'teacher@demo.com', '$2y$10$/zuE1Q4AmA1J6MXuovoRoenUL5PoblPSzSxXA3ubUw47wpiTNfoVS', 'teacher', 'Demo', NULL, 'Teacher', '', NULL, NULL, 'active', 0, '2025-11-06 11:14:42', '2026-01-06 20:49:02', 0, NULL, NULL, 0, NULL),
-(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', NULL, NULL, 'active', 0, '2025-11-06 11:15:04', '2026-03-08 13:53:31', 0, NULL, NULL, 0, NULL),
+(3, 'admin@demo.com', '$2y$10$zhZ636k.0buTfPYR..Q2eODPgdmjEcKklTOWC1HTR64BH13j0iNeS', 'admin', 'Demo', NULL, 'Admin', '', NULL, NULL, 'active', 0, '2025-11-06 11:15:04', '2026-03-10 20:38:25', 0, NULL, NULL, 0, NULL),
 (16, 'john.doe@example.com', '$2y$10$I19hzyUWwzkG9HMk8wEutekUr7tC9GmtiRFvW4lqePlq4eKBKXQtS', 'teacher', 'John', NULL, 'Doe', '', NULL, NULL, 'active', 0, '2025-11-06 14:05:34', '2025-11-06 18:29:13', 0, NULL, NULL, 0, NULL),
 (18, 'juan.delacruz@mcc.edu.ph', '$2y$10$762nxMWoGHGu7kRyvzc8K.FGrrYGGJpRdMbm5jentTkF4mfui3iBK', 'student', 'Juan', NULL, 'Dela Cruz', '', NULL, NULL, 'active', 0, '2025-11-06 18:30:24', '2025-11-06 18:30:24', 0, NULL, NULL, 0, NULL),
 (19, 'maria.santos@mcc.edu.ph', '$2y$10$KGlfA0PiOWB4HR0pds9.1epVHMzpgv3hsk.qLKXZCSh9mgaD20FCW', 'student', 'Maria', NULL, 'Santos', '', NULL, NULL, 'active', 0, '2025-11-06 18:30:45', '2026-02-14 08:35:58', 0, '$2y$10$eHfLDD/lkTefVxHXDsIUc.aQ5zhzyP.vp/AckoRlj.F42gZ4oEXku', '2026-02-14 01:35:58', 0, NULL),
@@ -3817,7 +3407,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (49, 'jake.silva@mcc.edu.ph', '$2y$10$KkoQ0Kd5xJgW5f653dpUiOcCyZbZYuZwMRKxzW9Mhq05np6P25mvu', 'student', 'Jake Anthony', NULL, 'Silva', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:32', '2025-11-10 08:47:32', 0, NULL, NULL, 0, NULL),
 (50, 'kaye.castro@mcc.edu.ph', '$2y$10$E5sxDNYuS7PQPqFEdcdqcupccfatEk39MJsK7LNx0ujWmpNwocPWy', 'student', 'Kaye', NULL, 'Castro', '', NULL, NULL, 'active', 0, '2025-11-10 08:47:40', '2025-11-10 08:47:40', 0, NULL, NULL, 0, NULL),
 (51, 'leandro.morales@mcc.edu.ph', '$2y$10$icTlD1gFj.SReFcPhM./bec13jp9ru0KFZlfEChhE4zpue7Mzz4CW', 'student', 'Leandro', NULL, 'Morales', '', NULL, NULL, 'active', 0, '2025-11-10 09:21:56', '2025-11-10 09:21:56', 0, NULL, NULL, 0, NULL),
-(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', NULL, NULL, 'active', 0, '2025-11-10 09:38:20', '2026-03-08 06:54:13', 0, NULL, NULL, 0, NULL),
+(52, 'mia.dizon@mcc.edu.ph', '$2y$10$EtWI1tGPBY9GmYYBuVs1lOSVTSe7XTi4fli2mEDeXH4xrTTo8lQ/e', 'teacher', 'Mia Rose', NULL, 'Dizon', '', NULL, NULL, 'active', 0, '2025-11-10 09:38:20', '2026-03-10 20:40:51', 0, NULL, NULL, 0, NULL),
 (53, 'nico.perez@mcc.edu.ph', '$2y$10$m.hi3cAvdrAUzCF7TMoaseMCqY.oGHNorWf7U4e1.IXkR7ANud61S', 'student', 'Nico Allan', NULL, 'Perez', '', NULL, NULL, 'active', 0, '2025-11-10 09:46:50', '2025-11-10 09:46:50', 0, NULL, NULL, 0, NULL),
 (54, 'olivia.delgado@mcc.edu.ph', '$2y$10$0h4mahiMCDm96OWctcRdXeujn7Yr/PRJvgyO7KQtO954d7V39.26m', 'student', 'Olivia Anne', NULL, 'Delgado', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
 (55, 'paul.uy@mcc.edu.ph', '$2y$10$8IsNfV4is0Sgs0N6e70Zk.PP.DcSJswNe.GBdLa3aLZhDxvJ.KiZG', 'student', 'Paul Vincent', NULL, 'Uy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:04:08', '2025-11-10 19:04:08', 0, NULL, NULL, 0, NULL),
@@ -3864,7 +3454,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (96, 'nathaniel.valencia@mcc.edu.ph', '$2y$10$XatFD2uxwosY846UpZJo9uMJsDRGnQjn3DpWwk9MXW8IzLEq7Mw.u', 'student', 'Nathaniel Jude', NULL, 'Valencia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
 (97, 'oliver.zamora@mcc.edu.ph', '$2y$10$0L1OolhGjvywA6x1PRTvV.VgqmNy.ZCRbew5dz2../JuVtxutw2Vi', 'student', 'Oliver Martin', NULL, 'Zamora', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
 (98, 'pauleen.aquino@mcc.edu.ph', '$2y$10$uDMkNg1eNPvdq/gPusU0EOnyIRhTQRwIVP78t1M8Ps0JvIo5uZxh2', 'student', 'Pauleen Joy', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
-(99, 'quincy.brillantes@mcc.edu.ph', '$2y$10$o2CPCMpiPz7kqFizGjpOXOyUMTV4TwF0JQ8.OZLiENDkzfruHjomq', 'student', 'Quincy Rae', NULL, 'Brillantes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2025-11-10 19:15:41', 0, NULL, NULL, 0, NULL),
+(99, 'quincy.brillantes@mcc.edu.ph', '$2y$10$o2CPCMpiPz7kqFizGjpOXOyUMTV4TwF0JQ8.OZLiENDkzfruHjomq', 'student', 'Quincy Rae', '', 'Brillantes', '', NULL, NULL, 'active', 0, '2025-11-10 12:15:41', '2026-03-10 21:10:10', 0, NULL, NULL, 0, NULL),
 (100, 'regina.concepcion@mcc.edu.ph', '$2y$10$b4DY7b6i6wrlmn6vvRuDluIT3l3sj07tHALks9MMgnFKeFzEyiV5y', 'student', 'Regina Faith', NULL, 'Concepcion', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
 (101, 'samuel.domingo@mcc.edu.ph', '$2y$10$lo/1HMyWsbaeSxorvPeyCOwSA271SufrhFR89fGEa6Spk60TNAata', 'student', 'Samuel Ray', NULL, 'Domingo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
 (102, 'therese.estrada@mcc.edu.ph', '$2y$10$f9d7DqMNBgZEkcCW0Z.V7eLL3BVRMjSHT8k2fWB/T2hRnR/F9nQai', 'student', 'Therese Marie', NULL, 'Estrada', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
@@ -3875,9 +3465,9 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (107, 'yara.malonzo@mcc.edu.ph', '$2y$10$oJSjMflWYI2WHCutruB4iO.HflHnYW4oYmh7e4X7BzKJ4uewlaJs.', 'student', 'Yara Nicole', NULL, 'Malonzo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
 (108, 'zeke.noble@mcc.edu.ph', '$2y$10$Do.MIHhKjzqTsd8N9rU.Nekp2W2JzIz/QLVCRi3.CJSf70CJSksr6', 'student', 'Zeke Daniel', NULL, 'Noble', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2025-11-10 19:15:42', 0, NULL, NULL, 0, NULL),
 (109, 'abigail.pineda@mcc.edu.ph', '$2y$10$Nl81BwhhufU0cKkd3yOfA.bbRUkcgfXb/NJJ6Bo4x8xAZkzMzOtpq', 'student', 'Abigail Rose', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:15:42', '2026-02-09 04:59:02', 0, NULL, NULL, 0, NULL),
-(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2026-03-08 14:58:04', 0, '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
+(110, 'ana.ortega@mcc.edu.ph', '$2y$10$9ZltQzA4BL8oxrhx7FU5S.Y58EGi7b8/a50kwKF55SdgDHLc1YDza', 'student', 'Ana', 'Mendoza', 'Ortega', '091237899844444', NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2026-03-09 11:17:51', 0, '$2y$10$cjJaI2VsT.BPvMAiYyiFBOAfvtT0XD2tu8RPz/RL1gdPEhX1SjEsq', '2026-02-20 18:47:07', 0, NULL),
 (111, 'ricardo.lim@mcc.edu.ph', '$2y$10$oO3esbnhLoSBMVVAEpi/5.oT2SZ4ht0cj1N1Bpg/Nug.hAicPeL/m', 'student', 'Ricardo', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
-(112, 'diego.alvarez@mcc.edu.ph', '$2y$10$RzvrH2OmfCYy8g5rf9YNuu/0eIfT0qnWWPwxU6A3x38lBR7r.QVE.', 'student', 'Diego', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
+(112, 'diego.alvarez@mcc.edu.ph', '$2y$10$RzvrH2OmfCYy8g5rf9YNuu/0eIfT0qnWWPwxU6A3x38lBR7r.QVE.', 'student', 'Diego', '', 'Alvarez', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2026-03-10 21:04:28', 0, NULL, NULL, 0, NULL),
 (113, 'julian.sy@mcc.edu.ph', '$2y$10$//yUsNWHi4oBimdkncqP0uhb0MgunJa4PDtINSAPbFT6S152uVm66', 'student', 'Julian', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
 (114, 'ian.navarro@mcc.edu.ph', '$2y$10$Lv8VW5L/qd6dhQ3Qe3EpYuL2.Z1mOtUZRlNdy/KGPWLZ2uQ/1pPaW', 'student', 'Ian', NULL, 'Navarro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
 (115, 'ava.aquino@mcc.edu.ph', '$2y$10$IuK1OPjM8U80QkPaXS0FFOQf1swNvAexMgD3umm7APk/0AyI5vZe2', 'student', 'Ava', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:35', '2025-11-10 19:30:35', 0, NULL, NULL, 0, NULL),
@@ -3887,7 +3477,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (119, 'camila.delos.santos@mcc.edu.ph', '$2y$10$dQyyKqDYjILaEpQlbSgJoONmz7cr5czVhUS/sPvNRmMYq.RaMVilm', 'student', 'Camila', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
 (120, 'miguel.ortega@mcc.edu.ph', '$2y$10$b2ey6HQ529Go4V4TvOL9C.IHDeDEeIsYB0Pydxiz8LBHc0UDodJlO', 'student', 'Miguel', NULL, 'Ortega', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
 (121, 'lucia.pineda@mcc.edu.ph', '$2y$10$Lrym9nnQukuWCWiyg3baBuep.utlPtfKEBCxFqBrIwVi4WDhs4oFG', 'student', 'Lucia', NULL, 'Pineda', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
-(122, 'stella.delos.santos@mcc.edu.ph', '$2y$10$CWwtdqdzT8m3PYlOZgCSgOc1R9zGLJYz.PlsNbWmvAz5c8E7dpvO2', 'student', 'Stella', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
+(122, 'stella.delos.santos@mcc.edu.ph', '$2y$10$CWwtdqdzT8m3PYlOZgCSgOc1R9zGLJYz.PlsNbWmvAz5c8E7dpvO2', 'student', 'Stella', '', 'Delos Santos', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2026-03-10 21:10:40', 0, NULL, NULL, 0, NULL),
 (123, 'chloe.aquino@mcc.edu.ph', '$2y$10$9XuzGkzfSmq79V/usvcvHeJdwOk0F.4WtLgmWUHvwjWNRU5HDvq0W', 'student', 'Chloe', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
 (124, 'ian.perez@mcc.edu.ph', '$2y$10$cGwyIpiCs2aQUFTTlMJ.I.W8YBeyLc27oRH.BFuiZD6egI/F/C0bO', 'student', 'Ian', NULL, 'Perez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
 (125, 'ellie.santos@mcc.edu.ph', '$2y$10$tBnqZJMZCgqMXtYkZYYj/OZkVGaYjok.TlnFsylch5n/MLQIk3xUW', 'student', 'Ellie', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:36', '2025-11-10 19:30:36', 0, NULL, NULL, 0, NULL),
@@ -3909,7 +3499,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (141, 'gabriela.fernandez@mcc.edu.ph', '$2y$10$E.H45zNesHnsyWDlGjvLU.ynRVPurBXot0w8Kvjxy4VFvG0tzXv0i', 'student', 'Gabriela', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
 (142, 'luis.garcia@mcc.edu.ph', '$2y$10$q1OO3FdOBQvH4Sg//qDeredqTnk3JPlZBeXC/5WtmkRmFWe6TMSBK', 'student', 'Luis', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
 (143, 'jorge.delos.santos@mcc.edu.ph', '$2y$10$4cejWj.phjNl64jJLoWxWOCSvU1Q2xa6bMdjD/0ZWHbZcEsCOvRie', 'student', 'Jorge', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:37', '2025-11-10 19:30:37', 0, NULL, NULL, 0, NULL),
-(144, 'leo.aquino@mcc.edu.ph', '$2y$10$tEoWo5184VhAxWmKz6hWXuQX47TZ7vh.ZxuPntHQHyPLbPb3gDWfW', 'student', 'Leo', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
+(144, 'leo.aquino@mcc.edu.ph', '$2y$10$tEoWo5184VhAxWmKz6hWXuQX47TZ7vh.ZxuPntHQHyPLbPb3gDWfW', 'student', 'Leo', '', 'Aquino', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2026-03-10 21:09:34', 0, NULL, NULL, 0, NULL),
 (145, 'nathan.ramos@mcc.edu.ph', '$2y$10$L4XGzrMaJPQ.L32V0VtTbeouxIXwrtnIzl6CqrGAZJrlO7hD/kwEq', 'student', 'Nathan', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
 (146, 'gabriela.santiago@mcc.edu.ph', '$2y$10$HGpNeDWVOqsc0NdJf1ulve3iFqDYaDP5mvG92WdpRm7dY7gXOGSDG', 'student', 'Gabriela', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
 (147, 'oscar.lim@mcc.edu.ph', '$2y$10$lxfGFuNzrcc8GhFcaTVLQui49HQXwclHm5nkMQ1ls86/EXgxavhrm', 'student', 'Oscar', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:38', '2025-11-10 19:30:38', 0, NULL, NULL, 0, NULL),
@@ -3927,7 +3517,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (159, 'ana.santiago@mcc.edu.ph', '$2y$10$x7AumFpCvIhEDSc2KbW5NOxyfAb41q4tRcPceO4ffP3YJebAUFVFK', 'student', 'Ana', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
 (160, 'ian.diaz@mcc.edu.ph', '$2y$10$P1jUfUwoVa6ZtIVKz/EsveK.hltkVp64Yfiqgeljs7kVkVcIM9aeK', 'student', 'Ian', NULL, 'Diaz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
 (161, 'carlos.santiago@mcc.edu.ph', '$2y$10$mJIZig7GgF3fVEFpJCgmZeR8SWsTmnIYlK3CRetrtyxojmvSJkc9W', 'student', 'Carlos', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
-(162, 'julian.cruz@mcc.edu.ph', '$2y$10$dVWmr.opMW2MvKGk5w/EwuerYVJpebZ8I3Tz9qywThvMvMoDVUcW2', 'student', 'Julian', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
+(162, 'julian.cruz@mcc.edu.ph', '$2y$10$dVWmr.opMW2MvKGk5w/EwuerYVJpebZ8I3Tz9qywThvMvMoDVUcW2', 'student', 'Julian', '', 'Cruz', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2026-03-10 21:10:17', 0, NULL, NULL, 0, NULL),
 (163, 'chloe.sy@mcc.edu.ph', '$2y$10$iZlkrPlzDq4gfYE7rMxf/OsGDCSwF3ZjWZg9lPpbKaNMAuIjGVMqa', 'student', 'Chloe', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
 (164, 'mia.sy@mcc.edu.ph', '$2y$10$nmS/2aU2hcSGmOf11PmGtuiveA8vk6WO4tmxw.cxYZZIzv4NexS3O', 'student', 'Mia', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
 (165, 'ava.diaz@mcc.edu.ph', '$2y$10$ek7OI4yUpyv3Oa391R5/reYVfXPloSeePVthzCZbrId082wsYmZQe', 'student', 'Ava', NULL, 'Diaz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:39', '2025-11-10 19:30:39', 0, NULL, NULL, 0, NULL),
@@ -4015,7 +3605,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (246, 'andres.salazar@mcc.edu.ph', '$2y$10$fB9.NUTS0sd4b/B2bvwWeey7MT2WeqWjsynygDnuB6eO1hC0lBR2G', 'student', 'Andres', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
 (247, 'nathan.aquino@mcc.edu.ph', '$2y$10$ZGaPAePTHKDeiBceXvNbrORzFSpueUTthr/SBAcC2rfCEVR0IDQp.', 'student', 'Nathan', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
 (248, 'brian.bravo@mcc.edu.ph', '$2y$10$vOlyrZjQsQlhuRuZsQCaAeycSNZiuVdYdPD9tL4mcF7xt0LuM77z2', 'student', 'Brian', NULL, 'Bravo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
-(249, 'lucia.cruz@mcc.edu.ph', '$2y$10$4/wT3mKiJVMdvfCwcqSDOOG5XSRVYxs0V9T8RqSiWqwv28QNOFIB6', 'student', 'Lucia', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
+(249, 'lucia.cruz@mcc.edu.ph', '$2y$10$4/wT3mKiJVMdvfCwcqSDOOG5XSRVYxs0V9T8RqSiWqwv28QNOFIB6', 'student', 'Lucia', '', 'Cruz', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2026-03-10 21:10:26', 0, NULL, NULL, 0, NULL),
 (250, 'victor.go@mcc.edu.ph', '$2y$10$PeHt64OQHl/wLIJSeSmulOSbU9tAr5oLOGRf8eGqYx.nF.ARlRDO.', 'student', 'Victor', NULL, 'Go', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
 (251, 'sebastian.fernandez@mcc.edu.ph', '$2y$10$on4rnAfl0hVutARz3fdno.IjtL/pbf5sbxCVB3qxG6I97hsApMViO', 'student', 'Sebastian', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
 (252, 'ian.ignacio@mcc.edu.ph', '$2y$10$qUvAi/i6FZ0PnzMczeO0Z.xzfQ79LIzMIOxpX19bL8uw5ro9WxhF6', 'student', 'Ian', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:45', '2025-11-10 19:30:45', 0, NULL, NULL, 0, NULL),
@@ -4048,11 +3638,11 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (279, 'isabella.ramos@mcc.edu.ph', '$2y$10$Ex6LlVfDA5C8ztGA/VeGqOafvHlUXmV1Q4JPK43a5EyC95LUl07la', 'student', 'Isabella', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
 (280, 'maria.delos.santos@mcc.edu.ph', '$2y$10$w7YVsGlzzwN6qqewh./MKu795ABD1DM/kphxViLXWpeofOALxj3Cu', 'student', 'Maria', NULL, 'Delos Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
 (281, 'felipe.fernandez@mcc.edu.ph', '$2y$10$rMwr8ItwaK1X04muL190U.oY6e5YicxpM4RW98q6ktEiGUnqjVMVq', 'student', 'Felipe', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(282, 'elena.aquino@mcc.edu.ph', '$2y$10$6p/dn2X0Mrs27HdQmpEZ7.6eFBriSR.5nJLonW.dkiqRrxLburmHe', 'student', 'Elena', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
+(282, 'elena.aquino@mcc.edu.ph', '$2y$10$6p/dn2X0Mrs27HdQmpEZ7.6eFBriSR.5nJLonW.dkiqRrxLburmHe', 'student', 'Elena', '', 'Aquino', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2026-03-10 21:09:17', 0, NULL, NULL, 0, NULL),
 (283, 'maria.bravo@mcc.edu.ph', '$2y$10$8MgjrftnnszBDgLfl9AeFeIXdVifAjbmOQ0m.OQQy6AUpxyS053oq', 'student', 'Maria', NULL, 'Bravo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
 (284, 'victor.alvarez@mcc.edu.ph', '$2y$10$5b2sMFpAc/5BuDTjQARupuGBEtqTX6A3NXd5BXN0fo8VSn2xs8FpG', 'student', 'Victor', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
 (285, 'luis.lim@mcc.edu.ph', '$2y$10$OSUl40mJM5DB5UtakEkeIuTFPb2FilnJYAdivYwRloJPqJr2G9JcW', 'student', 'Luis', NULL, 'Lim', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
-(286, 'valentina.cruz@mcc.edu.ph', '$2y$10$m8U2U9bOzTtZbxKgI9AFa.ee8PO.PIOT4DjbLtUKv/8XxKHicnLlO', 'student', 'Valentina', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2026-03-04 13:53:00', 0, '$2y$10$2fuDWX/lfVGI1sw43PtG8O2oNNCHU38c.IsjTaBQtiC8d7/8ZSh16', '2026-03-04 13:26:27', 0, NULL),
+(286, 'valentina.cruz@mcc.edu.ph', '$2y$10$m8U2U9bOzTtZbxKgI9AFa.ee8PO.PIOT4DjbLtUKv/8XxKHicnLlO', 'student', 'Valentina', '', 'Cruz', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2026-03-10 21:10:33', 0, '$2y$10$2fuDWX/lfVGI1sw43PtG8O2oNNCHU38c.IsjTaBQtiC8d7/8ZSh16', '2026-03-04 13:26:27', 0, NULL),
 (287, 'nathan.beltran@mcc.edu.ph', '$2y$10$KWTkyoixrEhQ2Evs/B/DgOfYC01MGcjNi6uVdCpevRrzXkfjgKRJm', 'student', 'Nathan', NULL, 'Beltran', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
 (288, 'nina.fernandez@mcc.edu.ph', '$2y$10$.uC6OipkkMkMBk2/4WT.jOaWt3xV0mru3g3/kvWk97H0ODbkFGb1m', 'student', 'Nina', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:47', '2025-11-10 19:30:47', 0, NULL, NULL, 0, NULL),
 (289, 'ian.salazar@mcc.edu.ph', '$2y$10$z0gtaLcG2/cp7/K0Sv3sM.iDdLbxvJvYDRfDsGlGRG06HH239Qju6', 'student', 'Ian', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
@@ -4062,16 +3652,16 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (293, 'juan.castro@mcc.edu.ph', '$2y$10$j5uuZ8INhECFQC/RFx7eTOOYO2gT.xs6cMi66tuSrkwIk/lG8Ofge', 'student', 'Juan', NULL, 'Castro', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
 (294, 'emma.fernandez@mcc.edu.ph', '$2y$10$3E2tFjuNKhpjWh5q25FzJuJod2/MKzu4dWDtVOUI3IhJMCaR0asJu', 'student', 'Emma', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
 (295, 'andres.manalo@mcc.edu.ph', '$2y$10$oXa5LmkFncALXarzwsb1SezP4JscuDXL/c4MXJRr46CBG9FLEadHC', 'student', 'Andres', NULL, 'Manalo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(296, 'mia.aquino@mcc.edu.ph', '$2y$10$gM9dWBXSV0lWoKJN7GL4CeRbhotsG/cS9LMmjiTLKPR3ItqA5dnba', 'student', 'Mia', NULL, 'Aquino', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
+(296, 'mia.aquino@mcc.edu.ph', '$2y$10$gM9dWBXSV0lWoKJN7GL4CeRbhotsG/cS9LMmjiTLKPR3ItqA5dnba', 'student', 'Mia', '', 'Aquino', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2026-03-10 21:09:42', 0, NULL, NULL, 0, NULL),
 (297, 'marcus.gomez@mcc.edu.ph', '$2y$10$4eWjl3RNGbojtKSmpyaBke9j0SkdsobXWvOw.AmCys9CgYa.MVME2', 'student', 'Marcus', NULL, 'Gomez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
 (298, 'andres.diaz@mcc.edu.ph', '$2y$10$veiNWID2DjAfy6K5uexeHucRUdYYVbGh9c5BroxzEg7LA1rYivkJu', 'student', 'Andres', NULL, 'Diaz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
-(299, 'ellie.alvarez@mcc.edu.ph', '$2y$10$PqvmuT0zBLAAxOA8p7SxTumnHu9WiVx2O1xz0cVe0.WLvgt9pNAkW', 'student', 'Ellie', NULL, 'Alvarez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2026-03-05 17:23:19', 0, '$2y$10$ZxmO7FgxabKfx5.vGQvchu.Iz8duF6D.JEBk9lZJCeuv48cRsPuFi', '2026-03-05 17:23:19', 0, NULL),
+(299, 'ellie.alvarez@mcc.edu.ph', '$2y$10$PqvmuT0zBLAAxOA8p7SxTumnHu9WiVx2O1xz0cVe0.WLvgt9pNAkW', 'student', 'Ellie', '', 'Alvarez', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2026-03-10 21:09:08', 0, '$2y$10$ZxmO7FgxabKfx5.vGQvchu.Iz8duF6D.JEBk9lZJCeuv48cRsPuFi', '2026-03-05 17:23:19', 0, NULL),
 (300, 'isabella.ignacio@mcc.edu.ph', '$2y$10$zganDea5m0YCpYRAvoTDm.GT2TNpi.E7zXWo8kxFxDe34CUjKDe.2', 'student', 'Isabella', NULL, 'Ignacio', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
 (301, 'lily.huang@mcc.edu.ph', '$2y$10$JO.acPWALoINfn5g44Z51.cpgHTyYTJMIO9W0.XuFiqwZ4p8DZg1C', 'student', 'Lily', NULL, 'Huang', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
 (302, 'leo.salazar@mcc.edu.ph', '$2y$10$6NeCkVp2PM6rIp1cgkr6Cux8PG9kCjGor5T/ZlO/0yKBqxJ/rIWsy', 'student', 'Leo', NULL, 'Salazar', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:48', '2025-11-10 19:30:48', 0, NULL, NULL, 0, NULL),
 (303, 'camila.santos@mcc.edu.ph', '$2y$10$n/zm9GOJAfvDTZs5NIZX8ezU/1V5e.lcqcUOPoofDLBqyVuWOG3Yi', 'student', 'Camila', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
 (304, 'isabella.cruz@mcc.edu.ph', '$2y$10$VKn7fG/7xmSayDkRC63vYuoZFXNX47D3YNxK4V9WH8k93M2aIY0Qe', 'student', 'Isabella', NULL, 'Cruz', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(305, 'nina.beltran@mcc.edu.ph', '$2y$10$ALhxBKcV72/Q3uqOnv.jB.0iwtTf9WiCs9AvcNMwSS7Frb5w.T9Pi', 'student', 'Nina', NULL, 'Beltran', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:42:26', 0, NULL, NULL, 0, NULL),
+(305, 'nina.beltran@mcc.edu.ph', '$2y$10$ALhxBKcV72/Q3uqOnv.jB.0iwtTf9WiCs9AvcNMwSS7Frb5w.T9Pi', 'student', 'Nina', '', 'Beltran', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-10 21:09:50', 0, NULL, NULL, 0, NULL),
 (306, 'sebastian.reyes@mcc.edu.ph', '$2y$10$f7ap3Ldh/0UOTdkM89EkRucNRjVYZ8pUML0xTemwQF41BH/.T82Em', 'student', 'Sebastian', NULL, 'Reyes', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
 (307, 'ana.santos@mcc.edu.ph', '$2y$10$SpapZhthzPExKx9.X91pUO.iz0FYW3FSw6PzKj3sV6T4FEYM9Z8/a', 'student', 'Ana', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
 (308, 'lucia.garcia@mcc.edu.ph', '$2y$10$XWFoWZ3CYMEhnx89XqgGMuW5f9gMTjwYULcr2Bl.M5UG9Sdo1Tl/O', 'student', 'Lucia', NULL, 'Garcia', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
@@ -4079,7 +3669,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (310, 'camila.villanueva@mcc.edu.ph', '$2y$10$KbRAMosF8IBQC4OpSo.PUeAt2BqADKUYiaQ7AKLeI8XyYtlWyakHi', 'student', 'Camila', NULL, 'Villanueva', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
 (311, 'ricardo.santiago@mcc.edu.ph', '$2y$10$ZmL/q0HOgcwuh0ESQcOzj.zwBskIMH4dkO6MiFH0D9Z2GNeQvddYq', 'student', 'Ricardo', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
 (312, 'elena.santos@mcc.edu.ph', '$2y$10$o8b371BaNTBthCZta7MsWeEVzeupUIFNHZebqF4LeC6vXsbkR9QJe', 'student', 'Elena', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
-(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', NULL, 'Bravo', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-02 20:32:45', 0, '$2y$10$uhF.rDj9uHQiTcXpQ5s6C.y5.7qbJf5PSPByONBTWdlMORrpscHhW', '2026-02-25 11:36:12', 0, NULL),
+(313, 'sofia.bravo@mcc.edu.ph', '$2y$10$OhSruXnylDumcbo9jsUSjOEC21pVcuTfzhU3FP5YlPr/K/K2n.3L2', 'student', 'Sofia', '', 'Bravo', '', NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2026-03-10 21:09:59', 0, '$2y$10$uhF.rDj9uHQiTcXpQ5s6C.y5.7qbJf5PSPByONBTWdlMORrpscHhW', '2026-02-25 11:36:12', 0, NULL),
 (314, 'brian.santiago@mcc.edu.ph', '$2y$10$/Pi/2lxuuKqBtaOcED5Xn.9c6HpUd7Mr7g6egOY0ePPm8f6M5Eo62', 'student', 'Brian', NULL, 'Santiago', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
 (315, 'emma.torres@mcc.edu.ph', '$2y$10$zAFGHsDPmVjfNKIlNVfU5eC7LBrJB1gGjPeP8IKhld30jsjaLbMEm', 'student', 'Emma', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
 (316, 'chloe.santos@mcc.edu.ph', '$2y$10$7B6iFc11eiMqGrsZH1veiOYk0AV.EfIY9C9zkaG6ElhHR8/k1DEbi', 'student', 'Chloe', NULL, 'Santos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:49', '2025-11-10 19:30:49', 0, NULL, NULL, 0, NULL),
@@ -4125,7 +3715,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (356, 'camila.fernandez@mcc.edu.ph', '$2y$10$T5KdbZgkFGuTVxmPmK1ylunrbikYisYPZqGAuVFjTamoKv.DVACIS', 'student', 'Camila', NULL, 'Fernandez', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
 (357, 'carlos.lozano@mcc.edu.ph', '$2y$10$MmFk6bLJUuc5JhUl9YSOa.Z36gGW7JC238gWC/mOWIVgADmQgSMIW', 'student', 'Carlos', NULL, 'Lozano', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
 (358, 'victor.sy@mcc.edu.ph', '$2y$10$2qvNqenCkW4yJb.xExld8uiX70YI.Muj2tJk.rI54qId2Er4XiCHe', 'student', 'Victor', NULL, 'Sy', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
-(359, 'dylan.ramos@mcc.edu.ph', '$2y$10$jyTFKV20iL6k2TcETH4I3uf5h6XHTeRdLOkTpzlGSpwTBTeRd2zEC', 'student', 'Dylan', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
+(359, 'dylan.ramos@mcc.edu.ph', '$2y$10$jyTFKV20iL6k2TcETH4I3uf5h6XHTeRdLOkTpzlGSpwTBTeRd2zEC', 'student', 'Dylan', NULL, 'Ramos', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2026-03-09 08:03:14', 0, NULL, NULL, 0, NULL),
 (360, 'ava.katindig@mcc.edu.ph', '$2y$10$SfrlkkHAod41FjcX9cpzsemhxaOaWPp81wQZbWWXT1iI.S9CLlN7u', 'student', 'Ava', NULL, 'Katindig', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:52', '2025-11-10 19:30:52', 0, NULL, NULL, 0, NULL),
 (361, 'isabella.quinto@mcc.edu.ph', '$2y$10$DiP9PerWajlEiBhoFe1cP.Kg1MZ1OkiT97/wNzi5FQ8wsv.S7q006', 'student', 'Isabella', NULL, 'Quinto', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
 (362, 'sofia.torres@mcc.edu.ph', '$2y$10$WELsZZ76m2uyGGtYw8w81OBSfEl9bHV8MLBYO31y5zybO1ywODzwq', 'student', 'Sofia', NULL, 'Torres', NULL, NULL, NULL, 'active', 0, '2025-11-10 12:30:53', '2025-11-10 19:30:53', 0, NULL, NULL, 0, NULL),
@@ -4170,15 +3760,15 @@ INSERT INTO `users` (`id`, `email`, `password`, `role`, `first_name`, `middle_na
 (443, 'michaeljordanmcaf@gamil.com', '$2y$10$IplfFfH1cNRf3or0sSNAgeoyedmDOzeUx2EJ6JWmI3zBXDUfx/nCK', 'student', 'Michael', NULL, 'Jordan', '', NULL, NULL, 'active', 0, '2026-02-15 09:28:02', '2026-02-22 13:55:10', 0, '$2y$10$kNn5KqsK/5xIb.GnTqyOcOweIEbst2OujAm4BVtaTzfOpTYUKwEQy', '2026-02-22 06:13:45', 0, NULL),
 (446, 'johnchristopherkingzamora@gmail.com', '$2y$10$XFDfDEADQUXfLGIBJGM.U.vCntZYXDeXmezqAlOz9xqL4cLgt6aYG', 'enrollee', 'Jeizi', 'Production', 'Inc', '09123798273', NULL, NULL, 'active', 1, '2026-02-19 01:21:05', '2026-02-18 18:22:08', 0, NULL, NULL, 0, NULL),
 (449, 'studentg444@gmail.com', NULL, 'enrollee', 'JOHN', 'CHISTOPHER KING', 'ZAMORA', '09123798273', NULL, NULL, 'active', 1, '2026-02-19 09:01:13', '2026-02-19 09:01:13', 0, NULL, NULL, 0, NULL),
-(450, 'james9238@gmail.com', '$2y$10$PURkDjDnZipJ4LxF6Mvco.7P1/54yipMnCUdyevxJ4.oV1iPpcOda', 'student', 'James', 'Regata', 'Solaire', '', NULL, NULL, 'active', 0, '2026-02-22 12:00:32', '2026-02-22 05:01:55', 0, NULL, NULL, 0, NULL),
+(450, 'james9238@gmail.com', '$2y$10$PURkDjDnZipJ4LxF6Mvco.7P1/54yipMnCUdyevxJ4.oV1iPpcOda', 'student', 'James', '', 'Solaire', '', NULL, NULL, 'active', 0, '2026-02-22 12:00:32', '2026-03-10 18:33:29', 0, NULL, NULL, 0, NULL),
 (451, 'james1234@gmail.com', '$2y$10$CmzZ3PVqBG6MJZKIWv4B0eP43LAwykJDy30/j895IO73hd2OkZdI.', 'enrollee', 'Joamsd', 'Regate', 'asmom', '', NULL, NULL, 'active', 0, '2026-02-22 12:02:35', '2026-02-22 05:37:13', 0, '$2y$10$iQ43Lc67KF8JK//i8okZbOOm9JYPd7ljLun6a4B9I5MnlPRYVEGt.', '2026-02-22 05:30:54', 0, NULL),
 (452, 'juanmanzano@gmail.com', '$2y$10$ACZMd/nTeFRNggcYfWEBrO1BFJ5esz9T2Y3qqYlo9DIe5fCLhxKWC', 'enrollee', 'Juan', 'Manzano', 'Torres', '', NULL, NULL, 'active', 0, '2026-02-24 16:27:04', '2026-02-24 16:29:10', 0, '$2y$10$Fx560as5MjyFX..cDf.tX.iE6lofHD9.B5BdYFBxX0eHQpgASlU6a', '2026-02-24 09:29:10', 0, NULL),
 (453, 'nikmanzano@gmail.com', '$2y$10$yCQFac0OtQXrbJEzYj3FTOmXWK59FpfJ85GyMiZDcSnOuP7DMUXwe', 'enrollee', 'Nik', 'Manzano', 'Santos', '', NULL, NULL, 'active', 0, '2026-02-24 16:41:22', '2026-02-24 17:12:56', 0, '$2y$10$QEoNk1iBR1XgiXps4CkVVue.AIxFipWBWiebVL3F.Inqd7k.ICrKW', '2026-02-24 10:12:56', 0, NULL),
-(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'student', 'Luna', 'Mendoza', 'Santos', '', NULL, NULL, 'active', 0, '2026-02-24 17:36:11', '2026-03-02 14:13:05', 0, '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
+(454, 'lunasantos@gmail.com', '$2y$10$2oAXLHxglO0KK9YVaQNlSO/3Q2KUzI29Z57BbWP1Ei6moLX6oavQ.', 'student', 'Luna', 'Diva', 'Santos', '', NULL, NULL, 'active', 0, '2026-02-24 17:36:11', '2026-03-10 21:03:51', 0, '$2y$10$y.ugZENzNqQLY8e8MNcTAejx5S1auZCRedm9fp7F4xgfG71RQ84H2', '2026-02-24 10:45:26', 0, NULL),
 (455, 'jcdev@gmail.com', '$2y$10$SAdEYNqyw0p95DRDP4QwLOtQhTwtkd3ZTCcS.SUvacn.V4XHr72ni', 'admin', 'Jeizi', '', 'Zamora', '09565387622', NULL, NULL, 'active', 0, '2026-03-01 17:22:08', '2026-03-08 09:57:51', 0, NULL, NULL, 0, NULL),
 (456, 'kiel1@gmail.com', '$2y$10$VHcOuEsOihaQlWQhNOpgqu47m8DtSdv16Ok3eJTA5EYxB3HvhmIfa', 'enrollee', 'Kiel', 'Santos', 'Sarmiento', '', NULL, NULL, 'active', 0, '2026-03-04 13:51:23', '2026-03-04 13:51:57', 0, NULL, NULL, 0, NULL),
 (457, 'joanasantos@gmail.com', '$2y$10$hpZZuedUas9glWD/GHC.8OULQXnYUGFO8DI1yO0HggRts0mR9.tum', 'enrollee', 'Joana', 'Miller', 'Santos', '', NULL, NULL, 'active', 0, '2026-03-05 16:55:18', '2026-03-05 20:42:36', 0, '$2y$10$no8bnw2v8PiS5pjlOM.U0.s0Vd6a1bZBcAVVOMgRDggxzyK6Uvm/i', '2026-03-05 20:42:36', 0, NULL),
-(458, 'joserizal2@gmail.com', '$2y$10$rS106vcGA0up96KWVUZphOGopzGTFvKesB7yTa4HW8toGXvfTK.lO', 'enrollee', 'Jose', '', 'Rizal', '', NULL, NULL, 'active', 0, '2026-03-07 12:00:25', '2026-03-08 13:27:16', 0, '$2y$10$o4KgzMKbvgBvuUMFVSWLb.oI3wr9Js79bPAyIxYWSB.FQwuIr215e', '2026-03-07 18:52:06', 0, NULL),
+(458, 'joserizal2@gmail.com', '$2y$10$rS106vcGA0up96KWVUZphOGopzGTFvKesB7yTa4HW8toGXvfTK.lO', 'enrollee', 'Jose', '', 'Rizal', '', NULL, NULL, 'active', 0, '2026-03-07 12:00:25', '2026-03-09 13:10:44', 0, '$2y$10$o4KgzMKbvgBvuUMFVSWLb.oI3wr9Js79bPAyIxYWSB.FQwuIr215e', '2026-03-07 18:52:06', 0, NULL),
 (459, 'jamessmith@gmail.com', '$2y$10$O2pQxfGf6D0Hu0I.XkAfEe0LFUuTmRjnQwhKbP/el265O7fLjwO8C', 'enrollee', 'James', 'ko', 'Smith', '09123748234', NULL, NULL, 'active', 0, '2026-03-08 09:39:38', '2026-03-08 14:56:55', 0, '$2y$10$Wkycf6x8cY.vNsH6QQXDUOfvauxPrtyuY7pnjUMr/jTk4MTLF51IC', '2026-03-08 14:29:40', 0, NULL);
 
 -- --------------------------------------------------------
@@ -4192,7 +3782,7 @@ CREATE TABLE `user_fcm_tokens` (
   `user_id` int UNSIGNED NOT NULL,
   `token` varchar(255) NOT NULL,
   `is_active` tinyint DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -4223,8 +3813,8 @@ CREATE TABLE `weekly_insights` (
   `insights_json` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `total_feedback` int NOT NULL DEFAULT '0',
   `model` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -4289,15 +3879,6 @@ INSERT INTO `year_level_sections` (`year_level_id`, `section_id`) VALUES
 (11, 13),
 (12, 14),
 (13, 15);
-
--- --------------------------------------------------------
-
---
--- Structure for view `student_balance_summary`
---
-DROP TABLE IF EXISTS `student_balance_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `student_balance_summary`  AS SELECT `s`.`id` AS `student_id`, `s`.`student_id` AS `student_number`, concat(`u`.`first_name`,' ',`u`.`last_name`) AS `student_name`, `s`.`year_level` AS `year_level`, `pp`.`academic_period_id` AS `academic_period_id`, `ap`.`school_year` AS `academic_year`, `ap`.`quarter` AS `quarter`, `pp`.`total_tuition` AS `total_amount`, coalesce(`pp`.`total_paid`,0) AS `paid_amount`, coalesce(`pp`.`balance`,`pp`.`total_tuition`) AS `balance`, `pp`.`status` AS `payment_plan_status`, count(distinct `i`.`id`) AS `total_installments`, count(distinct (case when (`i`.`status` = 'Pending') then `i`.`id` end)) AS `pending_installments`, count(distinct (case when (`i`.`status` = 'Overdue') then `i`.`id` end)) AS `overdue_installments`, min((case when (`i`.`status` in ('Pending','Overdue')) then `i`.`due_date` end)) AS `next_due_date`, min((case when (`i`.`status` in ('Pending','Overdue')) then `i`.`amount_due` end)) AS `next_amount_due`, sum((case when (`i`.`status` = 'Overdue') then `i`.`late_fee` else 0 end)) AS `total_late_fees` FROM ((((`students` `s` left join `users` `u` on((`u`.`id` = `s`.`user_id`))) left join `payment_plans` `pp` on(((`pp`.`student_id` = `s`.`id`) and (`pp`.`status` = 'Active')))) left join `academic_periods` `ap` on((`ap`.`id` = `pp`.`academic_period_id`))) left join `installments` `i` on((`i`.`payment_plan_id` = `pp`.`id`))) WHERE (`s`.`status` = 'active') GROUP BY `s`.`id`, `pp`.`id`, `ap`.`id`, `u`.`first_name`, `u`.`last_name` ;
 
 --
 -- Indexes for dumped tables
@@ -4463,6 +4044,29 @@ ALTER TABLE `chatbot_knowledge`
   ADD KEY `idx_chatbot_knowledge_active` (`is_active`);
 
 --
+-- Indexes for table `concern_messages`
+--
+ALTER TABLE `concern_messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ticket_id` (`ticket_id`),
+  ADD KEY `idx_sentiment` (`sentiment`),
+  ADD KEY `idx_sender_user_id` (`sender_user_id`),
+  ADD KEY `idx_created_at` (`created_at`);
+
+--
+-- Indexes for table `concern_tickets`
+--
+ALTER TABLE `concern_tickets`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_ticket_no` (`ticket_no`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_overall_sentiment` (`overall_sentiment`),
+  ADD KEY `idx_category` (`category`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_last_message_at` (`last_message_at`);
+
+--
 -- Indexes for table `discount_templates`
 --
 ALTER TABLE `discount_templates`
@@ -4590,6 +4194,33 @@ ALTER TABLE `final_grades`
   ADD KEY `idx_status_submitted_at` (`status`,`submitted_at`),
   ADD KEY `idx_student_academic_period` (`student_id`,`academic_period_id`),
   ADD KEY `idx_subject_section_period` (`subject_id`,`section_id`,`academic_period_id`);
+
+--
+-- Indexes for table `final_grade_submissions`
+--
+ALTER TABLE `final_grade_submissions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_fgs_scope` (`subject_id`,`section_id`,`academic_period_id`,`quarter`),
+  ADD KEY `idx_fgs_status_submitted` (`status`,`submitted_at`),
+  ADD KEY `idx_fgs_submitted_by` (`submitted_by`),
+  ADD KEY `idx_fgs_approved_by` (`approved_by`),
+  ADD KEY `fk_fgs_section` (`section_id`),
+  ADD KEY `fk_fgs_academic_period` (`academic_period_id`);
+
+--
+-- Indexes for table `final_grade_submission_items`
+--
+ALTER TABLE `final_grade_submission_items`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_fgsi_submission_student` (`submission_id`,`student_id`),
+  ADD KEY `idx_fgsi_student` (`student_id`);
+
+--
+-- Indexes for table `grade_submission_controls`
+--
+ALTER TABLE `grade_submission_controls`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_grade_submission_controls_updated_by` (`updated_by`);
 
 --
 -- Indexes for table `grading_input_items`
@@ -4845,15 +4476,6 @@ ALTER TABLE `students`
   ADD KEY `idx_students_section_year` (`section_id`,`year_level`);
 
 --
--- Indexes for table `student_enrollment_history`
---
-ALTER TABLE `student_enrollment_history`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_student_id` (`student_id`),
-  ADD KEY `idx_enrollment_id` (`enrollment_id`),
-  ADD KEY `idx_academic_period` (`academic_period_id`);
-
---
 -- Indexes for table `student_uniform_orders`
 --
 ALTER TABLE `student_uniform_orders`
@@ -5081,13 +4703,25 @@ ALTER TABLE `campus`
 -- AUTO_INCREMENT for table `chatbot_conversations`
 --
 ALTER TABLE `chatbot_conversations`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `chatbot_knowledge`
 --
 ALTER TABLE `chatbot_knowledge`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `concern_messages`
+--
+ALTER TABLE `concern_messages`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+
+--
+-- AUTO_INCREMENT for table `concern_tickets`
+--
+ALTER TABLE `concern_tickets`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `discount_templates`
@@ -5129,7 +4763,7 @@ ALTER TABLE `enrollment_discounts`
 -- AUTO_INCREMENT for table `enrollment_documents`
 --
 ALTER TABLE `enrollment_documents`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `enrollment_fee_items`
@@ -5174,10 +4808,22 @@ ALTER TABLE `final_grades`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=253;
 
 --
+-- AUTO_INCREMENT for table `final_grade_submissions`
+--
+ALTER TABLE `final_grade_submissions`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `final_grade_submission_items`
+--
+ALTER TABLE `final_grade_submission_items`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `grading_input_items`
 --
 ALTER TABLE `grading_input_items`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `grading_input_item_sources`
@@ -5249,7 +4895,7 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
 
 --
 -- AUTO_INCREMENT for table `payment_installment_penalties`
@@ -5324,16 +4970,10 @@ ALTER TABLE `students`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=420;
 
 --
--- AUTO_INCREMENT for table `student_enrollment_history`
---
-ALTER TABLE `student_enrollment_history`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `student_uniform_orders`
 --
 ALTER TABLE `student_uniform_orders`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `subjects`
@@ -5484,6 +5124,12 @@ ALTER TABLE `audit_logs`
   ADD CONSTRAINT `fk_audit_logs_actor_user` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `concern_messages`
+--
+ALTER TABLE `concern_messages`
+  ADD CONSTRAINT `fk_concern_messages_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `concern_tickets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Constraints for table `document_requirements`
 --
 ALTER TABLE `document_requirements`
@@ -5554,6 +5200,29 @@ ALTER TABLE `enrollment_parent_contacts`
 --
 ALTER TABLE `enrollment_periods`
   ADD CONSTRAINT `enrollment_periods_ibfk_1` FOREIGN KEY (`academic_period_id`) REFERENCES `academic_periods` (`id`) ON DELETE RESTRICT;
+
+--
+-- Constraints for table `final_grade_submissions`
+--
+ALTER TABLE `final_grade_submissions`
+  ADD CONSTRAINT `fk_fgs_academic_period` FOREIGN KEY (`academic_period_id`) REFERENCES `academic_periods` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_fgs_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_fgs_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_fgs_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_fgs_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Constraints for table `final_grade_submission_items`
+--
+ALTER TABLE `final_grade_submission_items`
+  ADD CONSTRAINT `fk_fgsi_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_fgsi_submission` FOREIGN KEY (`submission_id`) REFERENCES `final_grade_submissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `grade_submission_controls`
+--
+ALTER TABLE `grade_submission_controls`
+  ADD CONSTRAINT `fk_grade_submission_controls_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `installments`
@@ -5664,14 +5333,6 @@ ALTER TABLE `students`
   ADD CONSTRAINT `students_ibfk_1` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `students_section_id_foreign` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `students_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `student_enrollment_history`
---
-ALTER TABLE `student_enrollment_history`
-  ADD CONSTRAINT `student_enrollment_history_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`),
-  ADD CONSTRAINT `student_enrollment_history_ibfk_2` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`id`),
-  ADD CONSTRAINT `student_enrollment_history_ibfk_3` FOREIGN KEY (`academic_period_id`) REFERENCES `academic_periods` (`id`);
 
 --
 -- Constraints for table `student_uniform_orders`

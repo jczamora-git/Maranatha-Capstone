@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import AccessLockedCard from "@/components/AccessLockedCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,8 @@ const MyCourses = () => {
   const [loadingTeacher, setLoadingTeacher] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [sortOption, setSortOption] = useState<string>("code_asc");
+  const [hasActiveEnrollmentRecord, setHasActiveEnrollmentRecord] = useState<boolean | null>(null);
+  const [activeSchoolYear, setActiveSchoolYear] = useState<string>("");
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "student") {
@@ -43,6 +44,55 @@ const MyCourses = () => {
       
       try {
         setLoading(true);
+
+        // Check active academic period and gate access by enrollment record for that period
+        let activePeriod: any = null;
+        try {
+          const activePeriodRes = await apiGet(`${API_ENDPOINTS.ACADEMIC_PERIODS_ACTIVE}-public`);
+          activePeriod = activePeriodRes.data || activePeriodRes.period || activePeriodRes || null;
+        } catch (err) {
+          console.warn('Failed to fetch active period from public endpoint, trying authenticated endpoint', err);
+          try {
+            const activePeriodRes = await apiGet(API_ENDPOINTS.ACADEMIC_PERIODS_ACTIVE);
+            activePeriod = activePeriodRes.data || activePeriodRes.period || activePeriodRes || null;
+          } catch (err2) {
+            console.error('Failed to fetch active period', err2);
+          }
+        }
+
+        const resolvedSY = activePeriod?.school_year || '';
+        setActiveSchoolYear(resolvedSY);
+
+        let enrollmentsArray: any[] = [];
+        try {
+          const enrollmentResponse = await apiGet(API_ENDPOINTS.ENROLLMENTS);
+          if (Array.isArray(enrollmentResponse.data)) {
+            enrollmentsArray = enrollmentResponse.data;
+          } else if (enrollmentResponse.data && Array.isArray(enrollmentResponse.data.data)) {
+            enrollmentsArray = enrollmentResponse.data.data;
+          } else if (enrollmentResponse.data?.data?.id) {
+            enrollmentsArray = [enrollmentResponse.data.data];
+          } else if (enrollmentResponse.data?.id) {
+            enrollmentsArray = [enrollmentResponse.data];
+          }
+        } catch (error) {
+          console.error('Error checking student enrollment records:', error);
+          enrollmentsArray = [];
+        }
+
+        const hasEnrollmentForActivePeriod = activePeriod?.id
+          ? enrollmentsArray.some((e: any) => {
+              const periodId = e?.academic_period_id ?? e?.academicPeriodId ?? e?.enrollment_period_id;
+              return String(periodId) === String(activePeriod.id);
+            })
+          : enrollmentsArray.length > 0;
+
+        setHasActiveEnrollmentRecord(hasEnrollmentForActivePeriod);
+        if (!hasEnrollmentForActivePeriod) {
+          setCourses([]);
+          return;
+        }
+
         // declarations for values used across this function
         let studentYearLevelNum: number | null = null;
         let studentSectionId: any = null;
@@ -114,21 +164,7 @@ const MyCourses = () => {
 
         setStudentInfo(studentInfoObj);
 
-        // Fetch active academic period to get current semester (try public endpoint first)
-        let activePeriod = null;
-        try {
-          const activePeriodRes = await apiGet(`${API_ENDPOINTS.ACADEMIC_PERIODS_ACTIVE}-public`);
-          activePeriod = activePeriodRes.data || activePeriodRes.period || activePeriodRes || null;
-        } catch (err) {
-          console.warn('Failed to fetch active period from public endpoint, trying authenticated endpoint', err);
-          try {
-            const activePeriodRes = await apiGet(API_ENDPOINTS.ACADEMIC_PERIODS_ACTIVE);
-            activePeriod = activePeriodRes.data || activePeriodRes.period || activePeriodRes || null;
-          } catch (err2) {
-            console.error('Failed to fetch active period', err2);
-          }
-        }
-        
+        // Active period already fetched above and reused here for semester filtering
         if (!activePeriod) {
           console.warn('No active academic period found');
           setCourses([]);
@@ -241,6 +277,7 @@ const MyCourses = () => {
         setCourses(mappedCourses);
       } catch (error) {
         console.error('Error fetching courses:', error);
+        setHasActiveEnrollmentRecord(true);
         setCourses([]);
       } finally {
         setLoading(false);
@@ -258,22 +295,6 @@ const MyCourses = () => {
     course.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     course.teacher?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Sort courses
-  const sortedCourses = [...filteredCourses].sort((a, b) => {
-    switch (sortOption) {
-      case "code_asc":
-        return (a.code || "").localeCompare(b.code || "");
-      case "code_desc":
-        return (b.code || "").localeCompare(a.code || "");
-      case "title_asc":
-        return (a.title || "").localeCompare(b.title || "");
-      case "title_desc":
-        return (b.title || "").localeCompare(a.title || "");
-      default:
-        return 0;
-    }
-  });
 
   const handleViewTeacher = async (teacherId: number | string) => {
     if (!teacherId) {
@@ -326,6 +347,40 @@ const MyCourses = () => {
 
   if (!isAuthenticated) return null;
 
+  if (loading || hasActiveEnrollmentRecord === null) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading your enrollment access...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!loading && hasActiveEnrollmentRecord === false) {
+    return (
+      <DashboardLayout>
+        <AccessLockedCard
+          title="Enrollment Record Required"
+          description={`There are no enrollment records for this SY ${activeSchoolYear || 'N/A'}.`}
+          benefitsTitle="What you need to do"
+          benefits={[
+            "Submit your enrollment for the current active school year",
+            "Wait for your enrollment to be recorded in the system",
+            "Return to access your subjects and class details"
+          ]}
+          actionButton={{
+            label: "Go to My Enrollments",
+            onClick: () => navigate('/enrollment/my-enrollments')
+          }}
+        />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="px-4 py-4 sm:px-8 sm:py-8 bg-gradient-to-b from-background to-muted/30 min-h-screen">
@@ -368,24 +423,6 @@ const MyCourses = () => {
                 />
               </div>
 
-              {/* Sort */}
-              <div className="flex-shrink-0 w-36">
-                <Select value={sortOption} onValueChange={setSortOption}>
-                  <SelectTrigger className="border rounded-xl px-3 py-2 bg-background text-sm font-medium shadow-sm">
-                    {sortOption === "code_asc" && "Code A–Z"}
-                    {sortOption === "code_desc" && "Code Z–A"}
-                    {sortOption === "title_asc" && "Title A–Z"}
-                    {sortOption === "title_desc" && "Title Z–A"}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="code_asc">Code A → Z</SelectItem>
-                    <SelectItem value="code_desc">Code Z → A</SelectItem>
-                    <SelectItem value="title_asc">Title A → Z</SelectItem>
-                    <SelectItem value="title_desc">Title Z → A</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* View toggle */}
               <Button
                 variant="outline"
@@ -405,7 +442,7 @@ const MyCourses = () => {
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <span className="ml-3 text-base text-muted-foreground">Loading your courses…</span>
               </div>
-            ) : sortedCourses.length === 0 ? (
+            ) : filteredCourses.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <BookOpen className="h-14 w-14 text-muted-foreground/30 mb-4" />
                 <h3 className="text-lg font-semibold text-muted-foreground mb-1">
@@ -419,7 +456,7 @@ const MyCourses = () => {
               </div>
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedCourses.map((course) => (
+                {filteredCourses.map((course) => (
                   <div
                     key={course.id}
                     className="rounded-2xl border transition-all duration-200 flex flex-col overflow-hidden bg-white hover:shadow-lg hover:border-primary/30"
@@ -466,7 +503,7 @@ const MyCourses = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {sortedCourses.map((course) => (
+                {filteredCourses.map((course) => (
                   <div
                     key={course.id}
                     className="rounded-2xl border transition-all duration-200 flex items-center gap-3 p-3 bg-white hover:shadow-md hover:border-primary/30"

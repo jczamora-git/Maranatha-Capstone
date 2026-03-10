@@ -95,8 +95,8 @@ class AcademicPeriodModel extends Model
             return false;
         }
 
-        $data['created_at'] = date('Y-m-d H:i:s');
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['created_at'] = app_now();
+        $data['updated_at'] = app_now();
         
         return $this->db->table($this->table)->insert($data);
     }
@@ -106,7 +106,7 @@ class AcademicPeriodModel extends Model
      */
     public function update($id, $data)
     {
-        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = app_now();
         
         return $this->db->table($this->table)
                         ->where('id', $id)

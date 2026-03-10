@@ -22,7 +22,7 @@ class WeeklyInsightsModel extends Model
             'insights_json' => json_encode($insights),
             'total_feedback' => $totalFeedback,
             'model' => $modelName,
-            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_at' => app_now(),
         ];
 
         $existing = $this->get_by_window($windowStart, $windowEnd);
@@ -32,7 +32,7 @@ class WeeklyInsightsModel extends Model
                 ->update($payload);
         }
 
-        $payload['created_at'] = date('Y-m-d H:i:s');
+        $payload['created_at'] = app_now();
 
         return $this->db->table($this->table)
             ->insert($payload);

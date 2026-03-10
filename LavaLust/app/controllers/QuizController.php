@@ -129,7 +129,7 @@ class QuizController extends Controller {
                 'image_url' => $input['image_url'] ?? null,
                 'correct_answer' => $input['correct_answer'] ?? null,
                 'sample_answer' => $input['sample_answer'] ?? null,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now()
             ];
 
             // Create question
@@ -149,7 +149,7 @@ class QuizController extends Controller {
                             'choice_text' => $choice['text'],
                             'is_correct' => $choice['is_correct'] ? 1 : 0,
                             'order_number' => $choiceOrder++,
-                            'created_at' => date('Y-m-d H:i:s')
+                            'created_at' => app_now()
                         ];
                         $this->Quiz_model->create_choice($choiceData);
                     }
@@ -241,7 +241,7 @@ class QuizController extends Controller {
                             'choice_text' => $choice['text'],
                             'is_correct' => $choice['is_correct'] ? 1 : 0,
                             'order_number' => $choiceOrder++,
-                            'created_at' => date('Y-m-d H:i:s')
+                            'created_at' => app_now()
                         ];
                         $this->Quiz_model->create_choice($choiceData);
                     }
@@ -337,8 +337,8 @@ class QuizController extends Controller {
                 'available_until' => $input['available_until'] ?? null,
                 'section_directions' => isset($input['section_directions']) ? json_encode($input['section_directions']) : null,
                 'section_word_boxes' => isset($input['section_word_boxes']) ? json_encode($input['section_word_boxes']) : null,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'created_at' => app_now(),
+                'updated_at' => app_now()
             ];
 
             // Check if settings exist
@@ -511,7 +511,7 @@ class QuizController extends Controller {
                 $this->Quiz_model->create_session([
                     'activity_id'    => $activityId,
                     'student_id'     => $studentId,
-                    'started_at'     => date('Y-m-d H:i:s'),
+                    'started_at'     => app_now(),
                     'expires_at'     => $expiresAt,
                     'question_order' => json_encode($questionOrder),
                     'matching_order' => json_encode($matchingOrder),
@@ -655,7 +655,7 @@ class QuizController extends Controller {
                 'student_id'  => $studentId,
                 'answer_text' => $answerText,
                 'choice_id'   => $input['choice_id'] ?? null,
-                'updated_at'  => date('Y-m-d H:i:s')
+                'updated_at'  => app_now()
             ];
 
             $existing = $this->Quiz_model->get_student_answer($activityId, $input['question_id'], $studentId);
@@ -906,7 +906,7 @@ class QuizController extends Controller {
                     ->update([
                         'grade' => $autoGradedPoints,
                         'status' => $status,
-                        'updated_at' => date('Y-m-d H:i:s')
+                        'updated_at' => app_now()
                     ]);
             } else {
                 // Insert new grade
@@ -915,8 +915,8 @@ class QuizController extends Controller {
                     'student_id' => $studentId,
                     'grade' => $autoGradedPoints,
                     'status' => $status,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'created_at' => app_now(),
+                    'updated_at' => app_now()
                 ]);
             }
 
@@ -1045,7 +1045,7 @@ class QuizController extends Controller {
                 ->where('student_id', $studentId)
                 ->update([
                     'grade' => $totalPoints,
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'updated_at' => app_now()
                 ]);
 
             http_response_code(200);

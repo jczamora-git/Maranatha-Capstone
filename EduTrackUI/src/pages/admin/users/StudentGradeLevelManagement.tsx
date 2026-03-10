@@ -6,19 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Edit, Trash2, Users, ArrowLeft, CheckSquare, Square, X, LayoutGrid, List, ArrowUpDown, BookOpen } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Users, ArrowLeft, CheckSquare, Square, X, LayoutGrid, List, GraduationCap } from "lucide-react";
 import { AlertMessage } from "@/components/AlertMessage";
 import { useConfirm } from "@/components/Confirm";
 import { API_ENDPOINTS, apiGet, apiPut } from "@/lib/api";
-
-type YearLevel = {
-  id: number;
-  name: string;
-  order: number;
-};
 
 type Student = {
   id: string;
@@ -27,38 +19,33 @@ type Student = {
   studentId: string;
   yearLevel: string;
   section: string;
-  phone?: string;
   status: "active" | "inactive" | "graduated";
 };
 
 const StudentGradeLevelManagement = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+  const confirm = useConfirm();
+
   const [students, setStudents] = useState<Student[]>([]);
-  const [yearLevels, setYearLevels] = useState<YearLevel[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterGrade, setFilterGrade] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
   const [showBulkPanel, setShowBulkPanel] = useState(false);
-  const [bulkGradeLevel, setBulkGradeLevel] = useState<string>("");
-  
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editGradeLevel, setEditGradeLevel] = useState<string>("");
-  
-  const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processingBulk, setProcessingBulk] = useState(false);
+  const [alert, setAlert] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   const showAlert = (type: "success" | "error" | "info", message: string) => {
     setAlert({ type, message });
   };
 
-  const confirm = useConfirm();
+  const formatSection = (section: string) => {
+    const value = (section || "").trim();
+    if (!value) return "";
+    return /^\d+$/.test(value) ? `Section ID: ${value}` : value;
+  };
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "admin") {
@@ -66,74 +53,47 @@ const StudentGradeLevelManagement = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Fetch year levels
-  useEffect(() => {
-    const fetchYearLevels = async () => {
-      try {
-        const res = await apiGet('/api/year-levels');
-        if (res && res.success && res.year_levels) {
-          const sorted = res.year_levels.sort((a: YearLevel, b: YearLevel) => a.order - b.order);
-          setYearLevels(sorted);
-        }
-      } catch (err) {
-        console.error('Failed to fetch year levels:', err);
+  const fetchGrade6Students = async () => {
+    try {
+      setLoading(true);
+      const res = await apiGet(`${API_ENDPOINTS.STUDENTS}?year_level=${encodeURIComponent("Grade 6")}`);
+      const rows = res && (res.data || res.students) ? (res.data || res.students) : Array.isArray(res) ? res : [];
+
+      if (Array.isArray(rows)) {
+        const mapped: Student[] = rows.map((r: any) => ({
+          id: String(r.id ?? r.user_id ?? Date.now()),
+          name: `${r.last_name || r.lastName || ""}, ${r.first_name || r.firstName || ""}`.trim() || (r.email || ""),
+          email: r.email || r.user_email || "",
+          studentId: r.student_id || r.studentId || "",
+          yearLevel: r.year_level || "",
+          section: r.section_name ?? r.section ?? (r.section_id ? String(r.section_id) : ""),
+          status: r.status || r.user_status || "active",
+        }));
+        setStudents(mapped);
       }
-    };
-    
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchYearLevels();
+    } catch (err) {
+      console.error("Failed to load Grade 6 students:", err);
+      showAlert("error", "Failed to load Grade 6 students");
+    } finally {
+      setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  };
 
-  // Fetch students
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        setLoading(true);
-        const res = await apiGet(`${API_ENDPOINTS.USERS}/../students`);
-        const rows = res && (res.data || res.students) ? (res.data || res.students) : Array.isArray(res) ? res : [];
-        
-        if (Array.isArray(rows)) {
-          const mapped: Student[] = rows.map((r: any) => ({
-            id: String(r.id ?? r.user_id ?? Date.now()),
-            name: `${r.last_name || r.lastName || ''}, ${r.first_name || r.firstName || ''}`.trim() || (r.email || ''),
-            email: r.email || r.user_email || '',
-            studentId: r.student_id || r.studentId || '',
-            yearLevel: r.year_level || '',
-            section: r.section_name ?? r.section ?? '',
-            phone: r.phone || '',
-            status: r.status || r.user_status || 'active',
-          }));
-          setStudents(mapped);
-        }
-      } catch (err) {
-        console.error('Failed to fetch students:', err);
-        showAlert('error', 'Failed to load students');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (isAuthenticated && user?.role === 'admin') {
-      fetchStudents();
+    if (isAuthenticated && user?.role === "admin") {
+      fetchGrade6Students();
     }
   }, [isAuthenticated, user]);
 
   const filteredStudents = students.filter((s) => {
-    const q = searchQuery.trim().toLowerCase();
-    const matchesQuery = q === "" || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q);
-    const matchesGrade = filterGrade === "all" 
-      ? true 
-      : filterGrade === "unassigned" 
-        ? !s.yearLevel || s.yearLevel.trim() === ""
-        : s.yearLevel === filterGrade;
+    const query = searchQuery.trim().toLowerCase();
+    const matchesQuery =
+      query === "" ||
+      s.name.toLowerCase().includes(query) ||
+      s.email.toLowerCase().includes(query) ||
+      s.studentId.toLowerCase().includes(query);
     const matchesStatus = filterStatus === "all" || s.status === filterStatus;
-    return matchesQuery && matchesGrade && matchesStatus;
-  });
-
-  const sortedStudents = [...filteredStudents].sort((a, b) => {
-    if (sortOrder === "asc") return a.name.localeCompare(b.name);
-    return b.name.localeCompare(a.name);
+    return matchesQuery && matchesStatus;
   });
 
   const toggleSelectStudent = (studentId: string) => {
@@ -147,115 +107,79 @@ const StudentGradeLevelManagement = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedStudents.size === sortedStudents.length) {
+    if (selectedStudents.size === filteredStudents.length) {
       setSelectedStudents(new Set());
     } else {
-      setSelectedStudents(new Set(sortedStudents.map(s => s.id)));
+      setSelectedStudents(new Set(filteredStudents.map((s) => s.id)));
     }
   };
 
-  const handleBulkUpdate = async () => {
-    if (!bulkGradeLevel) {
-      showAlert("error", "Please select a grade level");
+  const handleGraduateStudent = async (student: Student) => {
+    if (student.status === "graduated") return;
+
+    const ok = await confirm({
+      title: "Mark as graduated",
+      description: `Mark ${student.name} as graduated?`,
+      emphasis: student.name,
+      confirmText: "Graduate",
+      cancelText: "Cancel",
+      variant: "default",
+    });
+    if (!ok) return;
+
+    try {
+      await apiPut(`/api/students/${student.id}`, { status: "graduated" });
+      setStudents((prev) => prev.map((s) => (s.id === student.id ? { ...s, status: "graduated" } : s)));
+      showAlert("success", `${student.name} marked as graduated`);
+    } catch (err: any) {
+      showAlert("error", err?.message || "Failed to graduate student");
+    }
+  };
+
+  const handleBulkGraduate = async () => {
+    const selectedList = filteredStudents.filter((s) => selectedStudents.has(s.id));
+    const pending = selectedList.filter((s) => s.status !== "graduated");
+
+    if (pending.length === 0) {
+      showAlert("info", "Selected students are already graduated");
       return;
     }
 
     const ok = await confirm({
-      title: 'Bulk Update Grade Level',
-      description: `Are you sure you want to assign ${selectedStudents.size} student(s) to the selected grade level?`,
-      confirmText: 'Update',
-      cancelText: 'Cancel',
-      variant: 'default'
+      title: "Bulk graduate students",
+      description: `Mark ${pending.length} selected Grade 6 student(s) as graduated?`,
+      confirmText: "Bulk Graduate",
+      cancelText: "Cancel",
+      variant: "default",
     });
-
     if (!ok) return;
 
     try {
-      const selectedStudentList = sortedStudents.filter(s => selectedStudents.has(s.id));
-      const gradeLevel = yearLevels.find(y => String(y.id) === bulkGradeLevel);
-      
-      if (!gradeLevel) {
-        showAlert("error", "Selected grade level not found");
-        return;
-      }
-
+      setProcessingBulk(true);
       let successCount = 0;
-      let failureCount = 0;
+      let failedCount = 0;
 
-      for (const student of selectedStudentList) {
+      for (const student of pending) {
         try {
-          await apiPut(`/api/students/${student.id}`, { yearLevel: gradeLevel.name });
+          await apiPut(`/api/students/${student.id}`, { status: "graduated" });
           successCount++;
         } catch (err) {
-          console.error(`Failed to update ${student.name}:`, err);
-          failureCount++;
+          console.error(`Failed to graduate ${student.name}:`, err);
+          failedCount++;
         }
       }
 
-      // Refresh students
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const res = await apiGet(`${API_ENDPOINTS.USERS}/../students`);
-      const rows = res && (res.data || res.students) ? (res.data || res.students) : Array.isArray(res) ? res : [];
-      
-      if (Array.isArray(rows)) {
-        const mapped: Student[] = rows.map((r: any) => ({
-          id: String(r.id ?? r.user_id ?? Date.now()),
-          name: `${r.last_name || r.lastName || ''}, ${r.first_name || r.firstName || ''}`.trim() || (r.email || ''),
-          email: r.email || r.user_email || '',
-          studentId: r.student_id || r.studentId || '',
-          yearLevel: r.year_level || '',
-          section: r.section_name ?? r.section ?? '',
-          phone: r.phone || '',
-          status: r.status || r.user_status || 'active',
-        }));
-        setStudents(mapped);
-      }
-
+      await fetchGrade6Students();
       setSelectedStudents(new Set());
       setShowBulkPanel(false);
-      setBulkGradeLevel("");
-      
-      showAlert("success", `Updated ${successCount} student(s)${failureCount > 0 ? `, ${failureCount} failed` : ''}`);
+      showAlert(
+        "success",
+        `Graduated ${successCount} student(s)${failedCount > 0 ? `, ${failedCount} failed` : ""}`
+      );
     } catch (err: any) {
-      console.error('Bulk update error:', err);
-      showAlert("error", err.message || "Failed to update students");
-    }
-  };
-
-  const handleEditStudent = (student: Student) => {
-    setEditingStudent(student);
-    setEditGradeLevel(student.yearLevel ? yearLevels.find(y => y.name === student.yearLevel)?.id.toString() || "" : "");
-    setShowEditModal(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingStudent || !editGradeLevel) {
-      showAlert("error", "Please select a grade level");
-      return;
-    }
-
-    try {
-      const gradeLevel = yearLevels.find(y => String(y.id) === editGradeLevel);
-      if (!gradeLevel) {
-        showAlert("error", "Selected grade level not found");
-        return;
-      }
-
-      await apiPut(`/api/students/${editingStudent.id}`, { yearLevel: gradeLevel.name });
-
-      // Update local state
-      setStudents(prev => prev.map(s => 
-        s.id === editingStudent.id 
-          ? { ...s, yearLevel: gradeLevel.name }
-          : s
-      ));
-
-      setShowEditModal(false);
-      setEditingStudent(null);
-      showAlert("success", `${editingStudent.name} grade level updated to ${gradeLevel.name}`);
-    } catch (err: any) {
-      console.error('Edit error:', err);
-      showAlert("error", err.message || "Failed to update student");
+      showAlert("error", err?.message || "Bulk graduation failed");
+    } finally {
+      setProcessingBulk(false);
     }
   };
 
@@ -273,25 +197,14 @@ const StudentGradeLevelManagement = () => {
             <ArrowLeft className="h-5 w-5" />
             Back to Students
           </Button>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Grade Level Management
-              </h1>
-              <p className="text-muted-foreground text-lg">Manage and assign students to grade levels</p>
-            </div>
-          </div>
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Graduating Students
+          </h1>
+          <p className="text-muted-foreground text-lg">Grade 6 students with individual and bulk graduation actions</p>
         </div>
 
         <Card className="shadow-lg border-0 mb-6">
           <CardHeader className="bg-gradient-to-r from-muted/50 to-muted border-b pb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold">All Students ({filteredStudents.length})</CardTitle>
-                <CardDescription className="text-base">Select students to bulk update their grade level</CardDescription>
-              </div>
-            </div>
-
             <div className="flex items-center gap-3 mt-4 flex-wrap">
               <div className="relative flex-1 min-w-64">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -302,23 +215,6 @@ const StudentGradeLevelManagement = () => {
                   className="pl-12 py-2.5 text-base border-2 focus:border-accent-500 rounded-xl"
                 />
               </div>
-
-              <Select value={filterGrade} onValueChange={setFilterGrade}>
-                <SelectTrigger className="border-2 rounded-xl px-3 py-2 bg-background font-medium w-40">
-                  {filterGrade === "all" 
-                    ? "All Grades" 
-                    : filterGrade === "unassigned"
-                      ? "Unassigned"
-                      : yearLevels.find(y => y.name === filterGrade)?.name || filterGrade}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Grades</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {yearLevels.map((yl) => (
-                    <SelectItem key={yl.id} value={yl.name}>{yl.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
 
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="border-2 rounded-xl px-3 py-2 bg-background font-medium w-40">
@@ -335,17 +231,6 @@ const StudentGradeLevelManagement = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSortOrder((s) => (s === "asc" ? "desc" : "asc"))}
-                className="flex items-center gap-2 font-medium"
-                title={`Sort ${sortOrder === "asc" ? "A → Z" : "Z → A"}`}
-              >
-                <ArrowUpDown className="h-4 w-4" />
-                {sortOrder === "asc" ? "A → Z" : "Z → A"}
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={() => setViewMode((v) => (v === "list" ? "grid" : "list"))}
                 className="flex items-center gap-2"
                 title="Toggle view"
@@ -354,6 +239,7 @@ const StudentGradeLevelManagement = () => {
               </Button>
             </div>
           </CardHeader>
+
           <CardContent className="p-6">
             {selectedStudents.size > 0 && (
               <div className="mb-6 p-4 bg-accent/10 border-2 border-accent/30 rounded-xl flex items-center justify-between">
@@ -365,8 +251,8 @@ const StudentGradeLevelManagement = () => {
                   onClick={() => setShowBulkPanel(true)}
                   className="bg-gradient-to-r from-primary to-accent text-white font-semibold gap-2"
                 >
-                  <BookOpen className="h-4 w-4" />
-                  Bulk Update Grade Level
+                  <GraduationCap className="h-4 w-4" />
+                  Bulk Graduate
                 </Button>
               </div>
             )}
@@ -375,36 +261,35 @@ const StudentGradeLevelManagement = () => {
               <div className="flex items-center justify-center h-96">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading students...</p>
+                  <p className="text-muted-foreground">Loading Grade 6 students...</p>
                 </div>
               </div>
-            ) : sortedStudents.length > 0 ? (
+            ) : filteredStudents.length > 0 ? (
               viewMode === "list" ? (
                 <div className="space-y-3">
-                  {/* Select All Header */}
                   <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg font-semibold">
                     <button
                       onClick={toggleSelectAll}
                       className="flex items-center justify-center h-6 w-6 rounded border-2 border-border hover:border-primary transition-colors"
                     >
-                      {selectedStudents.size === sortedStudents.length && sortedStudents.length > 0 ? (
+                      {selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? (
                         <CheckSquare className="h-5 w-5 text-primary" />
                       ) : (
                         <Square className="h-5 w-5" />
                       )}
                     </button>
-                    <span>{selectedStudents.size === sortedStudents.length && sortedStudents.length > 0 ? "Deselect All" : "Select All"}</span>
+                    <span>{selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? "Deselect All" : "Select All"}</span>
                   </div>
 
-                  {sortedStudents.map((student) => (
+                  {filteredStudents.map((student) => (
                     <div
                       key={student.id}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-card to-muted/20 border-2 border-border/30 rounded-xl hover:border-accent-300 hover:shadow-md transition-all group"
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-card to-muted/20 border-2 border-border/30 rounded-xl hover:border-accent-300 hover:shadow-md transition-all"
                     >
                       <div className="flex items-center gap-4 flex-1">
                         <button
                           onClick={() => toggleSelectStudent(student.id)}
-                          className="flex items-center justify-center h-6 w-6 rounded border-2 border-border group-hover:border-primary transition-colors"
+                          className="flex items-center justify-center h-6 w-6 rounded border-2 border-border hover:border-primary transition-colors"
                         >
                           {selectedStudents.has(student.id) ? (
                             <CheckSquare className="h-5 w-5 text-primary" />
@@ -412,24 +297,16 @@ const StudentGradeLevelManagement = () => {
                             <Square className="h-5 w-5" />
                           )}
                         </button>
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold text-base shadow-md">
-                          {student.name.charAt(0).toUpperCase()}
-                        </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
                             <p className="font-semibold text-base">{student.name}</p>
-                            <Badge variant="secondary" className="capitalize font-semibold px-3 py-1 bg-gradient-to-r from-primary/10 to-accent/10 text-primary border border-primary/20">
+                            <Badge variant="secondary" className="font-semibold px-3 py-1">
                               {student.studentId}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                             <span>{student.email}</span>
-                            {student.yearLevel && (
-                              <Badge variant="outline" className="text-xs">{student.yearLevel}</Badge>
-                            )}
-                            {student.section && (
-                              <span>• {student.section}</span>
-                            )}
+                            <Badge variant="outline" className="text-xs">{student.yearLevel}</Badge>
                           </div>
                         </div>
                       </div>
@@ -440,11 +317,12 @@ const StudentGradeLevelManagement = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditStudent(student)}
-                          className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleGraduateStudent(student)}
+                          disabled={student.status === "graduated"}
+                          className="gap-2"
                         >
-                          <Edit className="h-4 w-4" />
-                          Edit
+                          <GraduationCap className="h-4 w-4" />
+                          Graduate
                         </Button>
                       </div>
                     </div>
@@ -452,12 +330,12 @@ const StudentGradeLevelManagement = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sortedStudents.map((student) => (
-                    <div key={student.id} className="p-4 border-2 border-border/30 rounded-xl bg-card hover:border-accent-300 hover:shadow-md transition-all group">
+                  {filteredStudents.map((student) => (
+                    <div key={student.id} className="p-4 border-2 border-border/30 rounded-xl bg-card hover:border-accent-300 hover:shadow-md transition-all">
                       <div className="flex items-start gap-3 mb-3">
                         <button
                           onClick={() => toggleSelectStudent(student.id)}
-                          className="flex items-center justify-center h-6 w-6 rounded border-2 border-border group-hover:border-primary transition-colors flex-shrink-0 mt-1"
+                          className="flex items-center justify-center h-6 w-6 rounded border-2 border-border hover:border-primary transition-colors flex-shrink-0 mt-1"
                         >
                           {selectedStudents.has(student.id) ? (
                             <CheckSquare className="h-5 w-5 text-primary" />
@@ -471,9 +349,7 @@ const StudentGradeLevelManagement = () => {
                             <Badge variant="secondary" className="text-xs flex-shrink-0">{student.studentId}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{student.email}</p>
-                          {student.yearLevel && (
-                            <Badge variant="outline" className="text-xs mt-2">{student.yearLevel}</Badge>
-                          )}
+                          <Badge variant="outline" className="text-xs mt-2">{student.yearLevel}</Badge>
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-2">
@@ -483,10 +359,11 @@ const StudentGradeLevelManagement = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEditStudent(student)}
-                          className="gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleGraduateStudent(student)}
+                          disabled={student.status === "graduated"}
+                          className="gap-1"
                         >
-                          <Edit className="h-3 w-3" />
+                          <GraduationCap className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -497,134 +374,61 @@ const StudentGradeLevelManagement = () => {
               <div className="text-center py-12">
                 <Users className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-lg text-muted-foreground font-medium">
-                  {searchQuery ? "No students matching your search" : "No students found"}
+                  {searchQuery ? "No Grade 6 students matching your search" : "No Grade 6 students found"}
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Bulk Update Panel */}
         {showBulkPanel && (
           <div className="fixed inset-0 z-50 flex">
-            <div 
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setShowBulkPanel(false)}
-            />
+            <div className="absolute inset-0 bg-black/40" onClick={() => !processingBulk && setShowBulkPanel(false)} />
             <div className="relative ml-auto w-full max-w-lg bg-background shadow-2xl flex flex-col border-l border-border">
               <div className="bg-gradient-to-r from-primary to-accent p-6 text-white flex items-center justify-between border-b">
-                <h2 className="text-2xl font-bold">Bulk Update Grade Level</h2>
+                <h2 className="text-2xl font-bold">Bulk Graduate</h2>
                 <button
-                  onClick={() => setShowBulkPanel(false)}
+                  onClick={() => !processingBulk && setShowBulkPanel(false)}
                   className="p-1 hover:bg-white/20 rounded-lg"
                   title="Close panel"
-                  aria-label="Close bulk update panel"
+                  aria-label="Close bulk panel"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
 
               <div className="flex-1 p-6 space-y-6">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Selected: <span className="font-semibold text-foreground">{selectedStudents.size} student(s)</span>
-                  </p>
-                  <div className="max-h-48 overflow-y-auto space-y-2 p-3 bg-muted/30 rounded-lg">
-                    {sortedStudents.filter(s => selectedStudents.has(s.id)).map(s => (
+                <p className="text-sm text-muted-foreground">
+                  Selected: <span className="font-semibold text-foreground">{selectedStudents.size} student(s)</span>
+                </p>
+
+                <div className="max-h-56 overflow-y-auto space-y-2 p-3 bg-muted/30 rounded-lg">
+                  {filteredStudents
+                    .filter((s) => selectedStudents.has(s.id))
+                    .map((s) => (
                       <div key={s.id} className="text-sm p-2 bg-card rounded border border-border/50">
                         <p className="font-semibold">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.studentId}</p>
+                        <p className="text-xs text-muted-foreground">{s.studentId} • {s.status}</p>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="bulk-grade" className="text-base font-semibold mb-3 block">
-                    Assign to Grade Level
-                  </Label>
-                  <Select value={bulkGradeLevel} onValueChange={setBulkGradeLevel}>
-                    <SelectTrigger id="bulk-grade" className="border-2">
-                      <SelectValue placeholder="Select a grade level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {yearLevels.map((yl) => (
-                        <SelectItem key={yl.id} value={String(yl.id)}>{yl.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowBulkPanel(false)}
-                    className="flex-1"
-                  >
+                  <Button variant="outline" onClick={() => setShowBulkPanel(false)} className="flex-1" disabled={processingBulk}>
                     Cancel
                   </Button>
                   <Button
-                    onClick={handleBulkUpdate}
+                    onClick={handleBulkGraduate}
+                    disabled={processingBulk}
                     className="flex-1 bg-gradient-to-r from-primary to-accent text-white font-semibold"
                   >
-                    Update {selectedStudents.size} Student(s)
+                    {processingBulk ? "Processing..." : `Graduate ${selectedStudents.size} Student(s)`}
                   </Button>
                 </div>
               </div>
             </div>
           </div>
         )}
-
-        {/* Edit Student Modal */}
-        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-          <DialogContent className="max-w-md border-0 shadow-2xl">
-            <DialogHeader className="bg-gradient-to-r from-primary to-accent px-6 py-6 -mx-6 -mt-6 mb-6 rounded-t-lg">
-              <DialogTitle className="text-2xl font-bold text-white">Edit Student Grade Level</DialogTitle>
-            </DialogHeader>
-            
-            {editingStudent && (
-              <div className="space-y-6 px-2">
-                <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
-                  <p className="text-sm text-muted-foreground mb-1">Student</p>
-                  <p className="font-semibold text-base">{editingStudent.name}</p>
-                  <p className="text-sm text-muted-foreground mt-2">{editingStudent.studentId}</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-grade" className="text-base font-semibold mb-3 block">
-                    Grade Level
-                  </Label>
-                  <Select value={editGradeLevel} onValueChange={setEditGradeLevel}>
-                    <SelectTrigger id="edit-grade" className="border-2">
-                      <SelectValue placeholder="Select a grade level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {yearLevels.map((yl) => (
-                        <SelectItem key={yl.id} value={String(yl.id)}>{yl.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowEditModal(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveEdit}
-                    className="flex-1 bg-gradient-to-r from-primary to-accent text-white font-semibold"
-                  >
-                    Save Changes
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
         {alert && <AlertMessage type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
       </div>

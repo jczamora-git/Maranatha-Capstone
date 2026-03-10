@@ -168,7 +168,7 @@ class FeedbackController extends Controller
 
             $payload = [
                 'response_text' => $response_text,
-                'responded_at' => date('Y-m-d H:i:s'),
+                'responded_at' => app_now(),
             ];
 
             $res = $this->FeedbackModel->update_response($id, $payload);
