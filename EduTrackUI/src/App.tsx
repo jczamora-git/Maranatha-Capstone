@@ -182,9 +182,7 @@ const AppContent = () => {
             {!isProd && (
               <Route path="/student/forum" element={<ProtectedRoute requiredRole="student"><StudentForum /></ProtectedRoute>} />
             )}
-            {!isProd && (
-              <Route path="/student/feedback" element={<ProtectedRoute requiredRole="student"><StudentFeedbackSentiment /></ProtectedRoute>} />
-            )}
+            <Route path="/student/feedback" element={<ProtectedRoute requiredRole="student"><StudentFeedbackSentiment /></ProtectedRoute>} />
             
             {/* Enrollee Routes */}
             <Route path="/enrollee/dashboard" element={<ProtectedRoute requiredRole="enrollee"><EnrolleeDashboard /></ProtectedRoute>} />
@@ -315,9 +313,7 @@ const AppContent = () => {
               <Route path="/admin/campuses" element={<ProtectedRoute requiredRole="admin"><Suspense fallback={null}><LazyCampuses /></Suspense></ProtectedRoute>} />
             )}
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
-            {!isProd && (
-              <Route path="/admin/sentiment" element={<ProtectedRoute requiredRole="admin"><AdminSentimentAnalytics /></ProtectedRoute>} />
-            )}
+            <Route path="/admin/sentiment" element={<ProtectedRoute requiredRole="admin"><AdminSentimentAnalytics /></ProtectedRoute>} />
             {FEATURES.analytics && (
               <Route path="/admin/predictive-analytics" element={<ProtectedRoute requiredRole="admin"><PredictiveAnalytics /></ProtectedRoute>} />
             )}
@@ -379,8 +375,15 @@ const routerBase = (() => {
   try {
     const b = String(import.meta.env.BASE_URL || '/');
     // remove trailing slash except for root
-    if (b === '/') return '/';
-    return b.replace(/\/$/, '');
+    const normalized = b === '/' ? '/' : b.replace(/\/$/, '');
+
+    // If app is served from domain root via rewrite (clean URL mode),
+    // forcing basename to '/' avoids blank render when BASE_URL is '/ui/'.
+    if (normalized !== '/' && typeof window !== 'undefined' && !window.location.pathname.startsWith(normalized + '/')) {
+      return '/';
+    }
+
+    return normalized;
   } catch (e) {
     return '/';
   }

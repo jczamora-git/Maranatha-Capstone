@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { API_ENDPOINTS, apiGet } from "@/lib/api";
 import { useNotificationContext } from "@/context/NotificationContext";
+import { useAnnouncements, useUnreadCount } from "@/hooks/useNotifications";
 
 import { useEffect, useState } from "react";
 
@@ -221,6 +222,8 @@ const getEnrollmentAction = (status: EnrollmentStatus) => {
 const StudentDashboard = () => {
   const { user } = useAuth();
   const { notifications, addNotification } = useNotificationContext();
+  const { data: unreadCountData } = useUnreadCount({ enabled: user?.role === 'student' });
+  const { data: announcementsData } = useAnnouncements({ enabled: user?.role === 'student' });
   const [courses, setCourses] = useState<any[]>([]);
   const [hasOpenEnrollmentPeriod, setHasOpenEnrollmentPeriod] = useState<boolean | null>(null);
   const [activePeriodInfo, setActivePeriodInfo] = useState<any>(null);
@@ -477,6 +480,37 @@ const StudentDashboard = () => {
   const quickActionsToShow = isProd
     ? quickActions.filter((action) => action.name === "My Enrollments" || action.name === "Payments")
     : quickActions;
+
+  const matchesAudience = (aud: any, role?: string) => {
+    const r = (role || '').toString().toLowerCase();
+    if (!aud) return true;
+
+    let tokens: string[] = [];
+    if (Array.isArray(aud)) {
+      tokens = aud.map((x: any) => String(x).toLowerCase());
+    } else if (typeof aud === 'object' && aud.roles) {
+      tokens = aud.roles.map((x: any) => String(x).toLowerCase());
+    } else {
+      const raw = String(aud).toLowerCase();
+      tokens = raw.split(/[,;|]+/).map((s: string) => s.trim());
+    }
+
+    tokens = tokens.map((t: string) => t.replace(/[^a-z0-9]/g, '')).filter(Boolean);
+
+    if (tokens.includes('all') || tokens.includes('everyone')) return true;
+    if (r === 'admin') return true;
+    if (r === 'student' && (tokens.includes('student') || tokens.includes('students'))) return true;
+    if (r === 'teacher' && (tokens.includes('teacher') || tokens.includes('teachers'))) return true;
+
+    return false;
+  };
+
+  const unreadSystemCount = unreadCountData?.count ?? 0;
+  const unreadAnnouncementsCount = ((announcementsData?.data ?? announcementsData?.announcements ?? []) as any[])
+    .filter((ann: any) => matchesAudience(ann.audience, user?.role))
+    .filter((ann: any) => !ann.is_read).length;
+  const dashboardNotificationCount = unreadSystemCount + unreadAnnouncementsCount;
+
   const normalizedEnrollmentStatus = normalizeEnrollmentStatus(studentEnrollment?.status);
   const enrollmentStatusUi = getEnrollmentStatusUi(normalizedEnrollmentStatus);
   const enrollmentAction = getEnrollmentAction(normalizedEnrollmentStatus);
@@ -504,7 +538,7 @@ const StudentDashboard = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
               <p className="text-sm sm:text-base text-muted-foreground">Stay updated with your courses, enrollment, and school announcements.</p>
             </div>
-            <Badge className="w-fit bg-gradient-to-r from-blue-600 to-cyan-500 text-white border-transparent px-3 py-1">
+            <Badge className="hidden sm:inline-flex w-fit bg-gradient-to-r from-blue-600 to-cyan-500 text-white border-transparent px-3 py-1">
               Student Portal
             </Badge>
           </div>
@@ -517,8 +551,8 @@ const StudentDashboard = () => {
             <CardContent className="p-3 sm:p-5">
               <div className="flex flex-col gap-2 sm:gap-3">
                 <div className="grid grid-cols-[1fr_auto] items-start gap-2">
-                  <p className="min-w-0 text-[11px] sm:text-sm font-medium text-muted-foreground leading-tight">Active Courses</p>
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                  <p className="min-w-0 text-[11px] sm:text-sm font-medium text-muted-foreground leading-tight">Subjects</p>
+                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-blue-100 items-center justify-center shrink-0">
                     <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
                 </div>
@@ -534,11 +568,11 @@ const StudentDashboard = () => {
               <div className="flex flex-col gap-2 sm:gap-3">
                 <div className="grid grid-cols-[1fr_auto] items-start gap-2">
                   <p className="min-w-0 text-[11px] sm:text-sm font-medium text-muted-foreground leading-tight">Notifications</p>
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-emerald-100 items-center justify-center shrink-0">
                     <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
                   </div>
                 </div>
-                <p className="text-xl sm:text-3xl font-bold leading-none tracking-tight">{notifications.length}</p>
+                <p className="text-xl sm:text-3xl font-bold leading-none tracking-tight">{dashboardNotificationCount}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">Unread updates</p>
               </div>
             </CardContent>
@@ -550,7 +584,7 @@ const StudentDashboard = () => {
               <div className="flex flex-col gap-2 sm:gap-3">
                 <div className="grid grid-cols-[1fr_auto] items-start gap-2">
                   <p className="min-w-0 text-[11px] sm:text-sm font-medium text-muted-foreground leading-tight">Enrollment</p>
-                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${studentEnrollment ? enrollmentStatusUi.summaryIconBg : hasOpenEnrollmentPeriod ? 'bg-emerald-100' : 'bg-blue-100'}`}>
+                  <div className={`hidden sm:flex w-10 h-10 rounded-lg items-center justify-center shrink-0 ${studentEnrollment ? enrollmentStatusUi.summaryIconBg : hasOpenEnrollmentPeriod ? 'bg-emerald-100' : 'bg-blue-100'}`}>
                     <Calendar className={`h-4 w-4 sm:h-5 sm:w-5 ${studentEnrollment ? enrollmentStatusUi.summaryIconText : hasOpenEnrollmentPeriod ? 'text-emerald-600' : 'text-blue-600'}`} />
                   </div>
                 </div>
@@ -571,7 +605,7 @@ const StudentDashboard = () => {
                   <Card className={`border-2 ${enrollmentStatusUi.card}`}>
                     <CardHeader className="pb-2 sm:pb-3">
                       <div className="flex items-start gap-3 sm:gap-4">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${enrollmentStatusUi.iconBg}`}>
+                        <div className={`hidden sm:flex w-12 h-12 rounded-lg items-center justify-center flex-shrink-0 ${enrollmentStatusUi.iconBg}`}>
                           <Calendar className={`h-6 w-6 ${enrollmentStatusUi.iconText}`} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -605,7 +639,7 @@ const StudentDashboard = () => {
                   <Card className={`border-2 ${hasOpenEnrollmentPeriod ? 'border-green-300 bg-gradient-to-r from-green-50 to-emerald-50' : 'border-gray-300 bg-gradient-to-r from-gray-50 to-slate-50'}`}>
                     <CardHeader className="pb-2 sm:pb-3">
                       <div className="flex items-start gap-3 sm:gap-4">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${hasOpenEnrollmentPeriod ? 'bg-green-100' : 'bg-gray-200'}`}>
+                        <div className={`hidden sm:flex w-12 h-12 rounded-lg items-center justify-center flex-shrink-0 ${hasOpenEnrollmentPeriod ? 'bg-green-100' : 'bg-gray-200'}`}>
                           <Calendar className={`h-6 w-6 ${hasOpenEnrollmentPeriod ? 'text-green-600' : 'text-gray-600'}`} />
                         </div>
                         <div className="flex-1 min-w-0">

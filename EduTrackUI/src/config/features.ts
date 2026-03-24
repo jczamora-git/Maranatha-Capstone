@@ -47,8 +47,8 @@ const PRODUCTION_FEATURES = {
   rfidScanner: false,
   qrAttendance: false,
   
-  // Phase 3: Advanced Features (Future - DISABLED in production)
-  reports: false,
+  // Phase 3: Advanced Features
+  reports: true,
   analytics: false,  // DISABLED: Predictive analytics hidden in production
   learningMaterials: false,
   studentProgress: false,
